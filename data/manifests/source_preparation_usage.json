@@ -6,14 +6,45 @@
   "llm_calls": 0,
   "llm_tokens": 0,
   "all_source_preparation": {
-    "attempted_unique_sources": 70,
-    "readable_profiled": 68,
-    "zero_cached_errors": 57,
-    "normalization_and_profile_cumulative_seconds": 619.22,
+    "attempted_unique_sources": 97,
+    "readable_profiled": 95,
+    "zero_cached_errors": 79,
+    "normalization_and_profile_cumulative_seconds": 891.4147,
     "first_survey_wall_seconds": null,
     "first_survey_wall_time_note": "Not instrumented as an aggregate; per-source durations are retained.",
     "external_llm_calls": 0,
     "external_llm_tokens": 0,
-    "scope_note": "Preparation audit only; excludes main pipeline LLM use and Docker image build wall time."
+    "scope_note": "All offline preparation for this EUSES investigation, including unused research sources. Actual construction-used sources are counted separately from task audit rows. Node seconds sum per-source wall durations; total preparation wall remains unknown because initial survey aggregate was not instrumented.",
+    "initial_survey": {
+      "attempted_unique_sources": 70,
+      "readable_profiled": 68,
+      "zero_cached_errors": 57,
+      "node_seconds": 619.22
+    },
+    "additional_research_attempted_sources": 27,
+    "additional_research_successful_sources": 27,
+    "phase_surveys": [
+      {
+        "path": "data/manifests/euses_financial_survey.json",
+        "sources": 70,
+        "scope": "Original survey"
+      },
+      {
+        "path": "outputs/research/fallback_sources/survey.json",
+        "sources": 7,
+        "scope": "Additional research; only approved subset enters construction"
+      },
+      {
+        "path": "outputs/research/fallback_sources/survey_v2.json",
+        "sources": 14,
+        "scope": "Additional research; only approved subset enters construction"
+      },
+      {
+        "path": "outputs/research/small_finance_sources/proposal.json",
+        "sources": 6,
+        "scope": "Unused research sources; no finance recommendation accepted"
+      }
+    ],
+    "recorded_at": "2026-10-29T14:58:36.294107+00:00"
   }
 }
