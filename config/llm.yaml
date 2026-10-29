@@ -1,0 +1,15 @@
+# Credentials are local only and never belong in this file.
+backend: codex_cli
+model: gpt-6-sol
+reasoning_effort: high
+binary: /data/home/zhaoyanghan/.local/share/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex
+provider: factory
+provider_env_key: SHEETS_FACTORY_API_KEY
+api_key_file: .secrets/api_key
+endpoint_metadata_file: .secrets/metadata.json
+base_url: null
+container_image: sheetsfactory-lo:24.2
+container_memory: 2g
+container_cpus: 2
+max_parallel_calls: 4
+timeout_seconds: 600
