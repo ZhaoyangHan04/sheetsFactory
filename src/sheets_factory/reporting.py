@@ -58,9 +58,14 @@ def read_run(run_dir):
         result = {'run': json.loads(row[0]) if row else {}}
         for name in ('tasks', 'nodes', 'calls'):
             result[name] = [json.loads(row[0]) for row in connection.execute(f'SELECT payload FROM {name} ORDER BY rowid')]
-        result['events'] = [{'id': row[0], 'timestamp': row[1], 'kind': row[2], **json.loads(row[3])}
-            for row in connection.execute("SELECT id,timestamp,kind,payload FROM events WHERE kind IN "
-                "('checker.result','task.revised','task.rejected','run.finished') ORDER BY id")]
+        result['events'] = []
+        for row in connection.execute("SELECT id,timestamp,kind,payload FROM events WHERE kind IN "
+                "('checker.result','task.revised','task.rejected','run.finished','run.amended','run.resumed') ORDER BY id"):
+            payload = json.loads(row[3])
+            # Older direct audit inserts may use a payload `kind` to describe
+            # the amendment. It must not overwrite the authoritative event kind.
+            result['events'].append({**payload, 'payload_kind': payload.get('kind'),
+                                     'id': row[0], 'timestamp': row[1], 'kind': row[2]})
         return result
     finally:
         connection.rollback()
@@ -280,6 +285,8 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
     targets = (config.get('run') or {}).get('targets') or {
         'financial_modeling': run.get('financial_target', 20), 'debugging': run.get('debugging_target', 20)}
     actual = {mode: sum(task['mode'] == mode for task in qualified) for mode in targets}
+    amendments = [event for event in snapshot['events'] if event['kind'] == 'run.amended']
+    resumptions = [event for event in snapshot['events'] if event['kind'] == 'run.resumed']
     final_issue_counts, historical_issue_counts = Counter(), Counter()
     for task in tasks:
         final_issue_counts.update(issue.get('problem_id', 'unknown') for issue in task.get('issues', []))
@@ -305,8 +312,13 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
     wall_scope = 'recorded_run_wall_time'
     if not _number(wall):
         if run.get('status') not in {'completed', 'shortfall', 'failed', 'cancelled'} and started:
-            wall = max(0, (now - started).total_seconds())
-            wall_scope = 'live_elapsed_since_run_start'
+            phase_started = _instant(run.get('execution_phase_started_at'))
+            if run.get('resume_count') and phase_started:
+                wall = (run.get('previous_wall_seconds') or 0) + max(0, (now - phase_started).total_seconds())
+                wall_scope = 'live_accumulated_execution_phase_wall_time'
+            else:
+                wall = max(0, (now - started).total_seconds())
+                wall_scope = 'live_elapsed_since_run_start'
         else:
             wall, wall_scope = None, 'unknown_not_recorded'
     node_seconds = sum(node.get('duration_ms', 0) for node in nodes if _number(node.get('duration_ms'))) / 1000
@@ -315,6 +327,7 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
         'run': {'id': run.get('id', run_dir.name), 'status': run.get('status'), 'directory': str(run_dir),
                 'started_at': run.get('started_at'), 'started_at_shanghai': _display_time(run.get('started_at')),
                 'code_revision': run.get('code_revision'), 'model': run.get('model'),
+                'code_history': run.get('code_history', []), 'resume_count': run.get('resume_count', 0),
                 'reasoning_effort': run.get('reasoning_effort'), 'difficulty_status': run.get('difficulty_status', 'unknown'),
                 'difficulty_score': None, 'difficulty_note': '本轮只验题目质量，难度评测及低通过率目标延后；未报告正式模型 Pass@1。',
                 'targets': targets, 'actual_verified_counts': actual,
@@ -322,6 +335,8 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
                 'is_final_snapshot': run.get('status') in {'completed', 'shortfall', 'failed', 'cancelled'}},
         'sources': {'archive_scanned': manifest.get('unique_workbooks_inspected', run.get('discovered_sources')),
                     'selected_seed_pool': manifest.get('selected_count'), 'eligible_seed_pool': manifest.get('eligible_count'),
+                    'additional_selected_seed_pool': run.get('additional_selected_sources', 0),
+                    'merged_selected_seed_pool': run.get('selected_sources', manifest.get('selected_count')),
                     'preparation_attempted': prep.get('attempted_unique_sources', run.get('preprocess_attempted_sources')),
                     'preparation_readable_profiled': prep.get('readable_profiled'),
                     'preparation_zero_cached_errors': prep.get('zero_cached_errors'),
@@ -360,6 +375,8 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
                             if event.get('kind') == 'checker.result')),
                         'qualified_diagnosis_scopes': dict(Counter(task['diagnosis'].get('scope') or 'unknown' for task in qualified)),
                         'note': '最终问题实例与各版本诊断观测分列；同一问题跨版本出现不当作多个独立根因。'},
+        'change_history': {'amendments': amendments, 'resumptions': resumptions,
+                           'note': '保留提示词澄清、代码阶段和来源池扩展的实际事件，不将多阶段运行伪装成单一冻结版本。'},
         'tasks': details, 'consistency_warnings': warnings,
     }
 
@@ -389,6 +406,7 @@ def markdown_report(report):
              '## 题量与转化率', '', '| 指标 | 数值 |', '| --- | ---: |']
     for label, value in [
         ('归档中扫描的不同工作簿', sources['archive_scanned']), ('筛选进入种子池', sources['selected_seed_pool']),
+        ('续跑显式补充种子数', sources['additional_selected_seed_pool']), ('合并后的种子池', sources['merged_selected_seed_pool']),
         ('预处理尝试种子数', sources['preparation_attempted']), ('预处理可读取并画像', sources['preparation_readable_profiled']),
         ('正式运行使用的不同种子', sources['construction_attempted_unique_seeds']),
         ('实际到达构造节点的不同种子', sources['construct_node_reached_unique_seeds']),
@@ -447,6 +465,17 @@ def markdown_report(report):
               'harbor run -p "' + str(Path(run['directory']) / 'SpreadsheetEval') + '" -a nop', '```', '',
               '报告仅从审计数据库与产物读取，不修改题目状态；真实执行结果见逐题 Harbor 证据。'
               '未执行的控制、缺失用量和延期难度评测均不补造通过结论。', '']
+    changes = report.get('change_history') or {}
+    if changes.get('amendments') or changes.get('resumptions'):
+        lines += ['## 运行修订与续跑记录', '', changes['note'], '']
+        for event in changes.get('amendments', []):
+            lines.append(f"- {_display_time(event.get('timestamp'))}：{_md(event.get('reason', event.get('amendment', '显式修订')))}")
+            if event.get('before_sha256') or event.get('after_sha256'):
+                lines.append(f"  文件 `{_md(event.get('file'))}`；SHA `{event.get('before_sha256')}` → `{event.get('after_sha256')}`。")
+        for event in changes.get('resumptions', []):
+            lines.append(f"- {_display_time(event.get('timestamp'))}：同一运行续跑，保留 {event.get('preserved_task_count')} 个任务记录；"
+                         f"代码 `{event.get('previous_code_revision')}` → `{event.get('current_code_revision')}`。")
+        lines += ['']
     return '\n'.join(lines)
 
 

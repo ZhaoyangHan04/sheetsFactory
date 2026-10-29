@@ -156,3 +156,20 @@ def test_reports_are_portable_escape_untrusted_text_and_do_not_change_state(tmp_
     assert '难度' in markdown and '未知' in markdown
     assert audit.snapshot()['tasks'] == before
     assert Path(result['paths']['json']).is_file()
+
+
+def test_prompt_amendment_and_continuation_are_visible_in_final_metadata(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    payload = {'kind': 'prompt_context_clarification', 'file': 'prompts/diagnosis.md',
+               'before_sha256': 'old-hash', 'after_sha256': 'new-hash',
+               'reason': 'Clarify temporary workspace versus final Harbor path', 'requires_final_review': True}
+    audit.db.execute('INSERT INTO events(timestamp,kind,payload) VALUES (?,?,?)',
+                     ('2026-10-29T12:26:00Z', 'run.amended', json.dumps(payload)))
+    audit.db.commit()
+    audit.emit('run.resumed', preserved_task_count=3, previous_code_revision='phase1', current_code_revision='phase2')
+    result = write_reports(run, project_root=root)
+    event = result['report']['change_history']['amendments'][0]
+    assert event['kind'] == 'run.amended'
+    assert event['payload_kind'] == 'prompt_context_clarification'
+    text = Path(result['paths']['markdown']).read_text()
+    assert 'old-hash' in text and 'new-hash' in text and '同一运行续跑' in text

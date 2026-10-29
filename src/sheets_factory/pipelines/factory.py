@@ -13,6 +13,8 @@ from ..core.pipeline import BasePipeline
 from ..checkers import DiagnosisRunner
 from ..checkers.router import route_issues
 from ..evaluation.harbor import run_controls
+from ..resume import candidate_task_id, restore_target_claims
+from ..reporting import read_run
 
 
 def diagnostic_action(report):
@@ -43,7 +45,8 @@ class FactoryPipeline(BasePipeline):
         self.targets = config['run']['targets']
         self.lock = threading.RLock()
         self.active = {mode: 0 for mode in self.targets}
-        self.target_claims = {}
+        self.target_claims = (restore_target_claims(config['run_dir'], read_run(config['run_dir']))
+                              if config['run'].get('continuation_id') else {})
         self.route_catalog = DiagnosisRunner(config['project_root']).catalog
 
     def counts(self):
@@ -64,9 +67,7 @@ class FactoryPipeline(BasePipeline):
     def _context(self, seed, mode):
         source = Path(seed['local_path'])
         variant = int(seed.get('variant', 0))
-        task_id = ('fm-' if mode == 'financial_modeling' else 'dbg-') + seed['sha256'][:12]
-        if variant:
-            task_id += f'-v{variant}'
+        task_id = candidate_task_id(seed, mode)
         folder = Path(self.config['run_dir']) / 'tasks' / task_id
         folder.mkdir(parents=True, exist_ok=True)
         context = TaskContext(self.audit.run['id'], task_id, mode, source, folder,
@@ -112,6 +113,11 @@ class FactoryPipeline(BasePipeline):
                 'routes': route_issues(issues, self.route_catalog)}
 
     def process_task(self, seed, mode):
+        task_id = candidate_task_id(seed, mode)
+        if any(task['id'] == task_id for task in self.audit.snapshot()['tasks']):
+            self.audit.emit('task.skipped_existing', task_id=task_id, mode=mode,
+                            reason='Continuation preserves existing terminal/ready tasks and all budgets')
+            return
         if not self.reserve(mode):
             return
         context = self._context(seed, mode)
@@ -203,6 +209,19 @@ class FactoryPipeline(BasePipeline):
         path = Path(self.config['run']['seed_manifest'])
         manifest = json.loads((path if path.is_absolute() else root / path).read_text())
         seeds = manifest['selected']
+        original_pool_count = len(seeds)
+        merged = {seed['sha256']: seed for seed in seeds}
+        additional_entries = []
+        additional_manifests = self.config['run'].get('additional_seed_manifests', [])
+        for additional in additional_manifests:
+            additional_path = Path(additional)
+            if not additional_path.is_absolute():
+                additional_path = root / additional_path
+            entries = json.loads(additional_path.read_text()).get('selected', [])
+            additional_entries.extend(entries)
+            for entry in entries:
+                merged[entry['sha256']] = {**merged.get(entry['sha256'], {}), **entry}
+        seeds = list(merged.values())
         custom_seed_path = self.config['run'].get('seed_path')
         custom_unknown_sources = set()
         if custom_seed_path:
@@ -220,6 +239,8 @@ class FactoryPipeline(BasePipeline):
                     'local_path': str(file.resolve()), 'rank_score': existing.get(source_hash, {}).get('rank_score', 0)}
                 if source_hash not in existing:
                     custom_unknown_sources.add(source_hash)
+            for entry in additional_entries:
+                discovered[entry['sha256']] = {**discovered.get(entry['sha256'], {}), **entry}
             seeds = list(discovered.values())
             manifest = {**manifest, 'unique_workbooks_inspected': len(files), 'selected': seeds,
                         'download_url': 'local-seed-directory:' + str(seed_path), 'archive_sha256': None}
@@ -228,7 +249,7 @@ class FactoryPipeline(BasePipeline):
         finance = self._finance_evidence()
         for seed in seeds:
             seed['survey'] = survey.get(seed['sha256'], {})
-            seed['finance_evidence'] = finance.get(seed['sha256'], finance.get(Path(seed['local_path']).name,
+            seed['finance_evidence'] = seed.get('finance_evidence') or finance.get(seed['sha256'], finance.get(Path(seed['local_path']).name,
                 {'financial_modeling_eligible': False, 'reason': 'No positive finance-module evidence'} if finance else {}))
             if seed['sha256'] in custom_unknown_sources:
                 # General seed inputs receive semantic assessment; the EUSES-only
@@ -245,6 +266,9 @@ class FactoryPipeline(BasePipeline):
         if self.config['run'].get('source_filter'):
             seeds = [seed for seed in seeds if self.config['run']['source_filter'].lower() in seed['local_path'].lower()]
         self.audit.update_run(discovered_sources=manifest['unique_workbooks_inspected'], selected_sources=len(seeds),
+                              original_selected_sources=original_pool_count,
+                              additional_selected_sources=len(merged) - original_pool_count,
+                              additional_seed_manifests=additional_manifests,
                               preprocess_attempted_sources=len(survey), source_archive=manifest['download_url'],
                               source_archive_sha256=manifest['archive_sha256'])
         return seeds[:self.config['run']['max_sources']]
