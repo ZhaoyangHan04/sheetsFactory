@@ -14,6 +14,7 @@ from ..core.node import TaskContext, TaskRejected
 from ..core.pipeline import BasePipeline
 from ..checkers import DiagnosisRunner
 from ..checkers.router import route_issues
+from ..checkers.unsafe_regions import evaluate_native_risk_guard
 from ..evaluation.harbor import run_controls
 from ..resume import candidate_task_id, restore_target_claims, validate_scheduler
 from ..reporting import read_run
@@ -536,6 +537,99 @@ class FactoryPipeline(BasePipeline):
             finally:
                 fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
 
+    def _preharbor_native_risks(self, task, binding):
+        """Re-read current facts against this revision's full D, never ancestry.
+
+        Receipts live outside closed revisions. Missing evidence is unknown,
+        not a newly confirmed business defect or a baseline certification.
+        """
+        from openpyxl import load_workbook
+        from ..core.audit import utcnow
+
+        run_dir = Path(self.config['run_dir'])
+        delta_path = (run_dir / 'tasks' / task['id'] / 'revisions' /
+                      f"{int(task.get('revision', 0)):03d}" / 'private/expected_delta.json')
+        goal_path = run_dir / 'SpreadsheetEval' / task['id'] / 'tests/reference.xlsx'
+        changes, sheet_names, hashes, unavailable = [], [], {}, []
+        try:
+            raw = delta_path.read_bytes()
+            hashes['expected_delta_sha256'] = hashlib.sha256(raw).hexdigest()
+            delta = json.loads(raw)
+            changes = delta['expected_changes']
+            if not isinstance(changes, (dict, list)):
+                raise ValueError('Final expected_changes must contain computed cell addresses')
+            hashes['goal_sha256'] = hashlib.sha256(goal_path.read_bytes()).hexdigest()
+            book = load_workbook(goal_path, read_only=True, data_only=True, keep_links=False)
+            try:
+                sheet_names = list(book.sheetnames)
+            finally:
+                book.close()
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            changes = []  # Incomplete evidence must never create an intersection.
+            unavailable.append({'source': 'final_revision_artifacts', 'reason': str(exc)})
+        result = evaluate_native_risk_guard(changes, task.get('source_id'),
+            project_root=self.config['project_root'], sheet_names=sheet_names,
+            registry_path=self.config.get('native_risks', {}).get('registry_path'))
+        if unavailable:
+            result.update(state='unknown', blocking=False)
+            result['evidence_requests'].extend(unavailable)
+        result.update(task_id=task['id'], revision=int(task.get('revision', 0)),
+            revision_hash=binding['revision_hash'], export_binding=binding,
+            goal_sheet_names=sheet_names, **hashes)
+        receipt_id = hashlib.sha256(json.dumps(result, sort_keys=True, default=str).encode()).hexdigest()
+        previous = task.get('preharbor_native_risk_guard') or {}
+        if previous.get('receipt_id') == receipt_id:
+            return previous
+        receipt_path = run_dir / 'private/preharbor_native_checks' / task['id'] / (receipt_id + '.json')
+        result.update(receipt_id=receipt_id, checked_at=utcnow(), receipt_path=str(receipt_path))
+        receipt_path.parent.mkdir(parents=True, exist_ok=True)
+        receipt_path.write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+        self.audit.task(task['id'], preharbor_native_risk_guard=result)
+        self.audit.emit('preharbor.native_risk_checked', task_id=task['id'],
+            revision=result['revision'], revision_hash=result['revision_hash'],
+            registry_sha256=result['registry_sha256'], state=result['state'],
+            blocking=result['blocking'], receipt_path=str(receipt_path))
+        return result
+
+    def _withdraw_native_risk_export(self, task, binding, result, cumulative):
+        """Withdraw current credit while retaining every historical control file."""
+        from ..core.audit import utcnow
+
+        issues = [{**issue, 'issue_id': issue['issue_id'] + '-preharbor-' + result['receipt_id'][:16],
+                   'task_id': task['id'], 'revision': result['revision'],
+                   'revision_hash': result['revision_hash'], 'registry_sha256': result['registry_sha256']}
+                  for issue in result['issues'] if issue.get('certainty') == 'confirmed']
+        reason = 'Q09/R09: latest confirmed native unsafe region intersects final expected delta: ' + ', '.join(
+            sorted({cell for issue in issues for cell in issue['affected_cells']}))
+        history = {'task_id': task['id'], 'previous_status': task['status'],
+            'withdrawn_at': utcnow(), 'receipt_path': result['receipt_path'],
+            'revision': result['revision'], 'revision_hash': result['revision_hash'],
+            'registry_sha256': result['registry_sha256'], 'issues': issues,
+            'harbor_controls': task.get('harbor_controls'),
+            'harbor_export_binding': task.get('harbor_export_binding'),
+            'cumulative_controls': cumulative['per_task'].pop(binding['task_name'], None),
+            'cumulative_export_binding': cumulative['export_bindings'].pop(binding['task_name'], None)}
+        cumulative.setdefault('native_risk_withdrawals', []).append(history)
+        cumulative['complete'] = False
+        values = {'status': 'rejected', 'node': 'preharbor_native_risk', 'error': reason,
+            'issues': task.get('issues', []) + issues, 'harbor_controls': None,
+            'harbor_export_binding': None,
+            'native_risk_withdrawals': task.get('native_risk_withdrawals', []) + [history]}
+        if task.get('harbor_controls'):
+            values.update(historical_harbor_controls=task['harbor_controls'],
+                          historical_harbor_export_binding=task.get('harbor_export_binding'))
+        self.audit.task(task['id'], **values)
+        export = Path(self.config['run_dir']) / 'SpreadsheetEval' / task['id']
+        quarantine = (Path(self.config['run_dir']) / 'rejected_exports' /
+                      (task['id'] + '-native-' + result['receipt_id'][:16]))
+        if export.exists():
+            quarantine.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(export), quarantine)
+        self.audit.emit('task.rejected', task_id=task['id'], mode=task['mode'],
+            reason=reason, problem_id='Q09', route_id='R09', revision=result['revision'],
+            revision_hash=result['revision_hash'], registry_sha256=result['registry_sha256'],
+            receipt_path=result['receipt_path'], quarantine_path=str(quarantine))
+
     def _validate_exports_locked(self):
         from uuid import uuid4
         import time
@@ -564,6 +658,10 @@ class FactoryPipeline(BasePipeline):
                     raise ValueError('Export has no immutable revision hash')
                 if task.get('revision_hash') and task['revision_hash'] != binding['revision_hash']:
                     raise ValueError('Export revision hash differs from the audited task')
+                native_risks = self._preharbor_native_risks(task, binding)
+                if native_risks['blocking']:
+                    self._withdraw_native_risk_export(task, binding, native_risks, cumulative)
+                    continue
                 proof = task.get('harbor_controls', {})
                 if (task['status'] == 'qualified' and matched_controls(proof, task_name=binding['task_name'])
                     and task.get('harbor_export_binding') == binding):
@@ -578,7 +676,7 @@ class FactoryPipeline(BasePipeline):
             except (OSError, ValueError, TypeError, KeyError) as exc:
                 invalid.append((task, str(exc)))
         if not selected and not invalid:
-            if cumulative['per_task']:
+            if cumulative['per_task'] or cumulative.get('native_risk_withdrawals'):
                 summary_file.write_text(json.dumps(cumulative, indent=2, default=str))
             return
 
