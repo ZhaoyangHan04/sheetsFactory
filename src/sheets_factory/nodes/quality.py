@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+from copy import deepcopy
 from pathlib import Path
 import shutil
 import subprocess
@@ -81,7 +82,8 @@ class TrajectoryNode(BaseNode):
                                      timeout=ctx.config['agents']['trajectory_timeout_seconds'])
             trace.update({k: result[k] for k in ['events', 'reply', 'call_id', 'duration_ms'] if k in result})
         except Exception as exc:
-            trace['infrastructure_error'] = str(exc)
+            from ..llm.trace import recover_failed_attempt
+            trace.update(recover_failed_attempt(exc, task_id=ctx.task_id, workspace=work))
         # No completion/reward branch: all traces proceed to diagnosis.
         ctx.save('trajectory.json', trace)
         return {'traces': [trace]}
@@ -183,15 +185,110 @@ class RepairNode(BaseNode):
                    'source_business_issues': ctx.data.get('source_business_issues', []),
                    'source_profile': compact_profile(ctx.data['profile']),
                    'remaining_steps': ctx.config['run']['max_steps'] - ctx.revision}
-        result = ctx.llm.complete(prompt(ctx, 'repair.md') + '\nINPUT JSON:\n' + json.dumps(payload, ensure_ascii=False, default=str),
+        requested = [route['issue_id'] for route in routes]
+        instruction_only = all(route.get('problem_id') == 'Q03' for route in routes)
+        options = {}
+        if instruction_only:
+            from ..llm.schemas import instruction_repair_output_schema
+            options['output_schema'] = instruction_repair_output_schema(requested)
+            payload['repair_contract'] = {'permitted_changed_plan_fields': ['public_instruction'],
+                                         'preserve_all_other_fields_programmatically': True}
+        result = ctx.llm.complete(prompt(ctx, 'instruction_repair.md' if instruction_only else 'repair.md')
+                                 + '\nINPUT JSON:\n' + json.dumps(payload, ensure_ascii=False, default=str),
                                  role='repair_planner', task_id=ctx.task_id, stage=self.node_id,
-                                 timeout=ctx.config['agents']['timeout_seconds'])
+                                 timeout=ctx.config['agents']['timeout_seconds'], **options)
         ctx.save('repair_proposal.json', result)
-        requested = {route['issue_id'] for route in routes}
+        if instruction_only:
+            proposed = apply_instruction_repair(ctx.data['plan'], result, requested)
+            ctx.save('instruction_repair_receipt.json', {'assigned_issue_ids': requested,
+                'changed_plan_fields': ['public_instruction'], 'requires_full_revision_gates': True,
+                'reuse_old_harbor_controls': False})
+            return {'next_plan': proposed}
+        requested = set(requested)
         addressed = set(result.get('addressed_issue_ids', []))
         if result.get('repaired_task') and not requested <= addressed:
             raise TaskRejected('Repair proposal did not account for all assigned issue instances')
         return {'next_plan': result.get('repaired_task')}
+
+
+def apply_instruction_repair(current_plan, patch, assigned_issue_ids):
+    """Validate a Q03 patch and preserve every non-instruction field by copy."""
+    expected_fields = {'public_instruction', 'addressed_issue_ids', 'changes', 'unresolved_questions'}
+    if not isinstance(patch, dict) or set(patch) != expected_fields:
+        raise TaskRejected('Q03 instruction repair must use the minimal four-field patch contract')
+    instruction = patch['public_instruction']
+    if not isinstance(instruction, str) or not instruction.strip():
+        raise TaskRejected('Q03 instruction repair requires a nonempty public instruction')
+    for field in ('addressed_issue_ids', 'changes', 'unresolved_questions'):
+        if not isinstance(patch[field], list) or any(not isinstance(value, str) for value in patch[field]):
+            raise TaskRejected('Q03 instruction repair requires string-list receipts')
+    addressed = patch['addressed_issue_ids']
+    if (len(addressed) != len(set(addressed)) or set(addressed) != set(assigned_issue_ids)):
+        raise TaskRejected('Repair proposal did not account for all assigned issue instances exactly once')
+    if patch['unresolved_questions']:
+        raise TaskRejected('Q03 instruction repair has unresolved questions; collect evidence before applying it')
+    proposed = deepcopy(current_plan)
+    proposed['public_instruction'] = instruction.strip()
+    return proposed
+
+
+def _repair_digest(value):
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True,
+                                     separators=(',', ':'), default=str).encode()).hexdigest()
+
+
+def instruction_repair_receipt(*, task_id, revision, current_plan, assigned_issues,
+                               source_path, baseline_path, expected_source_sha256,
+                               expected_baseline_sha256, proposal):
+    """Bind a legacy proposal to audited files/plan/issues, without applying it."""
+    if not assigned_issues or any(issue.get('problem_id') != 'Q03' or issue.get('certainty') != 'confirmed'
+        or not issue.get('issue_id') or not issue.get('evidence') for issue in assigned_issues):
+        raise TaskRejected('Legacy instruction replay requires confirmed, evidenced Q03 issues')
+    source_hash = hashlib.sha256(Path(source_path).read_bytes()).hexdigest()
+    baseline_hash = hashlib.sha256(Path(baseline_path).read_bytes()).hexdigest()
+    if source_hash != expected_source_sha256 or baseline_hash != expected_baseline_sha256:
+        raise TaskRejected('Immutable source or baseline no longer matches the recorded repair receipts')
+    return {'receipt_version': 1, 'task_id': task_id, 'revision': revision,
+        'source_sha256': source_hash, 'baseline_sha256': baseline_hash,
+        'plan_sha256': _repair_digest(current_plan),
+        'issues_sha256': _repair_digest(sorted(assigned_issues, key=lambda issue: issue['issue_id'])),
+        'proposal_sha256': _repair_digest(proposal)}
+
+
+def replay_legacy_instruction_proposal(current_plan, proposal, assigned_issues, *, recorded_receipt, current_receipt):
+    """Prepare an instruction-only plan from matched receipts; never release it.
+
+    Callers must build current_receipt from the current files using
+    instruction_repair_receipt. The controller must still consume the next
+    revision and run all normal gates, including new actual Harbor controls.
+    """
+    required = {'receipt_version', 'task_id', 'revision', 'source_sha256', 'baseline_sha256',
+                'plan_sha256', 'issues_sha256', 'proposal_sha256'}
+    if (not isinstance(recorded_receipt, dict) or not isinstance(current_receipt, dict)
+        or set(recorded_receipt) != required or recorded_receipt != current_receipt):
+        raise TaskRejected('Legacy instruction replay receipts do not match the current task/source/plan/issues')
+    if (current_receipt['plan_sha256'] != _repair_digest(current_plan)
+        or current_receipt['proposal_sha256'] != _repair_digest(proposal)
+        or current_receipt['issues_sha256'] != _repair_digest(sorted(assigned_issues, key=lambda issue: issue['issue_id']))):
+        raise TaskRejected('Legacy instruction replay inputs differ from their receipt hashes')
+    if any(issue.get('problem_id') != 'Q03' or issue.get('certainty') != 'confirmed' for issue in assigned_issues):
+        raise TaskRejected('Legacy instruction replay is limited to confirmed Q03 issues')
+    candidate = proposal.get('repaired_task', proposal) if isinstance(proposal, dict) else None
+    if not isinstance(candidate, dict):
+        raise TaskRejected('Legacy proposal has no public instruction candidate')
+    patch = {'public_instruction': candidate.get('public_instruction'),
+        'addressed_issue_ids': proposal.get('addressed_issue_ids', []),
+        'changes': ['Extract only public_instruction from a receipt-matched historical proposal.'],
+        'unresolved_questions': proposal.get('unresolved_questions', [])}
+    next_plan = apply_instruction_repair(current_plan, patch, [issue['issue_id'] for issue in assigned_issues])
+    differences = []
+    for key in sorted((set(current_plan) | set(candidate)) - {'public_instruction'}):
+        if key not in candidate or key not in current_plan or candidate[key] != current_plan[key]:
+            differences.append({'field': key, 'kind': 'missing' if key not in candidate else
+                'added' if key not in current_plan else 'changed', 'ignored': True})
+    return {'next_plan': next_plan, 'receipt': deepcopy(current_receipt),
+            'ignored_noninstruction_differences': differences,
+            'requires_full_revision_gates': True, 'reuse_old_harbor_controls': False}
 
 
 class ExportNode(BaseNode):

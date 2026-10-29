@@ -47,3 +47,17 @@ def diagnosis_output_schema(assigned_check_ids: list[str]) -> dict:
         "issues": {"type": "array", "items": issue},
         "evidence_requests": {"type": "array", "items": request},
     })
+
+
+def instruction_repair_output_schema(assigned_issue_ids: list[str]) -> dict:
+    """A Q03 response edits one string; the program preserves the full plan."""
+    assigned = list(assigned_issue_ids)
+    if not assigned or len(assigned) != len(set(assigned)) or any(not isinstance(item, str) or not item for item in assigned):
+        raise ValueError('Assigned issue IDs must be nonempty and distinct')
+    properties = {
+        'public_instruction': {'type': 'string'},
+        'addressed_issue_ids': {'type': 'array', 'items': {'type': 'string', 'enum': assigned}},
+        'changes': {'type': 'array', 'items': {'type': 'string'}},
+        'unresolved_questions': {'type': 'array', 'items': {'type': 'string'}},
+    }
+    return {'type': 'object', 'properties': properties, 'required': list(properties), 'additionalProperties': False}

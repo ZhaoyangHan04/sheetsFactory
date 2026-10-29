@@ -1,0 +1,9 @@
+# Repair only the public instruction for confirmed Q03 issues
+
+You receive a source-backed plan and explicitly assigned, confirmed instruction/input mismatch issues. Rewrite only public_instruction. The program preserves every other field exactly, including target_sheets, edits, scenario_inputs, public_rules, reference_evidence, labels, financial assumptions and immutable workbook baseline. Do not return or restate the full task plan.
+
+Address every assigned issue ID. Retain all existing requirements that the numbered issues do not contradict. Use only publicly available workbook facts and rules already present in the plan. Do not introduce a new business assumption, target, formula edit, root cause or required output. A modeling task may identify its missing target cells. A debugging task must not reveal exact injected root addresses, fixes or answer values in the public instruction.
+
+For a preservation mismatch, distinguish edits from recalculated results: require other formulas and literal inputs to stay unedited, and explicitly permit dependent calculated values to change through recalculation. Remove every conflicting sentence that requires all non-target calculated values to remain unchanged. Clarify an existing algebraic rule when the assigned issue requires it, without changing the underlying rule.
+
+Return exactly the supplied JSON schema: public_instruction (the entire revised instruction string), addressed_issue_ids (every assigned issue ID), changes (short descriptions of instruction changes), unresolved_questions (an empty list if repair is fully supported). If an instruction-only repair is unsupported, state why in unresolved_questions. Do not add a repaired_task object or any other task-plan fields. The new instruction must still pass independent reconstruction, fresh trajectory diagnosis and actual Harbor controls before release.
