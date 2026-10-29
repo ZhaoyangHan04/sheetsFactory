@@ -26,10 +26,17 @@ TERMINAL_RUN_STATES = {'completed', 'shortfall', 'failed', 'cancelled'}
 PRESERVED_TASK_STATES = {'qualified', 'ready', 'rejected'}
 PROTECTED_BUDGETS = ('max_steps', 'max_evidence_rounds_per_revision',
                     'infrastructure_retries_per_stage', 'max_additional_trials_per_revision')
+SCHEDULERS = frozenset({'source_batches', 'rolling'})
 
 
 class ResumeError(RuntimeError):
     pass
+
+
+def validate_scheduler(value):
+    if not isinstance(value, str) or value not in SCHEDULERS:
+        raise ResumeError('run.scheduler must be source_batches or rolling')
+    return value
 
 
 def _now():
@@ -380,6 +387,8 @@ def prepare_resume(run_dir, *, config_patch=None, extra_manifest=None, current_c
         old_text = config_path.read_text()
         old = yaml.safe_load(old_text)
         new = _merge(old, config_patch)
+        scheduler_before = validate_scheduler(old['run'].get('scheduler', 'source_batches'))
+        scheduler_after = validate_scheduler(new['run'].get('scheduler', 'source_batches'))
         for key in PROTECTED_BUDGETS:
             if new['run'].get(key) != old['run'].get(key):
                 raise ResumeError(f'Resumption may not reset or change repair budget: {key}')
@@ -452,13 +461,15 @@ def prepare_resume(run_dir, *, config_patch=None, extra_manifest=None, current_c
         audit.update_run(status='resuming', code_revision=current_code_revision or previous.get('code_revision'),
                          code_history=history, resume_count=int(previous.get('resume_count', 0)) + 1,
                          resumed_at=now, previous_wall_seconds=previous_wall, wall_seconds=None,
-                         producer_pid=os.getpid(), producer_start_ticks=_pid_start(os.getpid()), producer_active=True)
+                         producer_pid=os.getpid(), producer_start_ticks=_pid_start(os.getpid()), producer_active=True,
+                         scheduler=scheduler_after)
         audit.emit('run.amended', amendment='configuration_and_source_pool', reason=reason,
                    continuation_id=continuation_id, config_before_sha256=_digest(old), config_after_sha256=_digest(new),
                    config_before_artifact=str(before), config_after_artifact=str(after),
                    extra_manifest_sha256=extra.get('parent_manifest_sha256') if extra else None,
                    additional_source_count=len(extra['selected']) if extra else 0,
                    max_parallel_calls_before=old_parallel, max_parallel_calls_after=new_parallel,
+                   scheduler_before=scheduler_before, scheduler_after=scheduler_after,
                    external_repair_task_ids=[specification['task_id'] for specification in repairs],
                    external_repair_manifest_sha256=_hash(repair_path))
         audit.emit('run.resumed', continuation_id=continuation_id, reason=reason, previous_status=previous.get('status'),

@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
+import fcntl
 import hashlib
 import json
 from pathlib import Path
 import re
 import shutil
 import threading
+import time
 
 from ..core.node import TaskContext, TaskRejected
 from ..core.pipeline import BasePipeline
 from ..checkers import DiagnosisRunner
 from ..checkers.router import route_issues
 from ..evaluation.harbor import run_controls
-from ..resume import candidate_task_id, restore_target_claims
+from ..resume import candidate_task_id, restore_target_claims, validate_scheduler
 from ..reporting import read_run
 
 
@@ -50,8 +52,11 @@ class FactoryPipeline(BasePipeline):
         super().__init__(config)
         self.audit, self.llm, self.engine = audit, llm, engine
         self.targets = config['run']['targets']
+        self.scheduler = validate_scheduler(config['run'].get('scheduler', 'source_batches'))
         self.lock = threading.RLock()
         self.active = {mode: 0 for mode in self.targets}
+        self.inflight_tasks = {}
+        self.busy_sources = set()
         self.target_claims = (restore_target_claims(config['run_dir'], read_run(config['run_dir']))
                               if config['run'].get('continuation_id') else {})
         self.route_catalog = DiagnosisRunner(config['project_root']).catalog
@@ -61,12 +66,29 @@ class FactoryPipeline(BasePipeline):
         return {mode: sum(task.get('mode') == mode and task.get('status') in {'ready', 'qualified'} for task in tasks)
                 for mode in self.targets}
 
-    def reserve(self, mode):
+    def _quota_used_locked(self, tasks=None):
+        tasks = self.audit.snapshot()['tasks'] if tasks is None else tasks
+        return {mode: len({task['id'] for task in tasks if task.get('mode') == mode
+                          and task.get('status') in {'ready', 'qualified'}} |
+                         {task_id for task_id, current in self.inflight_tasks.items() if current == mode})
+                for mode in self.targets}
+
+    def reserve(self, mode, task_id):
         with self.lock:
-            if self.counts()[mode] + self.active[mode] >= self.targets[mode]:
+            tasks = self.audit.snapshot()['tasks']
+            if task_id in self.inflight_tasks or any(task['id'] == task_id for task in tasks):
                 return False
+            if self._quota_used_locked(tasks)[mode] >= self.targets[mode]:
+                return False
+            self.inflight_tasks[task_id] = mode
             self.active[mode] += 1
             return True
+
+    def _release_task(self, mode, task_id):
+        with self.lock:
+            if self.inflight_tasks.get(task_id) == mode:
+                del self.inflight_tasks[task_id]
+                self.active[mode] -= 1
 
     def goal_ready(self):
         return all(self.counts()[mode] >= count for mode, count in self.targets.items())
@@ -121,23 +143,30 @@ class FactoryPipeline(BasePipeline):
 
     def process_task(self, seed, mode):
         task_id = candidate_task_id(seed, mode)
-        if any(task['id'] == task_id for task in self.audit.snapshot()['tasks']):
+        with self.lock:
+            existing = task_id in self.inflight_tasks or any(
+                task['id'] == task_id for task in self.audit.snapshot()['tasks'])
+            admitted = False if existing else self.reserve(mode, task_id)
+        if existing:
             self.audit.emit('task.skipped_existing', task_id=task_id, mode=mode,
                             reason='Continuation preserves existing terminal/ready tasks and all budgets')
-            return
-        if not self.reserve(mode):
-            return
-        context = self._context(seed, mode)
+            return {'task_id': task_id, 'status': 'skipped_existing'}
+        if not admitted:
+            self.audit.emit('scheduler.quota_deferred', task_id=task_id, mode=mode,
+                            source_id=seed['sha256'], variant=seed.get('variant', 0))
+            return {'task_id': task_id, 'status': 'quota_deferred'}
         try:
+            context = self._context(seed, mode)
             self.run_phase(context, 'preparation')
             self._execute_context(context)
         except Exception as exc:
-            self.audit.task(context.task_id, status='rejected', error=str(exc)[:2400], node='rejected')
-            self.audit.emit('task.rejected', task_id=context.task_id, mode=mode, reason=str(exc)[:2400])
+            self.audit.task(task_id, mode=mode, source_id=seed['sha256'], source=Path(seed['local_path']).name,
+                            variant=seed.get('variant', 0), status='rejected', error=str(exc)[:2400], node='rejected')
+            self.audit.emit('task.rejected', task_id=task_id, mode=mode, reason=str(exc)[:2400])
         finally:
-            with self.lock:
-                self.active[mode] -= 1
+            self._release_task(mode, task_id)
             self.audit.export()
+        return {'task_id': task_id, 'status': 'processed'}
 
     def _apply_repair(self, context, routes):
         if context.revision >= int(self.config['run']['max_steps']):
@@ -219,6 +248,7 @@ class FactoryPipeline(BasePipeline):
             raise TaskRejected('External repair authorization is not pending at the recorded revision')
         with self.lock:
             self.active[mode] += 1
+            self.inflight_tasks[task_id] = mode
         folder = Path(self.config['run_dir']) / 'tasks' / task_id
         seed = specification['seed']
         finance_evidence = seed.get('finance_evidence') or self._finance_evidence().get(previous['source_id'], {})
@@ -274,14 +304,21 @@ class FactoryPipeline(BasePipeline):
             self.audit.emit('task.rejected', task_id=task_id, mode=mode, reason=str(exc)[:2400],
                             external_repair=True)
         finally:
-            with self.lock:
-                self.active[mode] -= 1
+            self._release_task(mode, task_id)
             self.audit.export()
 
     def process_source(self, seed):
+        result = {'attempted_task_ids': [], 'quota_deferred_modes': [], 'skipped_existing': []}
         for mode in self.targets:
             if mode in seed.get('modes', list(self.targets)):
-                self.process_task(seed, mode)
+                outcome = self.process_task(seed, mode)
+                if outcome['status'] == 'processed':
+                    result['attempted_task_ids'].append(outcome['task_id'])
+                elif outcome['status'] == 'quota_deferred':
+                    result['quota_deferred_modes'].append(mode)
+                else:
+                    result['skipped_existing'].append(outcome['task_id'])
+        return result
 
     def _finance_evidence(self):
         path = Path(self.config['project_root']) / 'data/manifests/finance_model_evidence.json'
@@ -414,7 +451,92 @@ class FactoryPipeline(BasePipeline):
                     pending.add(pool.submit(self.process_source, seeds[cursor])); cursor += 1
         return cursor
 
+    def _eligible_source_jobs(self, seeds, states=None, busy_sources=None):
+        """Derive intentions from existing IDs; a quota skip consumes no variant."""
+        with self.lock:
+            states = self.audit.snapshot()['tasks'] if states is None else states
+            used = self._quota_used_locked(states)
+            existing = {task['id'] for task in states} | set(self.inflight_tasks)
+        available = {mode for mode, target in self.targets.items() if used[mode] < target}
+        occupied = set(self.busy_sources if busy_sources is None else busy_sources)
+        jobs = []
+        rounds = [seeds] + [self.variant_candidates(seeds, variant) for variant in
+                            range(1, self.config['run'].get('max_candidates_per_seed', 3))]
+        for candidates in rounds:
+            for seed in candidates:
+                source = seed['sha256']
+                if source in occupied:
+                    continue
+                modes = [mode for mode in seed.get('modes', list(self.targets))
+                         if mode in available and candidate_task_id(seed, mode) not in existing]
+                if modes:
+                    jobs.append({**seed, 'modes': modes})
+                    occupied.add(source)
+        return jobs
+
+    def _construct_rolling(self, seeds):
+        """One future per source, with no barrier between unrelated variants."""
+        workers = int(self.config['run']['max_parallel_sources'])
+        submitted = 0
+        pending = {}
+        try:
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                while True:
+                    while len(pending) < workers and not self.goal_ready():
+                        candidates = self._eligible_source_jobs(seeds)
+                        if not candidates:
+                            break
+                        seed = candidates[0]
+                        source = seed['sha256']
+                        self.busy_sources.add(source)
+                        self.audit.emit('scheduler.source_dispatched', source_id=source,
+                                        variant=seed.get('variant', 0), modes=seed['modes'])
+                        started = time.monotonic()
+                        try:
+                            future = pool.submit(self.process_source, seed)
+                        except BaseException:
+                            self.busy_sources.remove(source)
+                            self.audit.emit('scheduler.source_dispatch_failed', source_id=source,
+                                            variant=seed.get('variant', 0))
+                            raise
+                        pending[future] = (seed, started)
+                        submitted += 1
+                        self.audit.update_run(source_jobs_inflight=len(pending))
+                    if not pending:
+                        self.audit.emit('scheduler.drain_started', reason='no_pending_source_jobs', pending=0)
+                        break
+                    done, _ = wait(tuple(pending), return_when=FIRST_COMPLETED)
+                    for future in done:
+                        seed, started = pending.pop(future)
+                        try:
+                            result = future.result()
+                        except BaseException as exc:
+                            self.audit.emit('scheduler.source_failed', source_id=seed['sha256'],
+                                            variant=seed.get('variant', 0), error=str(exc)[:2400])
+                            raise
+                        finally:
+                            self.busy_sources.remove(seed['sha256'])
+                            self.audit.update_run(source_jobs_inflight=len(pending))
+                        self.audit.emit('scheduler.source_completed', source_id=seed['sha256'],
+                                        variant=seed.get('variant', 0),
+                                        duration_ms=round((time.monotonic() - started) * 1000), **result)
+        finally:
+            # Executor shutdown drains submitted jobs, including on interruption.
+            self.busy_sources.clear()
+            self.audit.update_run(source_jobs_inflight=0)
+        return submitted
+
     def _validate_exports(self):
+        """All main/sidecar validators share one retained file-lock inode."""
+        path = Path(self.config['run_dir']) / 'harbor_validation.lock'
+        with path.open('a+') as stream:
+            fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
+            try:
+                return self._validate_exports_locked()
+            finally:
+                fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+
+    def _validate_exports_locked(self):
         from uuid import uuid4
         import time
         from ..core.audit import utcnow
@@ -568,9 +690,14 @@ class FactoryPipeline(BasePipeline):
                 duration_ms=duration_ms, summary_path=batch['summary_path'])
 
     def run(self):
+        # Existing ready exports must be checked before provisional credit can
+        # suppress construction in a continuation.
+        if self.config['run'].get('continuation_id'):
+            self._validate_exports()
         seeds = self.load_seeds()
-        self.audit.update_run(status='constructing')
-        self.audit.emit('run.construction_started', sources=len(seeds), targets=self.targets)
+        self.audit.update_run(status='constructing', scheduler=self.scheduler)
+        self.audit.emit('run.construction_started', sources=len(seeds), targets=self.targets,
+                        scheduler=self.scheduler)
         repair_manifest = self.config['run'].get('external_repair_manifest')
         if repair_manifest:
             specifications = json.loads(Path(repair_manifest).read_text())
@@ -582,18 +709,35 @@ class FactoryPipeline(BasePipeline):
                         future.result()
             self._validate_exports()
         self.audit.update_run(status='constructing')
-        attempted_jobs = self._construct_batch(seeds)
-        self._validate_exports()
-        # Variants are fallback work after the first pass, not blind duplicates.
-        for variant in range(1, self.config['run'].get('max_candidates_per_seed', 3)):
-            if self.goal_ready():
-                break
-            candidates = self.variant_candidates(seeds, variant)
-            if not candidates:
-                break
-            self.audit.update_run(status='constructing', variant_round=variant)
-            attempted_jobs += self._construct_batch(candidates)
+        attempted_jobs = 0
+        if self.scheduler == 'rolling':
+            while True:
+                self.audit.update_run(status='constructing')
+                attempted_jobs += self._construct_rolling(seeds)
+                self._validate_exports()
+                tasks = self.audit.snapshot()['tasks']
+                qualified = {mode: sum(task.get('mode') == mode and task['status'] == 'qualified'
+                                       for task in tasks) for mode in self.targets}
+                if all(qualified[mode] >= target for mode, target in self.targets.items()):
+                    break
+                deficits = {mode: max(0, target - qualified[mode]) for mode, target in self.targets.items()}
+                if not self._eligible_source_jobs(seeds):
+                    self.audit.emit('scheduler.exhausted', deficits=deficits, pending=0)
+                    break
+                self.audit.emit('scheduler.refill_after_harbor', deficits=deficits)
+        else:
+            attempted_jobs = self._construct_batch(seeds)
             self._validate_exports()
+            # Legacy source batches retain the full first-pass/variant barriers.
+            for variant in range(1, self.config['run'].get('max_candidates_per_seed', 3)):
+                if self.goal_ready():
+                    break
+                candidates = self.variant_candidates(seeds, variant)
+                if not candidates:
+                    break
+                self.audit.update_run(status='constructing', variant_round=variant)
+                attempted_jobs += self._construct_batch(candidates)
+                self._validate_exports()
         tasks = self.audit.snapshot()['tasks']
         unique_sources = {task['source_id'] for task in tasks if task.get('source_id')}
         complete = all(sum(task.get('mode') == mode and task['status'] == 'qualified' for task in tasks) >= count

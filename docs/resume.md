@@ -67,3 +67,11 @@ Q03 的修复仅能修改 public_instruction，其他 plan 字段必须完全相
 配置补丁可调整 `run.max_parallel_sources` 和正整数 `agents.max_parallel_calls`；除调用并发外，agents 下的 model、reasoning_effort、roles、provider、timeout 等配置继续冻结。前后并发值写入 run.amended。
 
 `run.variant_modes` 默认是 `[financial_modeling]`。显式配置为 `[financial_modeling, debugging]` 后，debugging 变体仅来自该模式已有 ready/qualified 的来源或显式 debugging_eligible=true 的来源。没有有效产出的坏来源不会盲目重试。financial modeling 仍要求正向模型资格或该模式已有有效产出；两种模式均按各自剩余配额调度、保留 source_id，并沿用目标集合重合度去重。
+
+`run.scheduler` 只接受 `source_batches` 和 `rolling`。缺字段的旧配置继续使用 source_batches；随附 quality40.yaml 显式使用 rolling。终态续跑可通过显式配置补丁切换；`run.amended` 保存前后值，模型、targets 和所有旧预算仍被冻结。示例补丁为 `config/pipelines/quality40_rolling_continue.yaml`；它同时显式选择8来源/调用并发和最多5个新候选变体。
+
+rolling 在一个来源本轮所有模式结束后即可启动该来源下一合格变体，不再等待其他来源的首轮结束。同来源始终只有一个 source job，所有模式顺序运行，共享已完成的 plan cache。配额暂满时未创建 task ID 的候选不会被算作已消耗；旧任务的任意终态 ID 仍被跳过。
+
+续跑启动先验证既有 ready/qualified 导出，随后才派发新任务。构造排空后真实 Harbor 验证；失败释放缺口后，可选尚未创建的新候选补量。所有验证入口应调用 `FactoryPipeline._validate_exports()`，其使用同一 run 的 `harbor_validation.lock` 文件锁，避免主流程与早验证 sidecar 并发改写累计证明。不要直接调用内部 `_validate_exports_locked()`。
+
+具体调度约束见 [rolling_scheduler.md](rolling_scheduler.md)。切换调度器不会恢复中断中的 agent context；仍必须满足前面的终态续跑条件。

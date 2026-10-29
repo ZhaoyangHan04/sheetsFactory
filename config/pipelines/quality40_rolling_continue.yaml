@@ -1,0 +1,10 @@
+# Explicit terminal-run continuation patch. Models, quotas and budgets stay fixed.
+run:
+  scheduler: rolling
+  max_parallel_sources: 8
+  max_candidates_per_seed: 5
+  variant_modes:
+    - financial_modeling
+    - debugging
+agents:
+  max_parallel_calls: 8

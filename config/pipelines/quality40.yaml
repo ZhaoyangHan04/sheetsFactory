@@ -1,5 +1,6 @@
 run:
   name: euses-financial-quality40
+  scheduler: rolling
   targets:
     financial_modeling: 20
     debugging: 20
