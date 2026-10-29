@@ -26,6 +26,8 @@ def main(argv=None):
     parser.add_argument('--config', help='New-run configuration or an explicit continuation amendment')
     parser.add_argument('--resume', help='Continue a terminal run directory or run ID without resetting tasks or budgets')
     parser.add_argument('--extra-manifest', help='Hash-verified additional seed manifest for --resume')
+    parser.add_argument('--repair-task', action='append', default=[], help='Explicitly repair a terminal task with confirmed external issues; repeatable, requires --resume')
+    parser.add_argument('--repair-review', action='append', default=[], help='External review JSON for --repair-task; otherwise use each task external_quality_review.json')
     parser.add_argument('--resume-reason', default='Continue the terminal run with additional source candidates')
     parser.add_argument('--count', type=int)
     parser.add_argument('--seeds', help='Directory or .xls/.xlsx file to use instead of the manifest selection')
@@ -39,6 +41,10 @@ def main(argv=None):
     root = Path(__file__).resolve().parents[2]
     if args.extra_manifest and not args.resume:
         parser.error('--extra-manifest is only valid with --resume')
+    if (args.repair_task or args.repair_review) and not args.resume:
+        parser.error('--repair-task/--repair-review are only valid with --resume')
+    if args.repair_review and not args.repair_task:
+        parser.error('--repair-review requires at least one explicit --repair-task')
     if args.resume and (args.count is not None or args.seeds):
         parser.error('Continuation preserves quotas and source identity; use --extra-manifest instead of --count/--seeds')
     if args.max_sources is not None and args.max_sources <= 0:
@@ -63,7 +69,8 @@ def main(argv=None):
             patch['run']['source_filter'] = args.source_filter
         try:
             session = prepare_resume(run_dir, config_patch=patch, extra_manifest=args.extra_manifest,
-                                     current_code_revision=revision, reason=args.resume_reason)
+                                     current_code_revision=revision, reason=args.resume_reason,
+                                     repair_tasks=args.repair_task, review_files=args.repair_review)
         except (ResumeError, OSError, ValueError) as exc:
             parser.error(str(exc))
         config, audit = session.config, session.audit

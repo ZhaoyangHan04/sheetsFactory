@@ -36,6 +36,13 @@ def diagnostic_action(report):
     return 'export', []
 
 
+class _ExternalRepairContext(TaskContext):
+    @property
+    def revision_dir(self):
+        # Repair proposals must not overwrite artifacts in a closed revision.
+        return self.directory / 'external_repairs' / self.config['run']['continuation_id']
+
+
 class FactoryPipeline(BasePipeline):
     """Template-driven quota controller with distinct bounded repair budgets."""
 
@@ -123,64 +130,146 @@ class FactoryPipeline(BasePipeline):
         context = self._context(seed, mode)
         try:
             self.run_phase(context, 'preparation')
-            max_steps = int(self.config['run']['max_steps'])
-            phase = 'revision'
-            evidence_rounds = infrastructure_retries = 0
-            while True:
-                context.data.pop('construction_error', None)
-                try:
-                    if phase == 'revision':
-                        self._claim_targets(context)
-                        context.data.pop('diagnosis', None)
-                    self.run_phase(context, phase)
-                except TaskRejected as exc:
-                    context.data['construction_error'] = str(exc)
-                    context.data['diagnosis'] = self._construction_report(context, exc)
-                report = context.data.get('diagnosis')
-                if report is None:
-                    raise TaskRejected('UNRESOLVED: pipeline phase did not produce a diagnosis')
-                action, routes = diagnostic_action(report)
-                self.audit.emit('task.route', task_id=context.task_id, revision=context.revision,
-                                action=action, issue_ids=[route['issue_id'] for route in routes])
-                if action == 'export':
-                    self.run_phase(context, 'export')
-                    self.audit.task(context.task_id, status='ready', node='harbor_pending',
-                                    title=context.data['plan']['title'], revision=context.revision,
-                                    export_dir=str(context.data['export_dir']), independent_recovery=True)
-                    self.audit.emit('task.ready', task_id=context.task_id, mode=mode, revision=context.revision)
-                    break
-                if action == 'infrastructure_retry':
-                    budget = self.config['run'].get('infrastructure_retries_per_stage', 2)
-                    if infrastructure_retries >= budget:
-                        raise TaskRejected('INFRA_FAILED: same-revision infrastructure retry budget exhausted')
-                    infrastructure_retries += 1
-                    phase = 'infrastructure_retry'
-                elif action == 'evidence':
-                    budget = self.config['run'].get('max_evidence_rounds_per_revision', 2)
-                    if evidence_rounds >= budget:
-                        raise TaskRejected('UNRESOLVED: same-revision evidence budget exhausted')
-                    evidence_rounds += 1
-                    phase = 'evidence'
-                else:
-                    if context.revision >= max_steps:
-                        raise TaskRejected('EXHAUSTED: content repair budget exhausted')
-                    context.data['repair_routes'] = routes
-                    self.run_phase(context, 'repair')
-                    proposed = context.data.pop('next_plan', None)
-                    if not proposed:
-                        raise TaskRejected('No evidence-supported repair available')
-                    if proposed == context.data['plan']:
-                        raise TaskRejected('Repair made no change; stopping repeated no-progress cycle')
-                    context.data['plan'] = proposed
-                    context.revision += 1
-                    evidence_rounds = infrastructure_retries = 0
-                    phase = 'revision'
-                    self.audit.emit('task.revised', task_id=context.task_id, next_revision=context.revision)
-                self.audit.task(context.task_id, evidence_rounds=evidence_rounds,
-                                infrastructure_retries=infrastructure_retries, content_repairs=context.revision)
+            self._execute_context(context)
         except Exception as exc:
             self.audit.task(context.task_id, status='rejected', error=str(exc)[:2400], node='rejected')
             self.audit.emit('task.rejected', task_id=context.task_id, mode=mode, reason=str(exc)[:2400])
+        finally:
+            with self.lock:
+                self.active[mode] -= 1
+            self.audit.export()
+
+    def _apply_repair(self, context, routes):
+        if context.revision >= int(self.config['run']['max_steps']):
+            raise TaskRejected('EXHAUSTED: content repair budget exhausted')
+        context.data['repair_routes'] = routes
+        self.run_phase(context, 'repair')
+        proposed = context.data.pop('next_plan', None)
+        if not proposed:
+            raise TaskRejected('No evidence-supported repair available')
+        old_plan = context.data['plan']
+        if proposed == old_plan:
+            raise TaskRejected('Repair made no change; stopping repeated no-progress cycle')
+        if {route['problem_id'] for route in routes} == {'Q03'}:
+            old_other = {key: value for key, value in old_plan.items() if key != 'public_instruction'}
+            new_other = {key: value for key, value in proposed.items() if key != 'public_instruction'}
+            if old_other != new_other or not proposed.get('public_instruction'):
+                raise TaskRejected('Q03: instruction-only repair changed business rules or workbook construction')
+        context.data['plan'] = proposed
+        context.revision += 1
+
+    def _execute_context(self, context, phase='revision', evidence_rounds=0, infrastructure_retries=0):
+        max_steps = int(self.config['run']['max_steps'])
+        while True:
+            context.data.pop('construction_error', None)
+            try:
+                if phase == 'revision':
+                    self._claim_targets(context)
+                    context.data.pop('diagnosis', None)
+                self.run_phase(context, phase)
+            except TaskRejected as exc:
+                context.data['construction_error'] = str(exc)
+                context.data['diagnosis'] = self._construction_report(context, exc)
+            report = context.data.get('diagnosis')
+            if report is None:
+                raise TaskRejected('UNRESOLVED: pipeline phase did not produce a diagnosis')
+            action, routes = diagnostic_action(report)
+            self.audit.emit('task.route', task_id=context.task_id, revision=context.revision,
+                            action=action, issue_ids=[route['issue_id'] for route in routes])
+            if action == 'export':
+                self.run_phase(context, 'export')
+                self.audit.task(context.task_id, status='ready', node='harbor_pending',
+                                title=context.data['plan']['title'], revision=context.revision,
+                                export_dir=str(context.data['export_dir']), independent_recovery=True, error=None,
+                                harbor_controls=None)
+                self.audit.emit('task.ready', task_id=context.task_id, mode=context.mode, revision=context.revision)
+                break
+            if action == 'infrastructure_retry':
+                budget = self.config['run'].get('infrastructure_retries_per_stage', 2)
+                if infrastructure_retries >= budget:
+                    raise TaskRejected('INFRA_FAILED: same-revision infrastructure retry budget exhausted')
+                infrastructure_retries += 1
+                phase = 'infrastructure_retry'
+            elif action == 'evidence':
+                budget = self.config['run'].get('max_evidence_rounds_per_revision', 2)
+                if evidence_rounds >= budget:
+                    raise TaskRejected('UNRESOLVED: same-revision evidence budget exhausted')
+                evidence_rounds += 1
+                phase = 'evidence'
+            else:
+                if context.revision >= max_steps:
+                    raise TaskRejected('EXHAUSTED: content repair budget exhausted')
+                self._apply_repair(context, routes)
+                evidence_rounds = infrastructure_retries = 0
+                phase = 'revision'
+                self.audit.emit('task.revised', task_id=context.task_id, next_revision=context.revision)
+            self.audit.task(context.task_id, evidence_rounds=evidence_rounds,
+                            infrastructure_retries=infrastructure_retries, content_repairs=context.revision)
+
+    def process_external_repair(self, specification):
+        """Reopen only an explicitly authorized task; consume its next revision."""
+        task_id, mode = specification['task_id'], specification['mode']
+        previous = specification['previous_task']
+        revision = specification['revision']
+        state = next(task for task in self.audit.snapshot()['tasks'] if task['id'] == task_id)
+        if state.get('status') != 'repair_pending' or int(state.get('revision', 0)) != revision:
+            raise TaskRejected('External repair authorization is not pending at the recorded revision')
+        with self.lock:
+            self.active[mode] += 1
+        folder = Path(self.config['run_dir']) / 'tasks' / task_id
+        seed = specification['seed']
+        finance_evidence = seed.get('finance_evidence') or self._finance_evidence().get(previous['source_id'], {})
+        context = _ExternalRepairContext(self.audit.run['id'], task_id, mode, Path(seed['local_path']),
+            folder, self.config, self.audit, self.llm, self.engine, revision=revision)
+        context.data.update(variant=int(seed.get('variant', 0)), survey=seed.get('survey', {}),
+            finance_evidence=finance_evidence,
+            source_business_issues=finance_evidence.get('source_business_issues', []))
+        try:
+            if hashlib.sha256(context.source.read_bytes()).hexdigest() != previous['source_id']:
+                raise TaskRejected('Immutable repair source changed after authorization')
+            for artifact in specification['artifacts'].values():
+                if hashlib.sha256(Path(artifact['path']).read_bytes()).hexdigest() != artifact['sha256']:
+                    raise TaskRejected('Closed task artifact changed after external repair authorization')
+            context.data['plan'] = json.loads(Path(specification['artifacts']['plan']['path']).read_text())
+            report = json.loads(Path(specification['artifacts']['diagnosis']['path']).read_text())
+            existing = {issue['issue_id']: issue for issue in report.get('issues', [])}
+            existing.update({issue['issue_id']: issue for issue in specification['issues']})
+            report.update(issues=list(existing.values()), releasable=False,
+                          routes=route_issues(list(existing.values()), self.route_catalog))
+            if {route['problem_id'] for route in specification['routes']} == {'Q03'}:
+                report['external_repair_contract'] = {'permitted_changed_plan_fields': ['public_instruction'],
+                    'keep_all_other_plan_fields_exactly': True, 'normalized_baseline_must_not_change': True,
+                    'reason': 'Instruction-only mismatch; preserve existing target, mutation, assumptions and reference.'}
+            context.data['diagnosis'] = report
+            # Rebuild only source facts. Planning again would silently replace
+            # the closed task and discard the externally numbered issue.
+            for node in ('normalize', 'profile'):
+                self.load_node(node).run(context)
+            if context.data['source_id'] != previous['source_id']:
+                raise TaskRejected('Restored source identity does not match the original task')
+            cached_plan = Path(context.data.get('source_cache', context.data['baseline'].parent)) / f'task_plans_v{context.data["variant"]}.json'
+            if cached_plan.is_file():
+                context.data['source_assessment'] = json.loads(cached_plan.read_text()).get('source_assessment', {})
+            self.audit.emit('task.external_repair_started', task_id=task_id, revision=revision,
+                previous_evidence_rounds=previous.get('evidence_rounds'),
+                previous_infrastructure_retries=previous.get('infrastructure_retries'),
+                issue_ids=[issue['issue_id'] for issue in specification['issues']])
+            self._apply_repair(context, specification['routes'])
+            self.audit.task(task_id, revision=context.revision, content_repairs=context.revision,
+                            evidence_rounds=0, infrastructure_retries=0, harbor_controls=None,
+                            independent_recovery=False, external_repair_pending=False)
+            if hashlib.sha256(Path(context.data['baseline']).read_bytes()).hexdigest() != specification['artifacts']['baseline']['sha256']:
+                raise TaskRejected('Instruction/task repair changed the immutable normalized baseline')
+            self.audit.emit('task.revised', task_id=task_id, next_revision=context.revision,
+                            reason='explicit_confirmed_external_repair')
+            ordinary = TaskContext(context.run_id, context.task_id, context.mode, context.source,
+                context.directory, context.config, context.audit, context.llm, context.engine,
+                revision=context.revision, data=context.data)
+            self._execute_context(ordinary)
+        except Exception as exc:
+            self.audit.task(task_id, status='rejected', node='external_repair_failed', error=str(exc)[:2400])
+            self.audit.emit('task.rejected', task_id=task_id, mode=mode, reason=str(exc)[:2400],
+                            external_repair=True)
         finally:
             with self.lock:
                 self.active[mode] -= 1
@@ -260,8 +349,8 @@ class FactoryPipeline(BasePipeline):
             if eligibility is False:
                 seed['modes'] = [mode for mode in self.targets if mode != 'financial_modeling']
         seeds.sort(key=lambda seed: (
-            0 if seed['survey'].get('status') == 'ok' and seed['survey'].get('error_count') == 0 else 1,
             0 if seed['finance_evidence'].get('financial_modeling_eligible') is True else 1,
+            0 if seed['survey'].get('status') == 'ok' and seed['survey'].get('error_count') == 0 else 1,
             -seed.get('rank_score', 0)))
         if self.config['run'].get('source_filter'):
             seeds = [seed for seed in seeds if self.config['run']['source_filter'].lower() in seed['local_path'].lower()]
@@ -277,14 +366,34 @@ class FactoryPipeline(BasePipeline):
         if variant >= self.config['run'].get('max_candidates_per_seed', 3):
             return []
         states = self.audit.snapshot()['tasks']
+        enabled_modes = self.config['run'].get('variant_modes', ['financial_modeling'])
+        if not isinstance(enabled_modes, list) or any(mode not in self.targets for mode in enabled_modes):
+            raise ValueError('run.variant_modes must list configured task modes')
+        counts = self.counts()
         candidates = []
+        structural_errors = (
+            'Source lacks four nonempty sheets or a usable formula model',
+            'Full profile exceeds the configured coverage limit',
+            'Source contains no genuine cross-sheet formula dependency',
+        )
+        unusable = {task.get('source_id') for task in states
+                    if str(task.get('error') or '').startswith(structural_errors)}
         for seed in seeds:
+            if seed['sha256'] in unusable:
+                continue
             evidence = seed.get('finance_evidence', {})
-            explicit = evidence.get('financial_modeling_eligible', evidence.get('eligible'))
-            productive = any(task.get('source_id') == seed['sha256'] and task.get('mode') == 'financial_modeling'
-                             and task.get('status') in {'ready', 'qualified'} for task in states)
-            if explicit is True or productive:
-                candidates.append({**seed, 'variant': variant, 'modes': ['financial_modeling']})
+            modes = []
+            for mode in enabled_modes:
+                if counts[mode] >= self.targets[mode]:
+                    continue
+                explicit = (evidence.get('financial_modeling_eligible', evidence.get('eligible'))
+                    if mode == 'financial_modeling' else seed.get('debugging_eligible', evidence.get('debugging_eligible')))
+                productive = any(task.get('source_id') == seed['sha256'] and task.get('mode') == mode
+                    and task.get('status') in {'ready', 'qualified'} for task in states)
+                if explicit is True or productive:
+                    modes.append(mode)
+            if modes:
+                candidates.append({**seed, 'variant': variant, 'modes': modes})
         return candidates
 
     def _construct_batch(self, seeds):
@@ -333,6 +442,11 @@ class FactoryPipeline(BasePipeline):
         seeds = self.load_seeds()
         self.audit.update_run(status='constructing')
         self.audit.emit('run.construction_started', sources=len(seeds), targets=self.targets)
+        repair_manifest = self.config['run'].get('external_repair_manifest')
+        if repair_manifest:
+            for specification in json.loads(Path(repair_manifest).read_text()):
+                self.process_external_repair(specification)
+            self._validate_exports()
         attempted_jobs = self._construct_batch(seeds)
         self._validate_exports()
         # Variants are fallback work after the first pass, not blind duplicates.

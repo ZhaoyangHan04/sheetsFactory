@@ -267,3 +267,29 @@ def test_variants_keep_source_identity_and_reject_duplicate_modules(tmp_path):
                             'finance_evidence': {'financial_modeling_eligible': False}}], 1)
     assert len(variants) == 1
     assert variants[0]['modes'] == ['financial_modeling']
+
+
+def test_variant_modes_are_opt_in_and_use_mode_specific_productivity_and_quota(tmp_path):
+    from sheets_factory.core.audit import AuditStore
+    from sheets_factory.pipelines.factory import FactoryPipeline
+    config = {'project_root': str(ROOT), 'run_dir': str(tmp_path / 'run'),
+        'run': {'targets': {'financial_modeling': 2, 'debugging': 2}, 'max_steps': 3,
+                'variant_modes': ['financial_modeling', 'debugging']}}
+    audit = AuditStore(tmp_path / 'run', {'id': 'r'})
+    audit.task('debug-good', source_id='b' * 64, mode='debugging', status='qualified')
+    audit.task('debug-bad', source_id='c' * 64, mode='debugging', status='rejected')
+    factory = FactoryPipeline(config, audit, None, None)
+    seeds = [{'sha256': 'a' * 64, 'finance_evidence': {'financial_modeling_eligible': True}},
+             {'sha256': 'b' * 64, 'finance_evidence': {'financial_modeling_eligible': False}},
+             {'sha256': 'c' * 64, 'finance_evidence': {'financial_modeling_eligible': False}},
+             {'sha256': 'd' * 64, 'debugging_eligible': True,
+              'finance_evidence': {'financial_modeling_eligible': False}}]
+    candidates = {seed['sha256']: seed['modes'] for seed in factory.variant_candidates(seeds, 1)}
+    assert candidates == {'a' * 64: ['financial_modeling'], 'b' * 64: ['debugging'], 'd' * 64: ['debugging']}
+    audit.task('debug-second', source_id='d' * 64, mode='debugging', status='ready')
+    assert [seed['modes'] for seed in factory.variant_candidates(seeds, 1)] == [['financial_modeling']]
+    del config['run']['variant_modes']
+    assert all(seed['modes'] == ['financial_modeling'] for seed in factory.variant_candidates(seeds, 1))
+    audit.task('financial-structurally-invalid', source_id='a' * 64, mode='financial_modeling',
+               status='rejected', error='Source contains no genuine cross-sheet formula dependency')
+    assert factory.variant_candidates(seeds, 1) == []

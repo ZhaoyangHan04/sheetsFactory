@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 from uuid import uuid4
 
 import yaml
@@ -194,6 +195,17 @@ def normalize_extra_manifest(path):
     entries = data.get('selected', data.get('sources'))
     if not isinstance(entries, list):
         raise ResumeError('Extra manifest requires a selected or sources list')
+    # Research manifests keep file-selection metadata and business evidence in
+    # separate lists. Preserve that evidence when freezing the selected files.
+    business = data.get('finance_evidence', {})
+    business = business.get('sources', []) if isinstance(business, dict) else business
+    facts = {}
+    for record in [*(data.get('sources', []) if isinstance(data.get('sources'), list) else []),
+                   *(business if isinstance(business, list) else [])]:
+        if isinstance(record, dict):
+            digest = record.get('sha256') or record.get('source_sha256')
+            if digest:
+                facts[digest] = {**facts.get(digest, {}), **record}
     selected, seen = [], set()
     for original in entries:
         item = deepcopy(original)
@@ -214,6 +226,8 @@ def normalize_extra_manifest(path):
             continue
         seen.add(actual_hash)
         item.update(local_path=str(source), sha256=actual_hash)
+        if actual_hash in facts:
+            item['finance_evidence'] = {**facts[actual_hash], **item.get('finance_evidence', {})}
         if 'finance_evidence' not in item and 'financial_modeling_eligible' in item:
             item['finance_evidence'] = {key: item[key] for key in
                 ('financial_modeling_eligible', 'scenario_required', 'safe_modules', 'source_business_issues', 'evidence', 'risk')
@@ -233,6 +247,94 @@ def _merge(base, patch):
     return result
 
 
+def plan_external_repairs(run_dir, snapshot, config, task_ids, review_files=()):
+    """Validate explicit repair requests without mutating existing task records."""
+    from .checkers.router import route_issues
+    run_dir, root = Path(run_dir), Path(config['project_root'])
+    tasks = {task['id']: task for task in snapshot['tasks']}
+    catalog = yaml.safe_load((root / 'config/routes.yaml').read_text())
+    sources = {}
+    for filename in [config['run']['seed_manifest'], *config['run'].get('additional_seed_manifests', [])]:
+        path = Path(filename)
+        path = path if path.is_absolute() else root / path
+        for seed in json.loads(path.read_text()).get('selected', []):
+            sources[seed['sha256']] = {**sources.get(seed['sha256'], {}), **seed}
+    supplied = [Path(path).resolve() for path in review_files]
+    specifications = []
+    for task_id in dict.fromkeys(task_ids or []):
+        task = tasks.get(task_id)
+        if not task or task.get('status') not in PRESERVED_TASK_STATES:
+            raise ResumeError(f'External repair requires an existing terminal/ready task: {task_id}')
+        revision = int(task.get('revision', 0))
+        if revision >= int(config['run']['max_steps']):
+            raise ResumeError(f'Content repair budget exhausted for {task_id}: revision {revision}')
+        if int(task.get('content_repairs', revision)) > revision:
+            raise ResumeError(f'Inconsistent recorded content budget for {task_id}')
+        directory = run_dir / 'tasks' / task_id
+        paths = [directory / 'external_quality_review.json', *supplied]
+        issues, evidence_files = [], []
+        for path in dict.fromkeys(paths):
+            if not path.is_file():
+                continue
+            data = json.loads(path.read_text())
+            if not isinstance(data, dict):
+                raise ResumeError(f'External review must be a JSON object: {path}')
+            if data.get('task_id') not in (None, task_id):
+                continue
+            entries = data.get('issues', [data] if data.get('issue_id') else [])
+            relevant = []
+            for issue in entries:
+                if not isinstance(issue, dict):
+                    raise ResumeError(f'External issue must be a JSON object: {path}')
+                if issue.get('task_id', data.get('task_id', task_id)) != task_id:
+                    continue
+                reviewed_revision = issue.get('revision', data.get('revision'))
+                if reviewed_revision is not None and int(reviewed_revision) != revision:
+                    raise ResumeError(f'Stale external review for {task_id}')
+                if issue.get('certainty') != 'confirmed':
+                    continue
+                if not issue.get('issue_id') or not issue.get('evidence') or not issue.get('claim'):
+                    raise ResumeError(f'External issue lacks numbered evidence for {task_id}')
+                declared_route = issue.get('route_id', issue.get('repair_route'))
+                if not declared_route:
+                    raise ResumeError(f'External issue lacks an explicit repair route for {task_id}')
+                try:
+                    route = route_issues([{**issue, 'depends_on_issue_ids': []}], catalog)[0]
+                except (KeyError, ValueError) as exc:
+                    raise ResumeError(f'Unknown external problem/route for {task_id}') from exc
+                if route['route_class'] != 'repair' or declared_route != route['route_id']:
+                    raise ResumeError(f'External issue is not a confirmed content-repair route for {task_id}')
+                relevant.append({**issue, 'depends_on_issue_ids': []})
+            if relevant:
+                issues.extend(relevant)
+                evidence_files.append({'path': str(path), 'sha256': _hash(path)})
+        issues = list({issue['issue_id']: issue for issue in issues}.values())
+        if not issues:
+            raise ResumeError(f'No confirmed repair issue file available for {task_id}')
+        source_id = task.get('source_id')
+        seed = deepcopy(sources.get(source_id))
+        if not seed:
+            raise ResumeError(f'Original source is absent from the run manifests for {task_id}')
+        source = Path(seed['local_path'])
+        if not source.is_absolute():
+            source = root / source
+        if not source.is_file() or _hash(source) != source_id:
+            raise ResumeError(f'Immutable source hash changed or source missing for {task_id}')
+        seed.update(local_path=str(source.resolve()), variant=int(task.get('variant', 0)))
+        if candidate_task_id(seed, task['mode']) != task_id:
+            raise ResumeError(f'Task ID and immutable source identity disagree for {task_id}')
+        private = directory / 'revisions' / f'{revision:03d}' / 'private'
+        baseline = run_dir / 'sources' / source_id[:12] / 'baseline.xlsx'
+        artifacts = {'plan': private / 'plan.json', 'diagnosis': private / 'diagnosis.json', 'baseline': baseline}
+        if any(not path.is_file() for path in artifacts.values()):
+            raise ResumeError(f'Cannot restore the last constructed plan/diagnosis/baseline for {task_id}')
+        specifications.append({'task_id': task_id, 'mode': task['mode'], 'revision': revision,
+            'seed': seed, 'previous_task': task, 'issues': issues,
+            'routes': route_issues(issues, catalog), 'review_files': evidence_files,
+            'artifacts': {key: {'path': str(path), 'sha256': _hash(path)} for key, path in artifacts.items()}})
+    return specifications
+
+
 @dataclass
 class ResumeSession:
     audit: AuditStore
@@ -243,6 +345,15 @@ class ResumeSession:
     target_claims: dict
 
     def close(self):
+        # A dashboard/preflight failure may happen after authorization but before
+        # a queued repair starts. Keep it terminal and explicitly repairable;
+        # never leave a fictitious interrupted agent context behind.
+        for task in self.audit.snapshot()['tasks']:
+            if task.get('status') == 'repair_pending':
+                self.audit.task(task['id'], status='rejected', node='external_repair_not_started',
+                                error='Authorized external repair did not start in this execution phase')
+                self.audit.emit('task.external_repair_not_started', task_id=task['id'],
+                                revision=task.get('revision'), budget_preserved=True)
         self.audit.update_run(producer_active=False)
         self.lease.release()
 
@@ -254,7 +365,8 @@ class ResumeSession:
 
 
 def prepare_resume(run_dir, *, config_patch=None, extra_manifest=None, current_code_revision=None,
-                   reason='Continue the terminal run with additional verified source candidates', producer_probe=None):
+                   reason='Continue the terminal run with additional verified source candidates', producer_probe=None,
+                   repair_tasks=(), review_files=()):
     """Create an audited phase; no existing task or budget record is modified."""
     run_dir = Path(run_dir).resolve()
     if not (run_dir / 'run.sqlite').is_file() or not (run_dir / 'resolved_config.yaml').is_file():
@@ -273,14 +385,19 @@ def prepare_resume(run_dir, *, config_patch=None, extra_manifest=None, current_c
                 raise ResumeError(f'Resumption may not reset or change repair budget: {key}')
         if new['run']['targets'] != old['run']['targets']:
             raise ResumeError('Target quotas cannot change during continuation')
-        if new.get('agents') != old.get('agents'):
+        old_agents, new_agents = deepcopy(old.get('agents', {})), deepcopy(new.get('agents', {}))
+        old_parallel, new_parallel = old_agents.pop('max_parallel_calls', None), new_agents.pop('max_parallel_calls', None)
+        if old_agents != new_agents:
             raise ResumeError('Agent/provider configuration must remain unchanged for this continuation')
+        if new_parallel != old_parallel and (not isinstance(new_parallel, int) or isinstance(new_parallel, bool) or new_parallel <= 0):
+            raise ResumeError('max_parallel_calls must be a positive integer')
         if new.get('run_dir') != old.get('run_dir') or new.get('project_root') != old.get('project_root'):
             raise ResumeError('Run and project identity cannot change')
         if any(new['run'].get(key) != old['run'].get(key) for key in ('seed_manifest', 'seed_path')):
             raise ResumeError('Keep the original source manifest; append sources through extra_manifest')
         if int(new['run'].get('max_sources', 0)) < int(old['run'].get('max_sources', 0)):
             raise ResumeError('Continuation cannot truncate the existing source pool')
+        repairs = plan_external_repairs(run_dir, snapshot, old, repair_tasks, review_files) if repair_tasks else []
         claims = restore_target_claims(run_dir, snapshot)
         continuation_id = uuid4().hex[:12]
         private = run_dir / 'private/resume'
@@ -297,6 +414,9 @@ def prepare_resume(run_dir, *, config_patch=None, extra_manifest=None, current_c
             new['run']['max_sources'] = int(new['run'].get('max_sources', 0)) + len(extra['selected'])
         new['run']['continuation_id'] = continuation_id
         new['run']['resume_existing_task_ids'] = sorted(task['id'] for task in snapshot['tasks'])
+        repair_path = private / f'external_repairs_{continuation_id}.json'
+        repair_path.write_text(json.dumps(repairs, ensure_ascii=False, indent=2) + '\n')
+        new['run']['external_repair_manifest'] = str(repair_path)
         before = private / f'resolved_config_before_{continuation_id}.yaml'
         after = private / f'resolved_config_after_{continuation_id}.yaml'
         before.write_text(old_text)
@@ -305,6 +425,22 @@ def prepare_resume(run_dir, *, config_patch=None, extra_manifest=None, current_c
         config_path.write_text(new_text)
         previous = snapshot['run']
         audit = AuditStore(run_dir, previous)
+        for specification in repairs:
+            task_id = specification['task_id']
+            old_export = run_dir / 'SpreadsheetEval' / task_id
+            quarantine = run_dir / 'rejected_exports' / f'{task_id}-r{specification["revision"]:03d}-{continuation_id}'
+            if old_export.exists():
+                quarantine.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(old_export), quarantine)
+            audit.task(task_id, status='repair_pending', node='external_repair_pending',
+                       external_repair_issues=specification['issues'], harbor_controls=None,
+                       historical_export=str(quarantine) if quarantine.exists() else None)
+            audit.emit('task.external_repair_authorized', task_id=task_id, revision=specification['revision'],
+                       continuation_id=continuation_id, issue_ids=[issue['issue_id'] for issue in specification['issues']],
+                       prior_status=specification['previous_task']['status'], review_files=specification['review_files'],
+                       old_budget={key: specification['previous_task'].get(key) for key in
+                           ('revision', 'content_repairs', 'evidence_rounds', 'infrastructure_retries')},
+                       historical_harbor_controls=specification['previous_task'].get('harbor_controls'))
         history = list(previous.get('code_history', []))
         if not history:
             history.append({'code_revision': previous.get('code_revision'),
@@ -321,9 +457,12 @@ def prepare_resume(run_dir, *, config_patch=None, extra_manifest=None, current_c
                    continuation_id=continuation_id, config_before_sha256=_digest(old), config_after_sha256=_digest(new),
                    config_before_artifact=str(before), config_after_artifact=str(after),
                    extra_manifest_sha256=extra.get('parent_manifest_sha256') if extra else None,
-                   additional_source_count=len(extra['selected']) if extra else 0)
+                   additional_source_count=len(extra['selected']) if extra else 0,
+                   max_parallel_calls_before=old_parallel, max_parallel_calls_after=new_parallel,
+                   external_repair_task_ids=[specification['task_id'] for specification in repairs],
+                   external_repair_manifest_sha256=_hash(repair_path))
         audit.emit('run.resumed', continuation_id=continuation_id, reason=reason, previous_status=previous.get('status'),
-                   preserved_task_count=len(snapshot['tasks']), remaining_quotas=remaining_quotas(snapshot, new['run']['targets']),
+                   preserved_task_count=len(snapshot['tasks']), remaining_quotas=remaining_quotas(audit.snapshot(), new['run']['targets']),
                    previous_code_revision=previous.get('code_revision'), current_code_revision=current_code_revision,
                    original_started_at=previous.get('started_at'), previous_wall_seconds=previous_wall)
         return ResumeSession(audit, new, lease, snapshot, {task['id'] for task in snapshot['tasks']}, claims)
