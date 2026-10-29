@@ -203,6 +203,26 @@ class FactoryPipeline(BasePipeline):
         path = Path(self.config['run']['seed_manifest'])
         manifest = json.loads((path if path.is_absolute() else root / path).read_text())
         seeds = manifest['selected']
+        custom_seed_path = self.config['run'].get('seed_path')
+        custom_unknown_sources = set()
+        if custom_seed_path:
+            seed_path = Path(custom_seed_path)
+            if not seed_path.exists():
+                raise ValueError('Configured seed path does not exist')
+            files = [seed_path] if seed_path.is_file() else sorted(seed_path.rglob('*'))
+            existing = {item['sha256']: item for item in seeds}
+            discovered = {}
+            for file in files:
+                if not file.is_file() or file.suffix.lower() not in {'.xls', '.xlsx'}:
+                    continue
+                source_hash = hashlib.sha256(file.read_bytes()).hexdigest()
+                discovered[source_hash] = {**existing.get(source_hash, {}), 'sha256': source_hash,
+                    'local_path': str(file.resolve()), 'rank_score': existing.get(source_hash, {}).get('rank_score', 0)}
+                if source_hash not in existing:
+                    custom_unknown_sources.add(source_hash)
+            seeds = list(discovered.values())
+            manifest = {**manifest, 'unique_workbooks_inspected': len(files), 'selected': seeds,
+                        'download_url': 'local-seed-directory:' + str(seed_path), 'archive_sha256': None}
         survey_file = root / 'data/manifests/euses_financial_survey.json'
         survey = {item['source_sha256']: item for item in json.loads(survey_file.read_text())} if survey_file.exists() else {}
         finance = self._finance_evidence()
@@ -210,6 +230,10 @@ class FactoryPipeline(BasePipeline):
             seed['survey'] = survey.get(seed['sha256'], {})
             seed['finance_evidence'] = finance.get(seed['sha256'], finance.get(Path(seed['local_path']).name,
                 {'financial_modeling_eligible': False, 'reason': 'No positive finance-module evidence'} if finance else {}))
+            if seed['sha256'] in custom_unknown_sources:
+                # General seed inputs receive semantic assessment; the EUSES-only
+                # first-run whitelist must not forbid unrelated future sources.
+                seed['finance_evidence'] = {}
             evidence = seed['finance_evidence']
             eligibility = evidence.get('financial_modeling_eligible', evidence.get('eligible')) if isinstance(evidence, dict) else None
             if eligibility is False:

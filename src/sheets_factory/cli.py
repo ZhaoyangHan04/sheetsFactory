@@ -8,6 +8,7 @@ import sys
 import time
 import uuid
 import webbrowser
+import subprocess
 
 import yaml
 
@@ -22,6 +23,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Construct auditable spreadsheet tasks and start the live dashboard.')
     parser.add_argument('--config', default='config/pipelines/quality40.yaml')
     parser.add_argument('--count', type=int)
+    parser.add_argument('--seeds', help='Directory or .xls/.xlsx file to use instead of the manifest selection')
     parser.add_argument('--max-sources', type=int)
     parser.add_argument('--source-filter')
     parser.add_argument('--port', type=int)
@@ -45,6 +47,8 @@ def main(argv=None):
         config['run']['max_sources'] = args.max_sources
     if args.source_filter:
         config['run']['source_filter'] = args.source_filter
+    if args.seeds:
+        config['run']['seed_path'] = str(Path(args.seeds).resolve())
     run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + uuid.uuid4().hex[:6]
     run_dir = root / 'outputs/runs' / run_id
     run_dir.mkdir(parents=True)
@@ -54,6 +58,8 @@ def main(argv=None):
         'financial_target': config['run']['targets']['financial_modeling'],
         'debugging_target': config['run']['targets']['debugging'], 'difficulty_status': 'deferred',
         'model': config['agents']['model'], 'reasoning_effort': config['agents']['reasoning_effort']})
+    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, text=True, capture_output=True).stdout.strip()
+    audit.update_run(code_revision=revision)
     server = DashboardServer(audit.snapshot, audit.events, host=config['dashboard']['host'],
                              port=args.port if args.port is not None else config['dashboard']['port'])
     url = server.start()
