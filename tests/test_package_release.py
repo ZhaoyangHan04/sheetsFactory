@@ -510,9 +510,100 @@ def test_cached_diagnosis_origin_can_bind_same_recovery(fixture_run):
         path = base / 'private/diagnosis.json'
         diagnosis = json.loads(path.read_text())
         write_json(path, {**diagnosis, 'diagnostic_run_id': 'new-cached-diagnosis', 'llm_batches': [
-            {'cache_hit': True, 'origin_diagnostic_run_id': 'offline-fixture'}]})
+            {'visibility': 'review', 'cache_hit': True, 'origin_diagnostic_run_id': 'offline-fixture'}]})
     result = release.package_release(run, 1, root / 'release', project_root=root)
     assert result['task_count'] == 2
+
+
+def cached_public_fresh_private(base):
+    """Model a public cache hit after a changed recovery required fresh review."""
+    diagnosis_path = base / 'private/diagnosis.json'
+    diagnosis = json.loads(diagnosis_path.read_text())
+    recovery = json.loads((base / 'private/independent_recovery.json').read_text())
+    old_path = base / 'diagnostic_private-offline-fixture/evidence.json'
+    old_private = json.loads(old_path.read_text())
+    old_private['private']['independent_recovery'] = {'verified': False, 'error': 'offline failed old recovery'}
+    old_private['assigned_check_ids'] = ['Q04', 'Q09']
+    write_json(old_path, old_private)
+
+    common = {key: diagnosis[key] for key in ('task_revision_hash', 'check_plan_hash')}
+    public = {**common, 'diagnostic_run_id': 'offline-fixture', 'visibility': 'public_only',
+              'assigned_check_ids': ['Q01'], 'public': {
+                  'input_sha256': hashlib.sha256((base / 'public/input.xlsx').read_bytes()).hexdigest(),
+                  'instruction': (base / 'public/instruction.md').read_text()}}
+    private = {**common, 'diagnostic_run_id': 'fresh-review', 'visibility': 'review',
+               'assigned_check_ids': ['Q04', 'Q09'], 'private': {'independent_recovery': recovery}}
+    locations = []
+    for name, evidence in [('diagnostic_public-cache-origin', public), ('diagnostic_private-fresh', private)]:
+        directory = base / name
+        directory.mkdir()
+        for filename in ('input.xlsx', 'instruction.md'):
+            shutil.copy2(base / 'public' / filename, directory / filename)
+        write_json(directory / 'evidence.json', evidence)
+        locations.append(directory / 'evidence.json')
+
+    def receipt(evidence, cached):
+        stable = {key: value for key, value in evidence.items() if key != 'diagnostic_run_id'}
+        digest = hashlib.sha256(json.dumps(stable, ensure_ascii=False, sort_keys=True, default=str).encode()).hexdigest()
+        return {'visibility': evidence['visibility'], 'assigned_check_ids': evidence['assigned_check_ids'],
+                'status': 'completed', 'cache_hit': cached, 'payload_digest': digest,
+                **({'origin_diagnostic_run_id': evidence['diagnostic_run_id']} if cached else {})}
+
+    diagnosis.update(diagnostic_run_id='fresh-review', llm_batches=[receipt(public, True), receipt(private, False)])
+    write_json(diagnosis_path, diagnosis)
+    return locations
+
+
+def test_public_cache_origin_does_not_reuse_its_obsolete_private_review(fixture_run):
+    root, run, audit = fixture_run
+    tasks = pair(run, audit)
+    for _, base, _ in tasks:
+        cached_public_fresh_private(base)
+    result = release.package_release(run, 1, root / 'release', project_root=root)
+    manifest = json.loads(Path(result['manifest']).read_text())
+    for task in manifest['tasks']:
+        assert len(task['diagnosis']['reviewed_recovery_evidence']) == 1
+        assert '/diagnostic_private-fresh/' in task['diagnosis']['reviewed_recovery_evidence'][0]['path']
+        assert len(task['diagnosis']['public_diagnosis_evidence']) == 1
+        assert '/diagnostic_public-cache-origin/' in task['diagnosis']['public_diagnosis_evidence'][0]['path']
+
+
+def test_cached_private_review_still_must_bind_current_recovery(fixture_run):
+    root, run, audit = fixture_run
+    tasks = pair(run, audit)
+    for _, base, _ in tasks:
+        cached_public_fresh_private(base)
+        path = base / 'private/diagnosis.json'
+        diagnosis = json.loads(path.read_text())
+        diagnosis['llm_batches'][1].update(cache_hit=True, origin_diagnostic_run_id='offline-fixture')
+        write_json(path, diagnosis)
+    with pytest.raises(release.ReleaseError, match='reviewed different recovery evidence'):
+        release.package_release(run, 1, root / 'release', project_root=root)
+
+
+@pytest.mark.parametrize('mutation', ['missing_input', 'missing_instruction', 'missing_evidence',
+    'changed_input', 'changed_instruction', 'wrong_revision', 'wrong_check_plan', 'changed_payload'])
+def test_cached_public_provenance_cannot_be_missing_stale_or_tampered(fixture_run, mutation):
+    root, run, audit = fixture_run
+    tasks = pair(run, audit)
+    public_path, _ = cached_public_fresh_private(tasks[0][1])
+    if mutation.startswith('missing_'):
+        name = {'missing_input': 'input.xlsx', 'missing_instruction': 'instruction.md',
+                'missing_evidence': 'evidence.json'}[mutation]
+        (public_path.parent / name).unlink()
+    elif mutation == 'changed_input':
+        workbook(public_path.parent / 'input.xlsx', 99)
+    elif mutation == 'changed_instruction':
+        (public_path.parent / 'instruction.md').write_text('Changed offline instruction')
+    else:
+        evidence = json.loads(public_path.read_text())
+        key = {'wrong_revision': 'task_revision_hash', 'wrong_check_plan': 'check_plan_hash',
+               'changed_payload': 'public'}[mutation]
+        evidence[key] = 'tampered'
+        write_json(public_path, evidence)
+    with pytest.raises(release.ReleaseError):
+        release.package_release(run, 1, root / 'release', project_root=root)
+    assert not (root / 'release').exists()
 
 
 def test_runtime_context_is_minimal_documented_and_prepares_from_any_directory(fixture_run, tmp_path):

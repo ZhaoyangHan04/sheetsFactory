@@ -412,30 +412,50 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
     _require(comparison.get('reward') == 1, f'{task_id}: current recovery workbook does not match goal')
     native_risk_check = _latest_native_risk_check(
         project_root, run_dir, task, base, export, comparison, tracked, registry_path)
-    diagnostic_ids = {diagnosis['diagnostic_run_id']}
-    diagnostic_ids.update(batch['origin_diagnostic_run_id'] for batch in diagnosis.get('llm_batches', [])
-                          if isinstance(batch, dict) and batch.get('cache_hit') is True
-                          and isinstance(batch.get('origin_diagnostic_run_id'), str))
-    reviewed_recovery = []
-    for evidence_path in sorted(base.glob('diagnostic_private-*/evidence.json')):
-        candidate_files = {}
-        try:
-            evidence = _json(evidence_path, base, candidate_files)
-        except (OSError, ValueError):
-            continue
-        if (evidence.get('visibility') != 'review'
-                or evidence.get('diagnostic_run_id') not in diagnostic_ids
-                or evidence.get('task_revision_hash') != revision_hash
-                or evidence.get('check_plan_hash') != diagnosis['check_plan_hash']):
-            continue
-        _require((evidence.get('private') or {}).get('independent_recovery') == recovery,
-                 f'{task_id}: latest diagnosis reviewed different recovery evidence')
-        _require(_file(evidence_path.parent / 'input.xlsx', base, candidate_files) == original
-                 and _file(evidence_path.parent / 'instruction.md', base, candidate_files) == instruction_raw,
-                 f'{task_id}: diagnostic evidence used a different public revision')
-        tracked.update(candidate_files)
-        reviewed_recovery.append(_receipt(evidence_path, tracked))
+    diagnostic_ids = {'review': {diagnosis['diagnostic_run_id']}, 'public_only': set()}
+    batches, matched_batches = [], set()
+    for batch in diagnosis.get('llm_batches', []):
+        _require(isinstance(batch, dict), f'{task_id}: invalid diagnostic batch receipt')
+        visibility = batch.get('visibility')
+        _require(visibility in diagnostic_ids, f'{task_id}: diagnostic batch lacks its visibility')
+        origin = batch.get('origin_diagnostic_run_id') if batch.get('cache_hit') is True else diagnosis['diagnostic_run_id']
+        _require(isinstance(origin, str) and bool(origin), f'{task_id}: diagnostic cache lacks its origin')
+        diagnostic_ids[visibility].add(origin)
+        batches.append((visibility, origin, batch))
+    reviewed_recovery, public_diagnosis = [], []
+    for visibility, directory, receipts in (('review', 'diagnostic_private-*', reviewed_recovery),
+                                            ('public_only', 'diagnostic_public-*', public_diagnosis)):
+        for evidence_path in sorted(base.glob(directory + '/evidence.json')):
+            candidate_files = {}
+            try:
+                evidence = _json(evidence_path, base, candidate_files)
+            except (OSError, ValueError):
+                continue
+            if (evidence.get('visibility') != visibility
+                    or evidence.get('diagnostic_run_id') not in diagnostic_ids[visibility]
+                    or evidence.get('task_revision_hash') != revision_hash
+                    or evidence.get('check_plan_hash') != diagnosis['check_plan_hash']):
+                continue
+            if visibility == 'review':
+                _require((evidence.get('private') or {}).get('independent_recovery') == recovery,
+                         f'{task_id}: latest diagnosis reviewed different recovery evidence')
+            _require(_file(evidence_path.parent / 'input.xlsx', base, candidate_files) == original
+                     and _file(evidence_path.parent / 'instruction.md', base, candidate_files) == instruction_raw,
+                     f'{task_id}: diagnostic evidence used a different public revision')
+            for index, (batch_visibility, origin, batch) in enumerate(batches):
+                if (batch_visibility != visibility or origin != evidence['diagnostic_run_id']
+                        or ('assigned_check_ids' in batch
+                            and batch['assigned_check_ids'] != evidence.get('assigned_check_ids'))):
+                    continue
+                if batch.get('payload_digest'):
+                    stable = {key: value for key, value in evidence.items() if key != 'diagnostic_run_id'}
+                    digest = _sha(json.dumps(stable, ensure_ascii=False, sort_keys=True, default=str).encode())
+                    _require(digest == batch['payload_digest'], f'{task_id}: diagnostic batch payload differs')
+                matched_batches.add(index)
+            tracked.update(candidate_files)
+            receipts.append(_receipt(evidence_path, tracked))
     _require(bool(reviewed_recovery), f'{task_id}: missing diagnosis evidence for current recovery')
+    _require(len(matched_batches) == len(batches), f'{task_id}: missing matching diagnostic batch evidence')
     return {
         'task_id': task_id, 'task_name': binding['task_name'], 'mode': task['mode'],
         'source_id': task['source_id'], 'source_file': task.get('source'),
@@ -446,7 +466,8 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
         'diagnosis': {**_receipt(diagnosis_path, tracked),
                       'diagnostic_run_id': diagnosis['diagnostic_run_id'],
                       'check_plan_hash': diagnosis['check_plan_hash'],
-                      'enabled_check_ids': enabled, 'reviewed_recovery_evidence': reviewed_recovery},
+                      'enabled_check_ids': enabled, 'reviewed_recovery_evidence': reviewed_recovery,
+                      'public_diagnosis_evidence': public_diagnosis},
         'independent_recovery': {**_receipt(recovery_path, tracked),
             'recovered_workbook': _receipt(recovered_path, tracked),
             'public_input': _receipt(workspace / 'input.xlsx', tracked),
