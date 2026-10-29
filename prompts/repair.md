@@ -7,3 +7,5 @@ Keep the same task mode and real source workbook; repair assumptions only when s
 Return JSON {"repaired_task": TASK_WITH_SAME_FIELDS_AS_ORIGINAL, "addressed_issue_ids":[],"changes":[],"unresolved_questions":[]} or {"repaired_task":null,"reason":"unrepairable with available public evidence"}.
 
 For Q04/Q09, the protected reference scope includes all values changed by the injected/masked roots, including downstream results. Merely excluding a defective downstream worksheet in prose does not fix a contaminated reference. Baseline formula correction is unsupported by this executor. Select different source-backed roots whose entire affected closure is correct, or return unrepairable.
+
+When repairing a preservation conflict, require outside formulas and literal inputs to remain unedited, but explicitly permit dependent calculated results to change on recalculation. Do not retain another sentence that simultaneously requires every outside calculated value to stay unchanged.
