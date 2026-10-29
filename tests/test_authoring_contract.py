@@ -1,12 +1,13 @@
 """Planner/repair share unchanged executor limits and actual read-only artifacts."""
 import json
+import hashlib
 from pathlib import Path
 
 from openpyxl import Workbook
 import pytest
 
 from sheets_factory.core.node import TaskContext, TaskRejected
-from sheets_factory.nodes.construction import PlanNode, construction_contract, validate_plan
+from sheets_factory.nodes.construction import PlanNode, construction_contract, validate_plan, authoring_source_context
 from sheets_factory.nodes.quality import RepairNode
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,6 +56,9 @@ def test_plan_and_repair_share_contract_and_absolute_real_artifact_paths(tmp_pat
     for payload in (planner, repair):
         assert payload['source_file'] == 'real source name.xlsx'
         assert Path(payload['source_path']) == ctx.source.resolve()
+        assert payload['source_sha256'] == hashlib.sha256(ctx.source.read_bytes()).hexdigest()
+        assert Path(payload['native_risk_registry_path']) == ROOT / 'data/manifests/native_risks.json'
+        assert payload['native_risk_registry_available']
         assert Path(payload['baseline_path']) == ctx.data['baseline'].resolve()
         assert payload['baseline_is_immutable'] and payload['full_profile_available']
         full_path = Path(payload['full_profile_path'])
@@ -63,6 +67,14 @@ def test_plan_and_repair_share_contract_and_absolute_real_artifact_paths(tmp_pat
         assert Path(payload['python_executable']).is_absolute() and Path(payload['python_executable']).is_file()
     assert 'compact source_profile is only an index' in captured[1][2]
     assert 'financial_modeling requires 6 through 80' in captured[1][2]  # Compatibility with older producers.
+
+
+def test_author_context_respects_configured_risk_registry_without_inventing_files(tmp_path):
+    ctx = context(tmp_path, None)
+    ctx.config['native_risks'] = {'registry_path': str(tmp_path / 'absent_registry.json')}
+    payload = authoring_source_context(ctx)
+    assert payload['native_risk_registry_path'] == str(tmp_path / 'absent_registry.json')
+    assert payload['native_risk_registry_available'] is False
 
 
 @pytest.mark.parametrize('mode,actual,minimum', [('financial_modeling', 5, 6), ('financial_modeling', 81, 6),

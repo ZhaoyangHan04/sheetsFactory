@@ -64,9 +64,15 @@ def authoring_source_context(ctx):
     baseline = ctx.data.get('baseline')
     cache = ctx.data.get('source_cache')
     profile = Path(cache) / 'profile.json' if cache else None
+    registry = Path(ctx.config.get('native_risks', {}).get('registry_path') or 'data/manifests/native_risks.json')
+    if not registry.is_absolute():
+        registry = Path(ctx.config['project_root']) / registry
     candidate = Path(ctx.config['project_root']) / '.venv312/bin/python'
     executable = candidate.absolute() if candidate.is_file() else Path(sys.executable).absolute()
     return {'source_file': ctx.source.name, 'source_path': str(ctx.source.resolve()),
+            'source_sha256': digest(ctx.source) if ctx.source.is_file() else None,
+            'native_risk_registry_path': str(registry.resolve()),
+            'native_risk_registry_available': registry.is_file(),
             'baseline_path': str(Path(baseline).resolve()) if baseline else None,
             'baseline_is_immutable': True,
             'full_profile_path': str(profile.resolve()) if profile else None,
