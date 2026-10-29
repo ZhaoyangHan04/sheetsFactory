@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 import shutil
 import subprocess
@@ -90,36 +91,50 @@ class DiagnoseNode(BaseNode):
     node_id = 'diagnose'
 
     def execute(self, ctx):
+        from ..llm.schemas import diagnosis_output_schema
+        diagnosis_prompt = prompt(ctx, 'diagnosis.md')
         public = {'instruction': ctx.data['instruction'], 'profile': compact_profile(ctx.data['public_profile']),
-                  'rules': ctx.data['plan']['public_rules'], 'task_mode': ctx.mode}
+                  'rules': ctx.data['plan']['public_rules'], 'task_mode': ctx.mode,
+                  'input_sha256': hashlib.sha256(Path(ctx.data['input']).read_bytes()).hexdigest()}
         private = {'plan': ctx.data['plan'], 'construction': ctx.data['construction_validation'],
                    'expected_delta': ctx.data['delta'], 'root_impacts': ctx.data['root_impacts'],
                    'independent_recovery': ctx.data['recovery'],
                    'source_assessment': ctx.data.get('source_assessment', {}),
                    'native_risk_guard': ctx.data.get('native_risk_guard', {}),
                    'source_business_issues': ctx.data.get('source_business_issues', []),
+                   'goal_sha256': hashlib.sha256(Path(ctx.data['goal']).read_bytes()).hexdigest(),
                    'native_errors': ctx.data['profile']['errors']}
         health = {'healthy': all(not t.get('infrastructure_error') for t in ctx.data['traces']),
                   'checks': [{'probe': 'codex_native_cli', 'model': ctx.llm.model},
                              {'probe': 'libreoffice_full_recalculation', 'engine': ctx.data['engine_report']}]}
         bundle = {'task_id': ctx.task_id, 'revision_hash': ctx.data['revision_hash'],
+                  'revision': ctx.revision,
                   'public': public, 'private': private, 'engine_report': ctx.data['engine_report'],
                   'infrastructure_health_report': health}
+        bundle['reviewer_context_hash'] = hashlib.sha256(json.dumps({
+            'prompt': diagnosis_prompt, 'agents': ctx.config['agents'],
+            'schema_contract': diagnosis_output_schema(['Q01'])},
+            sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()
 
         def review(payload):
             is_public = payload['visibility'] == 'public_only'
             work = prepare_workspace(ctx, 'diagnostic_public' if is_public else 'diagnostic_private')
             (work / 'evidence.json').write_text(json.dumps(payload, ensure_ascii=False, default=str))
-            instruction = (prompt(ctx, 'diagnosis.md') + '\nRead /workspace/evidence.json for all assigned '
+            instruction = (diagnosis_prompt + '\nRead /workspace/evidence.json for all assigned '
                            'checks and evidence. Inspect input.xlsx/instruction.md as necessary. Return JSON only.')
             if not is_public:
-                instruction = prompt(ctx, 'diagnosis.md') + '\nINPUT JSON:\n' + json.dumps(payload, ensure_ascii=False, default=str)
+                instruction = diagnosis_prompt + '\nINPUT JSON:\n' + json.dumps(payload, ensure_ascii=False, default=str)
+            instruction += ('\nReturn assessments as an object keyed by every assigned_check_id exactly once. '
+                            'Follow the supplied output schema; missing assigned checks are a backend protocol failure.')
             return ctx.llm.complete(instruction, role='public_diagnostician' if is_public else 'reference_diagnostician',
                                     task_id=ctx.task_id, stage=self.node_id, workspace=work,
-                                    isolated=is_public, timeout=ctx.config['agents']['timeout_seconds'])
+                                    isolated=is_public, timeout=ctx.config['agents']['timeout_seconds'],
+                                    output_schema=diagnosis_output_schema(payload['assigned_check_ids']))
 
         runner = DiagnosisRunner(ctx.config['project_root'])
-        report = runner.diagnose(bundle, ctx.data['traces'], ctx.data['controls'], review, ctx.config)
+        report = runner.diagnose(bundle, ctx.data['traces'], ctx.data['controls'], review, ctx.config,
+                                batch_cache=ctx.data.setdefault('diagnostic_batch_cache', {}))
+        ctx.save('diagnostic_batch_cache.json', ctx.data['diagnostic_batch_cache'])
         if not ctx.data['recovery']['verified']:
             issue = {'issue_id': ctx.task_id + '-Q12-recovery', 'problem_id': 'Q12',
                 'severity': 'blocker', 'certainty': 'confirmed',

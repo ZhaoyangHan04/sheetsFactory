@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from copy import deepcopy
 import importlib
 import json
 from pathlib import Path
@@ -28,7 +29,7 @@ def _clean_trace(value):
 
 
 def _digest(value: object) -> str:
-    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, default=str).encode()).hexdigest()
 
 
 class DiagnosisRunner:
@@ -111,7 +112,8 @@ class DiagnosisRunner:
         return plan
 
     def diagnose(self, task_bundle: dict, traces: list, controls: dict,
-                 reviewer_callable: Callable[[dict], dict] | None, config: dict | None = None) -> dict:
+                 reviewer_callable: Callable[[dict], dict] | None, config: dict | None = None,
+                 *, batch_cache: dict | None = None) -> dict:
         plan = self.resolve(config)
         enabled = plan["enabled_check_ids"]
         revision = task_bundle.get("revision_hash", _digest(task_bundle.get("public", {})))
@@ -122,7 +124,8 @@ class DiagnosisRunner:
                   "assigned_check_ids": enabled, "enabled_check_ids": enabled,
                   "disabled_check_ids": plan["disabled_check_ids"], "plan": plan,
                   "assessments": {}, "issues": [], "observations": [], "evidence_requests": [],
-                  "llm_batches": []}
+                  "llm_batches": [], "execution_failures": []}
+        cache_entries = batch_cache.setdefault('entries', {}) if batch_cache is not None else {}
         assessments = report["assessments"]
         for check_id in plan["disabled_check_ids"]:
             assessments[check_id] = Assessment(check_id, "skipped", "disabled_by_config").to_dict()
@@ -148,6 +151,7 @@ class DiagnosisRunner:
                 continue
             visibility = self.specs[active[0]]["visibility"]
             payload = {"task_id": task_id, "task_revision_hash": revision,
+                       "task_revision": task_bundle.get('revision'),
                        "diagnostic_run_id": report["diagnostic_run_id"],
                        "check_plan_hash": plan["check_plan_hash"], "assigned_check_ids": active,
                        "visibility": visibility,
@@ -168,23 +172,47 @@ class DiagnosisRunner:
                 payload["private"] = task_bundle.get("private", {})
                 payload["public_diagnosis"] = {k: v for k, v in assessments.items()
                                                if self.specs[k]["visibility"] == "public_only"}
+            stable_payload = {key: value for key, value in payload.items() if key != 'diagnostic_run_id'}
+            payload_digest = _digest(stable_payload)
+            fingerprint = _digest({'payload_digest': payload_digest,
+                                   'reviewer_context_hash': task_bundle.get('reviewer_context_hash')})
+            receipt = {'assigned_check_ids': active, 'visibility': visibility,
+                       'batch_fingerprint': fingerprint, 'payload_digest': payload_digest, 'cache_hit': False}
             try:
-                if reviewer_callable is None:
-                    raise RuntimeError("No reviewer backend configured")
-                result = reviewer_callable(payload)
+                cached = cache_entries.get(fingerprint)
+                if cached:
+                    result = deepcopy(cached['result'])
+                    receipt.update(cache_hit=True, origin_diagnostic_run_id=cached['diagnostic_run_id'])
+                else:
+                    if reviewer_callable is None:
+                        raise RuntimeError("No reviewer backend configured")
+                    result = reviewer_callable(payload)
                 if isinstance(result, str):
                     result = json.loads(result)
+                if not isinstance(result, dict):
+                    raise ValueError('Reviewer backend must return a JSON object')
                 if "payload" in result:
                     result = result["payload"]
                 self._merge_batch(report, result, active, task_id, revision)
-                report["llm_batches"].append({"assigned_check_ids": active, "visibility": visibility, "status": "completed"})
+                receipt['status'] = 'completed'
+                report['llm_batches'].append(receipt)
+                # Semantic uncertainty remains an evidence request. It must not
+                # become a permanent cached answer to a repeated probe.
+                cacheable = (all(assessments[check]['state'] != 'unknown' for check in active)
+                    and not any(issue.get('certainty', 'suspected') != 'confirmed' for issue in result.get('issues', [])))
+                if cacheable:
+                    cache_entries[fingerprint] = {'result': deepcopy(result),
+                        'diagnostic_run_id': report['diagnostic_run_id'], 'payload_digest': payload_digest,
+                        'task_revision_hash': revision, 'check_plan_hash': plan['check_plan_hash'],
+                        'visibility': visibility, 'assigned_check_ids': active}
             except Exception as exc:
+                cache_entries.pop(fingerprint, None)
                 for check_id in active:
                     assessments[check_id] = Assessment(check_id, "unknown", f"Diagnosis batch failed: {type(exc).__name__}: {exc}",
                                                         execution_status="failed").to_dict()
-                report["llm_batches"].append({"assigned_check_ids": active, "visibility": visibility,
-                                              "status": "failed", "error": str(exc)})
-                report["evidence_requests"].append({"check_ids": active, "reason": "retry_failed_batch"})
+                receipt.update(status='failed', error=str(exc), error_type=type(exc).__name__)
+                report['llm_batches'].append(receipt)
+                self._backend_failure(report, task_id, revision, receipt)
 
         for check_id in enabled:
             spec = self.specs[check_id]
@@ -209,6 +237,28 @@ class DiagnosisRunner:
                               "undispositioned_warning_ids": warnings}
         report["releasable"] = not blocking and not unknown and not warnings
         return report
+
+    def _backend_failure(self, report, task_id, revision, receipt):
+        """Execution/protocol failures are Q11, never missing business inputs."""
+        issue_id = f"{task_id}-Q11-diagnose-{receipt['batch_fingerprint'][:12]}"
+        evidence = {'fault_stage': 'diagnose', 'visibility': receipt['visibility'],
+                    'assigned_check_ids': receipt['assigned_check_ids'],
+                    'batch_fingerprint': receipt['batch_fingerprint'], 'error_type': receipt['error_type'],
+                    'error': receipt['error']}
+        report['execution_failures'].append(evidence)
+        report['issues'].append({'issue_id': issue_id, 'problem_id': 'Q11', 'certainty': 'confirmed',
+            'severity': 'blocker', 'claim': 'Diagnosis backend execution or response protocol failed',
+            'evidence': [evidence], 'fault_stage': 'diagnose', 'revision_hash': revision,
+            'depends_on_issue_ids': []})
+        if 'Q11' in report['enabled_check_ids']:
+            assessment = report['assessments']['Q11']
+            assessment.update(state='flagged', reason='Diagnosis backend execution or response protocol failed',
+                              execution_status='failed')
+            assessment.setdefault('evidence', []).append(evidence)
+            assessment.setdefault('issue_ids', []).append(issue_id)
+        report['evidence_requests'].append({'check_ids': receipt['assigned_check_ids'],
+            'reason': 'retry_failed_backend_batch', 'fault_stage': 'diagnose',
+            'batch_fingerprint': receipt['batch_fingerprint']})
 
     def _program_issue(self, report: dict, task_id: str, revision: str, result: Assessment):
         if result.state != "flagged":

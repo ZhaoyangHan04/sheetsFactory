@@ -28,6 +28,11 @@ class BasePipeline(ABC):
             if template.get('mode') != mode:
                 raise ValueError(f'Pipeline template mode mismatch for {mode}')
             phases = template['phases']
+            # Older user templates get the safe isolated diagnosis retry phase;
+            # its contract must never rerun recovery or natural trajectories.
+            phases.setdefault('diagnosis_retry', ['diagnose'])
+            if phases['diagnosis_retry'] != ['diagnose']:
+                raise ValueError('diagnosis_retry phase must contain only diagnose')
             required = {'preparation', 'revision', 'evidence', 'infrastructure_retry', 'repair', 'export'}
             if not required <= phases.keys():
                 raise ValueError(f'Missing pipeline phases: {required - phases.keys()}')

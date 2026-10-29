@@ -189,7 +189,10 @@ class FactoryPipeline(BasePipeline):
                 if infrastructure_retries >= budget:
                     raise TaskRejected('INFRA_FAILED: same-revision infrastructure retry budget exhausted')
                 infrastructure_retries += 1
-                phase = 'infrastructure_retry'
+                issues = {issue['issue_id']: issue for issue in report.get('issues', [])}
+                diagnosis_only = bool(routes) and all(
+                    issues.get(route['issue_id'], {}).get('fault_stage') == 'diagnose' for route in routes)
+                phase = 'diagnosis_retry' if diagnosis_only else 'infrastructure_retry'
             elif action == 'evidence':
                 budget = self.config['run'].get('max_evidence_rounds_per_revision', 2)
                 if evidence_rounds >= budget:

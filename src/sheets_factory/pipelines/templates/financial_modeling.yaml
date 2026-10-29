@@ -5,6 +5,7 @@ phases:
   preparation: [normalize, profile, plan]
   revision: [construct, instruction, precheck, independent_recovery, trajectory, diagnose]
   evidence: [independent_recovery, diagnose]
+  diagnosis_retry: [diagnose]
   infrastructure_retry: [independent_recovery, trajectory, diagnose]
   repair: [repair]
   export: [export]
