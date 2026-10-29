@@ -75,3 +75,14 @@ USD = (结束 total_used - 开始 total_used) / quota_per_unit
 最终问题实例、各版本诊断观测、检查执行状态和拒绝原因分别统计。多标签拒绝原因之和可能超过拒绝候选总数。重试不等于内容修订，内容修复按版本递增单独统计。
 
 本轮目标 20 道 Financial Modeling 加 20 道 Debugging。难度及后续低通过率 gate 明确延后；报告不把开发尝试完成率写成正式 Pass@1。
+
+## 请求日志账单
+
+```bash
+.venv312/bin/python scripts/capture_billing.py \
+  --run-dir outputs/runs/RUN_ID --start 2026-10-29T12:11:33Z
+```
+
+该命令只读本地密钥和服务端账单，将原始响应保存在 run 的私有目录。重复运行按稳定请求身份合并；服务端响应中的 `id` 是显示序号，不能用于去重。
+
+报告中的 `billing.request_log_window` 使用服务端 `created_at` 筛选消费记录，以 `quota / quota_per_usd` 计算美元。它与账户起止 `total_used` 差额是两种独立观测，不能相加。日志覆盖区间、在途请求、延迟记账和共享凭据重叠均单独标注；`production_cost_usd` 仍保持未知，避免将时间窗错误归因为精确运行费用。公开报告只导出汇总白名单，不导出请求身份或账户信息。

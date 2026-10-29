@@ -23,3 +23,11 @@ The review separated task correctness from solver completion. It used local fixt
 - A successful public recovery witness is necessary evidence, but cannot formally prove that natural-language requirements have a unique interpretation. Independent semantic checks remain required.
 - The first implementation uses ordered phases with a controller-managed bounded repair loop, rather than an unrestricted user-defined cyclic graph.
 - Provider token reporting may be unavailable on interrupted calls. Audit reports must preserve unknown usage instead of claiming zero consumption.
+
+## Findings during the first production batch
+
+- The development inspection directory and final Harbor directory differ. A prompt clarification now evaluates the delivered `/app` contract. Prompt hashes and the reason are recorded as a run amendment; a local targeted contract review covers early tasks.
+- Correct edited roots do not establish correctness of the complete changed-value closure. A depreciation task affected a native monthly-profit formula that subtracted annual depreciation. The ready export was quarantined with a confirmed Q09 finding. Planning and reference diagnosis now explicitly inspect downstream changed outputs, their periods and units. A scope disclaimer cannot exclude those outputs from the value verifier.
+- An instruction that requires every outside value to remain unchanged contradicts required downstream recalculation. Two otherwise reproducible tasks were quarantined for Q03, including one with successful real Harbor controls. Preserving unedited formulas and literal inputs is distinct from preserving their calculated results. Repair must create a new revision and repeat quality checks and actual Harbor controls; old controls remain historical evidence.
+
+External findings are stored in each affected task's `external_quality_review.json`, in the run event log, and in separate business-review artifacts. They are not silently erased by changing the reference or by reclassifying the difficulty gate.
