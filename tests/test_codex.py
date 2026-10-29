@@ -8,9 +8,11 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 import unittest
 from unittest.mock import patch
+from jsonschema import Draft202012Validator, ValidationError
 
 from sheets_factory.core.audit import AuditStore
 from sheets_factory.llm import CodexCLI, CodexError
+from sheets_factory.llm.schemas import diagnosis_output_schema
 
 
 class CodexTests(unittest.TestCase):
@@ -226,6 +228,100 @@ print(json.dumps({'type':'turn.completed','usage':{'input_tokens':1,'output_toke
         self.assertEqual(_decode_object('```json\n{"ok":true}\n```'), {"ok": True})
         with self.assertRaises(ValueError):
             _decode_object("[]")
+
+    def test_optional_schema_is_passed_to_cli_and_persisted_privately(self):
+        schema = {"type": "object", "properties": {"ok": {"type": "boolean"}},
+                  "required": ["ok"], "additionalProperties": False}
+        backend = self.backend()
+        commands = []
+        build = backend._build_command
+
+        def capture(*args, **kwargs):
+            command = build(*args, **kwargs)
+            commands.append(command)
+            return command
+
+        with patch.object(backend, "_build_command", side_effect=capture):
+            self.assertEqual(backend.complete("prompt", "planner", output_schema=schema), {"ok": True})
+        command = commands[0]
+        path = Path(command[command.index("--output-schema") + 1])
+        self.assertEqual(json.loads(path.read_text()), schema)
+        self.assertEqual(path.parent, Path(self.records()[0]["record_path"]))
+        self.assertTrue(self.records()[0]["output_schema_enabled"])
+        self.assertEqual(len(self.records()[0]["output_schema_sha256"]), 64)
+
+    def test_no_schema_leaves_native_command_unchanged(self):
+        command = self.backend()._build_command(self.root / "public", "http://localhost/v1", False, "call")
+        self.assertNotIn("--output-schema", command)
+
+    def test_isolated_schema_maps_only_public_workspace_file_and_is_cleaned(self):
+        schema = {"type": "object", "properties": {"ok": {"type": "boolean"}},
+                  "required": ["ok"], "additionalProperties": False}
+        source = self.secrets / "response_schema.json"
+        source.write_text(json.dumps(schema))
+        workspace = self.root / "public"
+        workspace.mkdir()
+        backend = self.backend()
+        actual_commands, staged_paths = [], []
+        build = backend._build_command
+
+        def fixture_command(work, endpoint, isolated, name, **kwargs):
+            actual = build(work, endpoint, isolated, name, **kwargs)
+            actual_commands.append(actual)
+            mapped = Path(actual[actual.index("--output-schema") + 1])
+            self.assertEqual(mapped.parent, Path("/workspace"))
+            staged = work / mapped.name
+            staged_paths.append(staged)
+            self.assertEqual(json.loads(staged.read_text()), schema)
+            return [str(self.stub)]
+
+        with patch.object(backend, "_build_command", side_effect=fixture_command), patch("subprocess.run"):
+            self.assertEqual(backend.complete("prompt", "public", workspace=workspace, isolated=True,
+                                              output_schema=source), {"ok": True})
+        command = actual_commands[0]
+        mounts = [command[i + 1] for i, item in enumerate(command) if item == "--volume"]
+        self.assertEqual(len(mounts), 2)
+        self.assertFalse(any(str(self.secrets) in mount for mount in mounts))
+        self.assertNotIn(str(source), command)
+        self.assertTrue(all(not path.exists() for path in staged_paths))
+
+    def test_reply_schema_failure_keeps_known_usage(self):
+        schema = {"type": "object", "properties": {"marker": {"type": "string"}},
+                  "required": ["marker"], "additionalProperties": False}
+        with self.assertRaises(CodexError):
+            self.backend().complete("prompt", "planner", output_schema=schema)
+        self.assertEqual(self.records()[0]["failure_kind"], "output_schema_validation")
+        self.assertEqual(self.records()[0]["input_tokens"], 100)
+
+    def test_external_schema_refs_and_secret_enums_are_rejected_before_process(self):
+        for schema in [{"type": "object", "$ref": "file:///private/goal.json"},
+                       {"type": "object", "properties": {"value": {"enum": [self.key]}}}]:
+            with self.subTest(schema_kind="external_ref" if "$ref" in schema else "secret"):
+                with patch("subprocess.Popen") as process:
+                    with self.assertRaises(CodexError):
+                        self.backend().complete("prompt", "public", output_schema=schema)
+                    process.assert_not_called()
+        for record in self.records():
+            self.assertEqual(record["failure_kind"], "invalid_output_schema")
+            self.assertNotIn(self.key, json.dumps(record))
+
+    def test_diagnosis_schema_requires_every_assigned_id_without_extra_checks(self):
+        assigned = ["Q04", "Q06", "Q09"]
+        schema = diagnosis_output_schema(assigned)
+        Draft202012Validator.check_schema(schema)
+        validator = Draft202012Validator(schema)
+        result = {"assessments": {check: {"check_id": check, "state": "unknown", "reason": "No workbook", "evidence": []}
+                                   for check in assigned}, "issues": [], "evidence_requests": []}
+        validator.validate(result)
+        del result["assessments"]["Q09"]
+        with self.assertRaises(ValidationError):
+            validator.validate(result)
+        result["assessments"]["Q09"] = {"check_id": "Q06", "state": "unknown", "reason": "wrong ID", "evidence": []}
+        with self.assertRaises(ValidationError):
+            validator.validate(result)
+        for invalid in [[], ["Q04", "Q04"], ["private/goal.xlsx"]]:
+            with self.assertRaises(ValueError):
+                diagnosis_output_schema(invalid)
 
 
 if __name__ == "__main__":

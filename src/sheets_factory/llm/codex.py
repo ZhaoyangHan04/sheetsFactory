@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 import os
 from pathlib import Path
 import re
@@ -115,7 +116,8 @@ class CodexCLI:
         return env
 
     def _build_command(self, workspace: Path, endpoint: str, isolated: bool, name: str,
-                       *, model: str | None = None, reasoning: str | None = None) -> list[str]:
+                       *, model: str | None = None, reasoning: str | None = None,
+                       output_schema: Path | str | None = None) -> list[str]:
         cli = ["/usr/local/bin/codex" if isolated else str(self.binary), "exec",
                "--ignore-user-config", "--ignore-rules", "--ephemeral", "--skip-git-repo-check",
                "--json", "--color", "never", "-m", model or self.model]
@@ -129,6 +131,8 @@ class CodexCLI:
         }
         for key, value in settings.items():
             cli.extend(["-c", key + "=" + json.dumps(value)])
+        if output_schema is not None:
+            cli.extend(["--output-schema", str(output_schema)])
         if isolated:
             cli += ["--dangerously-bypass-approvals-and-sandbox", "-C", "/workspace", "-"]
             public_tools = []
@@ -150,9 +154,10 @@ class CodexCLI:
         return cli + ["--sandbox", "read-only", "-c", 'approval_policy="never"', "-C", str(workspace), "-"]
 
     def complete(self, prompt: str, role: str, task_id: str = "", stage: str = "",
-                 workspace: Path | None = None, isolated: bool = False, timeout: int | None = None) -> dict:
+                 workspace: Path | None = None, isolated: bool = False, timeout: int | None = None,
+                 output_schema: dict | Path | str | None = None) -> dict:
         final_prompt = prompt + "\n\nReturn exactly one JSON object as your final response, without commentary."
-        result = self._invoke(final_prompt, role, task_id, stage, workspace, isolated, timeout, True)
+        result = self._invoke(final_prompt, role, task_id, stage, workspace, isolated, timeout, True, output_schema)
         return result["parsed"]
 
     def attempt(self, prompt: str, workspace: Path, taskid: str = "", stage: str = "trajectory",
@@ -163,12 +168,14 @@ class CodexCLI:
         return self._invoke(prompt, "trace_agent", task_id, stage, workspace, True, timeout, False)
 
     def _invoke(self, prompt: str, role: str, task_id: str, stage: str,
-                workspace: Path | None, isolated: bool, timeout: int | None, expect_json: bool) -> dict:
+                workspace: Path | None, isolated: bool, timeout: int | None, expect_json: bool,
+                output_schema: dict | Path | str | None = None) -> dict:
         with self._slots:
-            return self._invoke_slot(prompt, role, task_id, stage, workspace, isolated, timeout, expect_json)
+            return self._invoke_slot(prompt, role, task_id, stage, workspace, isolated, timeout, expect_json, output_schema)
 
     def _invoke_slot(self, prompt: str, role: str, task_id: str, stage: str,
-                     workspace: Path | None, isolated: bool, timeout: int | None, expect_json: bool) -> dict:
+                     workspace: Path | None, isolated: bool, timeout: int | None, expect_json: bool,
+                     output_schema: dict | Path | str | None = None) -> dict:
         settings = self._role_settings(role, timeout)
         timeout = settings["timeout_seconds"]
         call_id = uuid.uuid4().hex
@@ -190,6 +197,8 @@ class CodexCLI:
         returncode = None
         stderr_parts: list[str] = []
         threads: list[threading.Thread] = []
+        schema_validator = None
+        staged_schema = None
 
         def clean(value):
             if isinstance(value, str):
@@ -213,10 +222,54 @@ class CodexCLI:
                 raise ValueError("Isolated agents require a dedicated public workspace")
             work.mkdir(parents=True, exist_ok=True)
             request.update({"endpoint": endpoint, "workspace": str(work)})
+            cli_schema = None
+            if output_schema is not None:
+                from jsonschema import Draft202012Validator
+                failure_kind = "invalid_output_schema"
+                if isinstance(output_schema, dict):
+                    schema = json.loads(json.dumps(output_schema, ensure_ascii=False, allow_nan=False))
+                else:
+                    schema_source = Path(output_schema).expanduser()
+                    if not schema_source.is_absolute():
+                        schema_source = self.project_root / schema_source
+                    schema = json.loads(schema_source.read_text())
+                if not isinstance(schema, dict):
+                    raise ValueError("Output schema must be a JSON object")
+
+                def check_refs(value):
+                    if isinstance(value, dict):
+                        reference = value.get("$ref")
+                        if reference is not None and (not isinstance(reference, str) or not reference.startswith("#")):
+                            raise ValueError("Output schemas may only use internal JSON references")
+                        for child in value.values():
+                            check_refs(child)
+                    elif isinstance(value, list):
+                        for child in value:
+                            check_refs(child)
+
+                check_refs(schema)
+                Draft202012Validator.check_schema(schema)
+                schema_validator = Draft202012Validator(schema)
+                serialized = json.dumps(schema, ensure_ascii=False, indent=2, allow_nan=False)
+                if key in serialized:
+                    raise ValueError("Output schema must not contain API credentials")
+                private_schema = directory / "output_schema.json"
+                private_schema.write_text(serialized)
+                cli_schema = private_schema
+                if isolated:
+                    # Copy the public contract only. Never mount the private call
+                    # directory or expose host schema paths inside the container.
+                    staged_schema = work / (".factory_output_schema_" + call_id + ".json")
+                    staged_schema.write_text(serialized)
+                    cli_schema = Path("/workspace") / staged_schema.name
+                request.update(output_schema_enabled=True,
+                               output_schema_sha256=sha256(serialized.encode()).hexdigest())
+                failure_kind = None
             (directory / "request.json").write_text(json.dumps(request, indent=2))
             (directory / "prompt.txt").write_text(clean(prompt))
             command = self._build_command(work, endpoint, isolated, container_name,
-                                          model=settings["model"], reasoning=settings["reasoning_effort"])
+                                          model=settings["model"], reasoning=settings["reasoning_effort"],
+                                          **({"output_schema": cli_schema} if cli_schema is not None else {}))
             process = subprocess.Popen(command, cwd=work, env=self._environment(key),
                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                        text=True, encoding="utf-8", errors="replace", start_new_session=True)
@@ -290,6 +343,12 @@ class CodexCLI:
                 except (ValueError, TypeError) as exc:
                     failure_kind = "invalid_json"
                     raise CodexError("Codex final response was not a valid JSON object") from exc
+                if schema_validator is not None:
+                    try:
+                        schema_validator.validate(parsed)
+                    except Exception as exc:
+                        failure_kind = "output_schema_validation"
+                        raise CodexError("Codex final response did not satisfy its output schema") from exc
         except KeyboardInterrupt:
             error = "Codex call cancelled"
             failure_kind = "cancelled"
@@ -298,6 +357,8 @@ class CodexCLI:
             error = clean(str(exc))
             failure_kind = failure_kind or "execution_error"
         finally:
+            if staged_schema is not None:
+                staged_schema.unlink(missing_ok=True)
             if isolated and process is not None:
                 try:
                     subprocess.run(["docker", "rm", "--force", container_name],
