@@ -412,31 +412,157 @@ class FactoryPipeline(BasePipeline):
         return cursor
 
     def _validate_exports(self):
-        export_root = Path(self.config['run_dir']) / 'SpreadsheetEval'
-        if not export_root.exists() or not any(export_root.iterdir()):
-            return
-        self.audit.update_run(status='harbor_validation')
-        controls = run_controls(export_root, Path(self.config['run_dir']) / 'harbor_jobs',
-            concurrency=self.config['harbor']['concurrency'],
-            event_callback=lambda event: self.audit.emit(event.get('type', 'harbor.event'),
-                **{key: value for key, value in event.items() if key != 'type'}))
-        (Path(self.config['run_dir']) / 'harbor_controls.json').write_text(json.dumps(controls, indent=2, default=str))
+        from uuid import uuid4
+        import time
+        from ..core.audit import utcnow
+        from ..evaluation.harbor import inspect_export, matched_controls, control_summary_paths
+
+        run_dir = Path(self.config['run_dir'])
+        export_root = run_dir / 'SpreadsheetEval'
+        summary_file = run_dir / 'harbor_controls.json'
+        cumulative = json.loads(summary_file.read_text()) if summary_file.is_file() else {}
+        if not isinstance(cumulative, dict):
+            raise ValueError('Cumulative Harbor summary must be a JSON object')
+        cumulative.setdefault('per_task', {})
+        cumulative.setdefault('export_bindings', {})
+        cumulative.setdefault('batches', [])
+        cumulative.setdefault('summary_paths', [])
+        selected, invalid = [], []
         for task in self.audit.snapshot()['tasks']:
-            if task['status'] not in {'ready', 'qualified'}:
+            if task.get('status') not in {'ready', 'qualified'}:
                 continue
-            per_task = controls.get('per_task', {}).get('sheetsfactory/' + task['id'], {})
-            good = (per_task.get('oracle', {}).get('matched') is True and per_task.get('nop', {}).get('matched') is True)
-            if good:
-                self.audit.task(task['id'], status='qualified', node='complete', harbor_controls=per_task)
-                self.audit.emit('task.qualified', task_id=task['id'], mode=task['mode'])
-            else:
-                self.audit.task(task['id'], status='rejected', node='harbor_failed',
-                                error='Actual Harbor oracle/nop validation failed', harbor_controls=per_task)
-                failed = export_root / task['id']
-                if failed.exists():
-                    quarantine = Path(self.config['run_dir']) / 'rejected_exports' / task['id']
-                    quarantine.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(failed), quarantine)
+            try:
+                binding = inspect_export(export_root / task['id'])
+                if binding['task_id'] != task['id'] or binding['revision'] != int(task.get('revision', 0)):
+                    raise ValueError('Export identity/revision differs from the current audited task')
+                if not binding.get('revision_hash'):
+                    raise ValueError('Export has no immutable revision hash')
+                if task.get('revision_hash') and task['revision_hash'] != binding['revision_hash']:
+                    raise ValueError('Export revision hash differs from the audited task')
+                proof = task.get('harbor_controls', {})
+                if (task['status'] == 'qualified' and matched_controls(proof, task_name=binding['task_name'])
+                    and task.get('harbor_export_binding') == binding):
+                    # Also project separately validated early batches into the
+                    # cumulative file, without rerunning or replacing the proof.
+                    cumulative['per_task'][binding['task_name']] = proof
+                    cumulative['export_bindings'][binding['task_name']] = binding
+                    cumulative['summary_paths'] = sorted(set(cumulative['summary_paths']) |
+                        set(control_summary_paths(proof, binding['task_name'])))
+                    continue
+                selected.append((task, binding))
+            except (OSError, ValueError, TypeError, KeyError) as exc:
+                invalid.append((task, str(exc)))
+        if not selected and not invalid:
+            if cumulative['per_task']:
+                summary_file.write_text(json.dumps(cumulative, indent=2, default=str))
+            return
+
+        batch_id = uuid4().hex[:12]
+        batch_dir = run_dir / 'harbor_batches' / batch_id
+        staging = batch_dir / 'SpreadsheetEval'
+        staging.mkdir(parents=True)
+        jobs = run_dir / 'harbor_jobs' / batch_id
+        jobs.mkdir(parents=True)
+        started, stamp = time.monotonic(), utcnow()
+        node_record = self.audit.record('nodes', {'node': 'harbor_validation', 'node_id': 'harbor_validation',
+            'batch_id': batch_id, 'started_at': stamp, 'status': 'running'})
+        self.audit.emit('node.started', node='harbor_validation', batch_id=batch_id)
+        self.audit.update_run(status='harbor_validation')
+        # Preserve a pre-batch projection as history before current task entries
+        # are replaced or removed. Actual per-batch Harbor summaries stay intact.
+        (batch_dir / 'cumulative_before.json').write_text(json.dumps(cumulative, indent=2, default=str))
+        batch = {'batch_id': batch_id, 'staging': str(staging), 'jobs_dir': str(jobs),
+                 'started_at': stamp, 'task_ids': [task['id'] for task, _ in selected + invalid],
+                 'export_bindings': {binding['task_name']: binding for _, binding in selected},
+                 'summary_path': None, 'complete': False, 'errors': []}
+        staged = []
+
+        def reject(task, reason, proof=None):
+            self.audit.task(task['id'], status='rejected', node='harbor_failed', error=reason,
+                            harbor_controls=proof or {}, harbor_export_binding=None)
+            self.audit.emit('task.rejected', task_id=task['id'], mode=task['mode'],
+                            reason=reason, harbor_batch_id=batch_id)
+            failed = export_root / task['id']
+            if failed.exists():
+                quarantine = run_dir / 'rejected_exports' / (task['id'] + '-harbor-' + batch_id)
+                quarantine.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(failed), quarantine)
+            batch['errors'].append({'task_id': task['id'], 'reason': reason})
+
+        try:
+            for task, error in invalid:
+                reject(task, 'Current Harbor output is missing or invalid: ' + error)
+            for task, binding in selected:
+                name = binding['task_name']
+                cumulative['per_task'].pop(name, None)
+                cumulative['export_bindings'].pop(name, None)
+                if task['status'] == 'qualified':
+                    self.audit.task(task['id'], status='ready', node='harbor_pending',
+                        historical_harbor_controls=task.get('harbor_controls'),
+                        historical_harbor_export_binding=task.get('harbor_export_binding'),
+                        harbor_controls=None, harbor_export_binding=None)
+                try:
+                    shutil.copytree(export_root / task['id'], staging / task['id'])
+                    if inspect_export(staging / task['id']) != binding:
+                        raise ValueError('Staged export changed while it was copied')
+                    staged.append((task, binding))
+                except (OSError, ValueError, TypeError, KeyError) as exc:
+                    reject(task, 'Could not stage the current immutable Harbor output: ' + str(exc))
+            (batch_dir / 'batch_manifest.json').write_text(json.dumps(batch, indent=2, default=str))
+            controls = {'per_task': {}, 'complete': False}
+            if staged:
+                controls = run_controls(staging, jobs, concurrency=self.config['harbor']['concurrency'],
+                    event_callback=lambda event: self.audit.emit(event.get('type', 'harbor.event'),
+                        **{key: value for key, value in event.items() if key != 'type'}))
+                actual_summary = jobs / 'control_summary.json'
+                # run_controls writes this path; a returned in-memory mapping
+                # alone is not represented as a persisted real summary.
+                if actual_summary.is_file():
+                    batch['summary_path'] = str(actual_summary)
+                else:
+                    batch['errors'].append({'reason': 'Harbor did not persist its control summary'})
+            for task, binding in staged:
+                name = binding['task_name']
+                proof = controls.get('per_task', {}).get(name, {})
+                good = matched_controls(proof, task_name=name) and batch['summary_path'] is not None
+                try:
+                    if inspect_export(export_root / task['id']) != binding or inspect_export(staging / task['id']) != binding:
+                        raise ValueError('Export changed while controls were executing')
+                except (OSError, ValueError, TypeError, KeyError) as exc:
+                    good = False
+                    batch['errors'].append({'task_id': task['id'], 'reason': str(exc)})
+                if proof:
+                    cumulative['per_task'][name] = proof
+                    cumulative['export_bindings'][name] = binding
+                if good:
+                    self.audit.task(task['id'], status='qualified', node='complete', error=None,
+                        harbor_controls=proof, harbor_export_binding=binding, harbor_summary_path=batch['summary_path'])
+                    self.audit.emit('task.qualified', task_id=task['id'], mode=task['mode'],
+                        revision=task.get('revision', 0), harbor_batch_id=batch_id,
+                        summary_path=batch['summary_path'])
+                else:
+                    reject(task, 'Actual Harbor oracle/nop validation failed or lacks current-version evidence', proof)
+            batch['complete'] = bool(staged) and not batch['errors'] and controls.get('complete') is True
+        except Exception as exc:
+            batch['errors'].append({'reason': str(exc)})
+            for task, _ in staged:
+                current = next(row for row in self.audit.snapshot()['tasks'] if row['id'] == task['id'])
+                if current.get('status') in {'ready', 'qualified'}:
+                    reject(task, 'Harbor control batch failed: ' + str(exc))
+        finally:
+            duration_ms = round((time.monotonic() - started) * 1000)
+            status = 'completed' if batch['complete'] else 'failed'
+            batch.update(status=status, duration_ms=duration_ms, finished_at=utcnow())
+            cumulative['batches'].append(batch)
+            if batch['summary_path']:
+                cumulative['summary_paths'] = sorted(set(cumulative['summary_paths']) | {batch['summary_path']})
+            cumulative.update(schema_version=2, latest_batch_id=batch_id, complete=batch['complete'])
+            summary_file.write_text(json.dumps(cumulative, indent=2, default=str))
+            (batch_dir / 'batch_manifest.json').write_text(json.dumps(batch, indent=2, default=str))
+            self.audit.update_record('nodes', node_record, {'status': status, 'duration_ms': duration_ms,
+                'summary_path': batch['summary_path'], 'error': batch['errors'] or None})
+            self.audit.emit('node.' + status, node='harbor_validation', batch_id=batch_id,
+                duration_ms=duration_ms, summary_path=batch['summary_path'])
 
     def run(self):
         seeds = self.load_seeds()

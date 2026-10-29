@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tomllib
 from uuid import uuid4
 
 
@@ -19,6 +20,71 @@ def _first_existing(paths):
         if path.is_file():
             return path
     raise FileNotFoundError("Missing task artifact; searched: " + ", ".join(map(str, paths)))
+
+
+def inspect_export(task_dir: str | Path) -> dict:
+    """Verify an immutable export and return its control-proof version binding.
+
+    Names come from task.toml, so staging directory names never change namespace.
+    A manifest does not certify files until all recorded hashes have been checked.
+    """
+    task_dir = Path(task_dir)
+    manifest_file = task_dir / 'export_manifest.json'
+    raw = manifest_file.read_bytes()
+    manifest = json.loads(raw)
+    if not isinstance(manifest, dict):
+        raise ValueError('Export manifest must be a JSON object')
+    metadata, files = manifest.get('metadata'), manifest.get('files')
+    if not isinstance(metadata, dict) or not isinstance(files, dict) or not files:
+        raise ValueError('Export manifest lacks metadata or recorded files')
+    for relative, expected in files.items():
+        relative_path = Path(relative)
+        if relative_path.is_absolute() or '..' in relative_path.parts:
+            raise ValueError('Export manifest contains an unsafe file path')
+        file = task_dir / relative_path
+        if not file.is_file() or hashlib.sha256(file.read_bytes()).hexdigest() != expected:
+            raise ValueError('Export file is missing or differs from manifest: ' + relative)
+    actual = {str(file.relative_to(task_dir)) for file in task_dir.rglob('*')
+              if file.is_file() and file.name != 'export_manifest.json'}
+    if actual != set(files):
+        raise ValueError('Export contains unrecorded or missing files')
+    config = tomllib.loads((task_dir / 'task.toml').read_text())
+    task_name = config.get('task', {}).get('name')
+    if not isinstance(task_name, str) or not task_name:
+        raise ValueError('Harbor task.toml lacks a task name')
+    return {'task_id': manifest.get('task_id'), 'task_name': task_name,
+            'revision': metadata.get('revision'), 'revision_hash': metadata.get('revision_hash'),
+            'export_manifest_sha256': hashlib.sha256(raw).hexdigest()}
+
+
+def matched_controls(proof, *, task_name=None):
+    """Require explicit real rewards for both controls; absent results never pass."""
+    for agent, expected in (('oracle', 1), ('nop', 0)):
+        result = proof.get(agent, {}) if isinstance(proof, dict) else {}
+        reward = result.get('reward')
+        if (result.get('matched') is not True or type(reward) not in (int, float)
+            or reward != expected or result.get('exception_info')
+            or (task_name is not None and result.get('task_name') != task_name)):
+            return False
+    return True
+
+
+def control_summary_paths(proof, task_name):
+    """Locate already persisted summaries supporting an externally bound proof."""
+    paths = set()
+    for agent in ('oracle', 'nop'):
+        result_file = (proof.get(agent) or {}).get('result_file')
+        if not result_file:
+            continue
+        for directory in list(Path(result_file).parents)[:4]:
+            candidate = directory / 'control_summary.json'
+            try:
+                summary = json.loads(candidate.read_text())
+                if summary.get('per_task', {}).get(task_name) == proof:
+                    paths.add(str(candidate))
+            except (OSError, ValueError, AttributeError):
+                continue
+    return sorted(paths)
 
 
 def export_harbor(task_dir: str | Path, export_dir: str | Path, metadata: dict | None = None,
