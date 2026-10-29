@@ -234,6 +234,215 @@
           ]
         }
       ]
+    },
+    {
+      "source_sha256": "ae10ba6ef9c28822113fab418cbdec575a72723d42dc4b0e891bf4069f1d72e8",
+      "reference_name": "ae10ba6ef9_financial-model-spreadsheet.xls",
+      "risks": [
+        {
+          "risk_id": "monthly-other-income-reuses-december-lease-interest",
+          "certainty": "confirmed",
+          "unsafe_regions": [
+            {
+              "sheet": "Monthly P&L",
+              "range": "P24:AA24"
+            }
+          ],
+          "affected_cells": [
+            "Monthly P&L!P24",
+            "Monthly P&L!Q24",
+            "Monthly P&L!R24",
+            "Monthly P&L!S24",
+            "Monthly P&L!T24",
+            "Monthly P&L!U24",
+            "Monthly P&L!V24",
+            "Monthly P&L!W24",
+            "Monthly P&L!X24",
+            "Monthly P&L!Y24",
+            "Monthly P&L!Z24",
+            "Monthly P&L!AA24"
+          ],
+          "claim": "January–December2003 other-income formulas all deduct the December2002 total lease-interest cell S22 instead of the contemporaneous month13–24 total interest S23:S34.",
+          "evidence": [
+            {
+              "cell": "Monthly P&L!D4",
+              "month_header": "2002-01-01"
+            },
+            {
+              "cell": "Monthly P&L!O4",
+              "month_header": "2002-12-01"
+            },
+            {
+              "cell": "Cap Lease!B11",
+              "value": 1
+            },
+            {
+              "cell": "Cap Lease!B22",
+              "value": 12
+            },
+            {
+              "cell": "Cap Lease!S10",
+              "label": "Total Interest"
+            },
+            {
+              "cell": "Cap Lease!B24",
+              "value": 14
+            },
+            {
+              "cell": "Cap Lease!S24",
+              "formula": "=E24+M24",
+              "value": 1677.38831095959
+            },
+            {
+              "scope": "Read-only reviewed fm-ae10ba6ef9c2 revision3 Revenue!K14:O16 task: eleven registered monthly cells Q24:AA24 intersect its full changed-value set; P24 is a confirmed local formula defect but remains a fixed value outside that delta. Only actual region/delta intersections block; no blanket ban on other modules."
+            },
+            {
+              "cell": "Monthly P&L!P24",
+              "month_header": "2003-01-01",
+              "original_formula": "=('Balance Sheet'!P6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S23",
+              "correct_interest_month": 13,
+              "correct_interest_value": 1734.77278023615,
+              "included_in_reviewed_expected_delta": false
+            },
+            {
+              "cell": "Monthly P&L!Q24",
+              "month_header": "2003-02-01",
+              "original_formula": "=('Balance Sheet'!Q6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S24",
+              "correct_interest_month": 14,
+              "correct_interest_value": 1677.38831095959,
+              "included_in_reviewed_expected_delta": true
+            },
+            {
+              "cell": "Monthly P&L!R24",
+              "month_header": "2003-03-01",
+              "original_formula": "=('Balance Sheet'!R6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S25",
+              "correct_interest_month": 15,
+              "correct_interest_value": 1619.42999699027,
+              "included_in_reviewed_expected_delta": true
+            },
+            {
+              "cell": "Monthly P&L!S24",
+              "month_header": "2003-04-01",
+              "original_formula": "=('Balance Sheet'!S6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S26",
+              "correct_interest_month": 16,
+              "correct_interest_value": 1560.89209988126,
+              "included_in_reviewed_expected_delta": true
+            },
+            {
+              "cell": "Monthly P&L!T24",
+              "month_header": "2003-05-01",
+              "original_formula": "=('Balance Sheet'!T6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S27",
+              "correct_interest_month": 17,
+              "correct_interest_value": 1501.76882380116,
+              "included_in_reviewed_expected_delta": true
+            },
+            {
+              "cell": "Monthly P&L!U24",
+              "month_header": "2003-06-01",
+              "original_formula": "=('Balance Sheet'!U6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S28",
+              "correct_interest_month": 18,
+              "correct_interest_value": 1442.05431496025,
+              "included_in_reviewed_expected_delta": true
+            },
+            {
+              "cell": "Monthly P&L!V24",
+              "month_header": "2003-07-01",
+              "original_formula": "=('Balance Sheet'!V6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S29",
+              "correct_interest_month": 19,
+              "correct_interest_value": 1381.74266103094,
+              "included_in_reviewed_expected_delta": true
+            },
+            {
+              "cell": "Monthly P&L!W24",
+              "month_header": "2003-08-01",
+              "original_formula": "=('Balance Sheet'!W6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S30",
+              "correct_interest_month": 20,
+              "correct_interest_value": 1320.82789056234,
+              "included_in_reviewed_expected_delta": true
+            },
+            {
+              "cell": "Monthly P&L!X24",
+              "month_header": "2003-09-01",
+              "original_formula": "=('Balance Sheet'!X6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S31",
+              "correct_interest_month": 21,
+              "correct_interest_value": 1259.30397238904,
+              "included_in_reviewed_expected_delta": true
+            },
+            {
+              "cell": "Monthly P&L!Y24",
+              "month_header": "2003-10-01",
+              "original_formula": "=('Balance Sheet'!Y6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S32",
+              "correct_interest_month": 22,
+              "correct_interest_value": 1197.16481503402,
+              "included_in_reviewed_expected_delta": true
+            },
+            {
+              "cell": "Monthly P&L!Z24",
+              "month_header": "2003-11-01",
+              "original_formula": "=('Balance Sheet'!Z6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S33",
+              "correct_interest_month": 23,
+              "correct_interest_value": 1134.40426610544,
+              "included_in_reviewed_expected_delta": true
+            },
+            {
+              "cell": "Monthly P&L!AA24",
+              "month_header": "2003-12-01",
+              "original_formula": "=('Balance Sheet'!AA6*0.0025)-'Cap Lease'!$S$22",
+              "incorrect_interest_cell": "Cap Lease!S22",
+              "incorrect_interest_month": 12,
+              "incorrect_interest_value": 1280.09685386994,
+              "correct_interest_cell": "Cap Lease!S34",
+              "correct_interest_month": 24,
+              "correct_interest_value": 1071.01611168758,
+              "included_in_reviewed_expected_delta": true
+            }
+          ]
+        }
+      ]
     }
   ]
 }

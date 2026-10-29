@@ -138,3 +138,24 @@ def test_missing_risk_identifier_is_not_a_valid_clear_assessment():
     del incomplete['risk_id']
     result = inspect_unsafe_regions(['Balance Sheet!F9'], [incomplete], sheet_names=['Income', 'Balance Sheet'])
     assert result['state'] == 'unknown' and not result['blocking']
+
+
+def test_financial_model_native_lease_period_fact_blocks_only_confirmed_2003_cells():
+    from pathlib import Path
+    from sheets_factory.checkers.unsafe_regions import evaluate_native_risk_guard
+    import json
+    root = Path(__file__).resolve().parents[1]
+    registry = json.loads((root / 'data/manifests/native_risks.json').read_text())
+    source = next(entry for entry in registry['sources'] if entry.get('reference_name', '').endswith('financial-model-spreadsheet.xls'))
+    risk = next(risk for risk in source['risks'] if risk['risk_id'] == 'monthly-other-income-reuses-december-lease-interest')
+    assert len(risk['affected_cells']) == 12
+    assert risk['affected_cells'][0] == 'Monthly P&L!P24' and risk['affected_cells'][-1] == 'Monthly P&L!AA24'
+    February = evaluate_native_risk_guard(['Revenue!K14', 'Monthly P&L!Q24'], source['source_sha256'],
+        project_root=root, sheet_names=['Revenue', 'Monthly P&L', 'Cap Lease'])
+    assert February['blocking'] and February['issues'][0]['affected_cells'] == ['Monthly P&L!Q24']
+    December_2002 = evaluate_native_risk_guard(['Monthly P&L!O24'], source['source_sha256'],
+        project_root=root, sheet_names=['Monthly P&L', 'Cap Lease'])
+    separate_module = evaluate_native_risk_guard(['Revenue!K14'], source['source_sha256'],
+        project_root=root, sheet_names=['Revenue', 'Monthly P&L', 'Cap Lease'])
+    assert not December_2002['blocking'] and December_2002['state'] == 'clear'
+    assert not separate_module['blocking'] and separate_module['state'] == 'clear'
