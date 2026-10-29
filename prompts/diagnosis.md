@@ -13,7 +13,7 @@ Q07: Identify direct answer copies/private references accessible from public fil
 Q09: Native workbook errors must not contaminate the claimed scope. Unrelated original errors can be preserved under an explicit bounded scope.
 Other program-backed items are assigned only when explicitly provided by the caller.
 
-Return JSON {"assessments":[{"check_id":"Q01","state":"clear","reason":"...","evidence":[]}],"issues":[],"evidence_requests":[]}.
+Return exactly one JSON object with assessments, issues and evidence_requests. Assessments must cover EVERY assigned_check_ids entry exactly once, and no unassigned check. When an output schema is supplied, use its exact assessments object keyed by those assigned IDs. Do not omit Q09 or any other assigned item: if evidence is insufficient, return unknown with the specific missing evidence rather than leaving the item out.
 Issue objects, if any, must identify problem_id, certainty confirmed/suspected, severity, claim and concrete evidence. Treat a successful independent reconstruction as evidence of attainability, not a reason to skip ambiguity/leak checks. This iteration explicitly defers difficulty only, not correctness or public-information sufficiency.
 
 
