@@ -35,3 +35,5 @@ TASK has:
 - involved_sheets: actual sheets necessary for the task, including dependencies.
 
 Do not return runnable arbitrary code. Approved edits are compiled by a restricted patch executor. If a mode cannot meet these conditions, return null and explain in source_assessment. JSON only.
+
+Reference scope includes the complete affected value closure, including downstream outputs. A correct target formula is insufficient if changing it also changes a native defective profit, cash-flow, tax or other result. A verbal scope exclusion cannot remove those changed cells from the strict value verifier. Inspect downstream units and business identities as well as upstream dependencies. Because baseline formula repair is unsupported, choose roots whose complete affected closure is evidence-supported, or reject that mode. State concrete cells/ranges for each known business defect in source_assessment.known_risks.
