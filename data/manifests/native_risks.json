@@ -484,6 +484,70 @@
               "included_in_reviewed_expected_delta": true
             }
           ]
+        },
+        {
+          "risk_id": "balance-sheet-accumulated-depreciation-omits-second-tranche",
+          "certainty": "confirmed",
+          "unsafe_regions": [
+            {
+              "sheet": "Balance Sheet",
+              "range": "Q12:AB12"
+            },
+            {
+              "sheet": "Bal Sheet for Offer Memo",
+              "range": "Q12:AB12"
+            }
+          ],
+          "claim": "January–December2003 accumulated depreciation uses only first-tranche monthly depreciation times elapsed months, omitting the second server tranche that begins depreciating at month13.",
+          "evidence": [
+            {
+              "cell": "Cap Lease!H5",
+              "formula": "=-PMT(0,H4,E3)",
+              "first_tranche_present_value": 175000,
+              "term_months": 36,
+              "monthly_depreciation": 4861.11111111111
+            },
+            {
+              "cell": "Cap Lease!P5",
+              "formula": "=-PMT(0,P4,M3)",
+              "second_tranche_present_value": 50000,
+              "monthly_depreciation": 1388.88888888889
+            },
+            {
+              "cell": "Cap Lease!U23",
+              "formula": "=$H$5+$P$5",
+              "value": 6250,
+              "meaning": "Combined monthly depreciation from month13, not second tranche alone"
+            },
+            {
+              "cell": "Balance Sheet!Q3",
+              "value": "2003-01-01"
+            },
+            {
+              "cells": [
+                "Balance Sheet!Q12",
+                "Bal Sheet for Offer Memo!Q12"
+              ],
+              "formula": "='Cap Lease'!$H$5*'Cap Lease'!$I23",
+              "original_value": 63194.4444444444,
+              "independent_expected": 64583.3333333333,
+              "method": "12 first-tranche monthly charges through December2002 plus the month13 combined charge"
+            },
+            {
+              "cells": [
+                "Balance Sheet!AB12",
+                "Bal Sheet for Offer Memo!AB12"
+              ],
+              "formula": "='Cap Lease'!$H$5*'Cap Lease'!$I34",
+              "original_value": 116666.666666667,
+              "independent_expected": 133333.333333333,
+              "method": "24 first-tranche charges plus12 second-tranche charges"
+            },
+            {
+              "scope": "The24 evidenced accumulated-depreciation cells intersect fm-ae10ba6ef9c2-v2 revision000 full553-cell changed-value set. Register these formulas themselves only; no blanket ancestry/descendant ban. Financing timing/deficit plug is a separate suspected observation and is not used for this confirmed block.",
+              "baseline_changed": false
+            }
+          ]
         }
       ]
     }

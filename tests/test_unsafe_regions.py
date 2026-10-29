@@ -150,12 +150,30 @@ def test_financial_model_native_lease_period_fact_blocks_only_confirmed_2003_cel
     risk = next(risk for risk in source['risks'] if risk['risk_id'] == 'monthly-other-income-reuses-december-lease-interest')
     assert len(risk['affected_cells']) == 12
     assert risk['affected_cells'][0] == 'Monthly P&L!P24' and risk['affected_cells'][-1] == 'Monthly P&L!AA24'
+    sheets = ['Revenue', 'Monthly P&L', 'Cap Lease', 'Balance Sheet', 'Bal Sheet for Offer Memo']
     February = evaluate_native_risk_guard(['Revenue!K14', 'Monthly P&L!Q24'], source['source_sha256'],
-        project_root=root, sheet_names=['Revenue', 'Monthly P&L', 'Cap Lease'])
+        project_root=root, sheet_names=sheets)
     assert February['blocking'] and February['issues'][0]['affected_cells'] == ['Monthly P&L!Q24']
     December_2002 = evaluate_native_risk_guard(['Monthly P&L!O24'], source['source_sha256'],
-        project_root=root, sheet_names=['Monthly P&L', 'Cap Lease'])
+        project_root=root, sheet_names=sheets)
     separate_module = evaluate_native_risk_guard(['Revenue!K14'], source['source_sha256'],
-        project_root=root, sheet_names=['Revenue', 'Monthly P&L', 'Cap Lease'])
+        project_root=root, sheet_names=sheets)
     assert not December_2002['blocking'] and December_2002['state'] == 'clear'
     assert not separate_module['blocking'] and separate_module['state'] == 'clear'
+
+
+def test_second_lease_tranche_fact_blocks_changed_2003_accumulation_only():
+    from pathlib import Path
+    from sheets_factory.checkers.unsafe_regions import evaluate_native_risk_guard
+    import json
+    root = Path(__file__).resolve().parents[1]
+    registry = json.loads((root / 'data/manifests/native_risks.json').read_text())
+    source = next(entry for entry in registry['sources'] if entry.get('reference_name', '').endswith('financial-model-spreadsheet.xls'))
+    sheets = ['Revenue', 'Monthly P&L', 'Cap Lease', 'Balance Sheet', 'Bal Sheet for Offer Memo', 'Annual P&L ']
+    unsafe = evaluate_native_risk_guard(['Cap Lease!H5', 'Balance Sheet!Q12', 'Bal Sheet for Offer Memo!AB12'],
+        source['source_sha256'], project_root=root, sheet_names=sheets)
+    assert unsafe['blocking'] and unsafe['state'] == 'flagged'
+    assert unsafe['issues'][0]['affected_cells'] == ['Bal Sheet for Offer Memo!AB12', 'Balance Sheet!Q12']
+    separate = evaluate_native_risk_guard(['Annual P&L !H11', 'Balance Sheet!P12'],
+        source['source_sha256'], project_root=root, sheet_names=sheets)
+    assert separate['state'] == 'clear' and not separate['blocking']
