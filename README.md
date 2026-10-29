@@ -45,6 +45,28 @@ EUSES 下载与候选筛选可单独执行：
 
 统计分开记录源使用数、有产出源数、候选数和最终题量。源转化率、候选转化率及每源产量各自说明分母。Token 来自实际 CLI 事件；费用没有可靠证据时显示未知。
 
+## 打包交付
+
+发布脚本只从当前实际 qualified 且报告核验通过的集合选题，再复核原始 oracle/nop 结果、文件哈希、诊断和恢复证据。每类数量不足时严格拒绝生成发布包；命令示例不表示当前已经达到目标。
+
+```bash
+# 第一批：Financial Modeling 10 道 + Debugging 10 道
+.venv312/bin/python scripts/package_release.py --run outputs/runs/<run_id> --per-mode 10
+
+# 完整批次：两类各 20 道，另建新发布，不覆盖第一批
+.venv312/bin/python scripts/package_release.py --run outputs/runs/<run_id> --per-mode 20
+```
+
+命令会输出新发布目录、`SpreadsheetEval.tar.gz` 和 SHA256 的绝对路径。解压后，先在发布目录准备运行镜像，再执行 Harbor 控制：
+
+```bash
+./prepare_runtime.sh
+harbor run --path SpreadsheetEval --agent oracle
+harbor run --path SpreadsheetEval --agent nop
+```
+
+发布包附带白名单内的最小 `runtime/` 构建上下文、准备脚本和操作说明；清单记录本次运行实际使用的镜像 ID、LibreOffice 版本和 recipe 文件哈希。默认不附大型镜像；apt 间接依赖与仓库可能变化，重新构建不保证得到原镜像 ID。私有诊断和请求日志不进入发布包。
+
 ## 测试
 
 ```bash
