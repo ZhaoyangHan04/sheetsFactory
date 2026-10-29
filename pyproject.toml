@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sheets-factory"
+version = "0.1.0"
+description = "Auditable spreadsheet task construction from real Excel seeds"
+requires-python = ">=3.12"
+dependencies = ["openpyxl>=3.1,<4", "xlrd>=2,<3", "PyYAML>=6,<7", "jsonschema>=4,<5", "requests>=2,<3"]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "harbor>=0.19,<1"]
+
+[project.scripts]
+sheets-factory = "sheets_factory.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
