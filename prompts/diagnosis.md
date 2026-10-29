@@ -15,3 +15,6 @@ Other program-backed items are assigned only when explicitly provided by the cal
 
 Return JSON {"assessments":[{"check_id":"Q01","state":"clear","reason":"...","evidence":[]}],"issues":[],"evidence_requests":[]}.
 Issue objects, if any, must identify problem_id, certainty confirmed/suspected, severity, claim and concrete evidence. Treat a successful independent reconstruction as evidence of attainability, not a reason to skip ambiguity/leak checks. This iteration explicitly defers difficulty only, not correctness or public-information sufficiency.
+
+
+Runtime contract clarification: final Harbor tasks actually mount the public workbook at /app/input.xlsx and require /app/output.xlsx. During development, inspectors and recovery compilers receive the SAME public file in a temporary /workspace directory. This diagnostic fixture path is not the delivered task runtime. Evaluate instruction/output paths against the final /app contract, not the temporary directory used for inspection. A difference between /workspace inspection paths and /app task paths by itself is not Q03; contradictory paths within the public task or nonexistent referenced worksheet/range still are Q03.

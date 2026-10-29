@@ -96,7 +96,7 @@ class CodexCLI:
             key = self._path("api_key_file", ".secrets/api_key").read_text().strip()
         if not key or "\n" in key or "\r" in key:
             raise ValueError("API credential is missing or malformed")
-        base = self.config.get("base_url")
+        base = os.environ.get("SHEETS_FACTORY_BASE_URL") or self.config.get("base_url")
         if not base:
             metadata = json.loads(self._path("endpoint_metadata_file", ".secrets/metadata.json").read_text())
             urls = metadata.get("urls", [])

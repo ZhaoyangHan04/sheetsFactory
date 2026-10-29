@@ -49,7 +49,7 @@ EUSES 下载与候选筛选可单独执行：
 
 ```bash
 ./scripts/test.sh -q
-RUN_LO_TESTS=1 ./scripts/test.sh tests/test_workbook.py -q
+SF_TEST_LIBREOFFICE=1 ./scripts/test.sh tests/test_workbook.py -q
 ```
 
 测试报告必须区分模拟 Provider、真实 Codex、LibreOffice 与 Harbor。部署与评测约束见 [docs/architecture.md](docs/architecture.md)、[docs/evaluation_requirements.md](docs/evaluation_requirements.md)、[docs/review_notes.md](docs/review_notes.md)。代码按功能和测试里程碑分批提交。
