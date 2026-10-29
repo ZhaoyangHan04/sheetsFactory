@@ -1,0 +1,10 @@
+# Continuation patch: pass together with --resume RUN_ID.
+# Models, reasoning effort, target quotas and repair budgets stay unchanged.
+run:
+  max_parallel_sources: 8
+  max_candidates_per_seed: 5
+  variant_modes:
+    - financial_modeling
+    - debugging
+agents:
+  max_parallel_calls: 8
