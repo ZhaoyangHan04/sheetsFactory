@@ -1,0 +1,7246 @@
+{
+  "dataset": "EUSES financial",
+  "source_record": "https://zenodo.org/records/581673",
+  "download_url": "https://zenodo.org/records/581673/files/financial.zip?download=1",
+  "archive_sha256": "fad3c1cbb6268be6296657a22732d7dda98014282606df1c31a9d275fe0f6001",
+  "archive_bytes": 22406926,
+  "unique_workbooks_inspected": 720,
+  "eligible_count": 99,
+  "selected_count": 70,
+  "selection": {
+    "min_nonempty_sheets": 4,
+    "min_formulas": 30,
+    "max_files": 70,
+    "ranking": "financial_score_v1"
+  },
+  "selected": [
+    {
+      "archive_member": "financial/processed/financial-model-spreadsheet.xls",
+      "sha256": "ae10ba6ef9c28822113fab418cbdec575a72723d42dc4b0e891bf4069f1d72e8",
+      "sheet_count": 17,
+      "nonempty_sheet_count": 17,
+      "formula_count": 2871,
+      "sheets": [
+        {
+          "name": "Overview",
+          "rows": 34,
+          "columns": 1,
+          "nonempty": 24
+        },
+        {
+          "name": "Employees",
+          "rows": 120,
+          "columns": 7,
+          "nonempty": 196
+        },
+        {
+          "name": "Equipment Expense",
+          "rows": 46,
+          "columns": 10,
+          "nonempty": 109
+        },
+        {
+          "name": "Cap Lease",
+          "rows": 58,
+          "columns": 21,
+          "nonempty": 636
+        },
+        {
+          "name": "Service Expense",
+          "rows": 46,
+          "columns": 6,
+          "nonempty": 137
+        },
+        {
+          "name": "Pipeline assumptions",
+          "rows": 18,
+          "columns": 5,
+          "nonempty": 37
+        },
+        {
+          "name": "Pipeline",
+          "rows": 34,
+          "columns": 11,
+          "nonempty": 270
+        },
+        {
+          "name": "Closed Sales",
+          "rows": 38,
+          "columns": 14,
+          "nonempty": 213
+        },
+        {
+          "name": "Quota",
+          "rows": 53,
+          "columns": 5,
+          "nonempty": 107
+        },
+        {
+          "name": "Revenue",
+          "rows": 34,
+          "columns": 17,
+          "nonempty": 169
+        },
+        {
+          "name": "Monthly P&L",
+          "rows": 27,
+          "columns": 27,
+          "nonempty": 476
+        },
+        {
+          "name": "Quarterly P&L",
+          "rows": 27,
+          "columns": 14,
+          "nonempty": 211
+        },
+        {
+          "name": "Annual P&L ",
+          "rows": 27,
+          "columns": 17,
+          "nonempty": 144
+        },
+        {
+          "name": "Balance Sheet",
+          "rows": 37,
+          "columns": 28,
+          "nonempty": 592
+        },
+        {
+          "name": "Stmt of CF",
+          "rows": 29,
+          "columns": 28,
+          "nonempty": 383
+        },
+        {
+          "name": "Cap Table",
+          "rows": 20,
+          "columns": 6,
+          "nonempty": 51
+        },
+        {
+          "name": "Bal Sheet for Offer Memo",
+          "rows": 36,
+          "columns": 28,
+          "nonempty": 592
+        }
+      ],
+      "rank_score": 147.742,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/ae10ba6ef9_financial-model-spreadsheet.xls"
+    },
+    {
+      "archive_member": "financial/processed/clienttemplate.xls",
+      "sha256": "ed2f5f2d4879a68bb40065e5c8596aa177e1762194ec08c76986a429a8ae190f",
+      "sheet_count": 13,
+      "nonempty_sheet_count": 13,
+      "formula_count": 920,
+      "sheets": [
+        {
+          "name": "Welcome!",
+          "rows": 39,
+          "columns": 2,
+          "nonempty": 26
+        },
+        {
+          "name": "Required Funds",
+          "rows": 24,
+          "columns": 4,
+          "nonempty": 50
+        },
+        {
+          "name": "Sources of Capital",
+          "rows": 34,
+          "columns": 4,
+          "nonempty": 39
+        },
+        {
+          "name": "Monthly Budget",
+          "rows": 36,
+          "columns": 7,
+          "nonempty": 95
+        },
+        {
+          "name": "Gross Margins",
+          "rows": 39,
+          "columns": 4,
+          "nonempty": 57
+        },
+        {
+          "name": "Sales Forecast",
+          "rows": 22,
+          "columns": 4,
+          "nonempty": 63
+        },
+        {
+          "name": "Cash Receipts and Disbursements",
+          "rows": 31,
+          "columns": 2,
+          "nonempty": 42
+        },
+        {
+          "name": "Current Balance Sheet",
+          "rows": 44,
+          "columns": 3,
+          "nonempty": 57
+        },
+        {
+          "name": "Income Statement",
+          "rows": 54,
+          "columns": 16,
+          "nonempty": 546
+        },
+        {
+          "name": "Cash Flow Statement",
+          "rows": 40,
+          "columns": 15,
+          "nonempty": 223
+        },
+        {
+          "name": "Balance Sheet",
+          "rows": 46,
+          "columns": 7,
+          "nonempty": 84
+        },
+        {
+          "name": "Break-Even",
+          "rows": 15,
+          "columns": 2,
+          "nonempty": 14
+        },
+        {
+          "name": "Financial Diagnostics",
+          "rows": 47,
+          "columns": 5,
+          "nonempty": 73
+        }
+      ],
+      "rank_score": 138.84,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/ed2f5f2d48_clienttemplate.xls"
+    },
+    {
+      "archive_member": "financial/processed/financialsample.xls",
+      "sha256": "2f40e71a6713913fd94e77db746771cef1b2f8073f83789065982b77fc831fc2",
+      "sheet_count": 4,
+      "nonempty_sheet_count": 4,
+      "formula_count": 79,
+      "sheets": [
+        {
+          "name": "Income Statement",
+          "rows": 37,
+          "columns": 4,
+          "nonempty": 38
+        },
+        {
+          "name": "Cash Flow Forecast",
+          "rows": 46,
+          "columns": 15,
+          "nonempty": 203
+        },
+        {
+          "name": "Balance Sheet",
+          "rows": 27,
+          "columns": 7,
+          "nonempty": 38
+        },
+        {
+          "name": "Start-Up Costs",
+          "rows": 23,
+          "columns": 2,
+          "nonempty": 27
+        }
+      ],
+      "rank_score": 114.158,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/2f40e71a67_financialsample.xls"
+    },
+    {
+      "archive_member": "financial/processed/my_financial_model.xls",
+      "sha256": "bbcce4d0b5921ebc42fb5d2772293e35a114c784c74e184a38c3d94eb767fca6",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 656,
+      "sheets": [
+        {
+          "name": "Income",
+          "rows": 36,
+          "columns": 16,
+          "nonempty": 364
+        },
+        {
+          "name": "Balance Sheet",
+          "rows": 22,
+          "columns": 16,
+          "nonempty": 180
+        },
+        {
+          "name": "Cashflow",
+          "rows": 13,
+          "columns": 15,
+          "nonempty": 64
+        },
+        {
+          "name": "Depreciation",
+          "rows": 11,
+          "columns": 16,
+          "nonempty": 67
+        },
+        {
+          "name": "simple income",
+          "rows": 16,
+          "columns": 16,
+          "nonempty": 140
+        },
+        {
+          "name": "RoadMap",
+          "rows": 25,
+          "columns": 10,
+          "nonempty": 39
+        }
+      ],
+      "rank_score": 87.312,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/bbcce4d0b5_my_financial_model.xls"
+    },
+    {
+      "archive_member": "financial/processed/master.xls",
+      "sha256": "803e9b27ac59453a7dbd7ec507e275a062f5fc18cdf6ec4a9cf44722f1232cb9",
+      "sheet_count": 7,
+      "nonempty_sheet_count": 7,
+      "formula_count": 1633,
+      "sheets": [
+        {
+          "name": "Instructions",
+          "rows": 44,
+          "columns": 3,
+          "nonempty": 30
+        },
+        {
+          "name": "Data Balance Sheet",
+          "rows": 56,
+          "columns": 8,
+          "nonempty": 111
+        },
+        {
+          "name": "Data Income Statement",
+          "rows": 32,
+          "columns": 8,
+          "nonempty": 83
+        },
+        {
+          "name": "Data Share Info",
+          "rows": 9,
+          "columns": 8,
+          "nonempty": 15
+        },
+        {
+          "name": "Analysis Balance Sheet",
+          "rows": 108,
+          "columns": 8,
+          "nonempty": 740
+        },
+        {
+          "name": "Analysis Income Statement",
+          "rows": 63,
+          "columns": 8,
+          "nonempty": 435
+        },
+        {
+          "name": "Analysis Ratios",
+          "rows": 347,
+          "columns": 8,
+          "nonempty": 452
+        }
+      ],
+      "rank_score": 85.266,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/803e9b27ac_master.xls"
+    },
+    {
+      "archive_member": "financial/processed/Financial-Projections.xls",
+      "sha256": "450d6dd5a8de3370e11fa7651ec1606a153a4a0bc03ae269cd7d9ec77df427cd",
+      "sheet_count": 7,
+      "nonempty_sheet_count": 7,
+      "formula_count": 3676,
+      "sheets": [
+        {
+          "name": "Payroll",
+          "rows": 75,
+          "columns": 40,
+          "nonempty": 2406
+        },
+        {
+          "name": "Capital Exp",
+          "rows": 33,
+          "columns": 40,
+          "nonempty": 549
+        },
+        {
+          "name": "Expenses",
+          "rows": 33,
+          "columns": 39,
+          "nonempty": 766
+        },
+        {
+          "name": "Rev-projections",
+          "rows": 71,
+          "columns": 39,
+          "nonempty": 1017
+        },
+        {
+          "name": "Rev-Quarterly",
+          "rows": 14,
+          "columns": 3,
+          "nonempty": 26
+        },
+        {
+          "name": "Cost-Quarterly",
+          "rows": 14,
+          "columns": 7,
+          "nonempty": 69
+        },
+        {
+          "name": "Cost vs. Rev",
+          "rows": 14,
+          "columns": 8,
+          "nonempty": 82
+        }
+      ],
+      "rank_score": 79.352,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/450d6dd5a8_Financial-Projections.xls"
+    },
+    {
+      "archive_member": "financial/processed/Annexure%20(Audited%2#A7E05.xls",
+      "sha256": "e2eb98478b194be2df0ad3ff6a23d1d10d7b8fcef116f9cb6e88d31ad009cd9a",
+      "sheet_count": 12,
+      "nonempty_sheet_count": 12,
+      "formula_count": 1022,
+      "sheets": [
+        {
+          "name": "INCOME STATEMENT",
+          "rows": 43,
+          "columns": 6,
+          "nonempty": 120
+        },
+        {
+          "name": "BALANCE SHEET",
+          "rows": 32,
+          "columns": 4,
+          "nonempty": 65
+        },
+        {
+          "name": "CHANGES IN EQUITY",
+          "rows": 20,
+          "columns": 4,
+          "nonempty": 34
+        },
+        {
+          "name": "CASH FLOW STATEMENT",
+          "rows": 22,
+          "columns": 6,
+          "nonempty": 46
+        },
+        {
+          "name": "NOTES TO FS",
+          "rows": 373,
+          "columns": 10,
+          "nonempty": 822
+        },
+        {
+          "name": "DISCLOSURE NOTES",
+          "rows": 91,
+          "columns": 7,
+          "nonempty": 197
+        },
+        {
+          "name": "ANNEXURE 1D",
+          "rows": 24,
+          "columns": 11,
+          "nonempty": 131
+        },
+        {
+          "name": "ANNEXURE 2A",
+          "rows": 21,
+          "columns": 5,
+          "nonempty": 43
+        },
+        {
+          "name": "ANNEXURE 3",
+          "rows": 29,
+          "columns": 9,
+          "nonempty": 141
+        },
+        {
+          "name": "ANNEXURE 4 ",
+          "rows": 29,
+          "columns": 7,
+          "nonempty": 124
+        },
+        {
+          "name": "APPROPRIATION STATEMENT",
+          "rows": 411,
+          "columns": 12,
+          "nonempty": 2490
+        },
+        {
+          "name": "NOTES TO APPR. STATEMENT",
+          "rows": 36,
+          "columns": 8,
+          "nonempty": 39
+        }
+      ],
+      "rank_score": 79.044,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/e2eb98478b_Annexure_20_Audited_2_A7E05.xls"
+    },
+    {
+      "archive_member": "financial/processed/Consolidated_Restatem#A7F7B.xls",
+      "sha256": "f1e50f8a901ee1b4fe25eab75ae037af86a73a623289528dfa19d097f38ee369",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 300,
+      "sheets": [
+        {
+          "name": "Key Financial Data",
+          "rows": 250,
+          "columns": 6,
+          "nonempty": 816
+        },
+        {
+          "name": "Income Statement",
+          "rows": 146,
+          "columns": 11,
+          "nonempty": 531
+        },
+        {
+          "name": "Items Included",
+          "rows": 103,
+          "columns": 10,
+          "nonempty": 451
+        },
+        {
+          "name": "Balance Sheet",
+          "rows": 36,
+          "columns": 8,
+          "nonempty": 170
+        },
+        {
+          "name": "Cash Flow",
+          "rows": 61,
+          "columns": 6,
+          "nonempty": 200
+        },
+        {
+          "name": "Global Biotech Acres",
+          "rows": 35,
+          "columns": 10,
+          "nonempty": 228
+        }
+      ],
+      "rank_score": 71.6,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/f1e50f8a90_Consolidated_Restatem_A7F7B.xls"
+    },
+    {
+      "archive_member": "financial/processed/2001financialstatements.xls",
+      "sha256": "656b82f77b8e3e0fc9a120641d865af2465cbe6947c3986f4da6861d65e3ebd5",
+      "sheet_count": 4,
+      "nonempty_sheet_count": 4,
+      "formula_count": 120,
+      "sheets": [
+        {
+          "name": "Balance Sheets",
+          "rows": 64,
+          "columns": 6,
+          "nonempty": 129
+        },
+        {
+          "name": "Income Statements",
+          "rows": 44,
+          "columns": 5,
+          "nonempty": 107
+        },
+        {
+          "name": "Shareholders' Equity",
+          "rows": 54,
+          "columns": 10,
+          "nonempty": 174
+        },
+        {
+          "name": "Cash Flows",
+          "rows": 61,
+          "columns": 6,
+          "nonempty": 174
+        }
+      ],
+      "rank_score": 69.24,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/656b82f77b_2001financialstatements.xls"
+    },
+    {
+      "archive_member": "financial/processed/FinancialCompilationDec03.xls",
+      "sha256": "b4e22946d14e267e8f632932a7ba91f6978325c0e5c1831caac6c1057b200bca",
+      "sheet_count": 4,
+      "nonempty_sheet_count": 4,
+      "formula_count": 246,
+      "sheets": [
+        {
+          "name": "Balance Sheet",
+          "rows": 49,
+          "columns": 3,
+          "nonempty": 40
+        },
+        {
+          "name": "Income Statement",
+          "rows": 59,
+          "columns": 6,
+          "nonempty": 89
+        },
+        {
+          "name": "Actusl vs Budget",
+          "rows": 74,
+          "columns": 8,
+          "nonempty": 378
+        },
+        {
+          "name": "Convention",
+          "rows": 70,
+          "columns": 8,
+          "nonempty": 181
+        }
+      ],
+      "rank_score": 59.492,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b4e22946d1_FinancialCompilationDec03.xls"
+    },
+    {
+      "archive_member": "financial/processed/Attachment_7_Financia#A7EB8.xls",
+      "sha256": "88748614820e176bcdbccd7d424d6df1c5e6efb186e70291c5269a179ef12279",
+      "sheet_count": 4,
+      "nonempty_sheet_count": 4,
+      "formula_count": 329,
+      "sheets": [
+        {
+          "name": "Assumptions for IS",
+          "rows": 27,
+          "columns": 5,
+          "nonempty": 84
+        },
+        {
+          "name": "Income Statement 90%",
+          "rows": 27,
+          "columns": 9,
+          "nonempty": 126
+        },
+        {
+          "name": "Income Statement 50% ",
+          "rows": 27,
+          "columns": 9,
+          "nonempty": 126
+        },
+        {
+          "name": "Income Statement 10%",
+          "rows": 27,
+          "columns": 9,
+          "nonempty": 126
+        }
+      ],
+      "rank_score": 54.658,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/8874861482_Attachment_7_Financia_A7EB8.xls"
+    },
+    {
+      "archive_member": "financial/processed/FinancialSchedules2Q03.xls",
+      "sha256": "29fffa886ee00b3e83f64c604bc073040030d6c89d77d06d054ed594cd5823ea",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 208,
+      "sheets": [
+        {
+          "name": "Balance Sheet",
+          "rows": 45,
+          "columns": 10,
+          "nonempty": 89
+        },
+        {
+          "name": "2nd QTR 03",
+          "rows": 51,
+          "columns": 22,
+          "nonempty": 203
+        },
+        {
+          "name": "YTD 03",
+          "rows": 51,
+          "columns": 22,
+          "nonempty": 206
+        },
+        {
+          "name": "2nd QTR 02",
+          "rows": 51,
+          "columns": 10,
+          "nonempty": 116
+        },
+        {
+          "name": "YTD 02",
+          "rows": 51,
+          "columns": 10,
+          "nonempty": 116
+        },
+        {
+          "name": "Cash Flow",
+          "rows": 48,
+          "columns": 11,
+          "nonempty": 93
+        }
+      ],
+      "rank_score": 51.416,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/29fffa886e_FinancialSchedules2Q03.xls"
+    },
+    {
+      "archive_member": "financial/processed/sampleReport.xls",
+      "sha256": "417a12e7fb9f49ca6543cc5e127e43ed1b011f9dcc778f97beb836921fcf1481",
+      "sheet_count": 5,
+      "nonempty_sheet_count": 5,
+      "formula_count": 63,
+      "sheets": [
+        {
+          "name": "OP_EXP",
+          "rows": 72,
+          "columns": 12,
+          "nonempty": 89
+        },
+        {
+          "name": "Bal Sht",
+          "rows": 57,
+          "columns": 12,
+          "nonempty": 66
+        },
+        {
+          "name": "Income",
+          "rows": 65,
+          "columns": 12,
+          "nonempty": 99
+        },
+        {
+          "name": "Stkhold.Equity",
+          "rows": 27,
+          "columns": 15,
+          "nonempty": 34
+        },
+        {
+          "name": "Cash Flows",
+          "rows": 63,
+          "columns": 12,
+          "nonempty": 81
+        }
+      ],
+      "rank_score": 50.126,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/417a12e7fb_sampleReport.xls"
+    },
+    {
+      "archive_member": "financial/processed/cds_fncl.xls",
+      "sha256": "9ab11b226c290cd983edd563e7de8faae9ff8dc935a24d965aa7eeb5812f899b",
+      "sheet_count": 9,
+      "nonempty_sheet_count": 7,
+      "formula_count": 79,
+      "sheets": [
+        {
+          "name": "00 Bal. Sheet",
+          "rows": 68,
+          "columns": 8,
+          "nonempty": 147
+        },
+        {
+          "name": "01 Bal. Sheet",
+          "rows": 68,
+          "columns": 8,
+          "nonempty": 147
+        },
+        {
+          "name": "00 Rev. Proj.",
+          "rows": 80,
+          "columns": 27,
+          "nonempty": 676
+        },
+        {
+          "name": "01 Rev. Proj.",
+          "rows": 72,
+          "columns": 27,
+          "nonempty": 670
+        },
+        {
+          "name": "00 Rev.Graph",
+          "rows": 0,
+          "columns": 0,
+          "nonempty": 0
+        },
+        {
+          "name": "01 Rev. Graph",
+          "rows": 0,
+          "columns": 0,
+          "nonempty": 0
+        },
+        {
+          "name": "Enrollment Rev. Proj.",
+          "rows": 34,
+          "columns": 18,
+          "nonempty": 217
+        },
+        {
+          "name": "00 Cash Flow Budget",
+          "rows": 53,
+          "columns": 28,
+          "nonempty": 455
+        },
+        {
+          "name": "01 Cash Flow Budget",
+          "rows": 47,
+          "columns": 27,
+          "nonempty": 441
+        }
+      ],
+      "rank_score": 47.158,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/9ab11b226c_cds_fncl.xls"
+    },
+    {
+      "archive_member": "financial/processed/Table%201%20Excel%20F#A81A2.xls",
+      "sha256": "b8e4c51882af1ef83cb47ed09496829e90c9a79160797788d7173f69b5efe667",
+      "sheet_count": 5,
+      "nonempty_sheet_count": 5,
+      "formula_count": 629,
+      "sheets": [
+        {
+          "name": "Income Statement",
+          "rows": 59,
+          "columns": 8,
+          "nonempty": 159
+        },
+        {
+          "name": "Balance Sheet",
+          "rows": 46,
+          "columns": 12,
+          "nonempty": 206
+        },
+        {
+          "name": "Portfolio Quality",
+          "rows": 69,
+          "columns": 12,
+          "nonempty": 297
+        },
+        {
+          "name": "Macroeconomic Indicators",
+          "rows": 15,
+          "columns": 12,
+          "nonempty": 28
+        },
+        {
+          "name": "Financial Performance Ratios",
+          "rows": 49,
+          "columns": 12,
+          "nonempty": 371
+        }
+      ],
+      "rank_score": 46.258,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b8e4c51882_Table_201_20Excel_20F_A81A2.xls"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Insights%#A809F.xls",
+      "sha256": "39b6457ef2527937ef0be1d7f7a544fa7879f2f8ff0f4f863492cee9490aa42a",
+      "sheet_count": 20,
+      "nonempty_sheet_count": 19,
+      "formula_count": 1879,
+      "sheets": [
+        {
+          "name": "硸硸卸䱕協⁓楤",
+          "rows": 0,
+          "columns": 0,
+          "nonempty": 0
+        },
+        {
+          "name": "SELECTED DATA",
+          "rows": 40,
+          "columns": 11,
+          "nonempty": 247
+        },
+        {
+          "name": "PER SHARE STATISTIC",
+          "rows": 26,
+          "columns": 6,
+          "nonempty": 69
+        },
+        {
+          "name": "QUARTER-END INFORMATION",
+          "rows": 31,
+          "columns": 9,
+          "nonempty": 186
+        },
+        {
+          "name": "STATEMENTS OF CONDITION",
+          "rows": 54,
+          "columns": 9,
+          "nonempty": 274
+        },
+        {
+          "name": "CONDENSED CONSOLIDATED STATEMEN",
+          "rows": 23,
+          "columns": 33,
+          "nonempty": 624
+        },
+        {
+          "name": "ANALYSIS OF NONINTEREST",
+          "rows": 22,
+          "columns": 11,
+          "nonempty": 189
+        },
+        {
+          "name": "OTHEXP",
+          "rows": 30,
+          "columns": 22,
+          "nonempty": 277
+        },
+        {
+          "name": "AVGQTR",
+          "rows": 58,
+          "columns": 8,
+          "nonempty": 172
+        },
+        {
+          "name": "AVGYTD",
+          "rows": 58,
+          "columns": 11,
+          "nonempty": 240
+        },
+        {
+          "name": "NET INTEREST INCOME ANALYSIS",
+          "rows": 24,
+          "columns": 21,
+          "nonempty": 258
+        },
+        {
+          "name": "LOAN_YLD_03",
+          "rows": 27,
+          "columns": 16,
+          "nonempty": 280
+        },
+        {
+          "name": "LOAN_YLD_02",
+          "rows": 27,
+          "columns": 16,
+          "nonempty": 280
+        },
+        {
+          "name": "LOAN_YLD_01",
+          "rows": 28,
+          "columns": 16,
+          "nonempty": 296
+        },
+        {
+          "name": "LOAN_YLD_00",
+          "rows": 28,
+          "columns": 16,
+          "nonempty": 296
+        },
+        {
+          "name": "PERIOD-END LOAN PORFOLIO ANALYS",
+          "rows": 28,
+          "columns": 26,
+          "nonempty": 503
+        },
+        {
+          "name": "COMPONENTS OF NONPERFORMING ",
+          "rows": 44,
+          "columns": 26,
+          "nonempty": 665
+        },
+        {
+          "name": "ALLOWANCE FOR CREDIT LOSSES",
+          "rows": 27,
+          "columns": 13,
+          "nonempty": 254
+        },
+        {
+          "name": "FEE GENERATION ACTIVITY",
+          "rows": 10,
+          "columns": 13,
+          "nonempty": 81
+        },
+        {
+          "name": "MARKET PRICES AND DIVIDENDS",
+          "rows": 53,
+          "columns": 5,
+          "nonempty": 129
+        }
+      ],
+      "rank_score": 45.758,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/39b6457ef2_Financial_20Insights__A809F.xls"
+    },
+    {
+      "archive_member": "financial/processed/finprojs.xls",
+      "sha256": "6525da9fa1a1f62763928a7ba45eff0e31e2679ed11ed4e559ccdbc231a8452e",
+      "sheet_count": 4,
+      "nonempty_sheet_count": 4,
+      "formula_count": 103,
+      "sheets": [
+        {
+          "name": "Summary",
+          "rows": 31,
+          "columns": 7,
+          "nonempty": 74
+        },
+        {
+          "name": "CFLOW1",
+          "rows": 55,
+          "columns": 16,
+          "nonempty": 525
+        },
+        {
+          "name": "Profit &Loss ",
+          "rows": 55,
+          "columns": 13,
+          "nonempty": 351
+        },
+        {
+          "name": "Balance  Sheet",
+          "rows": 52,
+          "columns": 12,
+          "nonempty": 185
+        }
+      ],
+      "rank_score": 39.206,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/6525da9fa1_finprojs.xls"
+    },
+    {
+      "archive_member": "financial/processed/finrpt01.xls",
+      "sha256": "af930679308f646cdeb51d5cce662f80cf5a116a0d7a9e8ee8038a53515522fa",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 206,
+      "sheets": [
+        {
+          "name": "Five Year Review",
+          "rows": 57,
+          "columns": 10,
+          "nonempty": 211
+        },
+        {
+          "name": "Balance Sheet",
+          "rows": 60,
+          "columns": 10,
+          "nonempty": 210
+        },
+        {
+          "name": "Changes in Fund Balances",
+          "rows": 68,
+          "columns": 8,
+          "nonempty": 145
+        },
+        {
+          "name": "Current Funds",
+          "rows": 77,
+          "columns": 8,
+          "nonempty": 157
+        },
+        {
+          "name": "Major Construction",
+          "rows": 41,
+          "columns": 8,
+          "nonempty": 138
+        },
+        {
+          "name": "Bonded Indebtedness",
+          "rows": 85,
+          "columns": 6,
+          "nonempty": 154
+        }
+      ],
+      "rank_score": 36.412,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/af93067930_finrpt01.xls"
+    },
+    {
+      "archive_member": "financial/processed/finrpt00.xls",
+      "sha256": "6043dd7f246be00f7380dcc9f74d59b88fe23932084f1ea9f675617bafb82e2d",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 180,
+      "sheets": [
+        {
+          "name": "Five Year Review",
+          "rows": 53,
+          "columns": 10,
+          "nonempty": 214
+        },
+        {
+          "name": "Balance Sheet",
+          "rows": 64,
+          "columns": 13,
+          "nonempty": 233
+        },
+        {
+          "name": "Changes in Fund Balances",
+          "rows": 61,
+          "columns": 13,
+          "nonempty": 167
+        },
+        {
+          "name": "Current Funds",
+          "rows": 49,
+          "columns": 12,
+          "nonempty": 145
+        },
+        {
+          "name": "Major Construction",
+          "rows": 44,
+          "columns": 8,
+          "nonempty": 153
+        },
+        {
+          "name": "Bonded Indebtedness",
+          "rows": 76,
+          "columns": 6,
+          "nonempty": 137
+        }
+      ],
+      "rank_score": 36.36,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/6043dd7f24_finrpt00.xls"
+    },
+    {
+      "archive_member": "financial/processed/Club%20Financial%20St#A7B41.xls",
+      "sha256": "bc2d57880acf72943712d830a0df7395205bf52aefd3e46fb5073f0d20ccb564",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 59,
+      "sheets": [
+        {
+          "name": "Info",
+          "rows": 12,
+          "columns": 1,
+          "nonempty": 8
+        },
+        {
+          "name": "Income Statement",
+          "rows": 38,
+          "columns": 9,
+          "nonempty": 88
+        },
+        {
+          "name": "Ledger",
+          "rows": 118,
+          "columns": 12,
+          "nonempty": 21
+        },
+        {
+          "name": "AP",
+          "rows": 42,
+          "columns": 8,
+          "nonempty": 10
+        },
+        {
+          "name": "Expense Accounts",
+          "rows": 38,
+          "columns": 17,
+          "nonempty": 103
+        },
+        {
+          "name": "AR",
+          "rows": 36,
+          "columns": 8,
+          "nonempty": 10
+        }
+      ],
+      "rank_score": 36.118,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/bc2d57880a_Club_20Financial_20St_A7B41.xls"
+    },
+    {
+      "archive_member": "financial/processed/W_SBT_financial.xls",
+      "sha256": "97780e5e5cf1903802bbbd223c828ccda11b05f7984d7aaede533ee08e7acf04",
+      "sheet_count": 5,
+      "nonempty_sheet_count": 4,
+      "formula_count": 3484,
+      "sheets": [
+        {
+          "name": "Instructions",
+          "rows": 0,
+          "columns": 0,
+          "nonempty": 0
+        },
+        {
+          "name": "Cash Flows",
+          "rows": 91,
+          "columns": 44,
+          "nonempty": 2216
+        },
+        {
+          "name": "Personnel",
+          "rows": 20,
+          "columns": 44,
+          "nonempty": 478
+        },
+        {
+          "name": "In-Kind Contributions",
+          "rows": 47,
+          "columns": 44,
+          "nonempty": 1103
+        },
+        {
+          "name": "Financial Summary",
+          "rows": 30,
+          "columns": 5,
+          "nonempty": 58
+        }
+      ],
+      "rank_score": 35.968,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/97780e5e5c_W_SBT_financial.xls"
+    },
+    {
+      "archive_member": "financial/processed/AAAsolution.xls",
+      "sha256": "678e9a09ff75c86e0d31063b332b064985ed8e96128204c1ca0440d388043e41",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 4,
+      "formula_count": 981,
+      "sheets": [
+        {
+          "name": "Begin Model",
+          "rows": 0,
+          "columns": 0,
+          "nonempty": 0
+        },
+        {
+          "name": "Model Assumptions",
+          "rows": 40,
+          "columns": 4,
+          "nonempty": 142
+        },
+        {
+          "name": "Financial Model",
+          "rows": 162,
+          "columns": 13,
+          "nonempty": 1069
+        },
+        {
+          "name": "NPV Calculation",
+          "rows": 28,
+          "columns": 15,
+          "nonempty": 150
+        },
+        {
+          "name": "End Model",
+          "rows": 0,
+          "columns": 0,
+          "nonempty": 0
+        },
+        {
+          "name": "Goldman Integrated Model",
+          "rows": 24,
+          "columns": 11,
+          "nonempty": 63
+        }
+      ],
+      "rank_score": 35.962,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/678e9a09ff_AAAsolution.xls"
+    },
+    {
+      "archive_member": "financial/processed/BLANK%20CHILDCARE%20F#A8B08.xls",
+      "sha256": "361159a06d658eb8b1c26ee375ef67f611d898cb00ddeae8617e0aee86b41743",
+      "sheet_count": 4,
+      "nonempty_sheet_count": 4,
+      "formula_count": 342,
+      "sheets": [
+        {
+          "name": "Cashsamp",
+          "rows": 61,
+          "columns": 17,
+          "nonempty": 786
+        },
+        {
+          "name": "P&lsamp",
+          "rows": 53,
+          "columns": 7,
+          "nonempty": 189
+        },
+        {
+          "name": "Revenue Assumptions",
+          "rows": 34,
+          "columns": 16,
+          "nonempty": 272
+        },
+        {
+          "name": "Balsamp",
+          "rows": 42,
+          "columns": 8,
+          "nonempty": 60
+        }
+      ],
+      "rank_score": 34.684,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/361159a06d_BLANK_20CHILDCARE_20F_A8B08.xls"
+    },
+    {
+      "archive_member": "financial/processed/sup2q3f.xls",
+      "sha256": "38fbf51afbebf1de93f03e408ad9aa6c526547f6e652a3b7d3787769994406c1",
+      "sheet_count": 15,
+      "nonempty_sheet_count": 15,
+      "formula_count": 222,
+      "sheets": [
+        {
+          "name": "CoverPage",
+          "rows": 13,
+          "columns": 2,
+          "nonempty": 5
+        },
+        {
+          "name": "Earnings",
+          "rows": 90,
+          "columns": 9,
+          "nonempty": 292
+        },
+        {
+          "name": "Annual Earnings",
+          "rows": 88,
+          "columns": 6,
+          "nonempty": 141
+        },
+        {
+          "name": "Balance Sheet",
+          "rows": 79,
+          "columns": 5,
+          "nonempty": 142
+        },
+        {
+          "name": "Investment Portfolio",
+          "rows": 78,
+          "columns": 1,
+          "nonempty": 12
+        },
+        {
+          "name": "Investment Schedule",
+          "rows": 27,
+          "columns": 5,
+          "nonempty": 61
+        },
+        {
+          "name": "P&C",
+          "rows": 57,
+          "columns": 14,
+          "nonempty": 193
+        },
+        {
+          "name": "Qtr Summary",
+          "rows": 58,
+          "columns": 17,
+          "nonempty": 321
+        },
+        {
+          "name": "Annual Summary",
+          "rows": 58,
+          "columns": 9,
+          "nonempty": 158
+        },
+        {
+          "name": "Qtr COR",
+          "rows": 124,
+          "columns": 13,
+          "nonempty": 71
+        },
+        {
+          "name": "CORvsIndustry",
+          "rows": 102,
+          "columns": 11,
+          "nonempty": 35
+        },
+        {
+          "name": "Specialty Premium",
+          "rows": 2,
+          "columns": 1,
+          "nonempty": 2
+        },
+        {
+          "name": "Annuity",
+          "rows": 32,
+          "columns": 7,
+          "nonempty": 54
+        },
+        {
+          "name": "Qtr Annuity",
+          "rows": 27,
+          "columns": 17,
+          "nonempty": 125
+        },
+        {
+          "name": "Annual Annuity",
+          "rows": 24,
+          "columns": 9,
+          "nonempty": 56
+        }
+      ],
+      "rank_score": 32.444,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/38fbf51afb_sup2q3f.xls"
+    },
+    {
+      "archive_member": "financial/processed/inc_exp.xls",
+      "sha256": "498f0cb1ddce42be6467ef57f30c4f494a2c5c0a1bc663111c790f24077c72ec",
+      "sheet_count": 11,
+      "nonempty_sheet_count": 11,
+      "formula_count": 300,
+      "sheets": [
+        {
+          "name": "Secured",
+          "rows": 19,
+          "columns": 5,
+          "nonempty": 19
+        },
+        {
+          "name": "Unsecured",
+          "rows": 18,
+          "columns": 5,
+          "nonempty": 19
+        },
+        {
+          "name": "Income",
+          "rows": 32,
+          "columns": 5,
+          "nonempty": 56
+        },
+        {
+          "name": "Priorities",
+          "rows": 20,
+          "columns": 5,
+          "nonempty": 32
+        },
+        {
+          "name": "Formal",
+          "rows": 22,
+          "columns": 5,
+          "nonempty": 34
+        },
+        {
+          "name": "Everyday",
+          "rows": 47,
+          "columns": 5,
+          "nonempty": 80
+        },
+        {
+          "name": "Occasional",
+          "rows": 32,
+          "columns": 5,
+          "nonempty": 54
+        },
+        {
+          "name": "Summary",
+          "rows": 22,
+          "columns": 5,
+          "nonempty": 40
+        },
+        {
+          "name": "Capital",
+          "rows": 21,
+          "columns": 1,
+          "nonempty": 16
+        },
+        {
+          "name": "Financial Statement -1",
+          "rows": 42,
+          "columns": 9,
+          "nonempty": 132
+        },
+        {
+          "name": "Financial Statement - 2",
+          "rows": 42,
+          "columns": 9,
+          "nonempty": 132
+        }
+      ],
+      "rank_score": 31.6,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/498f0cb1dd_inc_exp.xls"
+    },
+    {
+      "archive_member": "financial/processed/am_skandia_fin_supple#A80EE.xls",
+      "sha256": "c3909162aad9840f22e4fadf2e6e013c1da5d43b7b7c51fe381a72af86b384fa",
+      "sheet_count": 7,
+      "nonempty_sheet_count": 7,
+      "formula_count": 56,
+      "sheets": [
+        {
+          "name": "Overview",
+          "rows": 33,
+          "columns": 7,
+          "nonempty": 148
+        },
+        {
+          "name": "Statutory P&L",
+          "rows": 41,
+          "columns": 7,
+          "nonempty": 193
+        },
+        {
+          "name": "Balances",
+          "rows": 26,
+          "columns": 3,
+          "nonempty": 46
+        },
+        {
+          "name": "UL Trading",
+          "rows": 27,
+          "columns": 3,
+          "nonempty": 49
+        },
+        {
+          "name": "UL I-E",
+          "rows": 23,
+          "columns": 3,
+          "nonempty": 39
+        },
+        {
+          "name": "Sensitivity",
+          "rows": 26,
+          "columns": 8,
+          "nonempty": 38
+        },
+        {
+          "name": "Key Ratios",
+          "rows": 24,
+          "columns": 3,
+          "nonempty": 39
+        }
+      ],
+      "rank_score": 27.112,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/c3909162aa_am_skandia_fin_supple_A80EE.xls"
+    },
+    {
+      "archive_member": "financial/processed/FB57.xls",
+      "sha256": "245416dbdf949228ceb7f1c694c353943e03f408c963a558f16c56c144d51c5c",
+      "sheet_count": 7,
+      "nonempty_sheet_count": 7,
+      "formula_count": 4170,
+      "sheets": [
+        {
+          "name": "College Work-Study",
+          "rows": 91,
+          "columns": 35,
+          "nonempty": 1534
+        },
+        {
+          "name": "CWS per-recipient",
+          "rows": 60,
+          "columns": 18,
+          "nonempty": 988
+        },
+        {
+          "name": "Perkins Loans",
+          "rows": 104,
+          "columns": 35,
+          "nonempty": 1514
+        },
+        {
+          "name": "Perkins per-recipient",
+          "rows": 60,
+          "columns": 18,
+          "nonempty": 989
+        },
+        {
+          "name": "SEOG",
+          "rows": 91,
+          "columns": 35,
+          "nonempty": 1467
+        },
+        {
+          "name": "SEOG per-recipient",
+          "rows": 60,
+          "columns": 18,
+          "nonempty": 971
+        },
+        {
+          "name": "TABLE",
+          "rows": 39,
+          "columns": 17,
+          "nonempty": 329
+        }
+      ],
+      "rank_score": 25.34,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/245416dbdf_FB57.xls"
+    },
+    {
+      "archive_member": "financial/processed/MSC-Financials%20II.xls",
+      "sha256": "20ed8f6e4172307342c9d5f497654f20805f47e1afd546dd1a1b3df64bd2a1cd",
+      "sheet_count": 8,
+      "nonempty_sheet_count": 8,
+      "formula_count": 888,
+      "sheets": [
+        {
+          "name": "Instructions",
+          "rows": 111,
+          "columns": 6,
+          "nonempty": 86
+        },
+        {
+          "name": "Assessment Report",
+          "rows": 129,
+          "columns": 4,
+          "nonempty": 375
+        },
+        {
+          "name": "Financial Summary",
+          "rows": 130,
+          "columns": 4,
+          "nonempty": 265
+        },
+        {
+          "name": "ProfitLoss",
+          "rows": 59,
+          "columns": 4,
+          "nonempty": 120
+        },
+        {
+          "name": "BS",
+          "rows": 55,
+          "columns": 4,
+          "nonempty": 144
+        },
+        {
+          "name": "CFS",
+          "rows": 32,
+          "columns": 4,
+          "nonempty": 80
+        },
+        {
+          "name": "Notes 2",
+          "rows": 104,
+          "columns": 8,
+          "nonempty": 309
+        },
+        {
+          "name": "Notes",
+          "rows": 97,
+          "columns": 9,
+          "nonempty": 143
+        }
+      ],
+      "rank_score": 24.776,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/20ed8f6e41_MSC-Financials_20II.xls"
+    },
+    {
+      "archive_member": "financial/processed/historicalfinancial.xls",
+      "sha256": "54643c53bd4dfd2356cee0104193191740344383c30f6069b600ced6b3cc9922",
+      "sheet_count": 4,
+      "nonempty_sheet_count": 4,
+      "formula_count": 211,
+      "sheets": [
+        {
+          "name": "Earnings",
+          "rows": 49,
+          "columns": 39,
+          "nonempty": 775
+        },
+        {
+          "name": "Business Activity",
+          "rows": 43,
+          "columns": 39,
+          "nonempty": 696
+        },
+        {
+          "name": "Balance Sheet",
+          "rows": 54,
+          "columns": 39,
+          "nonempty": 818
+        },
+        {
+          "name": "Credit Loss",
+          "rows": 42,
+          "columns": 39,
+          "nonempty": 622
+        }
+      ],
+      "rank_score": 24.422,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/54643c53bd_historicalfinancial.xls"
+    },
+    {
+      "archive_member": "financial/processed/WFDFFinancialSummary.xls",
+      "sha256": "3a6c31e69ba26a1decf80dcc6e699160a4c4b1ff1815e362f0b1c60673e9a979",
+      "sheet_count": 4,
+      "nonempty_sheet_count": 4,
+      "formula_count": 80,
+      "sheets": [
+        {
+          "name": "Financial summary",
+          "rows": 51,
+          "columns": 15,
+          "nonempty": 192
+        },
+        {
+          "name": "Balance Sheet",
+          "rows": 15,
+          "columns": 8,
+          "nonempty": 53
+        },
+        {
+          "name": "Stork - 2002 Expenditures",
+          "rows": 61,
+          "columns": 21,
+          "nonempty": 277
+        },
+        {
+          "name": "Stork - 2002 Receipts",
+          "rows": 43,
+          "columns": 15,
+          "nonempty": 207
+        }
+      ],
+      "rank_score": 24.16,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/3a6c31e69b_WFDFFinancialSummary.xls"
+    },
+    {
+      "archive_member": "financial/processed/20031017112201!Aug200#A7DEB.xls",
+      "sha256": "b59d12e85cfb6e009aeb60a558d39ed27f947375df84978455c6b79b1cbf12de",
+      "sheet_count": 16,
+      "nonempty_sheet_count": 15,
+      "formula_count": 958,
+      "sheets": [
+        {
+          "name": "Coversheet",
+          "rows": 20,
+          "columns": 1,
+          "nonempty": 7
+        },
+        {
+          "name": "Combined Bal Sheet Page 1",
+          "rows": 57,
+          "columns": 12,
+          "nonempty": 214
+        },
+        {
+          "name": "Comb Rev & Expend Page 2",
+          "rows": 42,
+          "columns": 11,
+          "nonempty": 159
+        },
+        {
+          "name": "General Rev 3 ",
+          "rows": 84,
+          "columns": 13,
+          "nonempty": 303
+        },
+        {
+          "name": "General Exp Page 4",
+          "rows": 49,
+          "columns": 11,
+          "nonempty": 142
+        },
+        {
+          "name": "Debt Service Page 5",
+          "rows": 56,
+          "columns": 13,
+          "nonempty": 135
+        },
+        {
+          "name": "Capital Projects Page 6",
+          "rows": 79,
+          "columns": 12,
+          "nonempty": 246
+        },
+        {
+          "name": "Food Service Page 7",
+          "rows": 78,
+          "columns": 11,
+          "nonempty": 240
+        },
+        {
+          "name": "Federal Projects Page 8",
+          "rows": 92,
+          "columns": 10,
+          "nonempty": 250
+        },
+        {
+          "name": "Internal Service Page 9",
+          "rows": 52,
+          "columns": 12,
+          "nonempty": 117
+        },
+        {
+          "name": "Exp by Fun Gen Support Chart5",
+          "rows": 0,
+          "columns": 0,
+          "nonempty": 0
+        },
+        {
+          "name": "1",
+          "rows": 25,
+          "columns": 4,
+          "nonempty": 49
+        },
+        {
+          "name": "2",
+          "rows": 25,
+          "columns": 12,
+          "nonempty": 100
+        },
+        {
+          "name": "3",
+          "rows": 28,
+          "columns": 6,
+          "nonempty": 57
+        },
+        {
+          "name": "4",
+          "rows": 33,
+          "columns": 11,
+          "nonempty": 190
+        },
+        {
+          "name": "Sheet1",
+          "rows": 13,
+          "columns": 1,
+          "nonempty": 9
+        }
+      ],
+      "rank_score": 23.916,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b59d12e85c_20031017112201_Aug200_A7DEB.xls"
+    },
+    {
+      "archive_member": "financial/processed/20030114144840!Superi#A7DEA.xls",
+      "sha256": "377a73f10f1625fef39edc1d596a3332bed4f4cf78df4545fccc9a885c19376f",
+      "sheet_count": 15,
+      "nonempty_sheet_count": 14,
+      "formula_count": 957,
+      "sheets": [
+        {
+          "name": "Coversheet",
+          "rows": 20,
+          "columns": 1,
+          "nonempty": 7
+        },
+        {
+          "name": "Combined Bal Sheet Page 1",
+          "rows": 57,
+          "columns": 12,
+          "nonempty": 229
+        },
+        {
+          "name": "Comb Rev & Expend Page 2",
+          "rows": 42,
+          "columns": 11,
+          "nonempty": 159
+        },
+        {
+          "name": "General Rev 3 ",
+          "rows": 82,
+          "columns": 13,
+          "nonempty": 336
+        },
+        {
+          "name": "General Exp Page 4",
+          "rows": 49,
+          "columns": 11,
+          "nonempty": 150
+        },
+        {
+          "name": "Debt Service Page 5",
+          "rows": 55,
+          "columns": 13,
+          "nonempty": 139
+        },
+        {
+          "name": "Capital Projects Page 6",
+          "rows": 78,
+          "columns": 12,
+          "nonempty": 273
+        },
+        {
+          "name": "Food Service Page 7",
+          "rows": 77,
+          "columns": 11,
+          "nonempty": 253
+        },
+        {
+          "name": "Federal Projects Page 8",
+          "rows": 90,
+          "columns": 10,
+          "nonempty": 277
+        },
+        {
+          "name": "Internal Service Page 9",
+          "rows": 52,
+          "columns": 12,
+          "nonempty": 135
+        },
+        {
+          "name": "Exp by Fun Gen Support Chart5",
+          "rows": 0,
+          "columns": 0,
+          "nonempty": 0
+        },
+        {
+          "name": "1",
+          "rows": 25,
+          "columns": 4,
+          "nonempty": 49
+        },
+        {
+          "name": "2",
+          "rows": 25,
+          "columns": 12,
+          "nonempty": 113
+        },
+        {
+          "name": "3",
+          "rows": 28,
+          "columns": 6,
+          "nonempty": 57
+        },
+        {
+          "name": "4",
+          "rows": 33,
+          "columns": 11,
+          "nonempty": 190
+        }
+      ],
+      "rank_score": 23.914,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/377a73f10f_20030114144840_Superi_A7DEA.xls"
+    },
+    {
+      "archive_member": "financial/processed/StatusReportFormsApri#A784C.xls",
+      "sha256": "c9ab0fc7c5d0c4f671a02b13f102f303d9ab71fe8a302f6151f6d573f17d03d0",
+      "sheet_count": 4,
+      "nonempty_sheet_count": 4,
+      "formula_count": 81,
+      "sheets": [
+        {
+          "name": "InterimStatusReport",
+          "rows": 44,
+          "columns": 13,
+          "nonempty": 48
+        },
+        {
+          "name": "NCEInterimBudget",
+          "rows": 49,
+          "columns": 13,
+          "nonempty": 116
+        },
+        {
+          "name": "Non-NCEInterimBudget",
+          "rows": 57,
+          "columns": 13,
+          "nonempty": 126
+        },
+        {
+          "name": "StudentResearcherRegistration",
+          "rows": 54,
+          "columns": 13,
+          "nonempty": 106
+        }
+      ],
+      "rank_score": 19.162,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/c9ab0fc7c5_StatusReportFormsApri_A784C.xls"
+    },
+    {
+      "archive_member": "financial/processed/NEW.xls",
+      "sha256": "addc8cb983ed237740949be9d92d3afab7a47270700051e54833ca23fb7127d7",
+      "sheet_count": 9,
+      "nonempty_sheet_count": 9,
+      "formula_count": 2626,
+      "sheets": [
+        {
+          "name": "TABLE",
+          "rows": 8,
+          "columns": 3,
+          "nonempty": 7
+        },
+        {
+          "name": "TABLE-I",
+          "rows": 30,
+          "columns": 5,
+          "nonempty": 80
+        },
+        {
+          "name": "TABLE-II_Property",
+          "rows": 46,
+          "columns": 7,
+          "nonempty": 176
+        },
+        {
+          "name": "TABLE-III_GSC",
+          "rows": 50,
+          "columns": 4,
+          "nonempty": 87
+        },
+        {
+          "name": "01-check-00",
+          "rows": 163,
+          "columns": 23,
+          "nonempty": 2818
+        },
+        {
+          "name": "01-check-01",
+          "rows": 113,
+          "columns": 22,
+          "nonempty": 1268
+        },
+        {
+          "name": "01-deposit",
+          "rows": 76,
+          "columns": 18,
+          "nonempty": 404
+        },
+        {
+          "name": "02-all",
+          "rows": 115,
+          "columns": 7,
+          "nonempty": 556
+        },
+        {
+          "name": "99-00",
+          "rows": 15,
+          "columns": 7,
+          "nonempty": 57
+        }
+      ],
+      "rank_score": 14.252,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/addc8cb983_NEW.xls"
+    },
+    {
+      "archive_member": "financial/processed/Main_Part_of_the_Fina#A8115.xls",
+      "sha256": "4a44eecb612f3c7a0be6b30565766cb5bbca10c6fe5b2163a3547f894c1cad70",
+      "sheet_count": 12,
+      "nonempty_sheet_count": 12,
+      "formula_count": 1114,
+      "sheets": [
+        {
+          "name": "Informa",
+          "rows": 32,
+          "columns": 1,
+          "nonempty": 21
+        },
+        {
+          "name": "Front Page",
+          "rows": 49,
+          "columns": 1,
+          "nonempty": 13
+        },
+        {
+          "name": "Grants",
+          "rows": 30,
+          "columns": 31,
+          "nonempty": 432
+        },
+        {
+          "name": "Eq",
+          "rows": 60,
+          "columns": 19,
+          "nonempty": 172
+        },
+        {
+          "name": "Mat",
+          "rows": 30,
+          "columns": 18,
+          "nonempty": 59
+        },
+        {
+          "name": "ODC",
+          "rows": 30,
+          "columns": 18,
+          "nonempty": 59
+        },
+        {
+          "name": "Tr-inside",
+          "rows": 30,
+          "columns": 19,
+          "nonempty": 60
+        },
+        {
+          "name": "Tr-out",
+          "rows": 30,
+          "columns": 19,
+          "nonempty": 60
+        },
+        {
+          "name": "Sub-Contr",
+          "rows": 30,
+          "columns": 17,
+          "nonempty": 57
+        },
+        {
+          "name": "Total-1",
+          "rows": 35,
+          "columns": 14,
+          "nonempty": 260
+        },
+        {
+          "name": "Total-2",
+          "rows": 47,
+          "columns": 15,
+          "nonempty": 313
+        },
+        {
+          "name": "ERF",
+          "rows": 62,
+          "columns": 5,
+          "nonempty": 125
+        }
+      ],
+      "rank_score": 14.228,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/4a44eecb61_Main_Part_of_the_Fina_A8115.xls"
+    },
+    {
+      "archive_member": "financial/processed/FinalReportTables.xls",
+      "sha256": "fa5a989409c22f264519de099f0bde5565af58d2d0b500e94d663767a228f5c3",
+      "sheet_count": 12,
+      "nonempty_sheet_count": 12,
+      "formula_count": 1052,
+      "sheets": [
+        {
+          "name": "Table G.1",
+          "rows": 21,
+          "columns": 4,
+          "nonempty": 41
+        },
+        {
+          "name": "Table G.2",
+          "rows": 32,
+          "columns": 22,
+          "nonempty": 425
+        },
+        {
+          "name": "Table G.3",
+          "rows": 3,
+          "columns": 5,
+          "nonempty": 6
+        },
+        {
+          "name": "Table G.4",
+          "rows": 142,
+          "columns": 16,
+          "nonempty": 157
+        },
+        {
+          "name": "Table G.5.a",
+          "rows": 40,
+          "columns": 8,
+          "nonempty": 47
+        },
+        {
+          "name": "Table G.5.b",
+          "rows": 40,
+          "columns": 11,
+          "nonempty": 85
+        },
+        {
+          "name": "Table G.5.c",
+          "rows": 40,
+          "columns": 9,
+          "nonempty": 48
+        },
+        {
+          "name": "Table G.6",
+          "rows": 39,
+          "columns": 8,
+          "nonempty": 46
+        },
+        {
+          "name": "Table G.7",
+          "rows": 39,
+          "columns": 8,
+          "nonempty": 46
+        },
+        {
+          "name": "Table G.8",
+          "rows": 54,
+          "columns": 14,
+          "nonempty": 319
+        },
+        {
+          "name": "Currency Codes",
+          "rows": 32,
+          "columns": 2,
+          "nonempty": 64
+        },
+        {
+          "name": "Subsistence Rates",
+          "rows": 32,
+          "columns": 2,
+          "nonempty": 64
+        }
+      ],
+      "rank_score": 14.104,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/fa5a989409_FinalReportTables.xls"
+    },
+    {
+      "archive_member": "financial/processed/1999RISEAnnualReport(4).xls",
+      "sha256": "596d30aaaf8981c4864450f85e6ecc273f02e9ea421783a6391d8029044d5116",
+      "sheet_count": 4,
+      "nonempty_sheet_count": 4,
+      "formula_count": 13300,
+      "sheets": [
+        {
+          "name": "Sheet4",
+          "rows": 76,
+          "columns": 5,
+          "nonempty": 78
+        },
+        {
+          "name": "Sheet1",
+          "rows": 265,
+          "columns": 86,
+          "nonempty": 14355
+        },
+        {
+          "name": "Sheet2",
+          "rows": 252,
+          "columns": 2,
+          "nonempty": 88
+        },
+        {
+          "name": "Sheet3",
+          "rows": 25,
+          "columns": 6,
+          "nonempty": 78
+        }
+      ],
+      "rank_score": 14.0,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/596d30aaaf_1999RISEAnnualReport_4_.xls"
+    },
+    {
+      "archive_member": "financial/processed/hospitaldataset2002.xls",
+      "sha256": "6d6d0ce92927bcdafafdc07eb164bdfa49d2b368c1f05e6e178ced3704df85fe",
+      "sheet_count": 20,
+      "nonempty_sheet_count": 20,
+      "formula_count": 481,
+      "sheets": [
+        {
+          "name": "COVER",
+          "rows": 52,
+          "columns": 9,
+          "nonempty": 8
+        },
+        {
+          "name": "CONTENTS",
+          "rows": 24,
+          "columns": 5,
+          "nonempty": 55
+        },
+        {
+          "name": "STATEWIDE",
+          "rows": 2,
+          "columns": 1,
+          "nonempty": 1
+        },
+        {
+          "name": "ALL",
+          "rows": 30,
+          "columns": 6,
+          "nonempty": 159
+        },
+        {
+          "name": "CNE",
+          "rows": 30,
+          "columns": 6,
+          "nonempty": 158
+        },
+        {
+          "name": "LIFESPAN",
+          "rows": 30,
+          "columns": 6,
+          "nonempty": 158
+        },
+        {
+          "name": "INDIVIDUAL",
+          "rows": 2,
+          "columns": 1,
+          "nonempty": 1
+        },
+        {
+          "name": "BRADLEY",
+          "rows": 29,
+          "columns": 6,
+          "nonempty": 157
+        },
+        {
+          "name": "BUTLER",
+          "rows": 29,
+          "columns": 6,
+          "nonempty": 157
+        },
+        {
+          "name": "KENT",
+          "rows": 29,
+          "columns": 6,
+          "nonempty": 157
+        },
+        {
+          "name": "LANDMARK",
+          "rows": 29,
+          "columns": 6,
+          "nonempty": 157
+        },
+        {
+          "name": "MEMORIAL",
+          "rows": 29,
+          "columns": 6,
+          "nonempty": 157
+        },
+        {
+          "name": "MIRIAM",
+          "rows": 30,
+          "columns": 6,
+          "nonempty": 158
+        },
+        {
+          "name": "NEWPORT",
+          "rows": 30,
+          "columns": 6,
+          "nonempty": 158
+        },
+        {
+          "name": "RIH",
+          "rows": 30,
+          "columns": 6,
+          "nonempty": 158
+        },
+        {
+          "name": "RWMC",
+          "rows": 29,
+          "columns": 6,
+          "nonempty": 157
+        },
+        {
+          "name": "S.COUNTY",
+          "rows": 29,
+          "columns": 6,
+          "nonempty": 157
+        },
+        {
+          "name": "ST.JOE",
+          "rows": 29,
+          "columns": 6,
+          "nonempty": 157
+        },
+        {
+          "name": "WESTERLY",
+          "rows": 29,
+          "columns": 6,
+          "nonempty": 157
+        },
+        {
+          "name": "W&I",
+          "rows": 29,
+          "columns": 6,
+          "nonempty": 157
+        }
+      ],
+      "rank_score": 12.962,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/6d6d0ce929_hospitaldataset2002.xls"
+    },
+    {
+      "archive_member": "financial/processed/Exh_listFY03.xls",
+      "sha256": "dc4b097c0056568be277df756777476c1dd0a44370a6acf250ca69dadafb02b5",
+      "sheet_count": 29,
+      "nonempty_sheet_count": 29,
+      "formula_count": 463,
+      "sheets": [
+        {
+          "name": "Exhibit Listing",
+          "rows": 55,
+          "columns": 11,
+          "nonempty": 53
+        },
+        {
+          "name": "A1",
+          "rows": 49,
+          "columns": 7,
+          "nonempty": 22
+        },
+        {
+          "name": "A2",
+          "rows": 50,
+          "columns": 7,
+          "nonempty": 33
+        },
+        {
+          "name": "B",
+          "rows": 56,
+          "columns": 7,
+          "nonempty": 40
+        },
+        {
+          "name": "C",
+          "rows": 59,
+          "columns": 8,
+          "nonempty": 64
+        },
+        {
+          "name": "D1",
+          "rows": 63,
+          "columns": 14,
+          "nonempty": 103
+        },
+        {
+          "name": "D2",
+          "rows": 63,
+          "columns": 14,
+          "nonempty": 103
+        },
+        {
+          "name": "E",
+          "rows": 56,
+          "columns": 8,
+          "nonempty": 95
+        },
+        {
+          "name": "F1",
+          "rows": 69,
+          "columns": 9,
+          "nonempty": 69
+        },
+        {
+          "name": "F2",
+          "rows": 69,
+          "columns": 8,
+          "nonempty": 57
+        },
+        {
+          "name": "G",
+          "rows": 73,
+          "columns": 8,
+          "nonempty": 66
+        },
+        {
+          "name": "H",
+          "rows": 38,
+          "columns": 11,
+          "nonempty": 36
+        },
+        {
+          "name": "I",
+          "rows": 58,
+          "columns": 4,
+          "nonempty": 51
+        },
+        {
+          "name": "J",
+          "rows": 49,
+          "columns": 20,
+          "nonempty": 58
+        },
+        {
+          "name": "K",
+          "rows": 41,
+          "columns": 15,
+          "nonempty": 82
+        },
+        {
+          "name": "L",
+          "rows": 50,
+          "columns": 7,
+          "nonempty": 27
+        },
+        {
+          "name": "M",
+          "rows": 51,
+          "columns": 8,
+          "nonempty": 64
+        },
+        {
+          "name": "N",
+          "rows": 53,
+          "columns": 7,
+          "nonempty": 55
+        },
+        {
+          "name": "O",
+          "rows": 51,
+          "columns": 7,
+          "nonempty": 19
+        },
+        {
+          "name": "P",
+          "rows": 50,
+          "columns": 7,
+          "nonempty": 22
+        },
+        {
+          "name": "Q",
+          "rows": 51,
+          "columns": 8,
+          "nonempty": 24
+        },
+        {
+          "name": "R",
+          "rows": 50,
+          "columns": 5,
+          "nonempty": 41
+        },
+        {
+          "name": "S",
+          "rows": 57,
+          "columns": 8,
+          "nonempty": 53
+        },
+        {
+          "name": "T",
+          "rows": 77,
+          "columns": 9,
+          "nonempty": 84
+        },
+        {
+          "name": "U",
+          "rows": 50,
+          "columns": 7,
+          "nonempty": 40
+        },
+        {
+          "name": "V",
+          "rows": 63,
+          "columns": 10,
+          "nonempty": 49
+        },
+        {
+          "name": "W1",
+          "rows": 61,
+          "columns": 11,
+          "nonempty": 113
+        },
+        {
+          "name": "W2",
+          "rows": 61,
+          "columns": 11,
+          "nonempty": 113
+        },
+        {
+          "name": "AR-AP",
+          "rows": 50,
+          "columns": 10,
+          "nonempty": 37
+        }
+      ],
+      "rank_score": 12.926,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/dc4b097c00_Exh_listFY03.xls"
+    },
+    {
+      "archive_member": "financial/processed/financial-notes.xls",
+      "sha256": "666b76c513fc60383670dc0cf2eec1ad3d6bb18c5034ca28c8773358f660737e",
+      "sheet_count": 21,
+      "nonempty_sheet_count": 21,
+      "formula_count": 261,
+      "sheets": [
+        {
+          "name": "note 1",
+          "rows": 99,
+          "columns": 1,
+          "nonempty": 85
+        },
+        {
+          "name": "note 2",
+          "rows": 34,
+          "columns": 13,
+          "nonempty": 59
+        },
+        {
+          "name": "note 3-5",
+          "rows": 61,
+          "columns": 14,
+          "nonempty": 117
+        },
+        {
+          "name": "note 6-8",
+          "rows": 65,
+          "columns": 13,
+          "nonempty": 95
+        },
+        {
+          "name": "note 9-10",
+          "rows": 52,
+          "columns": 16,
+          "nonempty": 124
+        },
+        {
+          "name": "note 11",
+          "rows": 66,
+          "columns": 15,
+          "nonempty": 113
+        },
+        {
+          "name": "note 12 i",
+          "rows": 58,
+          "columns": 9,
+          "nonempty": 184
+        },
+        {
+          "name": "note 12 ii",
+          "rows": 62,
+          "columns": 10,
+          "nonempty": 180
+        },
+        {
+          "name": "note 12 iii",
+          "rows": 59,
+          "columns": 9,
+          "nonempty": 182
+        },
+        {
+          "name": "note 12 iv",
+          "rows": 29,
+          "columns": 16,
+          "nonempty": 56
+        },
+        {
+          "name": "note 13",
+          "rows": 60,
+          "columns": 13,
+          "nonempty": 103
+        },
+        {
+          "name": "note 14-16",
+          "rows": 46,
+          "columns": 15,
+          "nonempty": 117
+        },
+        {
+          "name": "note 17-18",
+          "rows": 52,
+          "columns": 20,
+          "nonempty": 143
+        },
+        {
+          "name": "note 19 i",
+          "rows": 56,
+          "columns": 18,
+          "nonempty": 187
+        },
+        {
+          "name": "note 19 ii",
+          "rows": 60,
+          "columns": 17,
+          "nonempty": 137
+        },
+        {
+          "name": "note 19 iii",
+          "rows": 53,
+          "columns": 15,
+          "nonempty": 108
+        },
+        {
+          "name": "note 20",
+          "rows": 51,
+          "columns": 14,
+          "nonempty": 113
+        },
+        {
+          "name": "note 21",
+          "rows": 64,
+          "columns": 15,
+          "nonempty": 154
+        },
+        {
+          "name": "note22-25",
+          "rows": 73,
+          "columns": 15,
+          "nonempty": 133
+        },
+        {
+          "name": "note 26 i",
+          "rows": 56,
+          "columns": 12,
+          "nonempty": 57
+        },
+        {
+          "name": "note 26 ii",
+          "rows": 58,
+          "columns": 16,
+          "nonempty": 95
+        }
+      ],
+      "rank_score": 12.522,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/666b76c513_financial-notes.xls"
+    },
+    {
+      "archive_member": "financial/processed/monthly%20financial%2#A7B53.xls",
+      "sha256": "5b80bdb217d962e64786b461126b1e5d822f47b36ee6b1ec71ce99545d70cb96",
+      "sheet_count": 27,
+      "nonempty_sheet_count": 27,
+      "formula_count": 186,
+      "sheets": [
+        {
+          "name": "1",
+          "rows": 55,
+          "columns": 8,
+          "nonempty": 190
+        },
+        {
+          "name": "2",
+          "rows": 34,
+          "columns": 18,
+          "nonempty": 464
+        },
+        {
+          "name": "3",
+          "rows": 34,
+          "columns": 18,
+          "nonempty": 464
+        },
+        {
+          "name": "4",
+          "rows": 36,
+          "columns": 9,
+          "nonempty": 260
+        },
+        {
+          "name": "5",
+          "rows": 36,
+          "columns": 9,
+          "nonempty": 261
+        },
+        {
+          "name": "6(1)",
+          "rows": 28,
+          "columns": 9,
+          "nonempty": 203
+        },
+        {
+          "name": "6(2)",
+          "rows": 42,
+          "columns": 9,
+          "nonempty": 290
+        },
+        {
+          "name": "7(1)",
+          "rows": 28,
+          "columns": 9,
+          "nonempty": 203
+        },
+        {
+          "name": "7(2)",
+          "rows": 39,
+          "columns": 9,
+          "nonempty": 287
+        },
+        {
+          "name": "8",
+          "rows": 51,
+          "columns": 13,
+          "nonempty": 307
+        },
+        {
+          "name": "9(1~4)",
+          "rows": 62,
+          "columns": 21,
+          "nonempty": 499
+        },
+        {
+          "name": "10",
+          "rows": 50,
+          "columns": 13,
+          "nonempty": 306
+        },
+        {
+          "name": "11",
+          "rows": 53,
+          "columns": 11,
+          "nonempty": 263
+        },
+        {
+          "name": "12",
+          "rows": 59,
+          "columns": 10,
+          "nonempty": 240
+        },
+        {
+          "name": "13",
+          "rows": 57,
+          "columns": 8,
+          "nonempty": 194
+        },
+        {
+          "name": "14",
+          "rows": 53,
+          "columns": 12,
+          "nonempty": 282
+        },
+        {
+          "name": "15",
+          "rows": 51,
+          "columns": 10,
+          "nonempty": 235
+        },
+        {
+          "name": "16",
+          "rows": 40,
+          "columns": 15,
+          "nonempty": 260
+        },
+        {
+          "name": "17",
+          "rows": 58,
+          "columns": 9,
+          "nonempty": 231
+        },
+        {
+          "name": "18",
+          "rows": 66,
+          "columns": 11,
+          "nonempty": 338
+        },
+        {
+          "name": "19",
+          "rows": 65,
+          "columns": 11,
+          "nonempty": 333
+        },
+        {
+          "name": "20",
+          "rows": 65,
+          "columns": 11,
+          "nonempty": 334
+        },
+        {
+          "name": "21",
+          "rows": 65,
+          "columns": 11,
+          "nonempty": 333
+        },
+        {
+          "name": "22",
+          "rows": 19,
+          "columns": 4,
+          "nonempty": 35
+        },
+        {
+          "name": "23",
+          "rows": 54,
+          "columns": 14,
+          "nonempty": 353
+        },
+        {
+          "name": "24",
+          "rows": 49,
+          "columns": 5,
+          "nonempty": 177
+        },
+        {
+          "name": "25",
+          "rows": 56,
+          "columns": 7,
+          "nonempty": 181
+        }
+      ],
+      "rank_score": 12.372,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/5b80bdb217_monthly_20financial_2_A7B53.xls"
+    },
+    {
+      "archive_member": "financial/processed/CTF%20Forms%202003-2004.xls",
+      "sha256": "a8503d50b3860c5113d9178b740caa6d15e7d76bc23ddfc4230acf14cd8a361c",
+      "sheet_count": 17,
+      "nonempty_sheet_count": 17,
+      "formula_count": 179,
+      "sheets": [
+        {
+          "name": "Demographics",
+          "rows": 30,
+          "columns": 6,
+          "nonempty": 38
+        },
+        {
+          "name": "QFR-1 Form",
+          "rows": 57,
+          "columns": 8,
+          "nonempty": 58
+        },
+        {
+          "name": "BE-1 Form",
+          "rows": 56,
+          "columns": 17,
+          "nonempty": 173
+        },
+        {
+          "name": "BR-1 Form",
+          "rows": 51,
+          "columns": 8,
+          "nonempty": 88
+        },
+        {
+          "name": "CGE-1",
+          "rows": 35,
+          "columns": 4,
+          "nonempty": 63
+        },
+        {
+          "name": "CM-1",
+          "rows": 35,
+          "columns": 4,
+          "nonempty": 61
+        },
+        {
+          "name": "IKM-1",
+          "rows": 35,
+          "columns": 4,
+          "nonempty": 58
+        },
+        {
+          "name": "SP-1",
+          "rows": 44,
+          "columns": 10,
+          "nonempty": 38
+        },
+        {
+          "name": "SP-1 (2)",
+          "rows": 44,
+          "columns": 10,
+          "nonempty": 38
+        },
+        {
+          "name": "SP-1 (3)",
+          "rows": 44,
+          "columns": 10,
+          "nonempty": 38
+        },
+        {
+          "name": "HP-1",
+          "rows": 44,
+          "columns": 10,
+          "nonempty": 40
+        },
+        {
+          "name": "HP-1 (2)",
+          "rows": 44,
+          "columns": 10,
+          "nonempty": 40
+        },
+        {
+          "name": "HP-1 (3)",
+          "rows": 44,
+          "columns": 10,
+          "nonempty": 40
+        },
+        {
+          "name": "ICP-1",
+          "rows": 51,
+          "columns": 7,
+          "nonempty": 35
+        },
+        {
+          "name": "ICP-1 (2)",
+          "rows": 51,
+          "columns": 7,
+          "nonempty": 35
+        },
+        {
+          "name": "ICP-1 (3)",
+          "rows": 51,
+          "columns": 7,
+          "nonempty": 35
+        },
+        {
+          "name": "PS-1",
+          "rows": 53,
+          "columns": 7,
+          "nonempty": 13
+        }
+      ],
+      "rank_score": 12.358,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/a8503d50b3_CTF_20Forms_202003-2004.xls"
+    },
+    {
+      "archive_member": "financial/processed/monthly%20financial%2#A7B52.xls",
+      "sha256": "9bc356b631832b36a7a916beea33a0b5eb4b2b6828fe4be088f4900da2b3a9f7",
+      "sheet_count": 26,
+      "nonempty_sheet_count": 26,
+      "formula_count": 143,
+      "sheets": [
+        {
+          "name": "1",
+          "rows": 51,
+          "columns": 8,
+          "nonempty": 174
+        },
+        {
+          "name": "2",
+          "rows": 34,
+          "columns": 18,
+          "nonempty": 464
+        },
+        {
+          "name": "3",
+          "rows": 34,
+          "columns": 18,
+          "nonempty": 464
+        },
+        {
+          "name": "4",
+          "rows": 36,
+          "columns": 9,
+          "nonempty": 260
+        },
+        {
+          "name": "5",
+          "rows": 36,
+          "columns": 9,
+          "nonempty": 261
+        },
+        {
+          "name": "6(1)",
+          "rows": 28,
+          "columns": 9,
+          "nonempty": 203
+        },
+        {
+          "name": "6(2)",
+          "rows": 42,
+          "columns": 9,
+          "nonempty": 290
+        },
+        {
+          "name": "7(1)",
+          "rows": 28,
+          "columns": 9,
+          "nonempty": 203
+        },
+        {
+          "name": "7(2)",
+          "rows": 39,
+          "columns": 9,
+          "nonempty": 287
+        },
+        {
+          "name": "8",
+          "rows": 49,
+          "columns": 13,
+          "nonempty": 281
+        },
+        {
+          "name": "9(1~4)",
+          "rows": 60,
+          "columns": 21,
+          "nonempty": 458
+        },
+        {
+          "name": "10",
+          "rows": 48,
+          "columns": 13,
+          "nonempty": 280
+        },
+        {
+          "name": "11",
+          "rows": 51,
+          "columns": 11,
+          "nonempty": 241
+        },
+        {
+          "name": "12",
+          "rows": 55,
+          "columns": 10,
+          "nonempty": 220
+        },
+        {
+          "name": "13",
+          "rows": 52,
+          "columns": 8,
+          "nonempty": 178
+        },
+        {
+          "name": "14",
+          "rows": 49,
+          "columns": 12,
+          "nonempty": 258
+        },
+        {
+          "name": "15",
+          "rows": 47,
+          "columns": 10,
+          "nonempty": 215
+        },
+        {
+          "name": "16",
+          "rows": 36,
+          "columns": 15,
+          "nonempty": 230
+        },
+        {
+          "name": "17",
+          "rows": 58,
+          "columns": 9,
+          "nonempty": 231
+        },
+        {
+          "name": "18",
+          "rows": 66,
+          "columns": 11,
+          "nonempty": 338
+        },
+        {
+          "name": "19",
+          "rows": 65,
+          "columns": 11,
+          "nonempty": 333
+        },
+        {
+          "name": "20",
+          "rows": 65,
+          "columns": 11,
+          "nonempty": 334
+        },
+        {
+          "name": "21",
+          "rows": 65,
+          "columns": 11,
+          "nonempty": 334
+        },
+        {
+          "name": "22",
+          "rows": 17,
+          "columns": 4,
+          "nonempty": 31
+        },
+        {
+          "name": "23",
+          "rows": 54,
+          "columns": 14,
+          "nonempty": 353
+        },
+        {
+          "name": "24",
+          "rows": 53,
+          "columns": 5,
+          "nonempty": 193
+        }
+      ],
+      "rank_score": 12.286,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/9bc356b631_monthly_20financial_2_A7B52.xls"
+    },
+    {
+      "archive_member": "financial/processed/03-3xx-en.xls",
+      "sha256": "46fc0d253b90db09d5ebef843b9f7f831430c6c0a96cf4fdf62c5672b36798f4",
+      "sheet_count": 11,
+      "nonempty_sheet_count": 11,
+      "formula_count": 626,
+      "sheets": [
+        {
+          "name": "map",
+          "rows": 71,
+          "columns": 5,
+          "nonempty": 254
+        },
+        {
+          "name": "Instructions",
+          "rows": 9,
+          "columns": 3,
+          "nonempty": 16
+        },
+        {
+          "name": "310",
+          "rows": 58,
+          "columns": 9,
+          "nonempty": 155
+        },
+        {
+          "name": "311",
+          "rows": 48,
+          "columns": 12,
+          "nonempty": 193
+        },
+        {
+          "name": "312",
+          "rows": 41,
+          "columns": 12,
+          "nonempty": 174
+        },
+        {
+          "name": "313",
+          "rows": 28,
+          "columns": 12,
+          "nonempty": 93
+        },
+        {
+          "name": "314",
+          "rows": 38,
+          "columns": 11,
+          "nonempty": 120
+        },
+        {
+          "name": "315",
+          "rows": 56,
+          "columns": 10,
+          "nonempty": 127
+        },
+        {
+          "name": "316",
+          "rows": 60,
+          "columns": 12,
+          "nonempty": 168
+        },
+        {
+          "name": "320",
+          "rows": 53,
+          "columns": 7,
+          "nonempty": 110
+        },
+        {
+          "name": "321",
+          "rows": 55,
+          "columns": 9,
+          "nonempty": 155
+        }
+      ],
+      "rank_score": 12.252,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/46fc0d253b_03-3xx-en.xls"
+    },
+    {
+      "archive_member": "financial/processed/notes.xls",
+      "sha256": "2a6c0a4c4224b7ae228e626cb0e1ec0c76a27d68745274cfcdc2e59c12ebd199",
+      "sheet_count": 12,
+      "nonempty_sheet_count": 12,
+      "formula_count": 96,
+      "sheets": [
+        {
+          "name": "Notes 1 - 5",
+          "rows": 62,
+          "columns": 10,
+          "nonempty": 90
+        },
+        {
+          "name": "Note 6",
+          "rows": 54,
+          "columns": 11,
+          "nonempty": 71
+        },
+        {
+          "name": "Notes 7 - 9",
+          "rows": 59,
+          "columns": 11,
+          "nonempty": 72
+        },
+        {
+          "name": "Note 10",
+          "rows": 58,
+          "columns": 16,
+          "nonempty": 171
+        },
+        {
+          "name": "Notes 11-13",
+          "rows": 59,
+          "columns": 12,
+          "nonempty": 68
+        },
+        {
+          "name": "Notes 14-15",
+          "rows": 55,
+          "columns": 11,
+          "nonempty": 75
+        },
+        {
+          "name": "Notes 16-17",
+          "rows": 56,
+          "columns": 11,
+          "nonempty": 80
+        },
+        {
+          "name": "Notes 18",
+          "rows": 58,
+          "columns": 15,
+          "nonempty": 170
+        },
+        {
+          "name": "Note 19-20",
+          "rows": 57,
+          "columns": 12,
+          "nonempty": 119
+        },
+        {
+          "name": "Notes 21-22",
+          "rows": 63,
+          "columns": 11,
+          "nonempty": 80
+        },
+        {
+          "name": "Notes 23-24",
+          "rows": 56,
+          "columns": 12,
+          "nonempty": 84
+        },
+        {
+          "name": "Notes 25-26",
+          "rows": 47,
+          "columns": 13,
+          "nonempty": 70
+        }
+      ],
+      "rank_score": 12.192,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/2a6c0a4c42_notes.xls"
+    },
+    {
+      "archive_member": "financial/processed/Natlform(F1).xls",
+      "sha256": "b86d849ed16b8e93712852dd42e056f8575ee253139a42c55dd59c67380becd3",
+      "sheet_count": 25,
+      "nonempty_sheet_count": 25,
+      "formula_count": 30,
+      "sheets": [
+        {
+          "name": "Sheet1",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 39
+        },
+        {
+          "name": "Sheet2 ",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet3",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet4",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet5",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet6",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet7",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet8",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet9",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet10",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet11",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet12",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet13",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet14",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 38
+        },
+        {
+          "name": "Sheet15",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet16",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet17",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet18",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet19",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet20",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet21",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet22",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet23",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        },
+        {
+          "name": "Sheet24",
+          "rows": 33,
+          "columns": 9,
+          "nonempty": 37
+        },
+        {
+          "name": "Sheet25",
+          "rows": 32,
+          "columns": 9,
+          "nonempty": 36
+        }
+      ],
+      "rank_score": 12.06,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b86d849ed1_Natlform_F1_.xls"
+    },
+    {
+      "archive_member": "financial/processed/financial-forms.xls",
+      "sha256": "05a9aca63a7b0753340465ca92f56a3c8f11a31f1a08eb17c0fbfc72331eae29",
+      "sheet_count": 11,
+      "nonempty_sheet_count": 11,
+      "formula_count": 177,
+      "sheets": [
+        {
+          "name": "English Plan",
+          "rows": 38,
+          "columns": 13,
+          "nonempty": 67
+        },
+        {
+          "name": "Russian Plan",
+          "rows": 38,
+          "columns": 13,
+          "nonempty": 67
+        },
+        {
+          "name": "FIN.REP.ENGL.",
+          "rows": 44,
+          "columns": 9,
+          "nonempty": 65
+        },
+        {
+          "name": "FIN.REP.RUS.",
+          "rows": 44,
+          "columns": 9,
+          "nonempty": 66
+        },
+        {
+          "name": "English Corr.",
+          "rows": 40,
+          "columns": 15,
+          "nonempty": 77
+        },
+        {
+          "name": "Russian Corr.",
+          "rows": 40,
+          "columns": 15,
+          "nonempty": 76
+        },
+        {
+          "name": "Journal",
+          "rows": 4,
+          "columns": 11,
+          "nonempty": 14
+        },
+        {
+          "name": "Exch diff",
+          "rows": 24,
+          "columns": 10,
+          "nonempty": 50
+        },
+        {
+          "name": "material transition",
+          "rows": 33,
+          "columns": 4,
+          "nonempty": 11
+        },
+        {
+          "name": "Time card",
+          "rows": 26,
+          "columns": 33,
+          "nonempty": 119
+        },
+        {
+          "name": "Accum TC",
+          "rows": 33,
+          "columns": 34,
+          "nonempty": 131
+        }
+      ],
+      "rank_score": 11.354,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/05a9aca63a_financial-forms.xls"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Calculato#A8B74.xls",
+      "sha256": "0ab3d8c1e5d4851c17778cccd27774b49a3dc7189ed03c0a96b43b9ebb5d27ab",
+      "sheet_count": 9,
+      "nonempty_sheet_count": 6,
+      "formula_count": 2487,
+      "sheets": [
+        {
+          "name": "Read Me First",
+          "rows": 0,
+          "columns": 0,
+          "nonempty": 0
+        },
+        {
+          "name": "(1)Tbl.Cnts",
+          "rows": 0,
+          "columns": 0,
+          "nonempty": 0
+        },
+        {
+          "name": "(2)Instructions",
+          "rows": 0,
+          "columns": 0,
+          "nonempty": 0
+        },
+        {
+          "name": "(3)TVM",
+          "rows": 18,
+          "columns": 13,
+          "nonempty": 27
+        },
+        {
+          "name": "(4)NPV-IRR Annual",
+          "rows": 68,
+          "columns": 9,
+          "nonempty": 77
+        },
+        {
+          "name": "(5)NPV-IRR Annuities",
+          "rows": 52,
+          "columns": 13,
+          "nonempty": 110
+        },
+        {
+          "name": "(6)Amortization Schedule",
+          "rows": 824,
+          "columns": 9,
+          "nonempty": 2255
+        },
+        {
+          "name": "(7)Annual Summary",
+          "rows": 44,
+          "columns": 9,
+          "nonempty": 165
+        },
+        {
+          "name": "(8)Statistics",
+          "rows": 28,
+          "columns": 5,
+          "nonempty": 30
+        }
+      ],
+      "rank_score": 10.974,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/0ab3d8c1e5_Financial_20Calculato_A8B74.xls"
+    },
+    {
+      "archive_member": "financial/processed/form_481-05-03.xls",
+      "sha256": "471d40d4a3ed2c85a0a3ba0c344f65c578adadf2620ed9f339a8341e44b2198f",
+      "sheet_count": 9,
+      "nonempty_sheet_count": 9,
+      "formula_count": 979,
+      "sheets": [
+        {
+          "name": "Start Here",
+          "rows": 31,
+          "columns": 4,
+          "nonempty": 38
+        },
+        {
+          "name": "Copy 1",
+          "rows": 76,
+          "columns": 15,
+          "nonempty": 163
+        },
+        {
+          "name": "Copy 2",
+          "rows": 67,
+          "columns": 11,
+          "nonempty": 306
+        },
+        {
+          "name": "Copy 3",
+          "rows": 67,
+          "columns": 11,
+          "nonempty": 306
+        },
+        {
+          "name": "Copy 4",
+          "rows": 61,
+          "columns": 19,
+          "nonempty": 94
+        },
+        {
+          "name": "Worksheet",
+          "rows": 67,
+          "columns": 11,
+          "nonempty": 154
+        },
+        {
+          "name": "Supplemental Sheet Copy 1",
+          "rows": 63,
+          "columns": 15,
+          "nonempty": 96
+        },
+        {
+          "name": "Supplemental Sheet Copy 2",
+          "rows": 63,
+          "columns": 11,
+          "nonempty": 329
+        },
+        {
+          "name": "Supplemental Sheet Copy 3",
+          "rows": 63,
+          "columns": 11,
+          "nonempty": 329
+        }
+      ],
+      "rank_score": 10.958,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/471d40d4a3_form_481-05-03.xls"
+    },
+    {
+      "archive_member": "financial/processed/Treasurer's%20Report%#A7EE5.xls",
+      "sha256": "a783cbbdd132e74ba64918bcf67f9dfccdafa5bda145df70df4e4bb13b914325",
+      "sheet_count": 9,
+      "nonempty_sheet_count": 9,
+      "formula_count": 778,
+      "sheets": [
+        {
+          "name": "National",
+          "rows": 817,
+          "columns": 11,
+          "nonempty": 551
+        },
+        {
+          "name": "Mid-Atlantic",
+          "rows": 817,
+          "columns": 11,
+          "nonempty": 538
+        },
+        {
+          "name": "New England",
+          "rows": 817,
+          "columns": 11,
+          "nonempty": 538
+        },
+        {
+          "name": "SouthEast",
+          "rows": 817,
+          "columns": 11,
+          "nonempty": 398
+        },
+        {
+          "name": "NorthWest",
+          "rows": 817,
+          "columns": 11,
+          "nonempty": 407
+        },
+        {
+          "name": "Midwest",
+          "rows": 817,
+          "columns": 11,
+          "nonempty": 374
+        },
+        {
+          "name": "San Diego",
+          "rows": 817,
+          "columns": 11,
+          "nonempty": 510
+        },
+        {
+          "name": "Chesapeake",
+          "rows": 817,
+          "columns": 11,
+          "nonempty": 533
+        },
+        {
+          "name": "Bay Area",
+          "rows": 817,
+          "columns": 11,
+          "nonempty": 380
+        }
+      ],
+      "rank_score": 10.556,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/a783cbbdd1_Treasurer_s_20Report__A7EE5.xls"
+    },
+    {
+      "archive_member": "financial/processed/sup4q03.xls",
+      "sha256": "7b0dbe443c172057e58334362769f9f78ddaa98b9ac0beff78c38bab3dbd1c3c",
+      "sheet_count": 10,
+      "nonempty_sheet_count": 10,
+      "formula_count": 223,
+      "sheets": [
+        {
+          "name": "CoverPage",
+          "rows": 14,
+          "columns": 2,
+          "nonempty": 5
+        },
+        {
+          "name": "Earnings",
+          "rows": 95,
+          "columns": 5,
+          "nonempty": 164
+        },
+        {
+          "name": "Annual Earnings",
+          "rows": 101,
+          "columns": 8,
+          "nonempty": 196
+        },
+        {
+          "name": "P&C",
+          "rows": 59,
+          "columns": 14,
+          "nonempty": 203
+        },
+        {
+          "name": "Qtr Summary",
+          "rows": 57,
+          "columns": 12,
+          "nonempty": 226
+        },
+        {
+          "name": "Annual Summary",
+          "rows": 59,
+          "columns": 9,
+          "nonempty": 160
+        },
+        {
+          "name": "Specialty Premium Distribution",
+          "rows": 37,
+          "columns": 7,
+          "nonempty": 15
+        },
+        {
+          "name": "Specialty Supplemental Ops Info",
+          "rows": 65,
+          "columns": 9,
+          "nonempty": 264
+        },
+        {
+          "name": "Qtr COR",
+          "rows": 129,
+          "columns": 9,
+          "nonempty": 50
+        },
+        {
+          "name": "CORvsIndustry",
+          "rows": 111,
+          "columns": 12,
+          "nonempty": 60
+        }
+      ],
+      "rank_score": 10.446,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/7b0dbe443c_sup4q03.xls"
+    },
+    {
+      "archive_member": "financial/processed/v-03_hist.xls",
+      "sha256": "24a626b67a33d4505bbdf8272b04018391f94f5ca697f0aa174bcff68d6c119b",
+      "sheet_count": 9,
+      "nonempty_sheet_count": 9,
+      "formula_count": 304,
+      "sheets": [
+        {
+          "name": "03",
+          "rows": 60,
+          "columns": 30,
+          "nonempty": 674
+        },
+        {
+          "name": "02",
+          "rows": 60,
+          "columns": 30,
+          "nonempty": 639
+        },
+        {
+          "name": "01",
+          "rows": 51,
+          "columns": 30,
+          "nonempty": 522
+        },
+        {
+          "name": "00",
+          "rows": 52,
+          "columns": 30,
+          "nonempty": 538
+        },
+        {
+          "name": "99",
+          "rows": 53,
+          "columns": 30,
+          "nonempty": 459
+        },
+        {
+          "name": "98",
+          "rows": 53,
+          "columns": 30,
+          "nonempty": 462
+        },
+        {
+          "name": "97",
+          "rows": 53,
+          "columns": 30,
+          "nonempty": 531
+        },
+        {
+          "name": "96",
+          "rows": 53,
+          "columns": 30,
+          "nonempty": 531
+        },
+        {
+          "name": "95",
+          "rows": 54,
+          "columns": 30,
+          "nonempty": 544
+        }
+      ],
+      "rank_score": 9.608,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/24a626b67a_v-03_hist.xls"
+    },
+    {
+      "archive_member": "financial/processed/DentalPPO-HMOrfpAttM.xls",
+      "sha256": "cb3c6f0497bf866aad3b589ac414739fd6d40a4641c415e79a5888c37a655f31",
+      "sheet_count": 9,
+      "nonempty_sheet_count": 9,
+      "formula_count": 97,
+      "sheets": [
+        {
+          "name": "Att M1-Finan Proposal",
+          "rows": 30,
+          "columns": 2,
+          "nonempty": 25
+        },
+        {
+          "name": "ListBox",
+          "rows": 3,
+          "columns": 3,
+          "nonempty": 7
+        },
+        {
+          "name": "Att M2-Finan Compl Chklst",
+          "rows": 22,
+          "columns": 3,
+          "nonempty": 25
+        },
+        {
+          "name": "Att M3-Compl Chklst Explan",
+          "rows": 12,
+          "columns": 2,
+          "nonempty": 10
+        },
+        {
+          "name": "Att M4a-Fully Insured Prem_DPPO",
+          "rows": 46,
+          "columns": 8,
+          "nonempty": 98
+        },
+        {
+          "name": "Att M4b-Fully Insured Prem_DHMO",
+          "rows": 46,
+          "columns": 14,
+          "nonempty": 97
+        },
+        {
+          "name": "Att M5a - Premium Analysis_DPPO",
+          "rows": 45,
+          "columns": 7,
+          "nonempty": 109
+        },
+        {
+          "name": "Att M5b - Premium Analysis_DHMO",
+          "rows": 55,
+          "columns": 7,
+          "nonempty": 105
+        },
+        {
+          "name": "M-6_Prov Reim History_DPPO",
+          "rows": 51,
+          "columns": 12,
+          "nonempty": 110
+        }
+      ],
+      "rank_score": 9.194,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/cb3c6f0497_DentalPPO-HMOrfpAttM.xls"
+    },
+    {
+      "archive_member": "financial/processed/mdr03demo.xls",
+      "sha256": "b1de981b50ef89d5d8232066fc6481c7ba728739546753bb96f58598dce285d4",
+      "sheet_count": 9,
+      "nonempty_sheet_count": 9,
+      "formula_count": 71,
+      "sheets": [
+        {
+          "name": "Table of Contents",
+          "rows": 36,
+          "columns": 1,
+          "nonempty": 28
+        },
+        {
+          "name": "Orig",
+          "rows": 21,
+          "columns": 8,
+          "nonempty": 108
+        },
+        {
+          "name": "Whole",
+          "rows": 18,
+          "columns": 8,
+          "nonempty": 104
+        },
+        {
+          "name": "BCorig",
+          "rows": 19,
+          "columns": 6,
+          "nonempty": 77
+        },
+        {
+          "name": "BCcorr",
+          "rows": 17,
+          "columns": 8,
+          "nonempty": 103
+        },
+        {
+          "name": "Online",
+          "rows": 14,
+          "columns": 7,
+          "nonempty": 57
+        },
+        {
+          "name": "Servvol",
+          "rows": 17,
+          "columns": 8,
+          "nonempty": 68
+        },
+        {
+          "name": "Subservnum",
+          "rows": 12,
+          "columns": 7,
+          "nonempty": 55
+        },
+        {
+          "name": "PMInew",
+          "rows": 11,
+          "columns": 8,
+          "nonempty": 46
+        }
+      ],
+      "rank_score": 9.142,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b1de981b50_mdr03demo.xls"
+    },
+    {
+      "archive_member": "financial/processed/hist.xls",
+      "sha256": "b90c65fbe923539a34e738380aa19e905535b6719a7643ceb187581abeedb222",
+      "sheet_count": 8,
+      "nonempty_sheet_count": 8,
+      "formula_count": 504,
+      "sheets": [
+        {
+          "name": "0",
+          "rows": 28,
+          "columns": 3,
+          "nonempty": 38
+        },
+        {
+          "name": "1",
+          "rows": 35,
+          "columns": 14,
+          "nonempty": 311
+        },
+        {
+          "name": "2",
+          "rows": 38,
+          "columns": 14,
+          "nonempty": 396
+        },
+        {
+          "name": "3",
+          "rows": 38,
+          "columns": 15,
+          "nonempty": 406
+        },
+        {
+          "name": "4",
+          "rows": 24,
+          "columns": 14,
+          "nonempty": 203
+        },
+        {
+          "name": "5",
+          "rows": 40,
+          "columns": 14,
+          "nonempty": 340
+        },
+        {
+          "name": "6",
+          "rows": 35,
+          "columns": 12,
+          "nonempty": 227
+        },
+        {
+          "name": "7",
+          "rows": 40,
+          "columns": 15,
+          "nonempty": 366
+        }
+      ],
+      "rank_score": 9.008,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b90c65fbe9_hist.xls"
+    },
+    {
+      "archive_member": "financial/processed/hist_e.xls",
+      "sha256": "f6fcd43a6b1f94155e1f5cd63f539907eb1ac8c85c6d208940ff9319d80b3170",
+      "sheet_count": 8,
+      "nonempty_sheet_count": 8,
+      "formula_count": 504,
+      "sheets": [
+        {
+          "name": "0",
+          "rows": 25,
+          "columns": 3,
+          "nonempty": 37
+        },
+        {
+          "name": "1",
+          "rows": 35,
+          "columns": 14,
+          "nonempty": 309
+        },
+        {
+          "name": "2",
+          "rows": 38,
+          "columns": 14,
+          "nonempty": 395
+        },
+        {
+          "name": "3",
+          "rows": 38,
+          "columns": 15,
+          "nonempty": 405
+        },
+        {
+          "name": "4",
+          "rows": 24,
+          "columns": 14,
+          "nonempty": 202
+        },
+        {
+          "name": "5",
+          "rows": 40,
+          "columns": 14,
+          "nonempty": 339
+        },
+        {
+          "name": "6",
+          "rows": 35,
+          "columns": 12,
+          "nonempty": 226
+        },
+        {
+          "name": "7",
+          "rows": 40,
+          "columns": 15,
+          "nonempty": 362
+        }
+      ],
+      "rank_score": 9.008,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/f6fcd43a6b_hist_e.xls"
+    },
+    {
+      "archive_member": "financial/processed/Annexes_C_I.xls",
+      "sha256": "9ee32a16c3a185b9b0354b2e031cc87ddcdca8cd3d8c332250765b93af6881e5",
+      "sheet_count": 8,
+      "nonempty_sheet_count": 8,
+      "formula_count": 462,
+      "sheets": [
+        {
+          "name": "Declaration - AnnexC",
+          "rows": 26,
+          "columns": 10,
+          "nonempty": 23
+        },
+        {
+          "name": "Commentary - Annex D",
+          "rows": 11,
+          "columns": 3,
+          "nonempty": 7
+        },
+        {
+          "name": "annex e",
+          "rows": 61,
+          "columns": 12,
+          "nonempty": 215
+        },
+        {
+          "name": "annex f",
+          "rows": 73,
+          "columns": 12,
+          "nonempty": 295
+        },
+        {
+          "name": "annex g",
+          "rows": 55,
+          "columns": 20,
+          "nonempty": 566
+        },
+        {
+          "name": "Annex h",
+          "rows": 41,
+          "columns": 9,
+          "nonempty": 29
+        },
+        {
+          "name": "Annex h(1)",
+          "rows": 35,
+          "columns": 9,
+          "nonempty": 40
+        },
+        {
+          "name": "Annex I",
+          "rows": 27,
+          "columns": 8,
+          "nonempty": 14
+        }
+      ],
+      "rank_score": 8.924,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/9ee32a16c3_Annexes_C_I.xls"
+    },
+    {
+      "archive_member": "financial/processed/c02031_template.xls",
+      "sha256": "aad536691bb19b7b63e0510933e5362ae1d314c06a157f4c544567d44717911d",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 1226,
+      "sheets": [
+        {
+          "name": "Title_Page",
+          "rows": 33,
+          "columns": 1,
+          "nonempty": 22
+        },
+        {
+          "name": "Check_Document_1",
+          "rows": 52,
+          "columns": 14,
+          "nonempty": 99
+        },
+        {
+          "name": "2003_2002_Difference",
+          "rows": 240,
+          "columns": 22,
+          "nonempty": 2445
+        },
+        {
+          "name": "Calculation_of_HEMS",
+          "rows": 27,
+          "columns": 4,
+          "nonempty": 100
+        },
+        {
+          "name": "Check_Document_2",
+          "rows": 69,
+          "columns": 14,
+          "nonempty": 236
+        },
+        {
+          "name": "CCANALYSIS",
+          "rows": 70,
+          "columns": 16,
+          "nonempty": 647
+        }
+      ],
+      "rank_score": 8.452,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/aad536691b_c02031_template.xls"
+    },
+    {
+      "archive_member": "financial/processed/ED%20Financial%20Statements.xls",
+      "sha256": "dd5cd27d5fde623b5aeb4c16be3c5c16b489f4ef16f50170a9c2d7fc10b59601",
+      "sheet_count": 7,
+      "nonempty_sheet_count": 7,
+      "formula_count": 713,
+      "sheets": [
+        {
+          "name": "BalSheet",
+          "rows": 60,
+          "columns": 10,
+          "nonempty": 94
+        },
+        {
+          "name": "StofProgCost SingleProg",
+          "rows": 124,
+          "columns": 9,
+          "nonempty": 407
+        },
+        {
+          "name": "ProgCostMultifunded",
+          "rows": 126,
+          "columns": 11,
+          "nonempty": 445
+        },
+        {
+          "name": "Sample BS",
+          "rows": 60,
+          "columns": 10,
+          "nonempty": 127
+        },
+        {
+          "name": "Sample ProgCost",
+          "rows": 125,
+          "columns": 9,
+          "nonempty": 462
+        },
+        {
+          "name": "Certification",
+          "rows": 36,
+          "columns": 6,
+          "nonempty": 21
+        },
+        {
+          "name": "Sch of Exp",
+          "rows": 73,
+          "columns": 7,
+          "nonempty": 39
+        }
+      ],
+      "rank_score": 8.426,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/dd5cd27d5f_ED_20Financial_20Statements.xls"
+    },
+    {
+      "archive_member": "financial/processed/V-Stmt-01.xls",
+      "sha256": "7f4a4141faf4616bdc89077539d2a77e9f6a84fe3c7069b342fd16de641f1534",
+      "sheet_count": 8,
+      "nonempty_sheet_count": 8,
+      "formula_count": 159,
+      "sheets": [
+        {
+          "name": "Memo On Prescribed Form",
+          "rows": 53,
+          "columns": 1,
+          "nonempty": 1
+        },
+        {
+          "name": "Tips & Tricks",
+          "rows": 31,
+          "columns": 1,
+          "nonempty": 19
+        },
+        {
+          "name": "Cover Page",
+          "rows": 45,
+          "columns": 4,
+          "nonempty": 29
+        },
+        {
+          "name": "Exhibit A - Page 1",
+          "rows": 39,
+          "columns": 10,
+          "nonempty": 140
+        },
+        {
+          "name": "Exhibit A - Page 2",
+          "rows": 32,
+          "columns": 10,
+          "nonempty": 121
+        },
+        {
+          "name": "Schedule 1",
+          "rows": 49,
+          "columns": 10,
+          "nonempty": 23
+        },
+        {
+          "name": "Schedule 2",
+          "rows": 46,
+          "columns": 8,
+          "nonempty": 10
+        },
+        {
+          "name": "ICQ",
+          "rows": 89,
+          "columns": 8,
+          "nonempty": 36
+        }
+      ],
+      "rank_score": 8.318,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/7f4a4141fa_V-Stmt-01.xls"
+    },
+    {
+      "archive_member": "financial/processed/AFS_Dec_2002.xls",
+      "sha256": "0b29345648117ee8f4e9b046dc9614b039bb339ea11d46e12711fa0cee6e8555",
+      "sheet_count": 8,
+      "nonempty_sheet_count": 8,
+      "formula_count": 52,
+      "sheets": [
+        {
+          "name": "Cover",
+          "rows": 53,
+          "columns": 9,
+          "nonempty": 25
+        },
+        {
+          "name": "AudReport",
+          "rows": 41,
+          "columns": 1,
+          "nonempty": 26
+        },
+        {
+          "name": "BalSht",
+          "rows": 26,
+          "columns": 9,
+          "nonempty": 26
+        },
+        {
+          "name": "IncStmt",
+          "rows": 38,
+          "columns": 10,
+          "nonempty": 77
+        },
+        {
+          "name": "Notes 1",
+          "rows": 46,
+          "columns": 9,
+          "nonempty": 61
+        },
+        {
+          "name": "Notes 2",
+          "rows": 22,
+          "columns": 9,
+          "nonempty": 25
+        },
+        {
+          "name": "Donor_Schedule",
+          "rows": 46,
+          "columns": 7,
+          "nonempty": 55
+        },
+        {
+          "name": "Donor_Schedule_2",
+          "rows": 20,
+          "columns": 7,
+          "nonempty": 23
+        }
+      ],
+      "rank_score": 8.104,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/0b29345648_AFS_Dec_2002.xls"
+    },
+    {
+      "archive_member": "financial/processed/finaid2004.xls",
+      "sha256": "625b41a713fbec9f099e83f0aaa2a8ca9d67de44548dd6c435c966e66d15039a",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 1002,
+      "sheets": [
+        {
+          "name": "AID by STATE type 1",
+          "rows": 502,
+          "columns": 6,
+          "nonempty": 2985
+        },
+        {
+          "name": "AID by AMOUNT type 1",
+          "rows": 502,
+          "columns": 6,
+          "nonempty": 2985
+        },
+        {
+          "name": "AID by STATE type 2",
+          "rows": 502,
+          "columns": 6,
+          "nonempty": 2985
+        },
+        {
+          "name": "AID by AMOUNT type 2",
+          "rows": 502,
+          "columns": 6,
+          "nonempty": 2985
+        },
+        {
+          "name": "WHAT IT COSTS by State!!!",
+          "rows": 503,
+          "columns": 7,
+          "nonempty": 3488
+        },
+        {
+          "name": "WHAT IT COSTS by Doner",
+          "rows": 503,
+          "columns": 7,
+          "nonempty": 3488
+        }
+      ],
+      "rank_score": 8.004,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/625b41a713_finaid2004.xls"
+    },
+    {
+      "archive_member": "financial/processed/FINANCIAL_REPORT.xls",
+      "sha256": "1e30292c3b0fc3ad871e62a6d7b6eb019c231e8c069e1f70625ae51e8fa6e69e",
+      "sheet_count": 7,
+      "nonempty_sheet_count": 7,
+      "formula_count": 281,
+      "sheets": [
+        {
+          "name": "How to use",
+          "rows": 36,
+          "columns": 4,
+          "nonempty": 32
+        },
+        {
+          "name": "Cover sheet",
+          "rows": 109,
+          "columns": 9,
+          "nonempty": 55
+        },
+        {
+          "name": "FR expenditures",
+          "rows": 66,
+          "columns": 9,
+          "nonempty": 373
+        },
+        {
+          "name": "FR finances",
+          "rows": 44,
+          "columns": 15,
+          "nonempty": 174
+        },
+        {
+          "name": "FR investments",
+          "rows": 56,
+          "columns": 5,
+          "nonempty": 31
+        },
+        {
+          "name": "FR non-eligible",
+          "rows": 24,
+          "columns": 11,
+          "nonempty": 59
+        },
+        {
+          "name": "AR activities",
+          "rows": 15,
+          "columns": 5,
+          "nonempty": 2
+        }
+      ],
+      "rank_score": 7.562,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/1e30292c3b_FINANCIAL_REPORT.xls"
+    },
+    {
+      "archive_member": "financial/processed/sample%20fiscal%20pag#A8AD8.xls",
+      "sha256": "59d004228343d79f404d941253cf2a132bf144619e4ee33a8a913bd58556fa94",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 487,
+      "sheets": [
+        {
+          "name": "Summary",
+          "rows": 65,
+          "columns": 10,
+          "nonempty": 360
+        },
+        {
+          "name": "1003",
+          "rows": 76,
+          "columns": 9,
+          "nonempty": 436
+        },
+        {
+          "name": "1043",
+          "rows": 76,
+          "columns": 9,
+          "nonempty": 436
+        },
+        {
+          "name": "1166",
+          "rows": 76,
+          "columns": 9,
+          "nonempty": 436
+        },
+        {
+          "name": "1198",
+          "rows": 76,
+          "columns": 9,
+          "nonempty": 436
+        },
+        {
+          "name": "1856",
+          "rows": 76,
+          "columns": 9,
+          "nonempty": 436
+        }
+      ],
+      "rank_score": 6.974,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/59d0042283_sample_20fiscal_20pag_A8AD8.xls"
+    },
+    {
+      "archive_member": "financial/processed/Appendix2_model.xls",
+      "sha256": "b9b31bc1839bd30ba44fff346a252a12297b7b5d0e884d20d5bb44e6c8c2a44b",
+      "sheet_count": 4,
+      "nonempty_sheet_count": 4,
+      "formula_count": 1485,
+      "sheets": [
+        {
+          "name": "Presentation",
+          "rows": 30,
+          "columns": 11,
+          "nonempty": 92
+        },
+        {
+          "name": "Data",
+          "rows": 197,
+          "columns": 16,
+          "nonempty": 1013
+        },
+        {
+          "name": "Zafarana 1999",
+          "rows": 85,
+          "columns": 17,
+          "nonempty": 391
+        },
+        {
+          "name": "Zafarana 2010",
+          "rows": 117,
+          "columns": 17,
+          "nonempty": 630
+        }
+      ],
+      "rank_score": 6.97,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b9b31bc183_Appendix2_model.xls"
+    },
+    {
+      "archive_member": "financial/processed/FY02-03_GOVT_FUNDS.xls",
+      "sha256": "b687b696f36359644a7293270ca277866096be3a3604400039fb619db5e45f09",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 371,
+      "sheets": [
+        {
+          "name": "Govt Funds-BS",
+          "rows": 64,
+          "columns": 12,
+          "nonempty": 172
+        },
+        {
+          "name": "Recon - BS",
+          "rows": 58,
+          "columns": 8,
+          "nonempty": 45
+        },
+        {
+          "name": "Govt Funds-RE",
+          "rows": 65,
+          "columns": 12,
+          "nonempty": 171
+        },
+        {
+          "name": "Govt Funds-BS Detail",
+          "rows": 52,
+          "columns": 41,
+          "nonempty": 602
+        },
+        {
+          "name": "Govt Funds-RE Detail",
+          "rows": 63,
+          "columns": 39,
+          "nonempty": 604
+        },
+        {
+          "name": "Recon - Net change of..",
+          "rows": 61,
+          "columns": 12,
+          "nonempty": 23
+        }
+      ],
+      "rank_score": 6.742,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b687b696f3_FY02-03_GOVT_FUNDS.xls"
+    },
+    {
+      "archive_member": "financial/processed/Q2%202003%20Financial#A7EF5.xls",
+      "sha256": "7c0ae39c4feb04afbc214842158434ccfac49f558fd3021dfd7b7cd63c486e38",
+      "sheet_count": 5,
+      "nonempty_sheet_count": 5,
+      "formula_count": 772,
+      "sheets": [
+        {
+          "name": "P&L",
+          "rows": 72,
+          "columns": 16,
+          "nonempty": 244
+        },
+        {
+          "name": "P&L Crib",
+          "rows": 127,
+          "columns": 21,
+          "nonempty": 780
+        },
+        {
+          "name": "BS",
+          "rows": 51,
+          "columns": 5,
+          "nonempty": 80
+        },
+        {
+          "name": "BS Crib",
+          "rows": 204,
+          "columns": 11,
+          "nonempty": 989
+        },
+        {
+          "name": "CF",
+          "rows": 74,
+          "columns": 9,
+          "nonempty": 308
+        }
+      ],
+      "rank_score": 6.544,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/7c0ae39c4f_Q2_202003_20Financial_A7EF5.xls"
+    },
+    {
+      "archive_member": "financial/processed/2003AssHistForms.xls",
+      "sha256": "c8476ebac42dd36b07d7e16496c14dbe230fbcb129fc7e327d14b3d82c20d72e",
+      "sheet_count": 5,
+      "nonempty_sheet_count": 5,
+      "formula_count": 768,
+      "sheets": [
+        {
+          "name": "Assessment History",
+          "rows": 44,
+          "columns": 5,
+          "nonempty": 49
+        },
+        {
+          "name": "Authorized",
+          "rows": 10,
+          "columns": 4,
+          "nonempty": 10
+        },
+        {
+          "name": "Unbilled ",
+          "rows": 9,
+          "columns": 4,
+          "nonempty": 9
+        },
+        {
+          "name": "Gross",
+          "rows": 9,
+          "columns": 4,
+          "nonempty": 9
+        },
+        {
+          "name": "Insolvency History",
+          "rows": 400,
+          "columns": 7,
+          "nonempty": 797
+        }
+      ],
+      "rank_score": 6.536,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/c8476ebac4_2003AssHistForms.xls"
+    },
+    {
+      "archive_member": "financial/processed/2003113145043.xls",
+      "sha256": "97b08e47ec0242abc240689a715e3045e313cf5e6f73a8ebd92e45e6e7ef4f66",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 265,
+      "sheets": [
+        {
+          "name": "How to use",
+          "rows": 34,
+          "columns": 4,
+          "nonempty": 31
+        },
+        {
+          "name": "Cover sheet",
+          "rows": 109,
+          "columns": 9,
+          "nonempty": 84
+        },
+        {
+          "name": "FR expenditures",
+          "rows": 66,
+          "columns": 9,
+          "nonempty": 403
+        },
+        {
+          "name": "FR finances",
+          "rows": 44,
+          "columns": 15,
+          "nonempty": 174
+        },
+        {
+          "name": "FR investments",
+          "rows": 38,
+          "columns": 5,
+          "nonempty": 32
+        },
+        {
+          "name": "AR activities",
+          "rows": 15,
+          "columns": 5,
+          "nonempty": 2
+        }
+      ],
+      "rank_score": 6.53,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/97b08e47ec_2003113145043.xls"
+    },
+    {
+      "archive_member": "financial/processed/RSAFinancials.xls",
+      "sha256": "f4fb6cf6f2b77581ac688f8ff902f4b0aa10428d09b0481ca7a74cb304f2c7e8",
+      "sheet_count": 6,
+      "nonempty_sheet_count": 6,
+      "formula_count": 256,
+      "sheets": [
+        {
+          "name": "Intro",
+          "rows": 42,
+          "columns": 2,
+          "nonempty": 19
+        },
+        {
+          "name": "App1",
+          "rows": 44,
+          "columns": 9,
+          "nonempty": 64
+        },
+        {
+          "name": "App 2",
+          "rows": 48,
+          "columns": 13,
+          "nonempty": 142
+        },
+        {
+          "name": "App 3",
+          "rows": 60,
+          "columns": 9,
+          "nonempty": 103
+        },
+        {
+          "name": "App 4a",
+          "rows": 36,
+          "columns": 7,
+          "nonempty": 70
+        },
+        {
+          "name": "App 4b",
+          "rows": 44,
+          "columns": 9,
+          "nonempty": 110
+        }
+      ],
+      "rank_score": 6.512,
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/f4fb6cf6f2_RSAFinancials.xls"
+    }
+  ],
+  "rejected": [
+    {
+      "archive_member": "financial/processed/02rise.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/030731csnb.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/03PFMJOURnalBOOKSFina#A7ED3.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/03Q4finstmts.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/10-formc.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/10_yr_financial_record.xls",
+      "reason": "XLRDError",
+      "detail": "Unsupported format, or corrupt file: Expected BOF record; found b'\\n  <html'"
+    },
+    {
+      "archive_member": "financial/processed/111802_fintables.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/1213.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/1214.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/1269med.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/1269supply.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/134_document.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/140%20-%20MR%20Financ#A7B27.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/17504.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/1999-2001.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/1999GroupFinancialSum#A7D02.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/20-10.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/20000531e4a.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2000_QTRINFOe.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2001-2003TwoYearCycle.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2001groupfinancialsummary.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2002_03_electronic_fi#A7DD3.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2002_Engels_2001-02_o#A80DA.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2002_prelim_numbers.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2002spouseformfb.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/20031128.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2003_04_FinancialAid_#A7B06.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2003_04_FinancialAid_#A7B07.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2003_bea_cdfi_partner#A7CB5.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2003_CFS_form_e.XLS",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2003_financial_statements.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2003_Project_Report_form.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2003_Workplan_for_Web.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2003hpfsr.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/20040130e6a.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/20040227.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2004_CFS_form_e.XLS",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2238.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/2619126_Fin_Form_Prog#A7B83.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/3763250_Q304_factsheet.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/3c_group_values.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/3q2000.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/3rdquarterfinancials2003.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/3yrsegment_table.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/4.f._FinReport.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/450form.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/4q03fax.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/509afin.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/50_20030630.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/5204_0%20TABLE%20CONC#A7B63.XLS",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/54_20030831.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/5_Year_Summary3.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/7-31-03%20Analysis%20#A7ED9.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/73102%20Analysis%20of#A7EDA.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/77001.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/7WorldTradeCenterTenants.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/90001.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/90c1_en.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/90c2_en.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/9510.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/99appdx31.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/99financials.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/_h8d62ck10a9im6rrddli#A7DD7.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/a3.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ABRIDGED.XLS",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/accesstool.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/account.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/acctserv_orgchart.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/activities_tasks.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/AdditionalFundsRequest.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/AEISupplementaryTable#A8113.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/AEISupplementaryTable#A8114.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/AFS_Dec_2001.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/agreement.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/All_FR_Staff_Directory.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/allisic3.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/AMJ2003_%20Publish.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Annex%20G%20Final%20F#A7D58.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/annex_18.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Annex_D1_StandardTabl#A7B3E.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Annex_II_Part_E1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/annex_VIII_financial_#A800A.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/AnnexB_D.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Annual%20Certificatio#A7DC6.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/AnnualFinalaccountsJune2001.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/apf_final_14.3.03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Appendix%201%20RFTFra#A7EB2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Appendix%20F%20%20CC%#A8082.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/appendix-f.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/appendix_b.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/AppendixFScores-97-011.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/appendk.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Application_Education#A8AE6.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ARF%20320.0%20Stateme#A7B80.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ARF%20320.9_Intra-gro#A7B81.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/attach12a.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/atthfrm3.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Audit%20Grading%20Matrix.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/b01-02legal_ltr_schedule.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/B01hist.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/B17hist.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/b5922-financialservic#A8111.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/b_tn1_e1_en-v2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/bb5-list.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/blltnwebtables03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/BM120304%20-%20Paper%#A7FFD.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Bnbjan011.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/BNPParibas.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/board_financial.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/BOP2002_Table_EN.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/borgraduatefellowsbud#A7EE7.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/brochure.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/BudCycleDeadlines.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/bus_inc.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/bus_plan_2003-4_annex2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/business.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/BY_2005_Exhibit_52_Template.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/c5922-financialservic#A8112.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/CAIW.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Campaign%20Financial%#A7CCF.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/cash_flow.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ccmigration_09186a008#A7CCD.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/cds_2002_H.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/CDS_FinAid.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/CEF_course_list.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ch1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ch13_e.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ch15_e.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ch9_1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ChampionshipAccounting.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/change_file_DJST30_FSV.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ChangeofFinancialMana#A7B64.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/CHARTS_N.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/check.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/chiffrecles2003.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/cip_cip.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/cl-ns.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/classspr2004.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/closewks03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/CMSAauditreport2001_2002.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/CMSAauditreport2002_2003.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/cmwrfinance.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/CoAnalFinSup1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/COMBINED%20FINANCIAL%#A80C6.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Combined_Financial_St#A7CBD.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/consol_cashflow_state#A8006.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Consolidated_LR_TestS#A7E57.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/contract_specificatio#A8098.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/controller.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/CORPFINTESTMODEL.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/COSO_Evaluation_Form.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Cost%20Statement.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/crab29_jos.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/CTCMCOSexportV102.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ctptf9.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/cunamechanges.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/cunamechanges1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/cvg_financials.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/DahSing(GT)-1stInterview.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/datasheet.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/dealsfeb03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/dealsjune03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/December%202003%20PMI#A80EF.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/delauthform.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/departmental_sales_e.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Dept-FS.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/dept.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/derivation.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/DH-37.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/DIR%20DEP%20AUTH.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Direct%20Deposit%20form.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/directdeposit.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/DirectDepositForm.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Disclosure.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/DisclosureRequirements.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/disneyflex.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/DistrictFinancialStatement.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/DJSI_World_Review_200#A8121.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/DJSI_World_Review_200#A8123.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/dl_tkicch_xls_finanzi#A80E9.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/doc_3_fin_plan.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/docprog.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/doj53forfy04web.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/DowJonesSTOXX_Nordic3#A8119.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/DowJonesSTOXX_Nordic3#A811A.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/dpost_303_cashflowstatement.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/dpost_303_division_fi#A8B71.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Draft%20Human%20Right#A7EB3.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/e-learning.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/e_calendar.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/EARN-20034QSupplement#A8016.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Economic1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Economic2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Editorial_Coverage.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/EligibilityForm0903.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/emaric_423.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/emergency%20financial#A7B61.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/End%20of%20Year%20Tim#A7E54.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ENDOFYEARANNUALACCOUN#A8042.XLS",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/English%20financial%2#A7F43.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ERATT_SAP_Financial_A#A7EC7.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/eval_update.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Example%20Financial%2#A8079.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/excel02.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/excel0402.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Executive%20Summary%2#A7CA3.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ExhibitF.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/expense_transfer_form.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/F1Financialprovision.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FACTQ102.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Fall%2004-05.Graduate#A7C4D.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Fall-2003-schedule.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fao_gfs.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fao_pcs.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FAUHousing_Analysis.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FB54_59.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/feb03jun03-contracts.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fhy380vtbj7n1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fi02.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fi198e.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fin%20aid%20HEI%20sectors.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fin%20aid%20IPEDS%20sectors.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FIN%20YEAR%201%20APRI#A7B18.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fin_accounts.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Fin_info.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Fin_plan_sel_def.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fin_rank.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fin_settlmnt_03-2002.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Fin_St%20June%20for%2#A7FFC.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fin_top_reports.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/finaid00.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinAidAvail.xls",
+      "reason": "AssertionError",
+      "detail": ""
+    },
+    {
+      "archive_member": "financial/processed/FinAidContingencyPlan.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinalAnnexFSSN06001.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinalFin.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Finance_Contact_List.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Finance_Financial_Aid.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financeRespChartTemp.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Activity%#A8015.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial%20affairs%20chart.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Analysis%#A7B4A.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Compariso#A7ED8.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20eligibility.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20highlights.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial%20indicators2000.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial%20measures%#A7D8C.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Mgt.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Needs%20A#A7B16.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Projectio#A7FF4.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Recommendations.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Regulatio#A7B42.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Repor%20U#A80EC.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Report%20#A8044.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Report.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Statement#A801C.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial%20statement.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Status%20#A7FF8.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Summary%2#A7F24.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial%20summary%20sheet.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial%20Summary.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial-finland_en.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial-greece_el.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial2000-2001.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_aid.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_analysis2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_benefits_ca#A7F22.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_data_downloadable.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_futures.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial_Highlights.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial_highlights_#A7B48.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_information_form.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_outlook_sta#A7DE4.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_outlook_sta#A7DE5.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_report_2002.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_report_prob#A7B30.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Financial_Security_Ro#A7B40.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_table_overview.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financial_webcast_200#A7C21.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financialanalysis.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financialassistapp.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinancialData200303.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinancialInfo.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financialplan.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinancialRecord.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinancialReport.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financialreport2000.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financialreport2001.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinancialReportBlank.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financials0203e.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financials0209e.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinancialsFormPlatform.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financialstate.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/financon.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/findata.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/finec.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/finfedst.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/finfuns.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinHrdshp_Wrksht.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/finkirbiling.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/finplanner_companylist.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinRep2000-01%20AGM2003.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinRep2001-02%20AGM2003.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/finrpt_temp.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/finstate.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/finstatuk01.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FINSTMT1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinSummary-031001.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinSummary-040301.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinSystem.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FinValCalc.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fiscalsponsorbudgetform.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Fiscsch.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fisproj.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FLEXI_MASTER%20V102.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/flexval.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FMInterfaces_v2.2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FMT_access_request_form.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Forbearance.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/form064.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/form1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/form26.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Form269.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/form_402_r_trip_repor#A7CF6.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Form_R1_en.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/forms.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FPRPFinRpt2004.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FSR%20Excell.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fsu_financial_reconci#A7CF8.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FTR_Template_11-2003_Excel.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Full_book_Financial_a#A7C1F.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/functdir.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FunctionCodeCrosswalk.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FY%202004%20Financial#A7BA7.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fy03_financial_stmts.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fy03gebk.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/fy04_financial_summary.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/FYR_2003_Prod_Excelsp#A8007.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/g1_e.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/GA_RecNonGAAP_FY03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/gb00fde.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/gb99fde.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/GIROform.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/GRID%20050303%20(030403).xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/GRID2004Funding.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/GVTquest2001_E.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/hasselback_list.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/hd2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/HEFCEProposalFinance.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/hispanicspring04.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/hist4q.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/hist4q_e.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/hist_restate_4q03_sel#A7B10.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/hist_restate_4q03_sel#A7B11.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Historical%20Financia#A7F49.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/HistoricalFinancialResults.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/history%20of%20univ%2#A7D22.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/historypivot.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/How_to_Calculate_a_GPA.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Howtomezzanine-financia.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/HREF%20website.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ICGFMSummitpollingdata.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/imlsoperating.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/imlsschedule.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/imp_legacy_system.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/income-statement.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/INCOMESTMT.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/index.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/industrybreakdown00-03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/IndustrySectorFinancial.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/interim_financial_ind#A7DA2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/internationalliquidit#A7BF7.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/internationalliquidit#A7C07.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/IntrotoAnalysis.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/issues.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ist_cost_claim_e2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Job_Order_Profile.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/k02.0203.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/k0304.0203.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Kapitalflussrechnung_engl.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/key_figures98_02.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/key_sc30_doc10b.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/KLIC_version_of_Finan#A7EE1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/LargeValue.xls",
+      "reason": "TypeError",
+      "detail": "'NoneType' object is not subscriptable"
+    },
+    {
+      "archive_member": "financial/processed/laserteamlist.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Lawrence-MBA569-corp%#A7B2D.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Leeds_ACCA_FT_CourseD#A7D44.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Lehigh_2020_financial#A7EF0.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/leverage.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/LGFTGUIDNACE%20AND%20#A7D8A.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/liitetiedot_23.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/liitetiedot_6.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/list_of_participants.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Local%20Programs%20Fi#A80F7.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/lstacumrpt.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ltquart.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/m14.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/m20.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Manufacturers.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/mapping.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/MARAD_CY03_Commercial#A7DCE.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/marketshares%2001-04.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/marketshares0204_en.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/marketsyracuse100.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/marketsyracuse50.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/MASTERDATASET835.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/MATHCOUNTS%20Financial.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/maytermcalc.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/MBB9%20Benchmarks%20b#A7F5C.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/mbda01.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/mfasset_accounts.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/milestones.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/mini.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/MiniFactBook2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ml_offshore.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/mls-industry-NAICS.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/mls-reason-qtr.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/MMMFinancialHistory.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/model_financ_rpt_040115.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Money_and_financial_markets.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/MonthlyFinancialRevie#A8B41.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/MonthlyReviewChecklist.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/MP_230304_cashflow.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/MS%20BA%20FINANCE-%20#A7D84.XLS",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ms2003ara.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Mtm%20All.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/NAD-29.02.2004-balans.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/name_number.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/nativespring04.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/NatlForm(f2).xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/NCASFOR1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/NCua_094.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Ncuapositions.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/NDP%20-%20SubNDP%20-%#A7B6D.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Netgraphe-ang.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/NettoQ302_Eng.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/New%20Direct%20Deposi#A7DE6.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/New_GECS_Reporting_Ba#A7E97.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Newcastle_CIMA_Course#A7D47.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/NJR0128FinInfo-963741.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/North%20America%20-%2#A8B11.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Note04d%E9f.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/note_15.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/note_16.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/NOTES2-00xls1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/off%20campus%20equipment.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/OfficersTaskCalendar.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/OFMReq_May03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/oge_form_450_sep02.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ogp_scopes_20040106.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/oig01.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ond_publish.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/OrgChargSept2003_2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/osm49.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Overheads_Vorlage_EK.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/P2_Financial_Summary_5277_7.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Paper_Registration_Qu#A7E64.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/paris040319.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Parish%20Financial%20#A7DD1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/parislst040311.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Part_4.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/pc_champ_budget97.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Personal%20Data%20Form.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Personal%20Financial%#A8014.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Personal%20Financial%#A80C0.xls",
+      "reason": "XLRDError",
+      "detail": "Unsupported format, or corrupt file: Expected BOF record; found b'<html>\\n<'"
+    },
+    {
+      "archive_member": "financial/processed/PersonalFinanceScope.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Personnel-Payroll%20M#A7E37.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/pfs.xls",
+      "reason": "FormulaError",
+      "detail": "ERROR *** Token 0x2d (AreaN) found in NAME formula"
+    },
+    {
+      "archive_member": "financial/processed/PhilanthropyFinancialForm.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/phonelist.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/pi1506_sig.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/PI_ATV_ENG.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/pilot_group_approvers.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/PosterData.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/preliminaryprogramsch#A7B5F.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/preliminaryprogramsch#A7B60.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/profit_ctr_add.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Project%20Financial%2#A7CEE.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Project%20Financial%2#A8AD9.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Prq403.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/psa%20financial%20sta#A7B1C.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/PTA%20Setup%20Respons#A8AF6.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/PUBLIC%20FINANCE%20-%#A7DE0.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/publicsupport.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/pwgsc-fi-304.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Q1_FinancialHighlights.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Q2-FY04%20Financial%2#A7EF1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Q201FIN.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Q3_02.XLS",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Q3_Final.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Q4_02.XLS",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Q4_FinancialHighlights.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Quarterly_Financial_I#A7EC0.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/quarterly_financial_s#A7B12.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/quarterly_financial_s#A7B13.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Quarterly_report_e.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Quarterly_Segment_Data.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/QuarterlyFinancial.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/quarterlyreport.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/quaterly.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/rahoitustilinpito_en_tablea.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/RamahBenchmarkingschedule.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ratioanal.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/RBC_2003_Highlights.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/rebase.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/recfundfin01.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Reconciliation%20Chec#A7CAA.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/RefCodeTable.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/register_of_uts_finan#A7E8A.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Report%20Inventory%20#A8191.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/report-financial-part.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/report10.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/requisite%20list%20fo#A7B1B.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Res-FS.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Resource.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Retail%20Stores%20data.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/RLB%20org%20chart.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/RLB%20staff%20list.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/RMRanker.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/RMRanker95.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/rolesftw.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/rolespunc.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/RSAFinancialAppendices.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/S&P%20Bond.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/S1-S2Report.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/s2004spreadsheet.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/SA%20Comptroller-final.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/SA%20contact.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/sabre_sklad_15-12.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/sample%20Auxiliary%20#A8AD7.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/SBIR%203881%208-20-03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/SCD-G1.XLS",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ScheduleG1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Scholarship%20Applica#A7B04.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/secreport2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Selected_FinancialData.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/selectedfinancial.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/sem_2_2003_examtimetable.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Semester_Course_Requi#A7E1F.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/semiann.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Senate%20order%20cont#A7B7C.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/SESX030504-951616.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/SF3881ACH.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/sifa_an.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/SN-03-E-CC-02A.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/sna-e-5.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Spreadsheet3Q03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Spring%2003-04%20Undergrad.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/spring-2004-schedule.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/spring2003spreadsheet.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/SR%20MEDICARE%20PATRO#A8AED.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/SS1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/STARSInterfaces10202003.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Statement%20financial#A7BA4.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/StatementofFinancialPos2.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/statements.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Statements_CashFlows.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Stats%202001_results.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/step3.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/STquart.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Student%20Financial%2#A8B19.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/StudentFinancialAid_Summary.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/summ0602.XLS",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/SummaryFinancialState#A803C.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Supp_IB_1Q03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Supp_IB_4Q03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/tab003.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/tab004.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/table22.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/table23.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/table_allocations_2004.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Tablee%2036.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/TAC%20Financial%20For#A817F.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/tblF-8.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Template-Int-Reserves.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Ten_Yr_Perf.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/thelinescompanyrevisions.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ti56.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/TI_ENG.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/timeallocationschedule.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/timeline.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/titles.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/toolguide.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/trace_50_011504.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/training_singapore03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/travel_advance.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/treasurers_report_aud#A7EA4.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/trngtool.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/TRR_blank.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/UC%20Fin%20Disc.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/UF-Transition-Certifi#A7B3F.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/UF_Genetics_Financial#A7E51.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/UIUC.Bus.ExpertSpreadsheet.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/uk-modules.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Unaudited%20Dec%2003.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/undergrad%20loan%20sh#A7E9D.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Unit_liaison_list_uis.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/UofC-Class_of_2001-20#A7B03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/usda_53report_052003.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/user_access_security_#A81A3.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/USF_BetaMapleFinancSumm.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/USFAthleticFinancialSummary.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/usnewscriteria.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ust-mfdr-1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/veleaplanbdgtsum200304.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/vi-05_hist.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/VMRF%20checklist.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/Voice%20Profile.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/wb1Q03tables.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/web-quarter_base_en.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/WebApplicationInventory.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/WebFinancials2002.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/website.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/XI-FinRpt-Master.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/XI-Sample-Budget-Fina#A7BA6.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/xls%5CL-1.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/xls%5CL-4.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/y0405a00.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/y0512c00.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/yrend-03.xls",
+      "reason": "minimum_structure"
+    },
+    {
+      "archive_member": "financial/processed/ysk_data_e.xls",
+      "reason": "minimum_structure"
+    }
+  ],
+  "license_note": "Retain source provenance; archive accessibility does not grant unrestricted redistribution."
+}

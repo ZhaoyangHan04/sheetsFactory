@@ -1,0 +1,279 @@
+{
+  "schema_version": "1.0",
+  "contract_version": "1",
+  "description": "Runtime checker registry; selection defaults to all.",
+  "groups": {
+    "public_semantics": {
+      "visibility": "public_only",
+      "after_groups": []
+    },
+    "reference_integrity": {
+      "visibility": "review",
+      "after_groups": [
+        "public_semantics"
+      ],
+      "ordering_if_group_present": true
+    },
+    "runtime_integrity": {
+      "visibility": "review",
+      "after_groups": []
+    },
+    "diagnostic_coverage": {
+      "visibility": "review",
+      "run_after_all_enabled_non_meta": true
+    }
+  },
+  "checkers": [
+    {
+      "id": "Q01",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "hybrid",
+      "visibility": "public_only",
+      "group": "public_semantics",
+      "depends_on": [],
+      "inputs": [
+        "public_artifacts",
+        "public_profile",
+        "normalized_trajectories"
+      ],
+      "program_handler": "public_assumption_probe",
+      "instructions": "核查必要参数的公开来源，并用替代取值说明缺失是否影响答案。",
+      "emits_problem_ids": [
+        "Q01"
+      ],
+      "run_after_all_enabled_non_meta": false,
+      "required": true
+    },
+    {
+      "id": "Q02",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "hybrid",
+      "visibility": "public_only",
+      "group": "public_semantics",
+      "depends_on": [],
+      "inputs": [
+        "public_artifacts",
+        "public_task_contract",
+        "normalized_trajectories"
+      ],
+      "program_handler": "alternative_rule_probe",
+      "instructions": "提出满足公开条件的两个解释，核验是否产生不同结果；仅措辞不同不算歧义。",
+      "emits_problem_ids": [
+        "Q02"
+      ],
+      "run_after_all_enabled_non_meta": false,
+      "required": true
+    },
+    {
+      "id": "Q03",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "hybrid",
+      "visibility": "public_only",
+      "group": "public_semantics",
+      "depends_on": [],
+      "inputs": [
+        "public_artifacts",
+        "public_profile",
+        "public_task_contract"
+      ],
+      "program_handler": "requirement_coverage_probe",
+      "instructions": "逐项对照题面与实际输入，验证区域存在性和需求覆盖。",
+      "emits_problem_ids": [
+        "Q03"
+      ],
+      "run_after_all_enabled_non_meta": false,
+      "required": true
+    },
+    {
+      "id": "Q04",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "hybrid",
+      "visibility": "review",
+      "group": "reference_integrity",
+      "depends_on": [],
+      "inputs": [
+        "private_contract",
+        "reference_artifacts",
+        "recovery_evidence"
+      ],
+      "program_handler": "reference_correctness_probe",
+      "instructions": "用独立计算与公开可推导性证据核验参考；原文件存在不是正确性证明。",
+      "emits_problem_ids": [
+        "Q04"
+      ],
+      "run_after_all_enabled_non_meta": false,
+      "required": true
+    },
+    {
+      "id": "Q05",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "program",
+      "visibility": "review",
+      "group": "runtime_integrity",
+      "depends_on": [],
+      "inputs": [
+        "verifier_regression_results",
+        "local_control_results"
+      ],
+      "program_handler": "verifier_controls_check",
+      "instructions": "依据正确、等价、nop、漏改和额外改动等程序对照识别验证器缺陷。",
+      "emits_problem_ids": [
+        "Q05"
+      ],
+      "run_after_all_enabled_non_meta": false,
+      "required": true
+    },
+    {
+      "id": "Q06",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "hybrid",
+      "visibility": "review",
+      "group": "reference_integrity",
+      "depends_on": [],
+      "inputs": [
+        "mutation_manifest",
+        "edit_diff",
+        "expected_delta",
+        "private_contract"
+      ],
+      "program_handler": "mutation_conformance_probe",
+      "instructions": "检查越界修改、mask 残留、无效分支、舍入无影响及多根因抵消。",
+      "emits_problem_ids": [
+        "Q06"
+      ],
+      "run_after_all_enabled_non_meta": false,
+      "required": true
+    },
+    {
+      "id": "Q07",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "hybrid",
+      "visibility": "public_only",
+      "group": "public_semantics",
+      "depends_on": [],
+      "inputs": [
+        "public_artifacts",
+        "public_profile",
+        "normalized_trajectories"
+      ],
+      "program_handler": "public_leak_probe",
+      "instructions": "定位公开可读的直接答案或构造信息；合法参考公式不自动构成泄漏。",
+      "emits_problem_ids": [
+        "Q07"
+      ],
+      "run_after_all_enabled_non_meta": false,
+      "required": true
+    },
+    {
+      "id": "Q08",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "hybrid",
+      "visibility": "public_only",
+      "group": "public_semantics",
+      "depends_on": [],
+      "inputs": [
+        "public_artifacts",
+        "template_complexity_contract",
+        "normalized_trajectories"
+      ],
+      "program_handler": "shortcut_complexity_probe",
+      "instructions": "须有可执行捷径或违反预先声明硬约束的测量；完成速度、完成状态和采样偏好均不足以证明过易。",
+      "emits_problem_ids": [
+        "Q08"
+      ],
+      "run_after_all_enabled_non_meta": false,
+      "required": true
+    },
+    {
+      "id": "Q09",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "hybrid",
+      "visibility": "review",
+      "group": "reference_integrity",
+      "depends_on": [],
+      "inputs": [
+        "baseline_report",
+        "private_contract",
+        "dependency_profile"
+      ],
+      "program_handler": "baseline_scope_probe",
+      "instructions": "区分注入错误和原生错误，检查可信范围是否覆盖题目承诺。",
+      "emits_problem_ids": [
+        "Q09"
+      ],
+      "run_after_all_enabled_non_meta": false,
+      "required": true
+    },
+    {
+      "id": "Q10",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "program",
+      "visibility": "review",
+      "group": "runtime_integrity",
+      "depends_on": [],
+      "inputs": [
+        "normalization_report",
+        "engine_report",
+        "stability_report"
+      ],
+      "program_handler": "engine_compatibility_check",
+      "instructions": "根据重算、稳定性和转换对照报告检查关键兼容性；缺报告返回 unknown。",
+      "emits_problem_ids": [
+        "Q10"
+      ],
+      "run_after_all_enabled_non_meta": false,
+      "required": true
+    },
+    {
+      "id": "Q11",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "program",
+      "visibility": "review",
+      "group": "runtime_integrity",
+      "depends_on": [],
+      "inputs": [
+        "tool_events",
+        "infrastructure_health_report"
+      ],
+      "program_handler": "infrastructure_check",
+      "instructions": "区分服务/挂载/进程故障、正常预算耗尽和普通操作错误。",
+      "emits_problem_ids": [
+        "Q11"
+      ],
+      "run_after_all_enabled_non_meta": false,
+      "required": true
+    },
+    {
+      "id": "Q12",
+      "version": "1.0.0",
+      "enabled_by_default": true,
+      "backend": "program",
+      "visibility": "review",
+      "group": "diagnostic_coverage",
+      "depends_on": [],
+      "inputs": [
+        "resolved_check_plan",
+        "completed_check_results",
+        "evidence_index"
+      ],
+      "program_handler": "diagnostic_coverage_check",
+      "instructions": "仅检查启用的非元检查返回与关键证据，禁用项不是缺失；不递归检查自己。",
+      "emits_problem_ids": [
+        "Q12"
+      ],
+      "run_after_all_enabled_non_meta": true,
+      "required": true
+    }
+  ]
+}

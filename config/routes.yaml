@@ -1,0 +1,356 @@
+{
+  "schema_version": "3.0",
+  "principles": {
+    "completion_status_is_route_input": false,
+    "reward_is_route_input": false,
+    "suspected_issue_route": "R12",
+    "unknown_required_assessment_blocks_release": true,
+    "unresolved_blocker_blocks_release": true,
+    "warn_disposition_required": true,
+    "route_selection": "Deterministic lookup by problem_id after evidence validation; prerequisites override priority.",
+    "task_revision_budget": "One atomic content-changing repair batch consumes one max_steps unit.",
+    "probe_budget": "Evidence and infrastructure retries are independently bounded; they never reset max_steps.",
+    "required_assessments_source": "resolved check plan enabled_check_ids; default all registered checks",
+    "disabled_check_state": "skipped",
+    "disabling_check_resolves_existing_issue": false
+  },
+  "problems": [
+    {
+      "problem_id": "Q01",
+      "code": "MISSING_ASSUMPTION",
+      "default_severity": "blocker",
+      "route_id": "R01",
+      "owner_stage": "contract_and_inputs",
+      "priority": 30,
+      "route_class": "repair",
+      "allowed_actions": [
+        "clarify_public_source",
+        "add_evidenced_public_assumption",
+        "change_target"
+      ],
+      "invalidated_artifacts": [
+        "contract",
+        "instruction",
+        "goal_if_rules_change",
+        "input_if_inputs_change",
+        "public_profile",
+        "traces_if_public_change"
+      ],
+      "required_rechecks": [
+        "public_source_coverage",
+        "independent_recovery",
+        "public_audit",
+        "all_diagnostics",
+        "fresh_trace_if_public_change"
+      ]
+    },
+    {
+      "problem_id": "Q02",
+      "code": "AMBIGUOUS_CONTRACT",
+      "default_severity": "blocker",
+      "route_id": "R02",
+      "owner_stage": "contract",
+      "priority": 30,
+      "route_class": "repair",
+      "allowed_actions": [
+        "clarify_business_rule",
+        "align_output_contract"
+      ],
+      "invalidated_artifacts": [
+        "contract",
+        "instruction",
+        "goal_if_rules_change",
+        "verifier_if_contract_change",
+        "traces_if_public_change"
+      ],
+      "required_rechecks": [
+        "alternative_solution_probe",
+        "contract_alignment",
+        "independent_recovery",
+        "verifier_regressions",
+        "all_diagnostics",
+        "fresh_trace_if_public_change"
+      ]
+    },
+    {
+      "problem_id": "Q03",
+      "code": "INSTRUCTION_INPUT_MISMATCH",
+      "default_severity": "blocker",
+      "route_id": "R03",
+      "owner_stage": "instruction_writer",
+      "priority": 30,
+      "route_class": "repair",
+      "allowed_actions": [
+        "rewrite_instruction_from_actual_input"
+      ],
+      "invalidated_artifacts": [
+        "instruction",
+        "public_profile_if_needed",
+        "traces"
+      ],
+      "required_rechecks": [
+        "requirement_coverage",
+        "public_audit",
+        "all_diagnostics",
+        "fresh_trace"
+      ]
+    },
+    {
+      "problem_id": "Q04",
+      "code": "REFERENCE_DEFECT",
+      "default_severity": "blocker",
+      "route_id": "R04",
+      "owner_stage": "reference_builder",
+      "priority": 20,
+      "route_class": "repair",
+      "allowed_actions": [
+        "independent_reference_validation",
+        "rebuild_baseline_and_goal",
+        "reject_if_unverifiable"
+      ],
+      "invalidated_artifacts": [
+        "baseline_if_needed",
+        "goal",
+        "input_if_needed",
+        "expected_delta",
+        "gate_reports",
+        "diagnostic_reports",
+        "traces_if_public_change"
+      ],
+      "required_rechecks": [
+        "reference_correctness",
+        "stability",
+        "independent_recovery",
+        "local_oracle_nop",
+        "all_diagnostics",
+        "fresh_trace_if_public_change"
+      ]
+    },
+    {
+      "problem_id": "Q05",
+      "code": "VERIFIER_DEFECT",
+      "default_severity": "blocker",
+      "route_id": "R05",
+      "owner_stage": "verifier",
+      "priority": 20,
+      "route_class": "repair",
+      "allowed_actions": [
+        "fix_verifier",
+        "add_positive_and_negative_controls"
+      ],
+      "invalidated_artifacts": [
+        "verifier_results",
+        "derived_measurements",
+        "gate_reports",
+        "diagnostic_reports",
+        "harbor_controls"
+      ],
+      "required_rechecks": [
+        "verifier_regressions",
+        "local_oracle_nop",
+        "rederive_output_diffs",
+        "all_diagnostics",
+        "harbor_controls"
+      ]
+    },
+    {
+      "problem_id": "Q06",
+      "code": "MUTATION_DEFECT",
+      "default_severity": "blocker",
+      "route_id": "R06",
+      "owner_stage": "mutation_builder",
+      "priority": 20,
+      "route_class": "repair",
+      "allowed_actions": [
+        "fix_patch_code",
+        "change_mutation",
+        "change_mask"
+      ],
+      "invalidated_artifacts": [
+        "input",
+        "public_profile",
+        "expected_delta",
+        "gate_reports",
+        "instruction_if_needed",
+        "traces"
+      ],
+      "required_rechecks": [
+        "approved_edit_diff",
+        "observable_delta",
+        "degeneracy_and_cancellation",
+        "local_oracle_nop",
+        "independent_recovery",
+        "all_diagnostics",
+        "fresh_trace"
+      ]
+    },
+    {
+      "problem_id": "Q07",
+      "code": "ANSWER_LEAK",
+      "default_severity": "blocker",
+      "route_id": "R07",
+      "owner_stage": "public_artifact_builder",
+      "priority": 30,
+      "route_class": "repair",
+      "allowed_actions": [
+        "remove_nonessential_answer_copy",
+        "isolate_private_artifacts",
+        "change_target"
+      ],
+      "invalidated_artifacts": [
+        "input_if_needed",
+        "goal_if_needed",
+        "public_profile",
+        "instruction_if_needed",
+        "gate_reports",
+        "traces_if_public_change"
+      ],
+      "required_rechecks": [
+        "leak_scan",
+        "required_input_preservation",
+        "independent_recovery",
+        "local_oracle_nop",
+        "all_diagnostics",
+        "fresh_trace_if_public_change"
+      ]
+    },
+    {
+      "problem_id": "Q08",
+      "code": "COMPLEXITY_DEFECT_OR_SHORTCUT",
+      "default_severity": "blocker",
+      "route_id": "R08",
+      "owner_stage": "task_planner",
+      "priority": 40,
+      "route_class": "repair",
+      "allowed_actions": [
+        "replan_connected_modules",
+        "adjust_mask",
+        "combine_effective_root_causes"
+      ],
+      "invalidated_artifacts": [
+        "plan",
+        "goal",
+        "input",
+        "public_profile",
+        "instruction",
+        "gate_reports",
+        "traces"
+      ],
+      "required_rechecks": [
+        "shortcut_witness_replay",
+        "template_intent_alignment",
+        "all_prechecks",
+        "independent_recovery",
+        "all_diagnostics",
+        "fresh_trace"
+      ],
+      "required_evidence": "Executable shortcut or measured violation of predeclared hard template constraints; completion status and sampling preferences are insufficient."
+    },
+    {
+      "problem_id": "Q09",
+      "code": "BASELINE_OR_SCOPE_CONTAMINATION",
+      "default_severity": "blocker",
+      "route_id": "R09",
+      "owner_stage": "baseline_and_planner",
+      "priority": 20,
+      "route_class": "repair",
+      "allowed_actions": [
+        "repair_baseline_with_evidence",
+        "restrict_and_disclose_task_scope",
+        "change_source",
+        "reject_if_unverifiable"
+      ],
+      "invalidated_artifacts": [
+        "baseline_if_needed",
+        "plan",
+        "goal",
+        "input",
+        "public_profile",
+        "instruction",
+        "gate_reports",
+        "traces"
+      ],
+      "required_rechecks": [
+        "baseline_correctness",
+        "scope_closure",
+        "stability",
+        "all_prechecks",
+        "independent_recovery",
+        "all_diagnostics",
+        "fresh_trace"
+      ]
+    },
+    {
+      "problem_id": "Q10",
+      "code": "ENGINE_INCOMPATIBILITY",
+      "default_severity": "blocker",
+      "route_id": "R10",
+      "owner_stage": "normalization_and_environment",
+      "priority": 10,
+      "route_class": "repair",
+      "allowed_actions": [
+        "fix_supported_environment",
+        "renormalize",
+        "choose_supported_dependency_cone",
+        "reject_if_unsupported"
+      ],
+      "invalidated_artifacts": [
+        "baseline_if_needed",
+        "environment",
+        "goal_if_needed",
+        "input_if_needed",
+        "gate_reports",
+        "traces_if_solver_environment_change"
+      ],
+      "required_rechecks": [
+        "conversion_semantics",
+        "full_recalculation",
+        "stability",
+        "all_prechecks",
+        "all_diagnostics",
+        "fresh_trace_if_solver_environment_change"
+      ]
+    },
+    {
+      "problem_id": "Q11",
+      "code": "INFRASTRUCTURE_FAILURE",
+      "default_severity": "blocker",
+      "route_id": "R11",
+      "owner_stage": "trace_collector",
+      "priority": 10,
+      "route_class": "infrastructure_retry",
+      "allowed_actions": [
+        "retry_same_revision_with_bounded_budget"
+      ],
+      "invalidated_artifacts": [
+        "faulted_events_and_derived_reports"
+      ],
+      "required_rechecks": [
+        "infrastructure_health",
+        "recollect_same_revision",
+        "all_diagnostics"
+      ]
+    },
+    {
+      "problem_id": "Q12",
+      "code": "INSUFFICIENT_DIAGNOSTIC_EVIDENCE",
+      "default_severity": "blocker",
+      "route_id": "R12",
+      "owner_stage": "evidence_collector",
+      "priority": 0,
+      "route_class": "evidence_collection",
+      "allowed_actions": [
+        "query_local_region",
+        "run_independent_probe",
+        "collect_additional_clean_trace"
+      ],
+      "invalidated_artifacts": [
+        "unsupported_diagnostic_conclusions"
+      ],
+      "required_rechecks": [
+        "requested_evidence_check",
+        "all_diagnostics"
+      ]
+    }
+  ]
+}
