@@ -1,0 +1,34 @@
+run:
+  name: euses-financial-quality40
+  targets:
+    financial_modeling: 20
+    debugging: 20
+  max_sources: 70
+  max_parallel_sources: 4
+  max_candidates_per_seed: 3
+  max_steps: 3
+  max_evidence_rounds_per_revision: 2
+  infrastructure_retries_per_stage: 2
+  seed_manifest: data/manifests/euses_financial.json
+engine:
+  image: sheetsfactory-lo:24.2
+  timeout_seconds: 120
+agents:
+  model: gpt-6-sol
+  reasoning_effort: high
+  timeout_seconds: 600
+  trajectory_timeout_seconds: 420
+diagnosis:
+  selection:
+    include: all
+    exclude: []
+  execution:
+    llm_batching: grouped
+  difficulty_deferred: true
+dashboard:
+  host: 127.0.0.1
+  port: 8765
+  open_browser: true
+harbor:
+  execute_controls: true
+  concurrency: 4

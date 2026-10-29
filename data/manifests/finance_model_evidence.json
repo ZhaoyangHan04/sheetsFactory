@@ -1,0 +1,1488 @@
+{
+  "scope": "Eleven finance-specific sources inspected: seven populated forecast/valuation models plus four genuine templates eligible only with a public scenario. All other sources default to debugging-only pending explicit semantic review.",
+  "method": "Direct workbook inspection, no external LLM/API calls. Candidate cases remain subject to planner and independent verification.",
+  "populated_model_count": 7,
+  "candidate_case_count": 21,
+  "sources": [
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/ae10ba6ef9_financial-model-spreadsheet.xls",
+      "source_sha256": "ae10ba6ef9c28822113fab418cbdec575a72723d42dc4b0e891bf4069f1d72e8",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/ae10ba6ef9c2.xlsx",
+      "classification": "populated_forecast",
+      "priority": 100,
+      "sheet_count": 17,
+      "formula_count": 2871,
+      "cached_error_count": 0,
+      "evidence": [
+        {
+          "sheet": "Revenue",
+          "cell": "F2",
+          "value_or_formula": "Revenue for 2002 represents closed sales, revenue for 2003 represents projected sales.  ",
+          "cached_value": "Revenue for 2002 represents closed sales, revenue for 2003 represents projected sales.  "
+        },
+        {
+          "sheet": "Revenue",
+          "cell": "D6",
+          "value_or_formula": 0.15,
+          "cached_value": 0.15
+        },
+        {
+          "sheet": "Annual P&L ",
+          "cell": "H4",
+          "value_or_formula": "FY 2004",
+          "cached_value": "FY 2004"
+        },
+        {
+          "sheet": "Annual P&L ",
+          "cell": "O5",
+          "value_or_formula": 0.85,
+          "cached_value": 0.85
+        },
+        {
+          "sheet": "Stmt of CF",
+          "cell": "A3",
+          "value_or_formula": " Forecast Statements of Cashflows",
+          "cached_value": " Forecast Statements of Cashflows"
+        }
+      ],
+      "candidate_cases": [
+        {
+          "case_id": "mobile-forecast-revenue",
+          "business_goal": "Forecast quarterly license and professional-service revenue from pipeline assumptions and stated growth rates",
+          "candidate_regions": [
+            "Pipeline!H7:I33",
+            "Revenue!K14:O16"
+          ],
+          "required_public_rules": [
+            "Map deal status to the published closing probabilities.",
+            "Use exact stated quarterly growth and services-to-license ratios."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "mobile-forecast-income",
+          "business_goal": "Build 2004–2006 annual operating forecast from sales growth and expense ratios",
+          "candidate_regions": [
+            "Annual P&L !H6:L27"
+          ],
+          "required_public_rules": [
+            "Read separate license and service growth assumptions for the relevant years.",
+            "State explicitly which revenue base each cost percentage applies to."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "mobile-capital-lease",
+          "business_goal": "Build lease payment, interest, principal and depreciation schedules feeding projected cash flows",
+          "candidate_regions": [
+            "Cap Lease!E3:U62"
+          ],
+          "required_public_rules": [
+            "Payment timing, monthly interest and term must be public.",
+            "Treat the two equipment tranches separately."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "constraints_and_original_defects": [
+        "Balance Sheet and Bal Sheet for Offer Memo duplicate much of the model; inspect answer-copy leakage before masking either.",
+        "Many periods are repeated on monthly, quarterly and annual sheets; preserve necessary inputs while checking direct answer copies."
+      ],
+      "business_correctness_certified": false,
+      "sha256": "ae10ba6ef9c28822113fab418cbdec575a72723d42dc4b0e891bf4069f1d72e8",
+      "financial_modeling_eligible": true,
+      "debugging_eligible": true,
+      "scenario_required": false,
+      "safe_modules": [
+        {
+          "case_id": "mobile-forecast-revenue",
+          "business_goal": "Forecast quarterly license and professional-service revenue from pipeline assumptions and stated growth rates",
+          "candidate_regions": [
+            "Pipeline!H7:I33",
+            "Revenue!K14:O16"
+          ],
+          "required_public_rules": [
+            "Map deal status to the published closing probabilities.",
+            "Use exact stated quarterly growth and services-to-license ratios."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "mobile-forecast-income",
+          "business_goal": "Build 2004–2006 annual operating forecast from sales growth and expense ratios",
+          "candidate_regions": [
+            "Annual P&L !H6:L27"
+          ],
+          "required_public_rules": [
+            "Read separate license and service growth assumptions for the relevant years.",
+            "State explicitly which revenue base each cost percentage applies to."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "mobile-capital-lease",
+          "business_goal": "Build lease payment, interest, principal and depreciation schedules feeding projected cash flows",
+          "candidate_regions": [
+            "Cap Lease!E3:U62"
+          ],
+          "required_public_rules": [
+            "Payment timing, monthly interest and term must be public.",
+            "Treat the two equipment tranches separately."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "source_business_issues": [
+        "Balance Sheet and Bal Sheet for Offer Memo duplicate much of the model; inspect answer-copy leakage before masking either.",
+        "Many periods are repeated on monthly, quarterly and annual sheets; preserve necessary inputs while checking direct answer copies."
+      ],
+      "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification."
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/bbcce4d0b5_my_financial_model.xls",
+      "source_sha256": "bbcce4d0b5921ebc42fb5d2772293e35a114c784c74e184a38c3d94eb767fca6",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/bbcce4d0b592.xlsx",
+      "classification": "populated_forecast",
+      "priority": 90,
+      "sheet_count": 6,
+      "formula_count": 656,
+      "cached_error_count": 0,
+      "evidence": [
+        {
+          "sheet": "Income",
+          "cell": "E2",
+          "value_or_formula": 2002,
+          "cached_value": 2002
+        },
+        {
+          "sheet": "Income",
+          "cell": "F2",
+          "value_or_formula": 2003,
+          "cached_value": 2003
+        },
+        {
+          "sheet": "Income",
+          "cell": "D3",
+          "value_or_formula": 0.05,
+          "cached_value": 0.05
+        },
+        {
+          "sheet": "Income",
+          "cell": "F3",
+          "value_or_formula": "=E3*(1+$D$3)",
+          "cached_value": 210000
+        },
+        {
+          "sheet": "Income",
+          "cell": "D10",
+          "value_or_formula": 0.4,
+          "cached_value": 0.4
+        },
+        {
+          "sheet": "Depreciation",
+          "cell": "E7",
+          "value_or_formula": "=IF(E6>0,$D$6/$D$7,0)",
+          "cached_value": 142857.142857143
+        }
+      ],
+      "candidate_cases": [
+        {
+          "case_id": "lemon-volume-price",
+          "business_goal": "Forecast lemonade volume and price using published growth assumptions",
+          "candidate_regions": [
+            "Income!F3:N4"
+          ],
+          "required_public_rules": [
+            "Volume growth and the price escalation period must be stated exactly.",
+            "The price driver is stored as 0.08/12; do not silently reinterpret as 8% annual compounded growth."
+          ],
+          "avoid_regions": [
+            "Income!E12:N34"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "lemon-sales-channels",
+          "business_goal": "Forecast online and street-channel revenue from volume, prices and channel shares",
+          "candidate_regions": [
+            "Income!F10:N11"
+          ],
+          "required_public_rules": [
+            "Online share is D10; street share is 1-D10.",
+            "Do not use the defective original total-revenue row as a reference."
+          ],
+          "avoid_regions": [
+            "Income!E12:N34"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "lemon-input-costs",
+          "business_goal": "Forecast required lemons, sugar and resulting material costs",
+          "candidate_regions": [
+            "Income!F5:N8",
+            "Income!F15:N17"
+          ],
+          "required_public_rules": [
+            "Use ingredient quantities per cup and the stored price escalation rates.",
+            "Keep task output local to the material-cost module."
+          ],
+          "avoid_regions": [
+            "Income!E12:N14",
+            "Income!E19:N34"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "constraints_and_original_defects": [
+        "Confirmed original defect: Income!E12:N12 sums row10 only and omits row11 Street Sales.",
+        "Possible period mismatch: annual asset depreciation is subtracted in a row labelled monthly profit. Do not certify downstream net income or cash flow without an explicit independent baseline correction."
+      ],
+      "business_correctness_certified": false,
+      "sha256": "bbcce4d0b5921ebc42fb5d2772293e35a114c784c74e184a38c3d94eb767fca6",
+      "financial_modeling_eligible": true,
+      "debugging_eligible": true,
+      "scenario_required": false,
+      "safe_modules": [
+        {
+          "case_id": "lemon-volume-price",
+          "business_goal": "Forecast lemonade volume and price using published growth assumptions",
+          "candidate_regions": [
+            "Income!F3:N4"
+          ],
+          "required_public_rules": [
+            "Volume growth and the price escalation period must be stated exactly.",
+            "The price driver is stored as 0.08/12; do not silently reinterpret as 8% annual compounded growth."
+          ],
+          "avoid_regions": [
+            "Income!E12:N34"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "lemon-sales-channels",
+          "business_goal": "Forecast online and street-channel revenue from volume, prices and channel shares",
+          "candidate_regions": [
+            "Income!F10:N11"
+          ],
+          "required_public_rules": [
+            "Online share is D10; street share is 1-D10.",
+            "Do not use the defective original total-revenue row as a reference."
+          ],
+          "avoid_regions": [
+            "Income!E12:N34"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "lemon-input-costs",
+          "business_goal": "Forecast required lemons, sugar and resulting material costs",
+          "candidate_regions": [
+            "Income!F5:N8",
+            "Income!F15:N17"
+          ],
+          "required_public_rules": [
+            "Use ingredient quantities per cup and the stored price escalation rates.",
+            "Keep task output local to the material-cost module."
+          ],
+          "avoid_regions": [
+            "Income!E12:N14",
+            "Income!E19:N34"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "source_business_issues": [
+        "Confirmed original defect: Income!E12:N12 sums row10 only and omits row11 Street Sales.",
+        "Possible period mismatch: annual asset depreciation is subtracted in a row labelled monthly profit. Do not certify downstream net income or cash flow without an explicit independent baseline correction."
+      ],
+      "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification."
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/678e9a09ff_AAAsolution.xls",
+      "source_sha256": "678e9a09ff75c86e0d31063b332b064985ed8e96128204c1ca0440d388043e41",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/678e9a09ff75.xlsx",
+      "classification": "populated_valuation",
+      "priority": 95,
+      "sheet_count": 6,
+      "formula_count": 981,
+      "cached_error_count": 0,
+      "evidence": [
+        {
+          "sheet": "Financial Model",
+          "cell": "A3",
+          "value_or_formula": "NEWBANK PRO FORMA FINANCIAL INFORMATION",
+          "cached_value": "NEWBANK PRO FORMA FINANCIAL INFORMATION"
+        },
+        {
+          "sheet": "Financial Model",
+          "cell": "A4",
+          "value_or_formula": "(All dollar figures stated in '000USD 2001)",
+          "cached_value": "(All dollar figures stated in '000USD 2001)"
+        },
+        {
+          "sheet": "Financial Model",
+          "cell": "D6",
+          "value_or_formula": 2001,
+          "cached_value": 2001
+        },
+        {
+          "sheet": "NPV Calculation",
+          "cell": "A3",
+          "value_or_formula": "NEWBANK NET PRESENT VALUE OF CASH FLOWS CALCULATION",
+          "cached_value": "NEWBANK NET PRESENT VALUE OF CASH FLOWS CALCULATION"
+        },
+        {
+          "sheet": "NPV Calculation",
+          "cell": "E15",
+          "value_or_formula": "=E13/(1+'Model Assumptions'!$C$13)^('NPV Calculation'!E6-'NPV Calculation'!$D$6)",
+          "cached_value": -828.982525896217
+        },
+        {
+          "sheet": "NPV Calculation",
+          "cell": "D25",
+          "value_or_formula": "=D16+D23",
+          "cached_value": 137.575036915079
+        }
+      ],
+      "candidate_cases": [
+        {
+          "case_id": "newbank-portfolio",
+          "business_goal": "Forecast loans issued and the loan portfolio using explicit growth and maturity rules",
+          "candidate_regions": [
+            "Financial Model!E10:N15"
+          ],
+          "required_public_rules": [
+            "Named ranges Maturity and Retention must resolve fully, or constrain the target to supported dependencies.",
+            "Publish the maturity/repayment convention."
+          ],
+          "avoid_regions": [
+            "Financial Model!D68:N73"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "newbank-staff",
+          "business_goal": "Forecast branch staffing and salary expense from operating drivers",
+          "candidate_regions": [
+            "Financial Model!D29:N36",
+            "Financial Model!D61:N61"
+          ],
+          "required_public_rules": [
+            "Disclose headcount ratios, turnover and rounding rules.",
+            "Use the assumptions table cells as public sources."
+          ],
+          "avoid_regions": [
+            "Financial Model!D68:N73"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "newbank-discounting",
+          "business_goal": "Discount provided free cash flows and financing costs to derive NPV",
+          "candidate_regions": [
+            "NPV Calculation!E15:O15",
+            "NPV Calculation!E22:N22",
+            "NPV Calculation!D16:D25"
+          ],
+          "required_public_rules": [
+            "Treat provided cash-flow amounts as frozen inputs; do not claim upstream net income is independently correct.",
+            "State the two discount-rate sources and year-zero timing explicitly."
+          ],
+          "avoid_regions": [
+            "Financial Model!D68:N73"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "constraints_and_original_defects": [
+        "Confirmed original defect: Financial Model!D73:N73 adds positive Income Tax Expense row70 to earnings before tax, rather than subtracting it. Avoid that cone for trusted business forecasts.",
+        "Named ranges require dependency resolution; profile marks unsupported names instead of assuming no dependencies."
+      ],
+      "business_correctness_certified": false,
+      "sha256": "678e9a09ff75c86e0d31063b332b064985ed8e96128204c1ca0440d388043e41",
+      "financial_modeling_eligible": true,
+      "debugging_eligible": true,
+      "scenario_required": false,
+      "safe_modules": [
+        {
+          "case_id": "newbank-portfolio",
+          "business_goal": "Forecast loans issued and the loan portfolio using explicit growth and maturity rules",
+          "candidate_regions": [
+            "Financial Model!E10:N15"
+          ],
+          "required_public_rules": [
+            "Named ranges Maturity and Retention must resolve fully, or constrain the target to supported dependencies.",
+            "Publish the maturity/repayment convention."
+          ],
+          "avoid_regions": [
+            "Financial Model!D68:N73"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "newbank-staff",
+          "business_goal": "Forecast branch staffing and salary expense from operating drivers",
+          "candidate_regions": [
+            "Financial Model!D29:N36",
+            "Financial Model!D61:N61"
+          ],
+          "required_public_rules": [
+            "Disclose headcount ratios, turnover and rounding rules.",
+            "Use the assumptions table cells as public sources."
+          ],
+          "avoid_regions": [
+            "Financial Model!D68:N73"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "newbank-discounting",
+          "business_goal": "Discount provided free cash flows and financing costs to derive NPV",
+          "candidate_regions": [
+            "NPV Calculation!E15:O15",
+            "NPV Calculation!E22:N22",
+            "NPV Calculation!D16:D25"
+          ],
+          "required_public_rules": [
+            "Treat provided cash-flow amounts as frozen inputs; do not claim upstream net income is independently correct.",
+            "State the two discount-rate sources and year-zero timing explicitly."
+          ],
+          "avoid_regions": [
+            "Financial Model!D68:N73"
+          ],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "source_business_issues": [
+        "Confirmed original defect: Financial Model!D73:N73 adds positive Income Tax Expense row70 to earnings before tax, rather than subtracting it. Avoid that cone for trusted business forecasts.",
+        "Named ranges require dependency resolution; profile marks unsupported names instead of assuming no dependencies."
+      ],
+      "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification."
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/8874861482_Attachment_7_Financia_A7EB8.xls",
+      "source_sha256": "88748614820e176bcdbccd7d424d6df1c5e6efb186e70291c5269a179ef12279",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/88748614820e.xlsx",
+      "classification": "populated_forecast",
+      "priority": 90,
+      "sheet_count": 4,
+      "formula_count": 329,
+      "cached_error_count": 0,
+      "evidence": [
+        {
+          "sheet": "Assumptions for IS",
+          "cell": "A4",
+          "value_or_formula": "NUMBER.TEL REVENUE ASSUMPTIONS",
+          "cached_value": "NUMBER.TEL REVENUE ASSUMPTIONS"
+        },
+        {
+          "sheet": "Assumptions for IS",
+          "cell": "B5",
+          "value_or_formula": 2001,
+          "cached_value": 2001
+        },
+        {
+          "sheet": "Assumptions for IS",
+          "cell": "E5",
+          "value_or_formula": 2004,
+          "cached_value": 2004
+        },
+        {
+          "sheet": "Assumptions for IS",
+          "cell": "B11",
+          "value_or_formula": "=B9*B10",
+          "cached_value": 2701800
+        },
+        {
+          "sheet": "Income Statement 50% ",
+          "cell": "B27",
+          "value_or_formula": "=B15-B21-B25",
+          "cached_value": -1650000
+        }
+      ],
+      "candidate_cases": [
+        {
+          "case_id": "tel-registration-fees",
+          "business_goal": "Forecast .tel registration revenue for the published confidence scenarios",
+          "candidate_regions": [
+            "Assumptions for IS!B11:E11",
+            "Assumptions for IS!B18:E18",
+            "Assumptions for IS!B25:E25"
+          ],
+          "required_public_rules": [
+            "Retain registration-volume scenarios and per-registration prices.",
+            "The confidence percentages label existing scenarios; do not reinterpret them as probability weights."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "tel-registration-margin",
+          "business_goal": "Forecast registration costs and gross margin across the three scenarios",
+          "candidate_regions": [
+            "Assumptions for IS!B13:E13",
+            "Assumptions for IS!B20:E20",
+            "Assumptions for IS!B27:E27"
+          ],
+          "required_public_rules": [
+            "Revenue less per-registration cost times registrations defines margin.",
+            "Identify the correct volume and cost rows for each scenario."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "tel-operating-outcome",
+          "business_goal": "Build scenario operating outcome with a minimum fee rule",
+          "candidate_regions": [
+            "Income Statement 90%!B24:H27",
+            "Income Statement 50% !B24:H27",
+            "Income Statement 10%!B24:H27"
+          ],
+          "required_public_rules": [
+            "TOB fee is the maximum of 250000 and 20% of pre-fee operating surplus.",
+            "Use the workbook-specific EBITDA definition explicitly; do not invent a standard convention."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "constraints_and_original_defects": [
+        "Original header inconsistency: Income Statement 90%!H5 says 2003 while the corresponding assumptions and other scenarios indicate 2004. Clarify the task period from explicit sources.",
+        "Shared expense rows across scenarios are legitimate dependencies; do not delete them as answer leakage."
+      ],
+      "business_correctness_certified": false,
+      "sha256": "88748614820e176bcdbccd7d424d6df1c5e6efb186e70291c5269a179ef12279",
+      "financial_modeling_eligible": true,
+      "debugging_eligible": true,
+      "scenario_required": false,
+      "safe_modules": [
+        {
+          "case_id": "tel-registration-fees",
+          "business_goal": "Forecast .tel registration revenue for the published confidence scenarios",
+          "candidate_regions": [
+            "Assumptions for IS!B11:E11",
+            "Assumptions for IS!B18:E18",
+            "Assumptions for IS!B25:E25"
+          ],
+          "required_public_rules": [
+            "Retain registration-volume scenarios and per-registration prices.",
+            "The confidence percentages label existing scenarios; do not reinterpret them as probability weights."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "tel-registration-margin",
+          "business_goal": "Forecast registration costs and gross margin across the three scenarios",
+          "candidate_regions": [
+            "Assumptions for IS!B13:E13",
+            "Assumptions for IS!B20:E20",
+            "Assumptions for IS!B27:E27"
+          ],
+          "required_public_rules": [
+            "Revenue less per-registration cost times registrations defines margin.",
+            "Identify the correct volume and cost rows for each scenario."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "tel-operating-outcome",
+          "business_goal": "Build scenario operating outcome with a minimum fee rule",
+          "candidate_regions": [
+            "Income Statement 90%!B24:H27",
+            "Income Statement 50% !B24:H27",
+            "Income Statement 10%!B24:H27"
+          ],
+          "required_public_rules": [
+            "TOB fee is the maximum of 250000 and 20% of pre-fee operating surplus.",
+            "Use the workbook-specific EBITDA definition explicitly; do not invent a standard convention."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "source_business_issues": [
+        "Original header inconsistency: Income Statement 90%!H5 says 2003 while the corresponding assumptions and other scenarios indicate 2004. Clarify the task period from explicit sources.",
+        "Shared expense rows across scenarios are legitimate dependencies; do not delete them as answer leakage."
+      ],
+      "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification."
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/2f40e71a67_financialsample.xls",
+      "source_sha256": "2f40e71a6713913fd94e77db746771cef1b2f8073f83789065982b77fc831fc2",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/2f40e71a6713.xlsx",
+      "classification": "populated_forecast",
+      "priority": 80,
+      "sheet_count": 4,
+      "formula_count": 79,
+      "cached_error_count": 0,
+      "evidence": [
+        {
+          "sheet": "Cash Flow Forecast",
+          "cell": "A2",
+          "value_or_formula": "CASH FLOW FORECAST  - Retail Store",
+          "cached_value": "CASH FLOW FORECAST  - Retail Store"
+        },
+        {
+          "sheet": "Cash Flow Forecast",
+          "cell": "C4",
+          "value_or_formula": "MAY",
+          "cached_value": "MAY"
+        },
+        {
+          "sheet": "Cash Flow Forecast",
+          "cell": "C10",
+          "value_or_formula": 10000,
+          "cached_value": 10000
+        },
+        {
+          "sheet": "Cash Flow Forecast",
+          "cell": "E19",
+          "value_or_formula": "=+D10*0.5",
+          "cached_value": 8750
+        },
+        {
+          "sheet": "Cash Flow Forecast",
+          "cell": "C34",
+          "value_or_formula": "=+C6+C14-C32",
+          "cached_value": 3500
+        }
+      ],
+      "candidate_cases": [
+        {
+          "case_id": "retail-inventory-purchases",
+          "business_goal": "Forecast inventory cash purchases using the sales-linked lag rule",
+          "candidate_regions": [
+            "Cash Flow Forecast!E19:N19"
+          ],
+          "required_public_rules": [
+            "July onward inventory purchases are half the previous month revenue.",
+            "Keep initial May/June inventory purchase inputs as supplied exceptions."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "retail-cash-movements",
+          "business_goal": "Build monthly forecast cash inflows and outflows from the published categories",
+          "candidate_regions": [
+            "Cash Flow Forecast!C14:N14",
+            "Cash Flow Forecast!C32:N32"
+          ],
+          "required_public_rules": [
+            "State which receipt and payment rows are included.",
+            "Do not double-count starting cash as an inflow."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "retail-cash-rollforward",
+          "business_goal": "Build rolling starting and ending cash balances over the forecast year",
+          "candidate_regions": [
+            "Cash Flow Forecast!D6:N6",
+            "Cash Flow Forecast!C34:N34"
+          ],
+          "required_public_rules": [
+            "Ending cash equals starting cash plus inflows minus outflows.",
+            "Next month starts from the previous ending cash."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "constraints_and_original_defects": [
+        "Cash Flow Forecast has populated nonzero values; other sheets contain historical statements and start-up budgets, so keep the forecast task focused."
+      ],
+      "business_correctness_certified": false,
+      "sha256": "2f40e71a6713913fd94e77db746771cef1b2f8073f83789065982b77fc831fc2",
+      "financial_modeling_eligible": true,
+      "debugging_eligible": true,
+      "scenario_required": false,
+      "safe_modules": [
+        {
+          "case_id": "retail-inventory-purchases",
+          "business_goal": "Forecast inventory cash purchases using the sales-linked lag rule",
+          "candidate_regions": [
+            "Cash Flow Forecast!E19:N19"
+          ],
+          "required_public_rules": [
+            "July onward inventory purchases are half the previous month revenue.",
+            "Keep initial May/June inventory purchase inputs as supplied exceptions."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "retail-cash-movements",
+          "business_goal": "Build monthly forecast cash inflows and outflows from the published categories",
+          "candidate_regions": [
+            "Cash Flow Forecast!C14:N14",
+            "Cash Flow Forecast!C32:N32"
+          ],
+          "required_public_rules": [
+            "State which receipt and payment rows are included.",
+            "Do not double-count starting cash as an inflow."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "retail-cash-rollforward",
+          "business_goal": "Build rolling starting and ending cash balances over the forecast year",
+          "candidate_regions": [
+            "Cash Flow Forecast!D6:N6",
+            "Cash Flow Forecast!C34:N34"
+          ],
+          "required_public_rules": [
+            "Ending cash equals starting cash plus inflows minus outflows.",
+            "Next month starts from the previous ending cash."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "source_business_issues": [
+        "Cash Flow Forecast has populated nonzero values; other sheets contain historical statements and start-up budgets, so keep the forecast task focused."
+      ],
+      "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification."
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/9ab11b226c_cds_fncl.xls",
+      "source_sha256": "9ab11b226c290cd983edd563e7de8faae9ff8dc935a24d965aa7eeb5812f899b",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/9ab11b226c29.xlsx",
+      "classification": "populated_forecast",
+      "priority": 75,
+      "sheet_count": 9,
+      "formula_count": 79,
+      "cached_error_count": 0,
+      "evidence": [
+        {
+          "sheet": "01 Rev. Proj.",
+          "cell": "A2",
+          "value_or_formula": "Projected Profit and Loss Statement - 2001",
+          "cached_value": "Projected Profit and Loss Statement - 2001"
+        },
+        {
+          "sheet": "01 Rev. Proj.",
+          "cell": "E8",
+          "value_or_formula": "=E6-E7",
+          "cached_value": 34020
+        },
+        {
+          "sheet": "01 Rev. Proj.",
+          "cell": "E17",
+          "value_or_formula": "=E15-E16",
+          "cached_value": 4090
+        },
+        {
+          "sheet": "01 Rev. Proj.",
+          "cell": "E51",
+          "value_or_formula": "=E18-E50",
+          "cached_value": 9419
+        },
+        {
+          "sheet": "01 Bal. Sheet",
+          "cell": "A2",
+          "value_or_formula": "Pro Forma Balance Sheet - 12/31/01",
+          "cached_value": "Pro Forma Balance Sheet - 12/31/01"
+        }
+      ],
+      "candidate_cases": [
+        {
+          "case_id": "training-gross-profit",
+          "business_goal": "Build projected net sales, cost of goods sold and gross profit",
+          "candidate_regions": [
+            "01 Rev. Proj.!E8:M18"
+          ],
+          "required_public_rules": [
+            "Net sales are gross sales less returns.",
+            "COGS includes beginning inventory plus purchases and freight less ending inventory.",
+            "Keep purchase inputs public; original purchase formulas contain hard-coded quantities that cannot be inferred after masking without explicit rules."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "training-operating-income",
+          "business_goal": "Build projected expense totals, operating income and net income",
+          "candidate_regions": [
+            "01 Rev. Proj.!E50:M56"
+          ],
+          "required_public_rules": [
+            "Use exact expense categories and distinguish other income.",
+            "Use the published projected period and preserve source drivers."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "training-pro-forma-assets",
+          "business_goal": "Build the projected 2001 balance-sheet asset aggregation",
+          "candidate_regions": [
+            "01 Bal. Sheet!F10:H30"
+          ],
+          "required_public_rules": [
+            "Subtract accumulated depreciation and the bad-debt reserve before aggregating.",
+            "Treat supplied asset and reserve amounts as explicit forecast inputs."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "constraints_and_original_defects": [
+        "Several other sheets have only hard-coded values; they are useful public inputs, not derivable targets.",
+        "Avoid original cumulative-income row57 until its mixed references and hard-coded values have been independently validated."
+      ],
+      "business_correctness_certified": false,
+      "sha256": "9ab11b226c290cd983edd563e7de8faae9ff8dc935a24d965aa7eeb5812f899b",
+      "financial_modeling_eligible": true,
+      "debugging_eligible": true,
+      "scenario_required": false,
+      "safe_modules": [
+        {
+          "case_id": "training-gross-profit",
+          "business_goal": "Build projected net sales, cost of goods sold and gross profit",
+          "candidate_regions": [
+            "01 Rev. Proj.!E8:M18"
+          ],
+          "required_public_rules": [
+            "Net sales are gross sales less returns.",
+            "COGS includes beginning inventory plus purchases and freight less ending inventory.",
+            "Keep purchase inputs public; original purchase formulas contain hard-coded quantities that cannot be inferred after masking without explicit rules."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "training-operating-income",
+          "business_goal": "Build projected expense totals, operating income and net income",
+          "candidate_regions": [
+            "01 Rev. Proj.!E50:M56"
+          ],
+          "required_public_rules": [
+            "Use exact expense categories and distinguish other income.",
+            "Use the published projected period and preserve source drivers."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "training-pro-forma-assets",
+          "business_goal": "Build the projected 2001 balance-sheet asset aggregation",
+          "candidate_regions": [
+            "01 Bal. Sheet!F10:H30"
+          ],
+          "required_public_rules": [
+            "Subtract accumulated depreciation and the bad-debt reserve before aggregating.",
+            "Treat supplied asset and reserve amounts as explicit forecast inputs."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "source_business_issues": [
+        "Several other sheets have only hard-coded values; they are useful public inputs, not derivable targets.",
+        "Avoid original cumulative-income row57 until its mixed references and hard-coded values have been independently validated."
+      ],
+      "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification."
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b9b31bc183_Appendix2_model.xls",
+      "source_sha256": "b9b31bc1839bd30ba44fff346a252a12297b7b5d0e884d20d5bb44e6c8c2a44b",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/b9b31bc1839b.xlsx",
+      "classification": "populated_valuation",
+      "priority": 100,
+      "sheet_count": 4,
+      "formula_count": 1485,
+      "cached_error_count": 0,
+      "evidence": [
+        {
+          "sheet": "Presentation",
+          "cell": "E1",
+          "value_or_formula": "Financial capability of wind turbines",
+          "cached_value": "Financial capability of wind turbines"
+        },
+        {
+          "sheet": "Presentation",
+          "cell": "E4",
+          "value_or_formula": "This model is a tool for evaluating wind turbine projects under different assumptions",
+          "cached_value": "This model is a tool for evaluating wind turbine projects under different assumptions"
+        },
+        {
+          "sheet": "Presentation",
+          "cell": "K16",
+          "value_or_formula": 5,
+          "cached_value": 5
+        },
+        {
+          "sheet": "Presentation",
+          "cell": "K17",
+          "value_or_formula": 20,
+          "cached_value": 20
+        },
+        {
+          "sheet": "Presentation",
+          "cell": "G17",
+          "value_or_formula": "=-PMT(K16/100,K17,G16)",
+          "cached_value": 85.5920930034041
+        },
+        {
+          "sheet": "Presentation",
+          "cell": "J24",
+          "value_or_formula": "=-PV($K$16/100,$K$17,J23)",
+          "cached_value": 1191.87107827068
+        }
+      ],
+      "candidate_cases": [
+        {
+          "case_id": "wind-capital-requirement",
+          "business_goal": "Calculate annualized capital and operating revenue requirements for a wind project",
+          "candidate_regions": [
+            "Presentation!G17:G19"
+          ],
+          "required_public_rules": [
+            "Use the disclosed annual discount rate, economic life and per-kW investment.",
+            "Specify end-of-year annuity convention and O&M addition."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "wind-project-capability",
+          "business_goal": "Value annual wind-generation contribution margins under baseline scenarios",
+          "candidate_regions": [
+            "Presentation!J21:K25"
+          ],
+          "required_public_rules": [
+            "Use selected annual revenue and O&M cost per kW.",
+            "Discount the constant end-of-year contribution over the stated life."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "wind-carbon-benefit",
+          "business_goal": "Calculate additional carbon-benefit requirements from project financing gaps and emission reductions",
+          "candidate_regions": [
+            "Presentation!J29:K30"
+          ],
+          "required_public_rules": [
+            "Units must distinguish currency per kW, kg CO2 per kW and currency per tonne.",
+            "State sign conventions and subtract existing CO2 benefit rates correctly."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "constraints_and_original_defects": [
+        "Scenario selection uses spreadsheet controls and INDEX inputs. Keep their effective selector cells visible and explain them in the public contract.",
+        "Zafarana 1999 and 2010 contain physical-energy calculations; not every formula there is a financial-modeling task."
+      ],
+      "business_correctness_certified": false,
+      "sha256": "b9b31bc1839bd30ba44fff346a252a12297b7b5d0e884d20d5bb44e6c8c2a44b",
+      "financial_modeling_eligible": true,
+      "debugging_eligible": true,
+      "scenario_required": false,
+      "safe_modules": [
+        {
+          "case_id": "wind-capital-requirement",
+          "business_goal": "Calculate annualized capital and operating revenue requirements for a wind project",
+          "candidate_regions": [
+            "Presentation!G17:G19"
+          ],
+          "required_public_rules": [
+            "Use the disclosed annual discount rate, economic life and per-kW investment.",
+            "Specify end-of-year annuity convention and O&M addition."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "wind-project-capability",
+          "business_goal": "Value annual wind-generation contribution margins under baseline scenarios",
+          "candidate_regions": [
+            "Presentation!J21:K25"
+          ],
+          "required_public_rules": [
+            "Use selected annual revenue and O&M cost per kW.",
+            "Discount the constant end-of-year contribution over the stated life."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        },
+        {
+          "case_id": "wind-carbon-benefit",
+          "business_goal": "Calculate additional carbon-benefit requirements from project financing gaps and emission reductions",
+          "candidate_regions": [
+            "Presentation!J29:K30"
+          ],
+          "required_public_rules": [
+            "Units must distinguish currency per kW, kg CO2 per kW and currency per tonne.",
+            "State sign conventions and subtract existing CO2 benefit rates correctly."
+          ],
+          "avoid_regions": [],
+          "status": "candidate_requires_planner_and_independent_verification"
+        }
+      ],
+      "source_business_issues": [
+        "Scenario selection uses spreadsheet controls and INDEX inputs. Keep their effective selector cells visible and explain them in the public contract.",
+        "Zafarana 1999 and 2010 contain physical-energy calculations; not every formula there is a financial-modeling task."
+      ],
+      "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification."
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/ed2f5f2d48_clienttemplate.xls",
+      "source_sha256": "ed2f5f2d4879a68bb40065e5c8596aa177e1762194ec08c76986a429a8ae190f",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/ed2f5f2d4879.xlsx",
+      "classification": "unpopulated_template",
+      "priority": 10,
+      "sheet_count": 13,
+      "formula_count": 920,
+      "cached_error_count": 4,
+      "evidence": [
+        {
+          "sheet": "Sales Forecast",
+          "cell": "A5",
+          "value_or_formula": "Thinking about seasonality and business growth what are the forecasted unit sales for each category?",
+          "cached_value": "Thinking about seasonality and business growth what are the forecasted unit sales for each category?"
+        },
+        {
+          "sheet": "Sales Forecast",
+          "cell": "B10",
+          "value_or_formula": 0,
+          "cached_value": 0
+        },
+        {
+          "sheet": "Monthly Budget",
+          "cell": "D8",
+          "value_or_formula": 0,
+          "cached_value": 0
+        },
+        {
+          "sheet": "Sources of Capital",
+          "cell": "B22",
+          "value_or_formula": 0.1,
+          "cached_value": 0.1
+        }
+      ],
+      "candidate_cases": [],
+      "constraints_and_original_defects": [
+        "Forecast sales and operating inputs are zero. Four existing Financial Diagnostics division errors. Use only after recording a coherent public scenario and validating the new baseline; do not fill arbitrary values solely to make mutation observable."
+      ],
+      "business_correctness_certified": false,
+      "sha256": "ed2f5f2d4879a68bb40065e5c8596aa177e1762194ec08c76986a429a8ae190f",
+      "financial_modeling_eligible": true,
+      "debugging_eligible": true,
+      "scenario_required": true,
+      "safe_modules": [
+        {
+          "business_goal": "Populate a coherent startup forecast and rebuild revenue, operating budget or financing calculations.",
+          "candidate_regions": [
+            "Sales Forecast",
+            "Monthly Budget",
+            "Income Statement",
+            "Cash Flow Statement"
+          ],
+          "required_public_rules": [
+            "Disclose every scenario input and its cells.",
+            "Use preserved input drivers; independently check chosen module and baseline errors."
+          ]
+        }
+      ],
+      "source_business_issues": [
+        "Forecast sales and operating inputs are zero. Four existing Financial Diagnostics division errors. Use only after recording a coherent public scenario and validating the new baseline; do not fill arbitrary values solely to make mutation observable."
+      ],
+      "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification."
+    },
+    {
+      "source": "/data/hzy/sheetsFactory/data/seeds/euses_financial/6525da9fa1_finprojs.xls",
+      "source_sha256": "6525da9fa1a1f62763928a7ba45eff0e31e2679ed11ed4e559ccdbc231a8452e",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/6525da9fa1a1.xlsx",
+      "formula_count": 103,
+      "sheet_count": 4,
+      "error_count": 0,
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/6525da9fa1_finprojs.xls",
+      "sha256": "6525da9fa1a1f62763928a7ba45eff0e31e2679ed11ed4e559ccdbc231a8452e",
+      "classification": "unpopulated_template",
+      "description": "Unpopulated multi-year financial projection template",
+      "priority": 30,
+      "financial_modeling_eligible": true,
+      "debugging_eligible": true,
+      "scenario_required": true,
+      "safe_modules": [
+        {
+          "business_goal": "Unpopulated multi-year financial projection template",
+          "candidate_regions": [
+            "CFLOW1!D15:O15",
+            "Profit &Loss !E14:M14",
+            "Profit &Loss !E39:M44"
+          ],
+          "public_scenario_input_regions": [
+            "CFLOW1!D11:O14",
+            "CFLOW1!D18:O39",
+            "Profit &Loss !D10:M12"
+          ],
+          "required_public_rules": [
+            "All scenario input values and units must be visible in the public input and instruction.",
+            "Recalculate and independently verify the new populated baseline before masking or injecting a bug."
+          ]
+        }
+      ],
+      "candidate_cases": [],
+      "source_business_issues": [
+        "CFLOW1 row42 (total outflows) and row44 (net cash) are original literal zeros, not working formulas. Do not treat those as computed goal targets without explicitly creating a derived goal.",
+        "Use existing formula-backed gross margin or expense modules after public scenario population."
+      ],
+      "constraints_and_original_defects": [
+        "CFLOW1 row42 (total outflows) and row44 (net cash) are original literal zeros, not working formulas. Do not treat those as computed goal targets without explicitly creating a derived goal.",
+        "Use existing formula-backed gross margin or expense modules after public scenario population."
+      ],
+      "evidence": [
+        {
+          "sheet": "CFLOW1",
+          "cell": "D11",
+          "value_or_formula": 0
+        },
+        {
+          "sheet": "CFLOW1",
+          "cell": "D18",
+          "value_or_formula": 0
+        }
+      ],
+      "business_correctness_certified": false,
+      "risk": "Eligible only after coherent public scenario creation; untouched zero-output template is not meaningful."
+    },
+    {
+      "source": "/data/hzy/sheetsFactory/data/seeds/euses_financial/97780e5e5c_W_SBT_financial.xls",
+      "source_sha256": "97780e5e5cf1903802bbbd223c828ccda11b05f7984d7aaede533ee08e7acf04",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/97780e5e5cf1.xlsx",
+      "formula_count": 3484,
+      "sheet_count": 5,
+      "error_count": 0,
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/97780e5e5c_W_SBT_financial.xls",
+      "sha256": "97780e5e5cf1903802bbbd223c828ccda11b05f7984d7aaede533ee08e7acf04",
+      "classification": "unpopulated_template",
+      "description": "Unpopulated three-year telecentre operating and cash-flow model",
+      "priority": 45,
+      "financial_modeling_eligible": true,
+      "debugging_eligible": true,
+      "scenario_required": true,
+      "safe_modules": [
+        {
+          "business_goal": "Unpopulated three-year telecentre operating and cash-flow model",
+          "candidate_regions": [
+            "Personnel!D15:AQ20",
+            "Cash Flows!D38:AQ38",
+            "Financial Summary!C9:E34"
+          ],
+          "public_scenario_input_regions": [
+            "Personnel!D7:D13",
+            "Personnel!D17",
+            "Cash Flows!D18:D36",
+            "Cash Flows!D9:D13"
+          ],
+          "required_public_rules": [
+            "All scenario input values and units must be visible in the public input and instruction.",
+            "Recalculate and independently verify the new populated baseline before masking or injecting a bug."
+          ]
+        }
+      ],
+      "candidate_cases": [],
+      "source_business_issues": [
+        "Keep financing, staffing and operating revenue assumptions mutually coherent.",
+        "Preserve public rate and timing conventions, including which future months carry initial values forward."
+      ],
+      "constraints_and_original_defects": [
+        "Keep financing, staffing and operating revenue assumptions mutually coherent.",
+        "Preserve public rate and timing conventions, including which future months carry initial values forward."
+      ],
+      "evidence": [
+        {
+          "sheet": "Personnel",
+          "cell": "D7",
+          "value_or_formula": 0
+        },
+        {
+          "sheet": "Personnel",
+          "cell": "D17",
+          "value_or_formula": 0
+        }
+      ],
+      "business_correctness_certified": false,
+      "risk": "Eligible only after coherent public scenario creation; untouched zero-output template is not meaningful."
+    },
+    {
+      "source": "/data/hzy/sheetsFactory/data/seeds/euses_financial/0ab3d8c1e5_Financial_20Calculato_A8B74.xls",
+      "source_sha256": "0ab3d8c1e5d4851c17778cccd27774b49a3dc7189ed03c0a96b43b9ebb5d27ab",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/0ab3d8c1e5d4.xlsx",
+      "formula_count": 2487,
+      "sheet_count": 9,
+      "error_count": 0,
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/0ab3d8c1e5_Financial_20Calculato_A8B74.xls",
+      "sha256": "0ab3d8c1e5d4851c17778cccd27774b49a3dc7189ed03c0a96b43b9ebb5d27ab",
+      "classification": "unpopulated_template",
+      "description": "Unpopulated financial calculator and loan amortization model",
+      "priority": 30,
+      "financial_modeling_eligible": true,
+      "debugging_eligible": true,
+      "scenario_required": true,
+      "safe_modules": [
+        {
+          "business_goal": "Unpopulated financial calculator and loan amortization model",
+          "candidate_regions": [
+            "(6)Amortization Schedule!E10",
+            "(6)Amortization Schedule!C15:I50",
+            "(7)Annual Summary!C15:I20"
+          ],
+          "public_scenario_input_regions": [
+            "(6)Amortization Schedule!E6:E9"
+          ],
+          "required_public_rules": [
+            "All scenario input values and units must be visible in the public input and instruction.",
+            "Recalculate and independently verify the new populated baseline before masking or injecting a bug."
+          ]
+        }
+      ],
+      "candidate_cases": [],
+      "source_business_issues": [
+        "Annual NPV and IRR displayed result cells are literal zeros in the original, not formulas. Avoid pretending they can be restored from an original computed goal.",
+        "TVM PV/PMT/FV entries are input constants; choose actual formula-backed amortization targets.",
+        "Disclose periodic-payment rounding and the original balance-less-than-10 stopping convention."
+      ],
+      "constraints_and_original_defects": [
+        "Annual NPV and IRR displayed result cells are literal zeros in the original, not formulas. Avoid pretending they can be restored from an original computed goal.",
+        "TVM PV/PMT/FV entries are input constants; choose actual formula-backed amortization targets.",
+        "Disclose periodic-payment rounding and the original balance-less-than-10 stopping convention."
+      ],
+      "evidence": [
+        {
+          "sheet": "(6)Amortization Schedule",
+          "cell": "E6",
+          "value_or_formula": 0
+        }
+      ],
+      "business_correctness_certified": false,
+      "risk": "Eligible only after coherent public scenario creation; untouched zero-output template is not meaningful."
+    }
+  ],
+  "other_unpopulated_templates": [
+    "finprojs.xls",
+    "W_SBT_financial.xls",
+    "Financial Calculato#A8B74.xls"
+  ],
+  "potential_statement_or_budget_sources": [
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/f1e50f8a90_Consolidated_Restatem_A7F7B.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/f1e50f8a901e.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/e2eb98478b_Annexure_20_Audited_2_A7E05.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/e2eb98478b19.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/656b82f77b_2001financialstatements.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/656b82f77b8e.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b4e22946d1_FinancialCompilationDec03.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/b4e22946d14e.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/417a12e7fb_sampleReport.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/417a12e7fb9f.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/6525da9fa1_finprojs.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/6525da9fa1a1.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/6043dd7f24_finrpt00.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/6043dd7f246b.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/af93067930_finrpt01.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/af930679308f.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/bc2d57880a_Club_20Financial_20St_A7B41.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/bc2d57880acf.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/97780e5e5c_W_SBT_financial.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/97780e5e5cf1.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/498f0cb1dd_inc_exp.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/498f0cb1ddce.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/54643c53bd_historicalfinancial.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/54643c53bd4d.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/c3909162aa_am_skandia_fin_supple_A80EE.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/c3909162aad9.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b59d12e85c_20031017112201_Aug200_A7DEB.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/b59d12e85cfb.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/377a73f10f_20030114144840_Superi_A7DEA.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/377a73f10f16.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/3a6c31e69b_WFDFFinancialSummary.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/3a6c31e69ba2.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/c9ab0fc7c5_StatusReportFormsApri_A784C.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/c9ab0fc7c5d0.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/4a44eecb61_Main_Part_of_the_Fina_A8115.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/4a44eecb612f.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/addc8cb983_NEW.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/addc8cb983ed.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/596d30aaaf_1999RISEAnnualReport_4_.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/596d30aaaf89.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/fa5a989409_FinalReportTables.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/fa5a989409c2.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/666b76c513_financial-notes.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/666b76c513fc.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/6d6d0ce929_hospitaldataset2002.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/6d6d0ce92927.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/dc4b097c00_Exh_listFY03.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/dc4b097c0056.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/a8503d50b3_CTF_20Forms_202003-2004.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/a8503d50b386.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/46fc0d253b_03-3xx-en.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/46fc0d253b90.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/5b80bdb217_monthly_20financial_2_A7B53.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/5b80bdb217d9.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/2a6c0a4c42_notes.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/2a6c0a4c4224.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/9bc356b631_monthly_20financial_2_A7B52.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/9bc356b63183.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/05a9aca63a_financial-forms.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/05a9aca63a7b.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b86d849ed1_Natlform_F1_.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/b86d849ed16b.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/0ab3d8c1e5_Financial_20Calculato_A8B74.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/0ab3d8c1e5d4.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/471d40d4a3_form_481-05-03.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/471d40d4a3ed.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/a783cbbdd1_Treasurer_s_20Report__A7EE5.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/a783cbbdd132.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/cb3c6f0497_DentalPPO-HMOrfpAttM.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/cb3c6f0497bf.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b1de981b50_mdr03demo.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/b1de981b50ef.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/9ee32a16c3_Annexes_C_I.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/9ee32a16c3a1.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b90c65fbe9_hist.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/b90c65fbe923.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/f6fcd43a6b_hist_e.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/f6fcd43a6b1f.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/dd5cd27d5f_ED_20Financial_20Statements.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/dd5cd27d5fde.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/7f4a4141fa_V-Stmt-01.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/7f4a4141faf4.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/aad536691b_c02031_template.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/aad536691bb1.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/0b29345648_AFS_Dec_2002.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/0b2934564811.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/1e30292c3b_FINANCIAL_REPORT.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/1e30292c3b0f.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/625b41a713_finaid2004.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/625b41a713fb.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/59d0042283_sample_20fiscal_20pag_A8AD8.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/59d004228343.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b687b696f3_FY02-03_GOVT_FUNDS.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/b687b696f363.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/7c0ae39c4f_Q2_202003_20Financial_A7EF5.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/7c0ae39c4feb.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/97b08e47ec_2003113145043.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/97b08e47ec02.xlsx"
+    },
+    {
+      "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/c8476ebac4_2003AssHistForms.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/c8476ebac42d.xlsx"
+    }
+  ],
+  "eligible_source_count": 11,
+  "scenario_required_source_count": 4,
+  "default_financial_modeling_eligible": false
+}

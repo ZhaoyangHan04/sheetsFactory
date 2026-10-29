@@ -62,6 +62,17 @@ class AuditStore:
             self.db.commit()
             return cursor.lastrowid
 
+    def update_record(self, table, record_id, values):
+        if table not in {'nodes', 'calls'}:
+            raise ValueError('Unsupported audit table')
+        with self.lock:
+            row = self.db.execute(f'SELECT payload FROM {table} WHERE id=?', (record_id,)).fetchone()
+            if row is None:
+                raise KeyError(record_id)
+            value = {**json.loads(row[0]), **values}
+            self.db.execute(f'UPDATE {table} SET payload=? WHERE id=?', (json.dumps(value, default=str), record_id))
+            self.db.commit()
+
     def events(self, after=0):
         with self.lock:
             rows = self.db.execute('SELECT id,timestamp,kind,payload FROM events WHERE id>? ORDER BY id LIMIT 1000', (after,)).fetchall()
@@ -83,12 +94,13 @@ class AuditStore:
                 'llm_calls': len(calls), 'unknown_usage_calls': sum(c.get('input_tokens') is None for c in calls),
                 'estimated_cost': None, 'cost_status': 'provider billing unavailable',
                 'candidates': len(tasks), 'unique_seeds': len(source_ids),
+                'ready': sum(t.get('status') == 'ready' for t in tasks),
                 'productive_seeds': len(productive), 'qualified': len(qualified),
                 'rejected': sum(t.get('status') == 'rejected' for t in tasks),
                 'candidate_conversion': len(qualified) / len(tasks) if tasks else None,
                 'source_conversion': len(productive) / len(source_ids) if source_ids else None,
                 'tasks_per_seed': len(qualified) / len(source_ids) if source_ids else None,
-                'cumulative_node_seconds': sum(n.get('duration_ms', 0) for n in tables['nodes']) / 1000,
+                'cumulative_node_seconds': sum(n.get('duration_ms', 0) or 0 for n in tables['nodes']) / 1000,
             }
             run = {**self.run, 'qualified': len(qualified), **{
                 mode: sum(t.get('mode') == mode for t in qualified)

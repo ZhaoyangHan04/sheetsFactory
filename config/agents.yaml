@@ -1,0 +1,32 @@
+# Each call resolves role overrides independently; concurrent calls never alter
+# the shared backend's default model or effort. Explicit caller timeout wins.
+roles:
+  planner:
+    model: gpt-6-sol
+    reasoning_effort: high
+    timeout_seconds: 600
+  repair_planner:
+    model: gpt-6-sol
+    reasoning_effort: high
+    timeout_seconds: 600
+  public_diagnostician:
+    model: gpt-6-sol
+    reasoning_effort: high
+    timeout_seconds: 600
+  reference_diagnostician:
+    model: gpt-6-sol
+    reasoning_effort: high
+    timeout_seconds: 600
+  trace_agent:
+    model: gpt-6-sol
+    reasoning_effort: high
+    timeout_seconds: 420
+
+# Keys are the logical prompt names used by nodes. Values are paths relative
+# to prompts/; a run can override an individual path without editing nodes.
+prompts:
+  planning.md: planning.md
+  repair.md: repair.md
+  diagnosis.md: diagnosis.md
+  recovery.md: recovery.md
+  trajectory.md: trajectory.md

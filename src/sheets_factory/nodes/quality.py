@@ -1,0 +1,189 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import uuid
+
+from ..core.node import BaseNode, TaskRejected
+from ..workbook import compare_workbooks
+from ..checkers import DiagnosisRunner
+from ..checkers.router import route_issues
+from ..evaluation.harbor import export_harbor
+from .construction import prompt, compact_profile
+
+
+def prepare_workspace(ctx, name):
+    workspace = ctx.revision_dir / (name + '-' + uuid.uuid4().hex[:8])
+    workspace.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ctx.data['input'], workspace / 'input.xlsx')
+    (workspace / 'instruction.md').write_text(ctx.data['instruction'])
+    return workspace
+
+
+class RecoveryNode(BaseNode):
+    node_id = 'independent_recovery'
+
+    def execute(self, ctx):
+        work = prepare_workspace(ctx, 'recovery_public')
+        result = {'public_information_only': True, 'workspace': str(work), 'verified': False}
+        try:
+            (work / 'public_profile.json').write_text(json.dumps(ctx.data.get('public_profile', {}), ensure_ascii=False))
+            public_payload = {'instruction': ctx.data['instruction'],
+                'profile': compact_profile(ctx.data['public_profile']) if ctx.data.get('public_profile') else {}}
+            compiler = ctx.llm.complete(prompt(ctx, 'recovery.md') + '\nPUBLIC INPUT JSON:\n' + json.dumps(public_payload, ensure_ascii=False),
+                role='recovery_compiler', task_id=ctx.task_id, stage=self.node_id, workspace=work, isolated=True,
+                timeout=ctx.config['agents']['timeout_seconds'])
+            result['compiler'] = compiler
+            if compiler.get('assumptions_added') or compiler.get('unresolved_questions'):
+                raise ValueError('Public reconstruction requires unresolved or newly invented assumptions')
+            code = compiler.get('code')
+            if isinstance(code, str) and code.strip():
+                compile(code, 'recovery.py', 'exec')
+                (work / 'recovery.py').write_text(code)
+                # Re-execute the witness from only public input and its program in a
+                # fresh, network-disabled container. A hand-written output alone
+                # cannot establish programmatic reconstruction.
+                replay = ctx.revision_dir / ('recovery_replay-' + uuid.uuid4().hex[:8])
+                replay.mkdir(parents=True)
+                shutil.copy2(ctx.data['input'], replay / 'input.xlsx')
+                shutil.copy2(work / 'recovery.py', replay / 'recovery.py')
+                execution = subprocess.run(['docker', 'run', '--rm', '--user', '0', '--network', 'none',
+                    '--cap-drop', 'ALL', '--cap-add', 'DAC_OVERRIDE', '--security-opt', 'no-new-privileges',
+                    '--memory', '2g', '--pids-limit', '256', '--volume', str(replay.resolve()) + ':/workspace:rw',
+                    '--workdir', '/workspace', '--entrypoint', '/usr/bin/python3',
+                    ctx.config['engine']['image'], '/workspace/recovery.py'], capture_output=True, text=True, timeout=120)
+                result['replay'] = {'directory': str(replay), 'returncode': execution.returncode,
+                                    'stdout': execution.stdout[-4000:], 'stderr': execution.stderr[-4000:]}
+                if execution.returncode or not (replay / 'output.xlsx').is_file():
+                    raise ValueError('Independent recovery program did not reproduce an output from public input')
+                calculated = ctx.engine.recalculate(replay / 'output.xlsx', ctx.revision_dir / 'private/recovered.xlsx')
+                comparison = compare_workbooks(ctx.data['input'], ctx.data['goal'], calculated)
+                result['comparison'] = comparison
+                result['verified'] = comparison.get('reward') == 1
+                result['program'] = (work / 'recovery.py').read_text()
+        except Exception as exc:
+            result['error'] = str(exc)
+        ctx.save('independent_recovery.json', result)
+        return {'recovery': result}
+
+
+class TrajectoryNode(BaseNode):
+    node_id = 'trajectory'
+
+    def execute(self, ctx):
+        work = prepare_workspace(ctx, 'trials/trial-000')
+        trace = {'trial_id': 'trial-000', 'events': [], 'workspace': str(work)}
+        try:
+            result = ctx.llm.attempt(prompt(ctx, 'trajectory.md'), work, taskid=ctx.task_id, stage=self.node_id,
+                                     timeout=ctx.config['agents']['trajectory_timeout_seconds'])
+            trace.update({k: result[k] for k in ['events', 'reply', 'call_id', 'duration_ms'] if k in result})
+        except Exception as exc:
+            trace['infrastructure_error'] = str(exc)
+        # No completion/reward branch: all traces proceed to diagnosis.
+        ctx.save('trajectory.json', trace)
+        return {'traces': [trace]}
+
+
+class DiagnoseNode(BaseNode):
+    node_id = 'diagnose'
+
+    def execute(self, ctx):
+        public = {'instruction': ctx.data['instruction'], 'profile': compact_profile(ctx.data['public_profile']),
+                  'rules': ctx.data['plan']['public_rules'], 'task_mode': ctx.mode}
+        private = {'plan': ctx.data['plan'], 'construction': ctx.data['construction_validation'],
+                   'expected_delta': ctx.data['delta'], 'root_impacts': ctx.data['root_impacts'],
+                   'independent_recovery': ctx.data['recovery'],
+                   'source_assessment': ctx.data.get('source_assessment', {}),
+                   'native_errors': ctx.data['profile']['errors']}
+        health = {'healthy': all(not t.get('infrastructure_error') for t in ctx.data['traces']),
+                  'checks': [{'probe': 'codex_native_cli', 'model': ctx.llm.model},
+                             {'probe': 'libreoffice_full_recalculation', 'engine': ctx.data['engine_report']}]}
+        bundle = {'task_id': ctx.task_id, 'revision_hash': ctx.data['revision_hash'],
+                  'public': public, 'private': private, 'engine_report': ctx.data['engine_report'],
+                  'infrastructure_health_report': health}
+
+        def review(payload):
+            is_public = payload['visibility'] == 'public_only'
+            work = prepare_workspace(ctx, 'diagnostic_public' if is_public else 'diagnostic_private')
+            (work / 'evidence.json').write_text(json.dumps(payload, ensure_ascii=False, default=str))
+            instruction = (prompt(ctx, 'diagnosis.md') + '\nRead /workspace/evidence.json for all assigned '
+                           'checks and evidence. Inspect input.xlsx/instruction.md as necessary. Return JSON only.')
+            if not is_public:
+                instruction = prompt(ctx, 'diagnosis.md') + '\nINPUT JSON:\n' + json.dumps(payload, ensure_ascii=False, default=str)
+            return ctx.llm.complete(instruction, role='public_diagnostician' if is_public else 'reference_diagnostician',
+                                    task_id=ctx.task_id, stage=self.node_id, workspace=work,
+                                    isolated=is_public, timeout=ctx.config['agents']['timeout_seconds'])
+
+        runner = DiagnosisRunner(ctx.config['project_root'])
+        report = runner.diagnose(bundle, ctx.data['traces'], ctx.data['controls'], review, ctx.config)
+        if not ctx.data['recovery']['verified']:
+            issue = {'issue_id': ctx.task_id + '-Q12-recovery', 'problem_id': 'Q12',
+                'severity': 'blocker', 'certainty': 'confirmed',
+                'claim': 'Independent public-information reconstruction has not matched reference values',
+                'revision_hash': ctx.data['revision_hash'], 'depends_on_issue_ids': [],
+                'evidence': [ctx.data['recovery'].get('comparison', ctx.data['recovery'].get('error', 'no output'))]}
+            report['issues'].append(issue)
+            # Mandatory recovery is separate from optional diagnostic selection.
+            # A disabled Q12 plugin remains skipped, but cannot disable this gate.
+            report['mandatory_gates'] = {'independent_recovery': {'passed': False, 'issue_id': issue['issue_id']}}
+            if 'Q12' in report['enabled_check_ids']:
+                assessment = report['assessments']['Q12']
+                assessment.update(state='flagged', reason=issue['claim'])
+                assessment.setdefault('evidence', []).extend(issue['evidence'])
+                assessment.setdefault('issue_ids', []).append(issue['issue_id'])
+        else:
+            report['mandatory_gates'] = {'independent_recovery': {'passed': True}}
+        report['routes'] = route_issues(report['issues'], runner.catalog,
+                                        ctx.config.get('diagnosis', {}).get('difficulty_deferred', False))
+        report['coverage']['blocking_issue_ids'] = [issue['issue_id'] for issue in report['issues']
+            if issue.get('severity', 'blocker') == 'blocker'
+            and not (issue['problem_id'] == 'Q08' and runner.resolve(ctx.config)['difficulty_deferred'])]
+        report['releasable'] = (report['releasable'] and ctx.data['recovery']['verified']
+                                and not report['coverage']['blocking_issue_ids'])
+        ctx.save('diagnosis.json', report)
+        ctx.audit.task(ctx.task_id, issues=report['issues'], diagnosis_scope=report['scope'])
+        for check, assessment in report['assessments'].items():
+            ctx.audit.emit('checker.result', task_id=ctx.task_id, revision=ctx.revision,
+                           checker=check, state=assessment['state'], reason=assessment['reason'])
+        return {'diagnosis': report}
+
+
+class RepairNode(BaseNode):
+    node_id = 'repair'
+
+    def execute(self, ctx):
+        routes = ctx.data.get('repair_routes', [])
+        issues = {issue['issue_id']: issue for issue in ctx.data.get('diagnosis', {}).get('issues', [])}
+        if not routes or any(route['route_class'] != 'repair'
+            or issues.get(route['issue_id'], {}).get('certainty') != 'confirmed' for route in routes):
+            raise TaskRejected('Content repair requires confirmed repair-class routes; collect evidence or retry infrastructure first')
+        payload = {'task_mode': ctx.mode, 'current_plan': ctx.data['plan'],
+                   'diagnosis': ctx.data.get('diagnosis'), 'construction_error': ctx.data.get('construction_error'),
+                   'assigned_repair_routes': routes,
+                   'source_profile': compact_profile(ctx.data['profile']),
+                   'remaining_steps': ctx.config['run']['max_steps'] - ctx.revision}
+        result = ctx.llm.complete(prompt(ctx, 'repair.md') + '\nINPUT JSON:\n' + json.dumps(payload, ensure_ascii=False, default=str),
+                                 role='repair_planner', task_id=ctx.task_id, stage=self.node_id,
+                                 timeout=ctx.config['agents']['timeout_seconds'])
+        ctx.save('repair_proposal.json', result)
+        requested = {route['issue_id'] for route in routes}
+        addressed = set(result.get('addressed_issue_ids', []))
+        if result.get('repaired_task') and not requested <= addressed:
+            raise TaskRejected('Repair proposal did not account for all assigned issue instances')
+        return {'next_plan': result.get('repaired_task')}
+
+
+class ExportNode(BaseNode):
+    node_id = 'export'
+
+    def execute(self, ctx):
+        destination = Path(ctx.config['run_dir']) / 'SpreadsheetEval' / ctx.task_id
+        metadata = {'task_id': ctx.task_id, 'mode': ctx.mode, 'source_id': ctx.data['source_id'],
+                    'source_file': ctx.source.name, 'difficulty_status': 'deferred',
+                    'revision': ctx.revision, 'revision_hash': ctx.data['revision_hash'],
+                    'base_image': ctx.config['engine']['image']}
+        export_harbor(ctx.revision_dir, destination, metadata, ctx.config['project_root'])
+        (ctx.directory / 'lineage.json').write_text(json.dumps(metadata, indent=2))
+        return {'export_dir': destination}

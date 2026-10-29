@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 import unittest
 from unittest.mock import patch
 
@@ -72,6 +73,43 @@ print(json.dumps({'type':'turn.completed','usage':{'input_tokens':100,'cached_in
         self.assertIn('model_providers.factory.wire_api="responses"', command)
         self.assertNotIn(self.key, " ".join(command))
         self.assertEqual(command[-1], "-")
+
+    def test_concurrent_role_overrides_are_local_and_audited(self):
+        self.config["roles"] = {
+            "planner": {"model": "planner-model", "reasoning_effort": "high", "timeout_seconds": 15},
+            "public_diagnostician": {"model": "review-model", "reasoning_effort": "xhigh", "timeout_seconds": 20},
+        }
+        backend = self.backend()
+        commands = []
+        original = backend._build_command
+
+        def capture(*args, **kwargs):
+            command = original(*args, **kwargs)
+            commands.append(command)
+            return command
+
+        with patch.object(backend, "_build_command", side_effect=capture):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                results = list(pool.map(lambda role: backend.complete("prompt", role), ["planner", "public_diagnostician"]))
+        self.assertEqual(results, [{"ok": True}, {"ok": True}])
+        records = {r["role"]: r for r in self.records()}
+        self.assertEqual(records["planner"]["model"], "planner-model")
+        self.assertEqual(records["planner"]["timeout_seconds"], 15)
+        self.assertEqual(records["public_diagnostician"]["model"], "review-model")
+        self.assertEqual(records["public_diagnostician"]["reasoning_effort"], "xhigh")
+        self.assertEqual(backend.model, "gpt-6-sol")
+        self.assertEqual(backend.reasoning, "high")
+        actual = {c[c.index("-m") + 1]: c for c in commands}
+        self.assertIn('model_reasoning_effort="high"', actual["planner-model"])
+        self.assertIn('model_reasoning_effort="xhigh"', actual["review-model"])
+
+    def test_explicit_timeout_overrides_role_and_role_overrides_global(self):
+        self.config.update({"timeout_seconds": 50, "roles": {"planner": {"timeout_seconds": 10}}})
+        backend = self.backend()
+        self.assertEqual(backend._role_settings("planner")["timeout_seconds"], 10)
+        self.assertEqual(backend._role_settings("planner", 8)["timeout_seconds"], 8)
+        self.assertEqual(backend._role_settings("other")["timeout_seconds"], 50)
+        self.assertEqual(backend._role_settings("other")["model"], "gpt-6-sol")
 
     def test_isolated_command_exposes_only_workspace_and_binary(self):
         backend = self.backend()

@@ -46,6 +46,8 @@ class BaseNode(ABC):
         stamp = utcnow()
         context.audit.emit('node.started', task_id=context.task_id, node=self.node_id, revision=context.revision)
         context.audit.task(context.task_id, node=self.node_id, revision=context.revision, status='running')
+        record_id = context.audit.record('nodes', {'task_id': context.task_id, 'node': self.node_id,
+            'node_id': self.node_id, 'revision': context.revision, 'started_at': stamp, 'status': 'running'})
         status, error = 'completed', None
         try:
             result = self.execute(context)
@@ -59,7 +61,7 @@ class BaseNode(ABC):
             record = {'task_id': context.task_id, 'node': self.node_id, 'revision': context.revision,
                       'started_at': stamp, 'duration_ms': round((time.monotonic() - started) * 1000),
                       'status': status, 'error': error}
-            context.audit.record('nodes', record)
+            context.audit.update_record('nodes', record_id, record)
             context.audit.emit('node.' + status, **record)
 
     @abstractmethod

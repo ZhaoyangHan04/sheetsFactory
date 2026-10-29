@@ -1,0 +1,19 @@
+{
+  "phase": "remaining_source_survey",
+  "attempted": 30,
+  "wall_seconds": 85.96,
+  "node_seconds": 248.66,
+  "llm_calls": 0,
+  "llm_tokens": 0,
+  "all_source_preparation": {
+    "attempted_unique_sources": 70,
+    "readable_profiled": 68,
+    "zero_cached_errors": 57,
+    "normalization_and_profile_cumulative_seconds": 619.22,
+    "first_survey_wall_seconds": null,
+    "first_survey_wall_time_note": "Not instrumented as an aggregate; per-source durations are retained.",
+    "external_llm_calls": 0,
+    "external_llm_tokens": 0,
+    "scope_note": "Preparation audit only; excludes main pipeline LLM use and Docker image build wall time."
+  }
+}

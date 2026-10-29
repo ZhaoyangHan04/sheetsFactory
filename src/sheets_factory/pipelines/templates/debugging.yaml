@@ -1,0 +1,10 @@
+version: 1
+id: debugging_v1
+mode: debugging
+phases:
+  preparation: [normalize, profile, plan]
+  revision: [construct, instruction, precheck, independent_recovery, trajectory, diagnose]
+  evidence: [independent_recovery, diagnose]
+  infrastructure_retry: [independent_recovery, trajectory, diagnose]
+  repair: [repair]
+  export: [export]

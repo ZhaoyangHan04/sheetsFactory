@@ -64,7 +64,27 @@ class CodexCLI:
         self.provider = self.config.get("provider", "factory")
         if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", self.provider):
             raise ValueError("Provider name is invalid")
-        self._slots = threading.BoundedSemaphore(int(self.config.get("max_parallel_calls", 4)))
+        slots = int(self.config.get("max_parallel_calls", 4))
+        if slots < 1:
+            raise ValueError("max_parallel_calls must be positive")
+        self._slots = threading.BoundedSemaphore(slots)
+
+    def _role_settings(self, role: str, timeout: int | None = None) -> dict:
+        """Resolve call-local settings without changing defaults shared by threads."""
+        overrides = self.config.get("roles", {}).get(role, {})
+        resolved = {
+            "model": overrides.get("model", self.model),
+            "reasoning_effort": overrides.get("reasoning_effort", self.reasoning),
+            "timeout_seconds": timeout if timeout is not None else overrides.get(
+                "timeout_seconds", self.config.get("timeout_seconds", 300)),
+        }
+        if not isinstance(resolved["model"], str) or not resolved["model"].strip():
+            raise ValueError("Role model must be a nonempty string")
+        if not isinstance(resolved["reasoning_effort"], str) or not resolved["reasoning_effort"].strip():
+            raise ValueError("Role reasoning effort must be a nonempty string")
+        if not isinstance(resolved["timeout_seconds"], (int, float)) or resolved["timeout_seconds"] <= 0:
+            raise ValueError("Role timeout must be positive")
+        return resolved
 
     def _path(self, setting: str, default: str) -> Path:
         value = Path(self.config.get(setting, default)).expanduser()
@@ -94,12 +114,13 @@ class CodexCLI:
         env[self.env_key] = key
         return env
 
-    def _build_command(self, workspace: Path, endpoint: str, isolated: bool, name: str) -> list[str]:
+    def _build_command(self, workspace: Path, endpoint: str, isolated: bool, name: str,
+                       *, model: str | None = None, reasoning: str | None = None) -> list[str]:
         cli = ["/usr/local/bin/codex" if isolated else str(self.binary), "exec",
                "--ignore-user-config", "--ignore-rules", "--ephemeral", "--skip-git-repo-check",
-               "--json", "--color", "never", "-m", self.model]
+               "--json", "--color", "never", "-m", model or self.model]
         settings = {
-            "model_reasoning_effort": self.reasoning,
+            "model_reasoning_effort": reasoning or self.reasoning,
             "model_provider": self.provider,
             f"model_providers.{self.provider}.name": self.provider,
             f"model_providers.{self.provider}.base_url": endpoint,
@@ -129,25 +150,27 @@ class CodexCLI:
         return cli + ["--sandbox", "read-only", "-c", 'approval_policy="never"', "-C", str(workspace), "-"]
 
     def complete(self, prompt: str, role: str, task_id: str = "", stage: str = "",
-                 workspace: Path | None = None, isolated: bool = False, timeout: int = 300) -> dict:
+                 workspace: Path | None = None, isolated: bool = False, timeout: int | None = None) -> dict:
         final_prompt = prompt + "\n\nReturn exactly one JSON object as your final response, without commentary."
         result = self._invoke(final_prompt, role, task_id, stage, workspace, isolated, timeout, True)
         return result["parsed"]
 
     def attempt(self, prompt: str, workspace: Path, taskid: str = "", stage: str = "trajectory",
-                timeout: int = 300, **kwargs) -> dict:
+                timeout: int | None = None, **kwargs) -> dict:
         task_id = kwargs.pop("task_id", taskid)
         if kwargs:
             raise TypeError("Unexpected attempt arguments: " + ", ".join(kwargs))
         return self._invoke(prompt, "trace_agent", task_id, stage, workspace, True, timeout, False)
 
     def _invoke(self, prompt: str, role: str, task_id: str, stage: str,
-                workspace: Path | None, isolated: bool, timeout: int, expect_json: bool) -> dict:
+                workspace: Path | None, isolated: bool, timeout: int | None, expect_json: bool) -> dict:
         with self._slots:
             return self._invoke_slot(prompt, role, task_id, stage, workspace, isolated, timeout, expect_json)
 
     def _invoke_slot(self, prompt: str, role: str, task_id: str, stage: str,
-                     workspace: Path | None, isolated: bool, timeout: int, expect_json: bool) -> dict:
+                     workspace: Path | None, isolated: bool, timeout: int | None, expect_json: bool) -> dict:
+        settings = self._role_settings(role, timeout)
+        timeout = settings["timeout_seconds"]
         call_id = uuid.uuid4().hex
         directory = self.run_dir / "llm_calls" / "private" / call_id
         directory.mkdir(parents=True, mode=0o700)
@@ -178,7 +201,7 @@ class CodexCLI:
             return value
 
         request = {"call_id": call_id, "role": role, "task_id": task_id, "stage": stage,
-                   "model": self.model, "reasoning_effort": self.reasoning,
+                   "model": settings["model"], "reasoning_effort": settings["reasoning_effort"],
                    "isolated": isolated, "started_at": started, "timeout_seconds": timeout}
         self.audit.emit("llm.started", **request)
         try:
@@ -192,7 +215,8 @@ class CodexCLI:
             request.update({"endpoint": endpoint, "workspace": str(work)})
             (directory / "request.json").write_text(json.dumps(request, indent=2))
             (directory / "prompt.txt").write_text(clean(prompt))
-            command = self._build_command(work, endpoint, isolated, container_name)
+            command = self._build_command(work, endpoint, isolated, container_name,
+                                          model=settings["model"], reasoning=settings["reasoning_effort"])
             process = subprocess.Popen(command, cwd=work, env=self._environment(key),
                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                        text=True, encoding="utf-8", errors="replace", start_new_session=True)
