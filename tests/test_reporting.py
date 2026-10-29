@@ -72,6 +72,109 @@ def test_distinct_denominators_and_no_double_counting(tmp_path):
     assert report['run']['started_at_shanghai'].startswith('2026-10-29 20:00:00')
 
 
+def test_resumed_live_elapsed_and_producer_phases_are_separate_with_offsets(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    audit.update_run(status='constructing', producer_active=True, resume_count=1,
+                     started_at='2026-10-29T20:00:00+08:00',
+                     resumed_at='2026-10-29T12:09:00Z',
+                     execution_phase_started_at='2026-10-29T20:10:00+08:00',
+                     finished_at='2026-10-29T12:05:00Z',
+                     wall_seconds=None, previous_wall_seconds=90)
+    report = generate_report(run, project_root=root, now=datetime(2026, 10, 29, 12, 15, tzinfo=timezone.utc))
+    timing = report['timing']
+    assert timing['end_to_end_elapsed_seconds'] == 900
+    assert timing['end_to_end_elapsed_status'] == 'live'
+    assert timing['end_to_end_elapsed_ended_at'] == report['generated_at']
+    assert timing['active_producer_cumulative_phase_seconds'] == 390
+    assert timing['active_producer_cumulative_phase_status'] == 'live'
+    assert timing['wall_seconds'] == 390  # Legacy field remains available.
+    assert timing['time_measures_additive'] is False
+    text = markdown_report(report)
+    assert '端到端经过时间：900.00 秒' in text
+    assert 'Producer 活跃阶段累计：390.00 秒' in text
+    assert '正式运行墙钟' not in text
+
+
+@pytest.mark.parametrize('status', ['completed', 'cancelled', 'interrupted'])
+def test_stopped_elapsed_uses_finish_and_does_not_grow_producer_time(tmp_path, status):
+    root, run, audit = fixture_run(tmp_path)
+    audit.update_run(status=status, producer_active=False, wall_seconds=100,
+                     execution_phase_started_at='2026-10-29T12:00:00Z',
+                     finished_at='2026-10-29T20:05:00+08:00')
+    report = generate_report(run, project_root=root, now=datetime(2026, 10, 29, 13, tzinfo=timezone.utc))
+    timing = report['timing']
+    assert timing['end_to_end_elapsed_seconds'] == 300
+    assert timing['end_to_end_elapsed_status'] == 'known'
+    assert timing['active_producer_cumulative_phase_seconds'] == 100
+    assert timing['active_producer_cumulative_phase_status'] == 'known'
+    assert not report['run']['is_live_snapshot']
+
+
+@pytest.mark.parametrize('finished_at', [None, 'invalid', '2026-10-29T11:59:00Z'])
+def test_missing_or_invalid_terminal_finish_stays_unknown(tmp_path, finished_at):
+    root, run, audit = fixture_run(tmp_path)
+    audit.update_run(status='failed', producer_active=False, finished_at=finished_at)
+    timing = generate_report(run, project_root=root)['timing']
+    assert timing['end_to_end_elapsed_seconds'] is None
+    assert timing['end_to_end_elapsed_status'] == 'unknown'
+    assert timing['active_producer_cumulative_phase_seconds'] == 100
+
+
+def test_live_resumption_with_unknown_prior_duration_does_not_assume_zero(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    audit.update_run(status='constructing', producer_active=True, resume_count=1,
+                     wall_seconds=None, previous_wall_seconds=None,
+                     execution_phase_started_at='2026-10-29T12:10:00Z')
+    timing = generate_report(run, project_root=root,
+                             now=datetime(2026, 10, 29, 12, 15, tzinfo=timezone.utc))['timing']
+    assert timing['end_to_end_elapsed_seconds'] == 900
+    assert timing['active_producer_cumulative_phase_seconds'] is None
+    assert timing['active_producer_cumulative_phase_status'] == 'unknown'
+    assert timing['active_producer_cumulative_phase_scope'] == 'unknown_previous_phase_seconds'
+
+
+def test_initial_live_phase_uses_its_own_start_and_does_not_sum_preparation(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    audit.update_run(status='constructing', producer_active=True, wall_seconds=None,
+                     execution_phase_started_at='2026-10-29T12:01:00Z')
+    timing = generate_report(run, project_root=root,
+                             now=datetime(2026, 10, 29, 12, 2, tzinfo=timezone.utc))['timing']
+    assert timing['end_to_end_elapsed_seconds'] == 120
+    assert timing['active_producer_cumulative_phase_seconds'] == 60
+    assert timing['preparation_cumulative_seconds'] == 619.22
+    assert timing['cumulative_node_seconds'] == 12
+    audit.update_run(started_at=None, execution_phase_started_at=None)
+    unknown = generate_report(run, project_root=root)['timing']
+    assert unknown['end_to_end_elapsed_seconds'] is None
+    assert unknown['active_producer_cumulative_phase_seconds'] is None
+
+
+def test_terminal_resumption_does_not_use_a_stale_previous_finish(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    audit.update_run(status='completed', producer_active=False, resume_count=1,
+                     resumed_at='2026-10-29T12:09:00Z',
+                     execution_phase_started_at='2026-10-29T12:10:00Z',
+                     finished_at='2026-10-29T12:05:00Z')
+    timing = generate_report(run, project_root=root)['timing']
+    assert timing['end_to_end_elapsed_seconds'] is None
+    assert timing['end_to_end_elapsed_scope'] == 'unknown_invalid_or_stale_end_timestamp'
+    assert timing['active_producer_cumulative_phase_seconds'] == 100
+
+
+def test_inactive_interruption_without_finish_does_not_become_a_live_snapshot(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    audit.update_run(status='constructing', producer_active=False, wall_seconds=None,
+                     execution_phase_started_at='2026-10-29T12:00:00Z')
+    audit.emit('llm.started', call_id='interrupted-call', role='trace_agent')
+    report = generate_report(run, project_root=root,
+                             now=datetime(2026, 10, 29, 13, tzinfo=timezone.utc))
+    assert report['timing']['end_to_end_elapsed_seconds'] is None
+    assert report['timing']['active_producer_cumulative_phase_seconds'] is None
+    assert report['tokens']['active_call_count'] == 0
+    assert report['tokens']['completion_missing_count'] == 1
+    assert '中断或暂停快照' in markdown_report(report)
+
+
 def test_missing_recovery_or_harbor_exception_cannot_claim_verified_quantity(tmp_path):
     root, run, audit = fixture_run(tmp_path)
     (run / 'tasks/fm-a/revisions/000/private/independent_recovery.json').unlink()
@@ -119,6 +222,7 @@ def test_gateway_quota_delta_is_not_production_cost(tmp_path):
     assert result['scope'] == 'credential_time_window_only'
     assert any('10.0 秒' in note for note in result['notes'])
     assert any('20:14:00' in note for note in result['notes'])
+    assert any('最初一段' in note and '此后' in note for note in result['notes'])
 
 
 def test_inconsistent_billing_unit_or_missing_end_does_not_invent_cost(tmp_path):
@@ -156,6 +260,7 @@ def test_reports_are_portable_escape_untrusted_text_and_do_not_change_state(tmp_
     assert '<link ' not in html and '<script src=' not in html
     assert '\\| bad' in markdown
     assert '难度' in markdown and '未知' in markdown
+    assert '端到端经过秒数' in html and 'Producer 活跃阶段累计秒数' in html
     assert audit.snapshot()['tasks'] == before
     assert Path(result['paths']['json']).is_file()
 

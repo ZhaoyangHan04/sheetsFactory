@@ -21,6 +21,8 @@ import yaml
 
 
 MODES = {'financial_modeling': 'Financial Modeling', 'debugging': 'Debugging'}
+FINAL_RUN_STATUSES = frozenset({'completed', 'shortfall', 'failed', 'cancelled'})
+STOPPED_RUN_STATUSES = FINAL_RUN_STATUSES | {'interrupted', 'paused', 'checkpointed', 'stopped'}
 
 
 def _read_json(path, default=None):
@@ -47,6 +49,72 @@ def _instant(value):
 def _display_time(value):
     parsed = _instant(value)
     return parsed.astimezone(ZoneInfo('Asia/Shanghai')).strftime('%Y-%m-%d %H:%M:%S +08:00') if parsed else None
+
+
+def _run_is_live(run):
+    return run.get('status') not in STOPPED_RUN_STATUSES and run.get('producer_active') is not False
+
+
+def _time_measures(run, now):
+    """Keep lifecycle elapsed time separate from producer execution phases."""
+    live = _run_is_live(run)
+    started = _instant(run.get('started_at'))
+    phase_started = _instant(run.get('execution_phase_started_at'))
+    resumed = _instant(run.get('resumed_at'))
+    finished = _instant(run.get('finished_at'))
+    # A resumed producer retains the previous phase's finished_at until it exits.
+    # It is not the end of the current lifecycle or the current active phase.
+    boundary = max((stamp for stamp in (phase_started, resumed) if stamp), default=None)
+    elapsed_end = now if live else finished
+    elapsed_scope = 'started_at_to_report_time' if live else 'started_at_to_finished_at'
+    elapsed_status, elapsed = ('live' if live else 'known'), None
+    if not started:
+        elapsed_status, elapsed_scope = 'unknown', 'unknown_missing_started_at'
+    elif not elapsed_end:
+        elapsed_status, elapsed_scope = 'unknown', 'unknown_missing_finished_at'
+    elif elapsed_end < started or (not live and boundary and elapsed_end < boundary):
+        elapsed_status, elapsed_scope = 'unknown', 'unknown_invalid_or_stale_end_timestamp'
+    else:
+        elapsed = (elapsed_end - started).total_seconds()
+
+    def valid_seconds(value):
+        return _number(value) and Decimal(str(value)).is_finite() and value >= 0
+
+    recorded = run.get('wall_seconds')
+    active = recorded if valid_seconds(recorded) else None
+    active_status = 'known' if active is not None else 'unknown'
+    active_scope = 'recorded_run_wall_seconds' if active is not None else 'unknown_not_recorded'
+    if live and phase_started:
+        previous = run.get('previous_wall_seconds') if run.get('resume_count') else 0
+        if phase_started > now or (resumed and phase_started < resumed):
+            active, active_status, active_scope = None, 'unknown', 'unknown_current_phase_start'
+        elif not valid_seconds(previous):
+            active, active_status, active_scope = None, 'unknown', 'unknown_previous_phase_seconds'
+        else:
+            active = previous + (now - phase_started).total_seconds()
+            active_status, active_scope = 'live', 'previous_phase_seconds_plus_current_phase_elapsed'
+    # Preserve the legacy projection for existing consumers; reports below use
+    # the two explicit measures instead of calling this value end-to-end time.
+    wall, wall_scope = recorded, 'recorded_run_wall_time'
+    if not _number(wall):
+        if live and started:
+            if run.get('resume_count') and phase_started:
+                wall = (run.get('previous_wall_seconds') or 0) + max(0, (now - phase_started).total_seconds())
+                wall_scope = 'live_accumulated_execution_phase_wall_time'
+            else:
+                wall, wall_scope = max(0, (now - started).total_seconds()), 'live_elapsed_since_run_start'
+        else:
+            wall, wall_scope = None, 'unknown_not_recorded'
+    return {
+        'wall_seconds': wall, 'wall_scope': wall_scope,
+        'end_to_end_elapsed_seconds': elapsed, 'end_to_end_elapsed_status': elapsed_status,
+        'end_to_end_elapsed_scope': elapsed_scope,
+        'end_to_end_elapsed_ended_at': elapsed_end.isoformat() if elapsed is not None else None,
+        'active_producer_cumulative_phase_seconds': active,
+        'active_producer_cumulative_phase_status': active_status,
+        'active_producer_cumulative_phase_scope': active_scope,
+        'time_measures_additive': False,
+    }
 
 
 def read_run(run_dir):
@@ -129,7 +197,7 @@ def _observed_calls(calls, events, run, now):
     """Include recorded request starts without inventing their token usage."""
     known = {call.get('call_id') for call in calls if call.get('call_id')}
     pending = {}
-    live = run.get('status') not in {'completed', 'shortfall', 'failed', 'cancelled'}
+    live = _run_is_live(run)
     for event in events:
         call_id = event.get('call_id')
         if not call_id or call_id in known:
@@ -304,7 +372,8 @@ def billing_window(run_dir, run, scope_note=None):
         '该凭据计费窗口可能包含并行工程、试跑和未记录的取消请求；没有逐调用账单，不能等同正式管线费用。']
     overlap_end = context.get('overlap_ended_at')
     if overlap_end:
-        notes.append('已知工程或试跑重叠至 ' + (_display_time(overlap_end) or str(overlap_end)) + '。')
+        notes.append('已知最初一段工程或试跑重叠至 ' + (_display_time(overlap_end) or str(overlap_end))
+                     + '；这不证明此后没有其他共享凭据流量。')
     result = {'scope': 'credential_time_window_only', 'production_cost_usd': None,
               'quota_delta': None, 'cost_usd': None, 'quota_per_usd': None,
               'start_captured_at': start.get('captured_at') if start else None,
@@ -468,20 +537,7 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
                 codes = {category}
             rejection_codes.update(codes)
     revision_counts = Counter(task['revision'] for task in details)
-    started = _instant(run.get('started_at'))
-    wall = run.get('wall_seconds')
-    wall_scope = 'recorded_run_wall_time'
-    if not _number(wall):
-        if run.get('status') not in {'completed', 'shortfall', 'failed', 'cancelled'} and started:
-            phase_started = _instant(run.get('execution_phase_started_at'))
-            if run.get('resume_count') and phase_started:
-                wall = (run.get('previous_wall_seconds') or 0) + max(0, (now - phase_started).total_seconds())
-                wall_scope = 'live_accumulated_execution_phase_wall_time'
-            else:
-                wall = max(0, (now - started).total_seconds())
-                wall_scope = 'live_elapsed_since_run_start'
-        else:
-            wall, wall_scope = None, 'unknown_not_recorded'
+    time_measures = _time_measures(run, now)
     node_seconds = sum(stage['completed_cumulative_seconds'] for stage in stages.values())
     return {
         'schema_version': '1.0', 'generated_at': now.isoformat(), 'generated_at_shanghai': _display_time(now.isoformat()),
@@ -493,7 +549,8 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
                 'difficulty_score': None, 'difficulty_note': '本轮只验题目质量，难度评测及低通过率目标延后；未报告正式模型 Pass@1。',
                 'targets': targets, 'actual_verified_counts': actual,
                 'target_met': all(actual[mode] >= count for mode, count in targets.items()),
-                'is_final_snapshot': run.get('status') in {'completed', 'shortfall', 'failed', 'cancelled'}},
+                'is_final_snapshot': run.get('status') in FINAL_RUN_STATUSES,
+                'is_live_snapshot': _run_is_live(run)},
         'sources': {'archive_scanned': manifest.get('unique_workbooks_inspected', run.get('discovered_sources')),
                     'selected_seed_pool': manifest.get('selected_count'), 'eligible_seed_pool': manifest.get('eligible_count'),
                     'additional_selected_seed_pool': run.get('additional_selected_sources', 0),
@@ -516,11 +573,15 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
                   'tasks_per_used_seed': _ratio(len(qualified), len(used_sources)),
                   'by_mode': {mode: {'target': targets[mode], 'qualified': actual[mode],
                       'candidates': sum(task['mode'] == mode for task in details)} for mode in targets}},
-        'timing': {'wall_seconds': wall, 'wall_scope': wall_scope, 'cumulative_node_seconds': node_seconds,
+        'timing': {**time_measures, 'cumulative_node_seconds': node_seconds,
                    'node_attempt_count': len(nodes), 'running_node_count': sum(node.get('status') == 'running' for node in nodes),
                    'preparation_cumulative_seconds': prep.get('normalization_and_profile_cumulative_seconds'),
                    'preparation_wall_seconds': prep.get('first_survey_wall_seconds'),
-                   'note': '节点累计仅包含已结束尝试的记录耗时，运行中已过时间另列；并发累计不等于墙钟时间。阶段 Token 按调用 stage 归属，包含重试；只相加已知输入与输出，缓存已包含在输入中。预处理与正式运行分列。',
+                   'note': '端到端经过时间按 started_at 至当前结束时间或报告时间计算，包含阶段间停顿；'
+                           'Producer 活跃阶段累计使用已记录的 run.wall_seconds，运行中仅在阶段起点与此前累计已知时补当前阶段。'
+                           '两者不能相加，缺少所需时间证据时保持未知。旧 wall_seconds/wall_scope 仅保留兼容。'
+                           '节点累计仅包含已结束尝试的记录耗时，运行中已过时间另列；并发累计不等于端到端经过时间，'
+                           '也不用于反推它。阶段 Token 按调用 stage 归属，包含重试；只相加已知输入与输出，缓存已包含在输入中。预处理与正式运行分列。',
                    'by_node': {name: {'attempts': stage['attempts'],
                                      'cumulative_seconds': stage['completed_cumulative_seconds']}
                                for name, stage in stages.items() if stage['attempts']}},
@@ -577,7 +638,8 @@ def _links_for_task(report, task, report_dir=None):
 
 def _snapshot_note(report):
     tokens = report['tokens']
-    prefix = '结束运行报告' if report['run']['is_final_snapshot'] else '进度快照，运行尚未结束'
+    prefix = ('结束运行报告' if report['run']['is_final_snapshot'] else
+              '进度快照，运行尚未结束' if report['run']['is_live_snapshot'] else '中断或暂停快照，Producer 未运行')
     return (prefix + f"；活动调用 {tokens.get('active_call_count', 0)} 次，已记录结束结果 "
             f"{tokens.get('recorded_call_count', tokens['call_count'])} 次，"
             f"核心用量未知 {tokens['unknown_core_usage_calls']} 次。已知 Token 不代表未完成请求的最终消耗。")
@@ -607,7 +669,10 @@ def markdown_report(report, report_dir=None):
     for mode, row in output['by_mode'].items():
         lines.append(f"| {MODES.get(mode, mode)} | {row['target']} | {row['qualified']} | {row['candidates']} |")
     lines += ['', '## 时间与 Token', '',
-              f"正式运行墙钟：{_fmt(report['timing']['wall_seconds'])} 秒；节点累计："
+              f"端到端经过时间：{_fmt(report['timing']['end_to_end_elapsed_seconds'])} 秒"
+              f"（{report['timing']['end_to_end_elapsed_status']}）；Producer 活跃阶段累计："
+              f"{_fmt(report['timing']['active_producer_cumulative_phase_seconds'])} 秒"
+              f"（{report['timing']['active_producer_cumulative_phase_status']}）；节点累计："
               f"{_fmt(report['timing']['cumulative_node_seconds'])} 秒。", '', report['timing']['note'], '',
               '| 阶段 | 尝试次数 | 运行中 | 完成累计秒数 | 已知输入 | 输入中缓存 | 已知输出 | 用量未知调用 |',
               '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |']
@@ -712,7 +777,8 @@ def html_report(report, report_dir=None):
     cards = [('已核验题量', str(output['verified_qualified'])), ('候选数', str(output['candidates'])),
              ('候选转化率', _pct(output['candidate_conversion'])),
              ('使用种子数', str(report['sources']['construction_attempted_unique_seeds'])),
-             ('墙钟秒数', _fmt(report['timing']['wall_seconds'])),
+             ('端到端经过秒数', _fmt(report['timing']['end_to_end_elapsed_seconds'])),
+             ('Producer 活跃阶段累计秒数', _fmt(report['timing']['active_producer_cumulative_phase_seconds'])),
              ('已知 Token', f"{report['tokens']['known_total_tokens']:,}"),
              ('待 Harbor 验证', str(output['ready_pending_validation']))]
     for mode, values in output['by_mode'].items():
