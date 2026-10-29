@@ -143,6 +143,45 @@ def test_fake_qualified_report_does_not_replace_actual_proofs(fixture_run):
     assert not (root / 'release').exists()
 
 
+@pytest.mark.parametrize('unfinished', [{}, {'finished_at': None}, {'finished_at': ''}],
+                         ids=['missing-finish-time', 'null-finish-time', 'empty-finish-time'])
+def test_unfinished_ancestor_batch_refuses_even_qualified_tasks(fixture_run, unfinished):
+    root, run, audit = fixture_run
+    tasks = pair(run, audit)
+    bindings = {binding['task_name']: binding for _, _, export in tasks
+                for binding in [inspect_export(export)]}
+    write_json(run / 'SpreadsheetEval/batch_manifest.json', {
+        'offline_fixture': True, 'export_bindings': bindings,
+        'status': 'completed', 'complete': True, **unfinished})
+
+    with pytest.raises(release.ReleaseError, match='batch manifest is not finalized'):
+        release.package_release(run, 1, root / 'release', project_root=root)
+    assert not (root / 'release').exists()
+    assert not list(root.glob('.*.partial-*'))
+
+
+@pytest.mark.parametrize('final_state', [{}, {'status': 'failed', 'complete': False}],
+                         ids=['manual-without-status', 'partially-failed-batch'])
+def test_finalized_ancestor_batch_allows_qualified_tasks(fixture_run, final_state):
+    root, run, audit = fixture_run
+    tasks = pair(run, audit)
+    bindings = {binding['task_name']: binding for _, _, export in tasks
+                for binding in [inspect_export(export)]}
+    batch_path = run / 'SpreadsheetEval/batch_manifest.json'
+    write_json(batch_path, {
+        'offline_fixture': True, 'export_bindings': bindings,
+        'finished_at': '2026-10-29T00:00:00+00:00', **final_state})
+
+    result = release.package_release(run, 1, root / 'release', project_root=root)
+    assert result['task_count'] == 2
+    manifest = json.loads(Path(result['manifest']).read_text())
+    expected_receipt = {'path': str(batch_path),
+                        'sha256': hashlib.sha256(batch_path.read_bytes()).hexdigest()}
+    for task in manifest['tasks']:
+        for control in task['controls'].values():
+            assert control['batch_manifests'] == [expected_receipt]
+
+
 def test_export_hash_change_refuses(fixture_run):
     root, run, audit = fixture_run
     tasks = pair(run, audit)

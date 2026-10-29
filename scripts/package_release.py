@@ -288,6 +288,10 @@ def _validate_task(run_dir, task, tracked, secret_values=()):
             batch_path = ancestor / 'batch_manifest.json'
             if batch_path.is_file():
                 batch = _json(batch_path, run_dir, tracked)
+                # Individual tasks can qualify before their batch receipt is
+                # final. Do not freeze a receipt that the runner still updates.
+                _require(bool(batch.get('finished_at')),
+                         f'{task_id}: batch manifest is not finalized')
                 _require((batch.get('export_bindings') or {}).get(binding['task_name']) == binding,
                          f'{task_id}: batch manifest binding differs')
                 batch_receipts.append(_receipt(batch_path, tracked))
