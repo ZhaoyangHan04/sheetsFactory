@@ -581,6 +581,7 @@ class FactoryPipeline(BasePipeline):
                     for future in futures:
                         future.result()
             self._validate_exports()
+        self.audit.update_run(status='constructing')
         attempted_jobs = self._construct_batch(seeds)
         self._validate_exports()
         # Variants are fallback work after the first pass, not blind duplicates.

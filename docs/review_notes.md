@@ -31,3 +31,13 @@ The review separated task correctness from solver completion. It used local fixt
 - An instruction that requires every outside value to remain unchanged contradicts required downstream recalculation. Two otherwise reproducible tasks were quarantined for Q03, including one with successful real Harbor controls. Preserving unedited formulas and literal inputs is distinct from preserving their calculated results. Repair must create a new revision and repeat quality checks and actual Harbor controls; old controls remain historical evidence.
 
 External findings are stored in each affected task's `external_quality_review.json`, in the run event log, and in separate business-review artifacts. They are not silently erased by changing the reference or by reclassifying the difficulty gate.
+
+## Reliability changes during continuation
+
+- Each diagnostic response now has a strict schema covering exactly its assigned check IDs. A missing item is a protocol failure, never a clear assessment. Successful diagnostic batches can be reused only for the same input, goal, revision, prompt, schema and evidence fingerprint; retries rerun the failed batch.
+- A Q03-only repair returns a minimal public-instruction patch. The program copies every other plan field, so omitted metadata or an incidental rewrite of private evidence cannot invalidate an otherwise focused repair. Every applied patch still consumes a revision and repeats all gates.
+- A natural attempt that reaches its time budget after observable model/tool progress retains its partial trace and is diagnosed without a completion score. Verified provider/process failures remain infrastructure findings. The independent public-information recovery witness must still complete successfully.
+- Confirmed native defects are registered by source hash and specific cells. The guard checks intersections with the complete changed-value set instead of rejecting the whole source. An example is a 2003 monthly-interest formula that reused December 2002 lease interest.
+- Actual Harbor controls are bound to exported file hashes and task revisions. Unchanged validated tasks retain their proof; a new or changed export must receive new oracle and nop trials. Release packaging rechecks the persisted trials, staging bytes, diagnosis and independent recovery before selecting tasks.
+
+Code changes made after a producer starts apply to a subsequent process. Prompt and native-risk files are read during their respective nodes; their mid-run amendments retain before/after hashes in the event audit. Neither mechanism silently resets candidate budgets or upgrades historical results.
