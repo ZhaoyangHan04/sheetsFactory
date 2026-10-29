@@ -10,10 +10,12 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from html import escape
 import json
+import os
 from pathlib import Path
 import re
 import sqlite3
 from zoneinfo import ZoneInfo
+from urllib.parse import quote
 
 import yaml
 
@@ -60,7 +62,8 @@ def read_run(run_dir):
             result[name] = [json.loads(row[0]) for row in connection.execute(f'SELECT payload FROM {name} ORDER BY rowid')]
         result['events'] = []
         for row in connection.execute("SELECT id,timestamp,kind,payload FROM events WHERE kind IN "
-                "('checker.result','task.revised','task.rejected','run.finished','run.amended','run.resumed') ORDER BY id"):
+                "('checker.result','task.revised','task.rejected','run.finished','run.amended','run.resumed',"
+                "'llm.started','llm.completed','llm.failed') ORDER BY id"):
             payload = json.loads(row[3])
             # Older direct audit inserts may use a payload `kind` to describe
             # the amendment. It must not overwrite the authoritative event kind.
@@ -122,6 +125,84 @@ def _group(items, key):
     return dict(result)
 
 
+def _observed_calls(calls, events, run, now):
+    """Include recorded request starts without inventing their token usage."""
+    known = {call.get('call_id') for call in calls if call.get('call_id')}
+    pending = {}
+    live = run.get('status') not in {'completed', 'shortfall', 'failed', 'cancelled'}
+    for event in events:
+        call_id = event.get('call_id')
+        if not call_id or call_id in known:
+            continue
+        if event['kind'] == 'llm.started':
+            pending[call_id] = {**event, 'status': 'running' if live else 'unknown',
+                'usage': None, 'input_tokens': None, 'output_tokens': None,
+                'projected_from_events': True, 'completion_missing': not live,
+                'started_at': event.get('started_at', event.get('timestamp'))}
+        elif event['kind'] in {'llm.completed', 'llm.failed'} and call_id in pending:
+            pending[call_id].update(event)
+            pending[call_id].update(status='completed' if event['kind'] == 'llm.completed' else 'failed',
+                                    finished_at=event.get('timestamp'), completion_missing=False)
+    for call in pending.values():
+        start = _instant(call.get('started_at'))
+        end = _instant(call.get('finished_at'))
+        if start and (end or call['status'] == 'running'):
+            call.setdefault('duration_ms', max(0, ((end or now) - start).total_seconds() * 1000))
+    return calls + list(pending.values())
+
+
+def _stage_accounting(nodes, calls, now):
+    """Group actual stage-tagged calls and completed node attempts separately."""
+    stages = {}
+    for node in nodes:
+        name = node.get('node') or node.get('node_id') or 'unknown'
+        stages.setdefault(name, {'nodes': [], 'calls': []})['nodes'].append(node)
+    for call in calls:
+        name = call.get('stage') or 'unassigned_llm'
+        stages.setdefault(name, {'nodes': [], 'calls': []})['calls'].append(call)
+    output = {}
+    for name, group in stages.items():
+        attempts, stage_calls = group['nodes'], group['calls']
+        usage = summarize_usage(stage_calls)
+        active = [node for node in attempts if node.get('status') == 'running']
+        output[name] = {
+            'attempts': len(attempts), 'completed_attempts': sum(node.get('status') == 'completed' for node in attempts),
+            'failed_attempts': sum(node.get('status') == 'failed' for node in attempts),
+            'recorded_running_attempts': len(active),
+            'completed_cumulative_seconds': sum(node['duration_ms'] for node in attempts
+                if node.get('status') != 'running' and _number(node.get('duration_ms'))) / 1000,
+            'active_elapsed_seconds': sum(max(0, (now - _instant(node['started_at'])).total_seconds())
+                for node in active if _instant(node.get('started_at'))),
+            'llm_calls': len(stage_calls),
+            'input_tokens_known': usage['fields']['input_tokens']['known_sum'],
+            'cached_input_tokens_known': usage['fields']['cached_input_tokens']['known_sum'],
+            'output_tokens_known': usage['fields']['output_tokens']['known_sum'],
+            'known_total_tokens': usage['known_total_tokens'],
+            'unknown_core_usage_calls': usage['unknown_core_usage_calls'],
+        }
+    return output
+
+
+def _task_presentation(run_dir, task, oracle, nop):
+    """Expose only selected public files and Harbor result JSON as links."""
+    root = Path(run_dir).resolve()
+    revision = _task_directory(root, task) / 'revisions' / f"{int(task.get('revision', 0) or 0):03d}"
+    plan = _read_json(revision / 'private/plan.json', {})
+    artifacts = {}
+    for label, filename in [('instruction', 'instruction.md'), ('input', 'input.xlsx')]:
+        candidate = (revision / 'public' / filename).resolve()
+        if (candidate.is_file() and candidate.is_relative_to(root)
+                and candidate.is_relative_to((revision / 'public').resolve())
+                and not {part.lower() for part in candidate.relative_to(root).parts} & {'private', '.secrets'}):
+            artifacts[label] = str(candidate)
+    for label, record in [('oracle', oracle), ('nop', nop)]:
+        candidate = Path(record.get('result_file') or '').resolve()
+        if (candidate.is_file() and candidate.name == 'result.json' and candidate.is_relative_to(root)
+                and not {part.lower() for part in candidate.relative_to(root).parts} & {'private', '.secrets'}):
+            artifacts[label] = str(candidate)
+    return {'title': task.get('title') or plan.get('title') or task['id'], 'artifacts': artifacts}
+
+
 def _extra_calls(directories, excluded_ids):
     calls, seen, records = [], set(excluded_ids), []
     for location in directories or []:
@@ -145,6 +226,75 @@ def _extra_calls(directories, excluded_ids):
             'scope': '显式提供的工程或试跑目录；按 call_id 去重，排除正式运行调用，不与正式运行相加归因。'}
 
 
+def _request_log_window(run_dir):
+    """Copy only approved aggregate fields, never the private billing ledger."""
+    raw = _read_json(Path(run_dir) / 'private/billing_snapshots/summary.json')
+    result = {'status': 'unavailable',
+              'attribution': 'shared_api_key_created_at_window_not_exact_run_attribution',
+              'production_cost_usd': None, 'window': {}, 'quota_per_usd': None,
+              'totals': {}, 'by_model': {}, 'coverage': {}, 'capture': {},
+              'notes': [
+                  '按服务端请求 created_at 选择同 key 时间窗，会纳入窗口内 pilot、工程试跑和其他重叠请求；不能精确归因本次 run。',
+                  '运行中请求、延迟入账或尚未返回的日志可能遗漏；观察区间覆盖不等于账单完整或已结算。',
+                  '服务端请求数不同于 CLI 调用数，一次 agent 调用可以发起多次请求。']}
+    if not isinstance(raw, dict):
+        result['notes'].append('请求日志汇总尚不可用，未将缺失费用记为零。')
+        return result
+
+    def nonnegative(value):
+        return value if _number(value) and Decimal(str(value)).is_finite() and value >= 0 else None
+
+    def totals(value):
+        if not isinstance(value, dict):
+            return {}
+        return {name: nonnegative(value.get(name)) for name in (
+            'requests', 'quota', 'usd', 'prompt_tokens', 'completion_tokens',
+            'cache_read_tokens', 'uncached_prompt_tokens', 'total_tokens')}
+
+    window = raw.get('window') or {}
+    for name in ('start', 'end_exclusive'):
+        stamp = _instant(window.get(name)) if isinstance(window, dict) else None
+        if stamp:
+            result['window'][name] = stamp.isoformat()
+    unit = nonnegative(raw.get('quota_per_usd'))
+    result['quota_per_usd'] = unit if unit else None
+    result['totals'] = totals(raw.get('totals'))
+    models = raw.get('by_model') or {}
+    for model, value in (models if isinstance(models, dict) else {}).items():
+        if isinstance(model, str):
+            result['by_model'][model] = totals(value)
+    coverage = raw.get('coverage') or {}
+    coverage = coverage if isinstance(coverage, dict) else {}
+    for name in ('observed_intervals_cover_window', 'window_start_observed', 'server_total_unknown',
+                 'in_flight_or_delayed_logs_may_be_missing', 'exact_billing_completeness_certified'):
+        value = coverage.get(name)
+        if isinstance(value, bool):
+            result['coverage'][name] = value
+    capture = raw.get('capture') or {}
+    capture = capture if isinstance(capture, dict) else {}
+    stamp = _instant(capture.get('captured_at'))
+    if stamp:
+        result['capture']['captured_at'] = stamp.isoformat()
+    for name in ('duration_seconds', 'unique_ledger_events', 'snapshots'):
+        result['capture'][name] = nonnegative(capture.get(name))
+    result['status'] = ('measured_request_log_window' if result['totals'].get('usd') is not None
+                        else 'summary_available_cost_unknown')
+    quota, dollars = result['totals'].get('quota'), result['totals'].get('usd')
+    if quota is not None and unit and dollars is not None:
+        derived = Decimal(str(quota)) / Decimal(str(unit))
+        if abs(derived - Decimal(str(dollars))) > Decimal('0.000001'):
+            result['totals']['usd'] = None
+            result['status'] = 'summary_available_cost_unknown'
+            result['notes'].append('汇总美元数与 quota / quota_per_usd 不一致，未展示未经证实的美元费用。')
+    for model, values in result['by_model'].items():
+        quota, dollars = values.get('quota'), values.get('usd')
+        if quota is not None and unit and dollars is not None:
+            if abs(Decimal(str(quota)) / Decimal(str(unit)) - Decimal(str(dollars))) > Decimal('0.000001'):
+                values['usd'] = None
+                result['notes'].append('某模型的美元汇总与 quota 换算不一致，该模型费用保持未知。')
+    return result
+
+
 def billing_window(run_dir, run, scope_note=None):
     private = Path(run_dir) / 'private'
     start = _read_json(private / 'billing_start.json')
@@ -159,9 +309,12 @@ def billing_window(run_dir, run, scope_note=None):
               'quota_delta': None, 'cost_usd': None, 'quota_per_usd': None,
               'start_captured_at': start.get('captured_at') if start else None,
               'end_captured_at': end.get('captured_at') if end else None,
-              'notes': notes, 'status': 'unavailable'}
+              'notes': notes, 'status': 'unavailable',
+              'request_log_window': _request_log_window(run_dir),
+              'methods_additive': False,
+              'methods_note': '快照差额与请求日志时间窗是两种不同观察方法，不能相加，也不能混作精确 run 归因。'}
     if not start or not end:
-        notes.append('缺少开始或结束账单快照，费用未知。')
+        notes.append('缺少开始或结束账单快照，快照差额费用未知。')
         return result
     before = (start.get('usage') or {}).get('data') or {}
     after = (end.get('usage') or {}).get('data') or {}
@@ -252,6 +405,14 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
     now = now or datetime.now(timezone.utc)
     if not now.tzinfo:
         now = now.replace(tzinfo=timezone.utc)
+    recorded_call_count = len(calls)
+    calls = _observed_calls(calls, snapshot['events'], run, now)
+    usage = summarize_usage(calls)
+    usage.update(recorded_call_count=recorded_call_count,
+                 active_call_count=sum(call.get('status') == 'running' for call in calls),
+                 completion_missing_count=sum(call.get('completion_missing', False) for call in calls),
+                 note='调用数包含审计中已记录的请求开始；未完成或缺失结束记录的调用用量保持未知。')
+    stages = _stage_accounting(nodes, calls, now)
     config_path = run_dir / 'resolved_config.yaml'
     config = yaml.safe_load(config_path.read_text()) if config_path.is_file() else {}
     manifest_path = Path((config.get('run') or {}).get('seed_manifest', 'data/manifests/euses_financial.json'))
@@ -275,7 +436,7 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
         details.append({'task_id': task['id'], 'mode': task.get('mode'), 'source_id': task.get('source_id'),
                         'source': task.get('source'), 'status': task.get('status'), 'verified_qualified': verified,
                         'revision': int(task.get('revision', 0) or 0), 'variant': int(task.get('variant', 0) or 0),
-                        'title': task.get('title'), 'error': task.get('error'),
+                        **_task_presentation(run_dir, task, oracle, nop), 'error': task.get('error'),
                         'oracle': oracle, 'nop': nop, 'independent_recovery': recovery, 'diagnosis': diagnosis})
     qualified = [task for task in details if task['verified_qualified']]
     used_sources = {task['source_id'] for task in details if task.get('source_id')}
@@ -321,7 +482,7 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
                 wall_scope = 'live_elapsed_since_run_start'
         else:
             wall, wall_scope = None, 'unknown_not_recorded'
-    node_seconds = sum(node.get('duration_ms', 0) for node in nodes if _number(node.get('duration_ms'))) / 1000
+    node_seconds = sum(stage['completed_cumulative_seconds'] for stage in stages.values())
     return {
         'schema_version': '1.0', 'generated_at': now.isoformat(), 'generated_at_shanghai': _display_time(now.isoformat()),
         'run': {'id': run.get('id', run_dir.name), 'status': run.get('status'), 'directory': str(run_dir),
@@ -359,11 +520,12 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
                    'node_attempt_count': len(nodes), 'running_node_count': sum(node.get('status') == 'running' for node in nodes),
                    'preparation_cumulative_seconds': prep.get('normalization_and_profile_cumulative_seconds'),
                    'preparation_wall_seconds': prep.get('first_survey_wall_seconds'),
-                   'note': '并发节点累计时间不等于运行墙钟时间；预处理时间与正式运行分列，不补造缺失墙钟时间。',
-                   'by_node': {name: {'attempts': len(group), 'cumulative_seconds': sum(
-                       node.get('duration_ms', 0) for node in group if _number(node.get('duration_ms'))) / 1000}
-                       for name, group in _group(nodes, 'node').items()}},
-        'tokens': summarize_usage(calls),
+                   'note': '节点累计仅包含已结束尝试的记录耗时，运行中已过时间另列；并发累计不等于墙钟时间。阶段 Token 按调用 stage 归属，包含重试；只相加已知输入与输出，缓存已包含在输入中。预处理与正式运行分列。',
+                   'by_node': {name: {'attempts': stage['attempts'],
+                                     'cumulative_seconds': stage['completed_cumulative_seconds']}
+                               for name, stage in stages.items() if stage['attempts']}},
+        'stages': stages,
+        'tokens': usage,
         'engineering_usage': _extra_calls(engineering_dirs, {call.get('call_id') for call in calls}),
         'billing': billing_window(run_dir, run, billing_scope_note),
         'diagnostics': {'final_issue_instances_by_code': dict(sorted(final_issue_counts.items())),
@@ -397,9 +559,33 @@ def _md(value):
     return escape(str(value if value is not None else '未知'), quote=False).replace('|', '\\|').replace('\n', ' ')
 
 
-def markdown_report(report):
+def _links_for_task(report, task, report_dir=None):
+    root = Path(report['run']['directory']).resolve()
+    directory = Path(report_dir).resolve() if report_dir else root / 'reports'
+    links = []
+    for key, label in [('instruction', '题面'), ('input', '输入'), ('oracle', 'Oracle 证据'), ('nop', 'Nop 证据')]:
+        value = task.get('artifacts', {}).get(key)
+        if not value:
+            continue
+        path = Path(value).resolve()
+        if (not path.is_file() or not path.is_relative_to(root)
+                or {part.lower() for part in path.relative_to(root).parts} & {'private', '.secrets'}):
+            continue
+        links.append((label, quote(os.path.relpath(path, directory), safe='/._-')))
+    return links
+
+
+def _snapshot_note(report):
+    tokens = report['tokens']
+    prefix = '结束运行报告' if report['run']['is_final_snapshot'] else '进度快照，运行尚未结束'
+    return (prefix + f"；活动调用 {tokens.get('active_call_count', 0)} 次，已记录结束结果 "
+            f"{tokens.get('recorded_call_count', tokens['call_count'])} 次，"
+            f"核心用量未知 {tokens['unknown_core_usage_calls']} 次。已知 Token 不代表未完成请求的最终消耗。")
+
+
+def markdown_report(report, report_dir=None):
     run, sources, output = report['run'], report['sources'], report['yield']
-    lines = ['# sheetsFactory 运行报告', '',
+    lines = ['# sheetsFactory 运行报告', '', _snapshot_note(report), '',
              f"运行 `{run['id']}`；状态 **{run['status']}**；报告时间 {report['generated_at_shanghai']}。", '',
              f"已核验产出 **{output['verified_qualified']} 道**，候选 {output['candidates']} 道。"
              f"目标题量是否达到：{'是' if run['target_met'] else '否'}。", '', run['difficulty_note'], '',
@@ -411,7 +597,8 @@ def markdown_report(report):
         ('正式运行使用的不同种子', sources['construction_attempted_unique_seeds']),
         ('实际到达构造节点的不同种子', sources['construct_node_reached_unique_seeds']),
         ('贡献合格题目的种子', sources['productive_unique_seeds']), ('候选任务', output['candidates']),
-        ('已核验合格任务', output['verified_qualified']), ('已拒绝候选', output['rejected']),
+        ('已核验合格任务', output['verified_qualified']), ('待 Harbor 验证', output['ready_pending_validation']),
+        ('已拒绝候选', output['rejected']),
         ('候选转化率：合格题 / 候选题', _pct(output['candidate_conversion'])),
         ('源转化率：产题种子 / 使用种子', _pct(output['productive_source_conversion'])),
         ('平均每个使用种子的合格题数', _fmt(output['tasks_per_used_seed']))]:
@@ -422,7 +609,14 @@ def markdown_report(report):
     lines += ['', '## 时间与 Token', '',
               f"正式运行墙钟：{_fmt(report['timing']['wall_seconds'])} 秒；节点累计："
               f"{_fmt(report['timing']['cumulative_node_seconds'])} 秒。", '', report['timing']['note'], '',
-              '| 用量 | 已知合计 | 用量未知的调用数 |', '| --- | ---: | ---: |']
+              '| 阶段 | 尝试次数 | 运行中 | 完成累计秒数 | 已知输入 | 输入中缓存 | 已知输出 | 用量未知调用 |',
+              '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |']
+    for stage, values in report.get('stages', {}).items():
+        lines.append(f"| {_md(stage)} | {values['attempts']} | {values['recorded_running_attempts']} | "
+                     f"{_fmt(values['completed_cumulative_seconds'])} | {values['input_tokens_known']:,} | "
+                     f"{values['cached_input_tokens_known']:,} | {values['output_tokens_known']:,} | "
+                     f"{values['unknown_core_usage_calls']} |")
+    lines += ['', '| 用量 | 已知合计 | 用量未知的调用数 |', '| --- | ---: | ---: |']
     for name, value in report['tokens']['fields'].items():
         lines.append(f"| {name} | {value['known_sum']:,} | {value['unknown_call_count']} |")
     lines += ['', f"正式运行调用 {report['tokens']['call_count']} 次；已知输入加输出 "
@@ -434,9 +628,27 @@ def markdown_report(report):
                if report['engineering_usage']['status'] != 'not_requested' else
                '未提供工程/试跑审计目录，额外用量未知；没有把它当成零消耗。'), '',
               '## 费用口径', '',
-              f"凭据计费窗口费用：{('$' + _fmt(report['billing']['cost_usd'], 6)) if report['billing']['cost_usd'] is not None else '未知'}。"
-              '正式管线的精确归因费用：未知。', '']
+              f"方法一，凭据起止快照差额：{('$' + _fmt(report['billing']['cost_usd'], 6)) if report['billing']['cost_usd'] is not None else '未知'}。", '']
     lines += ['- ' + note for note in report['billing']['notes']]
+    log = report['billing'].get('request_log_window') or {}
+    log_totals = log.get('totals') or {}
+    log_window = log.get('window') or {}
+    log_dollars = log_totals.get('usd')
+    lines += ['', f"方法二，同 key 按请求 created_at 时间窗：{('$' + _fmt(log_dollars, 6)) if log_dollars is not None else '未知'}。", '',
+              '窗口：' + (_display_time(log_window.get('start')) or '未知') + ' 至 '
+              + (_display_time(log_window.get('end_exclusive')) or '未知') + '（结束不含）。', '',
+              f"服务端请求 {_fmt(log_totals.get('requests'))} 次；quota {_fmt(log_totals.get('quota'))}；"
+              f"输入 {_fmt(log_totals.get('prompt_tokens'))}，其中缓存 {_fmt(log_totals.get('cache_read_tokens'))}；"
+              f"输出 {_fmt(log_totals.get('completion_tokens'))} token。缓存不重复相加。", '']
+    lines += ['- ' + note for note in log.get('notes', [])]
+    if log.get('by_model'):
+        lines += ['', '| 日志窗口模型 | 请求 | 美元 | 输入 Token | 其中缓存 | 输出 Token |',
+                  '| --- | ---: | ---: | ---: | ---: | ---: |']
+        for model, totals in log['by_model'].items():
+            lines.append(f"| {_md(model)} | {_fmt(totals.get('requests'))} | {_fmt(totals.get('usd'), 6)} | "
+                         f"{_fmt(totals.get('prompt_tokens'))} | {_fmt(totals.get('cache_read_tokens'))} | "
+                         f"{_fmt(totals.get('completion_tokens'))} |")
+    lines += ['', report['billing'].get('methods_note', ''), '正式管线的精确归因费用：未知。', '']
     lines += ['', '## 诊断与修复', '', '| 问题编号 | 最终实例 | 版本诊断观测 |', '| --- | ---: | ---: |']
     diagnostics = report['diagnostics']
     for code in sorted(set(diagnostics['final_issue_instances_by_code']) | set(diagnostics['revision_report_issue_observations_by_code'])):
@@ -445,12 +657,14 @@ def markdown_report(report):
     lines += ['', f"累计内容修复版本数：{diagnostics['content_repair_revision_total']}。", '',
               '合格任务的诊断范围：`' + json.dumps(diagnostics['qualified_diagnosis_scopes'], ensure_ascii=False) + '`。', '',
               '拒绝原因计数：`' + json.dumps(diagnostics['rejected_candidates_by_reason'], ensure_ascii=False) + '`。', '',
-              '## 逐题证据', '', '| 任务 | 类别 | 状态 | Oracle | Nop | 独立恢复 | 核验合格 |',
-              '| --- | --- | --- | ---: | ---: | --- | --- |']
+              '## 逐题证据', '', '| 任务 / 题目 | 类别 | 状态 | Oracle | Nop | 独立恢复 | 核验合格 | 文件 |',
+              '| --- | --- | --- | ---: | ---: | --- | --- | --- |']
     for task in report['tasks']:
-        lines.append(f"| {_md(task['task_id'])} | {_md(task['mode'])} | {_md(task['status'])} | "
+        title = _md(task.get('title', task['task_id'])).replace('[', '\\[').replace(']', '\\]')
+        links = ' · '.join(f'[{label}]({href})' for label, href in _links_for_task(report, task, report_dir))
+        lines.append(f"| {_md(task['task_id'])} / {title} | {_md(task['mode'])} | {_md(task['status'])} | "
             f"{_md(task['oracle']['reward'])} | {_md(task['nop']['reward'])} | "
-            f"{'通过' if task['independent_recovery']['verified'] else '未证实'} | {'是' if task['verified_qualified'] else '否'} |")
+            f"{'通过' if task['independent_recovery']['verified'] else '未证实'} | {'是' if task['verified_qualified'] else '否'} | {links} |")
     failures = [task for task in report['tasks'] if task.get('error')]
     if failures:
         lines += ['', '## 拒绝与失败样例', '']
@@ -479,20 +693,48 @@ def markdown_report(report):
     return '\n'.join(lines)
 
 
-def html_report(report):
+def html_report(report, report_dir=None):
     run, output = report['run'], report['yield']
-    rows = ''.join('<tr>' + ''.join('<td>' + escape(str(value)) + '</td>' for value in [
-        task['task_id'], MODES.get(task['mode'], task['mode']), task['status'],
-        _fmt(task['oracle']['reward']), _fmt(task['nop']['reward']),
-        '通过' if task['independent_recovery']['verified'] else '未证实',
-        '是' if task['verified_qualified'] else '否', task.get('error') or '']) + '</tr>' for task in report['tasks'])
+    rows = []
+    for task in report['tasks']:
+        title = escape(str(task.get('title') or task['task_id']))
+        links = ' · '.join('<a href="' + escape(href, quote=True) + '">' + label + '</a>'
+                           for label, href in _links_for_task(report, task, report_dir))
+        cells = ['<td>' + escape(str(task['task_id'])) + '<br><small>' + title + '</small></td>']
+        cells.extend('<td>' + escape(str(value)) + '</td>' for value in [
+            MODES.get(task['mode'], task['mode']), task['status'],
+            _fmt(task['oracle']['reward']), _fmt(task['nop']['reward']),
+            '通过' if task['independent_recovery']['verified'] else '未证实',
+            '是' if task['verified_qualified'] else '否', task.get('error') or ''])
+        cells.append('<td>' + links + '</td>')
+        rows.append('<tr>' + ''.join(cells) + '</tr>')
+    rows = ''.join(rows)
     cards = [('已核验题量', str(output['verified_qualified'])), ('候选数', str(output['candidates'])),
              ('候选转化率', _pct(output['candidate_conversion'])),
              ('使用种子数', str(report['sources']['construction_attempted_unique_seeds'])),
              ('墙钟秒数', _fmt(report['timing']['wall_seconds'])),
-             ('已知 Token', f"{report['tokens']['known_total_tokens']:,}")]
+             ('已知 Token', f"{report['tokens']['known_total_tokens']:,}"),
+             ('待 Harbor 验证', str(output['ready_pending_validation']))]
+    for mode, values in output['by_mode'].items():
+        cards.append((MODES.get(mode, mode), str(values['qualified']) + ' / ' + str(values['target'])))
     cards_html = ''.join(f'<article><span>{escape(label)}</span><strong>{escape(value)}</strong></article>' for label, value in cards)
     notes = ''.join('<li>' + escape(note) + '</li>' for note in report['billing']['notes'])
+    billing_log = report['billing'].get('request_log_window') or {}
+    billing_log_totals = billing_log.get('totals') or {}
+    billing_log_dollars = billing_log_totals.get('usd')
+    billing_log_window = billing_log.get('window') or {}
+    log_notes = ''.join('<li>' + escape(note) + '</li>' for note in billing_log.get('notes', []))
+    log_range = ((_display_time(billing_log_window.get('start')) or '未知') + ' 至 '
+                 + (_display_time(billing_log_window.get('end_exclusive')) or '未知') + '（结束不含）')
+    log_models = ''.join('<tr>' + ''.join('<td>' + escape(str(value)) + '</td>' for value in [
+        model, _fmt(values.get('requests')), _fmt(values.get('usd'), 6),
+        _fmt(values.get('prompt_tokens')), _fmt(values.get('cache_read_tokens')),
+        _fmt(values.get('completion_tokens'))]) + '</tr>' for model, values in billing_log.get('by_model', {}).items())
+    stage_rows = ''.join('<tr>' + ''.join('<td>' + escape(str(value)) + '</td>' for value in [
+        name, stage['attempts'], stage['recorded_running_attempts'], _fmt(stage['completed_cumulative_seconds']),
+        f"{stage['input_tokens_known']:,}", f"{stage['cached_input_tokens_known']:,}",
+        f"{stage['output_tokens_known']:,}", stage['unknown_core_usage_calls']]) + '</tr>'
+        for name, stage in report.get('stages', {}).items())
     # Embed an escaped text report for full offline inspection, not raw JSON in
     # an executable script. No CDN, network request or remote font is needed.
     return f'''<!doctype html>
@@ -505,11 +747,18 @@ article{{background:white;border:1px solid #dce2e8;border-radius:12px;padding:20
 .table{{overflow:auto}}table{{border-collapse:collapse;background:white;width:100%}}td,th{{padding:10px;border-bottom:1px solid #e3e8ed;text-align:left;vertical-align:top}}th{{white-space:nowrap}}td:last-child{{min-width:240px}}
 pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:white;padding:20px;border:1px solid #dce2e8}}small{{color:#536171}}
 </style><h1>sheetsFactory 运行报告</h1><p>{escape(str(run['id']))} · {escape(str(run['status']))} · {escape(report['generated_at_shanghai'] or '')}</p>
-<div class="cards">{cards_html}</div><p class="notice">{escape(run['difficulty_note'])}</p>
-<section><h2>费用口径</h2><p>凭据计费窗口：{escape('$' + _fmt(report['billing']['cost_usd'], 6) if report['billing']['cost_usd'] is not None else '未知')}；正式管线精确归因费用：未知。</p><ul>{notes}</ul></section>
+<p class="notice">{escape(_snapshot_note(report))}</p><div class="cards">{cards_html}</div><p>{escape(run['difficulty_note'])}</p>
+<section><h2>阶段耗时与用量</h2><p><small>{escape(report['timing']['note'])}</small></p><div class="table"><table><thead><tr>
+<th>阶段</th><th>尝试</th><th>运行中</th><th>完成累计秒数</th><th>已知输入 Token</th><th>输入中缓存</th><th>已知输出</th><th>用量未知调用</th></tr></thead><tbody>{stage_rows}</tbody></table></div></section>
+<section><h2>费用口径</h2>
+<p>方法一，凭据起止快照差额：{escape('$' + _fmt(report['billing']['cost_usd'], 6) if report['billing']['cost_usd'] is not None else '未知')}。</p><ul>{notes}</ul>
+<p>方法二，同 key 按请求 created_at 时间窗：<b>{escape('$' + _fmt(billing_log_dollars, 6) if billing_log_dollars is not None else '未知')}</b>。</p>
+<p><small>{escape(log_range)}；服务端请求 {escape(_fmt(billing_log_totals.get('requests')))} 次。</small></p><ul>{log_notes}</ul>
+<div class="table"><table><thead><tr><th>日志窗口模型</th><th>请求</th><th>美元</th><th>输入 Token</th><th>其中缓存</th><th>输出 Token</th></tr></thead><tbody>{log_models}</tbody></table></div>
+<p class="notice">{escape(report['billing'].get('methods_note', ''))} 正式管线精确归因费用：未知。</p></section>
 <section><h2>逐题证据</h2><input id="filter" placeholder="筛选任务、类别、状态或错误" aria-label="筛选任务"><div class="table"><table id="tasks"><thead><tr>
-<th>任务</th><th>类别</th><th>状态</th><th>Oracle</th><th>Nop</th><th>独立恢复</th><th>核验合格</th><th>失败原因</th></tr></thead><tbody>{rows}</tbody></table></div></section>
-<details><summary>完整统计、指标定义和复现命令</summary><pre>{escape(markdown_report(report))}</pre></details>
+<th>任务 / 题目</th><th>类别</th><th>状态</th><th>Oracle</th><th>Nop</th><th>独立恢复</th><th>核验合格</th><th>失败原因</th><th>公开文件与控制证据</th></tr></thead><tbody>{rows}</tbody></table></div></section>
+<details><summary>完整统计、指标定义和复现命令</summary><pre>{escape(markdown_report(report, report_dir))}</pre></details>
 <script>document.getElementById('filter').addEventListener('input',function(){{let q=this.value.toLowerCase();document.querySelectorAll('#tasks tbody tr').forEach(function(r){{r.hidden=!r.textContent.toLowerCase().includes(q);}});}});</script>
 </html>'''
 
@@ -520,6 +769,6 @@ def write_reports(run_dir, output_dir=None, **kwargs):
     directory.mkdir(parents=True, exist_ok=True)
     paths = {'json': directory / 'report.json', 'markdown': directory / 'report.zh-CN.md', 'html': directory / 'report.html'}
     paths['json'].write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
-    paths['markdown'].write_text(markdown_report(report))
-    paths['html'].write_text(html_report(report))
+    paths['markdown'].write_text(markdown_report(report, directory))
+    paths['html'].write_text(html_report(report, directory))
     return {'paths': {name: str(path.resolve()) for name, path in paths.items()}, 'report': report}

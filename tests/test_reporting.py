@@ -2,12 +2,14 @@ from datetime import datetime, timezone
 from hashlib import sha256
 import json
 from pathlib import Path
+import re
+from urllib.parse import unquote
 
 import pytest
 import yaml
 
 from sheets_factory.core.audit import AuditStore
-from sheets_factory.reporting import billing_window, generate_report, summarize_usage, write_reports
+from sheets_factory.reporting import billing_window, generate_report, summarize_usage, write_reports, markdown_report
 
 
 def fixture_run(tmp_path):
@@ -173,3 +175,156 @@ def test_prompt_amendment_and_continuation_are_visible_in_final_metadata(tmp_pat
     assert event['payload_kind'] == 'prompt_context_clarification'
     text = Path(result['paths']['markdown']).read_text()
     assert 'old-hash' in text and 'new-hash' in text and '同一运行续跑' in text
+
+
+def test_progress_report_includes_active_started_calls_as_unknown_usage(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    audit.update_run(status='constructing')
+    audit.emit('llm.started', call_id='active-call', role='trace_agent', stage='trajectory',
+               started_at='2026-10-29T12:01:00Z')
+    report = generate_report(run, project_root=root, now=datetime(2026, 10, 29, 12, 2, tzinfo=timezone.utc))
+    assert report['tokens']['call_count'] == 2
+    assert report['tokens']['recorded_call_count'] == 1
+    assert report['tokens']['active_call_count'] == 1
+    assert report['tokens']['unknown_core_usage_calls'] == 1
+    assert report['tokens']['known_total_tokens'] == 130
+    assert not report['tokens']['exact_total_available']
+    text = markdown_report(report)
+    assert '进度快照' in text and '活动调用 1 次' in text
+    assert report['stages']['trajectory']['unknown_core_usage_calls'] == 1
+
+
+def test_finished_orphan_calls_stay_unknown_and_existing_records_deduplicate(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    audit.emit('llm.started', call_id='formal-call', role='planner')
+    audit.emit('llm.started', call_id='orphan-call', role='trace_agent')
+    report = generate_report(run, project_root=root)
+    assert report['tokens']['call_count'] == 2
+    assert report['tokens']['completion_missing_count'] == 1
+    assert report['tokens']['active_call_count'] == 0
+    assert report['tokens']['unknown_core_usage_calls'] == 1
+    assert '结束运行报告' in markdown_report(report)
+
+
+def test_phase_table_matches_totals_and_excludes_active_node_duration(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    audit.record('nodes', {'node': 'plan', 'status': 'running', 'duration_ms': 999999,
+                          'started_at': '2026-10-29T12:00:00Z'})
+    audit.record('calls', {'call_id': 'plan-call', 'stage': 'plan', 'role': 'planner',
+                         'input_tokens': 50, 'cached_input_tokens': 20, 'output_tokens': 5})
+    report = generate_report(run, project_root=root, now=datetime(2026, 10, 29, 12, 0, 10, tzinfo=timezone.utc))
+    assert report['stages']['plan']['known_total_tokens'] == 55
+    assert report['stages']['plan']['cached_input_tokens_known'] == 20
+    assert report['stages']['plan']['completed_cumulative_seconds'] == 0
+    assert report['stages']['plan']['active_elapsed_seconds'] == 10
+    assert sum(stage['known_total_tokens'] for stage in report['stages'].values()) == report['tokens']['known_total_tokens']
+    assert report['timing']['cumulative_node_seconds'] == 12
+    assert '完成累计秒数' in markdown_report(report)
+
+
+def test_public_artifact_links_and_titles_are_safe_and_relative(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    revision = run / 'tasks/fm-a/revisions/000'
+    public = revision / 'public'
+    public.mkdir()
+    (public / 'instruction.md').write_text('Complete the public financial model.')
+    (revision / 'private/plan.json').write_text(json.dumps({'title': '<img onerror="bad"> Forecast revenue'}))
+    secret = root / '.secrets/api_key'
+    secret.parent.mkdir()
+    secret.write_text('do-not-expose-this')
+    (public / 'input.xlsx').symlink_to(secret)
+    safe_result = run / 'harbor_control_jobs/oracle/result.json'
+    safe_result.parent.mkdir(parents=True)
+    safe_result.write_text('{}')
+    private_result = revision / 'private/result.json'
+    private_result.write_text('{}')
+    controls = json.loads((run / 'harbor_controls.json').read_text())
+    controls['per_task']['sheetsfactory/fm-a']['oracle']['result_file'] = str(safe_result)
+    controls['per_task']['sheetsfactory/fm-a']['nop']['result_file'] = str(private_result)
+    (run / 'harbor_controls.json').write_text(json.dumps(controls))
+    output = tmp_path / 'deliverables'
+    result = write_reports(run, output_dir=output, project_root=root)
+    html = Path(result['paths']['html']).read_text()
+    assert '<img onerror=' not in html
+    assert '&lt;img onerror=' in html
+    assert 'Forecast revenue' in html
+    hrefs = re.findall(r'<a href="([^"]+)"', html)
+    targets = {(output / unquote(href)).resolve() for href in hrefs}
+    assert (public / 'instruction.md').resolve() in targets
+    assert safe_result.resolve() in targets
+    assert secret.resolve() not in targets
+    assert private_result.resolve() not in targets
+    assert all('file:' not in href and 'https:' not in href and '.secrets' not in href and '/private/' not in href for href in hrefs)
+    assert 'do-not-expose-this' not in html
+    assert '待 Harbor 验证' in html and 'Financial Modeling' in html and 'Debugging' in html
+
+
+def billing_log_summary(run, dollars=8.654836):
+    directory = run / 'private/billing_snapshots'
+    directory.mkdir(parents=True, exist_ok=True)
+    totals = {'requests': 287, 'quota': 4327418, 'usd': dollars,
+              'prompt_tokens': 9658486, 'completion_tokens': 251621, 'cache_read_tokens': 7321344,
+              'api_key': 'private-ledger-secret'}
+    record = {
+        'attribution': 'shared_api_key_created_at_window_not_exact_run_attribution',
+        'window': {'start': '2026-10-29T12:11:33Z', 'end_exclusive': '2026-10-29T12:55:58Z'},
+        'quota_per_usd': 500000, 'totals': totals, 'by_model': {'gpt-6-sol': totals},
+        'coverage': {'observed_intervals_cover_window': True, 'exact_billing_completeness_certified': False,
+                     'in_flight_or_delayed_logs_may_be_missing': True, 'raw': 'private-ledger-secret'},
+        'capture': {'captured_at': '2026-10-29T12:56:00Z', 'duration_seconds': 1.8,
+                    'snapshots': 3, 'unique_ledger_events': 1101, 'api_key': 'private-ledger-secret'},
+        'ledger': [{'request_id': 'private-ledger-secret'}], 'api_key': 'private-ledger-secret',
+    }
+    (directory / 'summary.json').write_text(json.dumps(record))
+    (directory / 'ledger.json').write_text('private-ledger-secret')
+
+
+def test_request_log_cost_is_available_without_end_snapshot_and_only_allowlisted_aggregates_export(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    billing_log_summary(run)
+    report = generate_report(run, project_root=root)
+    billing = report['billing']
+    logs = billing['request_log_window']
+    assert billing['cost_usd'] is None
+    assert logs['status'] == 'measured_request_log_window'
+    assert logs['totals']['usd'] == 8.654836
+    assert logs['totals']['requests'] == 287
+    assert billing['production_cost_usd'] is None and logs['production_cost_usd'] is None
+    assert billing['methods_additive'] is False
+    assert logs['coverage']['exact_billing_completeness_certified'] is False
+    assert logs['capture']['snapshots'] == 3
+    assert 'private-ledger-secret' not in json.dumps(report)
+    result = write_reports(run, project_root=root)
+    for name in ['html', 'markdown']:
+        text = Path(result['paths'][name]).read_text()
+        assert '$8.654836' in text
+        assert '不能相加' in text
+        assert 'created_at' in text and 'pilot' in text
+        assert '未' in text and '结算' in text
+        assert 'private-ledger-secret' not in text
+
+
+def test_snapshot_delta_and_request_window_costs_remain_separate(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    billing_log_summary(run)
+    private = run / 'private'
+    (private / 'billing_start.json').write_text(json.dumps(snapshot(1000000, '2026-10-29T12:00:00Z')))
+    (private / 'billing_end.json').write_text(json.dumps(snapshot(1250000, '2026-10-29T12:10:00Z')))
+    report = generate_report(run, project_root=root)
+    assert report['billing']['cost_usd'] == .5
+    assert report['billing']['request_log_window']['totals']['usd'] == 8.654836
+    assert report['billing']['production_cost_usd'] is None
+    text = markdown_report(report)
+    assert '$0.500000' in text and '$8.654836' in text
+    assert '方法一' in text and '方法二' in text
+    assert '$9.154836' not in text
+
+
+def test_inconsistent_request_summary_usd_is_not_reported_as_measured_cost(tmp_path):
+    root, run, audit = fixture_run(tmp_path)
+    billing_log_summary(run, dollars=999)
+    logs = generate_report(run, project_root=root)['billing']['request_log_window']
+    assert logs['status'] == 'summary_available_cost_unknown'
+    assert logs['totals']['usd'] is None
+    assert logs['by_model']['gpt-6-sol']['usd'] is None
+    assert any('不一致' in note for note in logs['notes'])

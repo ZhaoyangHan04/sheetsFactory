@@ -13,8 +13,7 @@ import webbrowser
 # Work directly from a checkout without installing model or spreadsheet deps.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from sheets_factory.dashboard import DashboardServer
-from sheets_factory.dashboard.read_only import ReadOnlyAuditView
+from sheets_factory.dashboard.read_only import ReadOnlyAuditView, HistoricalDashboardServer
 
 
 def main(argv=None) -> int:
@@ -27,7 +26,7 @@ def main(argv=None) -> int:
     try:
         view = ReadOnlyAuditView(args.run)
         view.snapshot()  # Validate the existing database without updating it.
-        server = DashboardServer(view.snapshot, view.events, host=args.host, port=args.port)
+        server = HistoricalDashboardServer(view.snapshot, view.events, host=args.host, port=args.port)
         url = server.start()
     except (OSError, ValueError, sqlite3.Error) as error:
         parser.exit(2, "Cannot open run viewer: " + str(error) + "\n")

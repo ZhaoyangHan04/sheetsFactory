@@ -8,6 +8,8 @@ from pathlib import Path
 import sqlite3
 from typing import Any
 
+from .server import DashboardServer
+
 
 _TERMINAL = {
     "completed", "complete", "done", "shortfall", "failed", "cancelled",
@@ -117,14 +119,35 @@ class ReadOnlyAuditView:
             maximum = connection.execute("SELECT COALESCE(MAX(id),0) FROM events").fetchone()[0]
             recent_events = self._events(connection, max(0, maximum - 100))
             calls = self._project_calls(connection, tables["calls"], saved_run)
+            transitions = {}
+            for stamp, kind, payload in connection.execute(
+                    "SELECT timestamp,kind,payload FROM events WHERE kind IN "
+                    "('task.ready','task.qualified','task.rejected') ORDER BY id"):
+                task_id = json.loads(payload).get("task_id")
+                if task_id:
+                    transitions[task_id] = {"timestamp": stamp, "kind": kind}
 
-        tasks = tables["tasks"]
+        tasks = []
+        for original in tables["tasks"]:
+            task = dict(original)
+            task_id = task.get("id", task.get("task_id"))
+            if task.get("error") and not task.get("rejection_reason"):
+                task["rejection_reason"] = task["error"]
+            transition = transitions.get(task_id)
+            if transition and transition["kind"] == "task." + str(task.get("status")):
+                task["duration_ms"] = _milliseconds(task.get("created_at"), transition["timestamp"])
+                task["duration_scope"] = "creation_to_recorded_state_transition"
+            elif str(task.get("status", "")).lower() == "running" and str(saved_run.get("status", "")).lower() not in _TERMINAL:
+                task["duration_ms"] = _milliseconds(task.get("created_at"))
+                task["duration_scope"] = "live_since_task_creation"
+            tasks.append(task)
         qualified = [task for task in tasks if task.get("status") == "qualified"]
         source_ids = {task["source_id"] for task in tasks if task.get("source_id")}
         productive = {task["source_id"] for task in qualified if task.get("source_id")}
         inputs = sum(call.get("input_tokens") or 0 for call in calls)
         outputs = sum(call.get("output_tokens") or 0 for call in calls)
-        issues = [issue for task in tasks for issue in task.get("issues", [])]
+        issues = [{"task_id": task.get("id"), **issue}
+                  for task in tasks for issue in task.get("issues", [])]
         metrics = {
             "input_tokens": inputs, "output_tokens": outputs, "total_tokens": inputs + outputs,
             "cached_input_tokens": sum(call.get("cached_input_tokens") or 0 for call in calls),
@@ -148,6 +171,54 @@ class ReadOnlyAuditView:
             **{mode: sum(task.get("mode") == mode for task in qualified)
                for mode in ("financial_modeling", "debugging")},
         }
-        return {"run": run, "metrics": metrics, "tasks": tasks, "nodes": tables["nodes"],
+        stage_nodes = self._stages(tables["nodes"], calls)
+        return {"run": run, "metrics": metrics, "tasks": tasks, "nodes": stage_nodes,
+                "node_attempts": tables["nodes"],
                 "llm_calls": calls, "issues": issues, "events": recent_events,
-                "viewer": {"read_only": True, "source": "sqlite", "directory": str(self.directory)}}
+                "viewer": {"read_only": True, "source": "sqlite", "directory": str(self.directory),
+                           "stage_time_scope": "Sum of completed recorded node durations; active elapsed time is separate.",
+                           "stage_token_scope": "Known input plus output from all calls with matching stage, including retries. Cached input is a subset, not added again."}}
+
+    @staticmethod
+    def _stages(nodes: list[dict], calls: list[dict]) -> list[dict]:
+        stages = {}
+        for node in nodes:
+            stage = node.get("node_id", node.get("node", "unknown"))
+            group = stages.setdefault(stage, {"node_id": stage, "node": stage, "attempts": [], "calls": []})
+            group["attempts"].append(node)
+        for call in calls:
+            stage = call.get("stage") or "unassigned_llm"
+            group = stages.setdefault(stage, {"node_id": stage, "node": stage, "attempts": [], "calls": []})
+            group["calls"].append(call)
+        result = []
+        for group in stages.values():
+            attempts, stage_calls = group.pop("attempts"), group.pop("calls")
+            active = [node for node in attempts if node.get("status") == "running"]
+            active_calls = [call for call in stage_calls if call.get("status") == "running"]
+            inputs = sum(call.get("input_tokens") or 0 for call in stage_calls)
+            outputs = sum(call.get("output_tokens") or 0 for call in stage_calls)
+            group.update({
+                "count": len(attempts), "completed": sum(node.get("status") == "completed" for node in attempts),
+                "failed_count": sum(node.get("status") == "failed" for node in attempts),
+                "running_count": len(active), "active_llm_calls": len(active_calls),
+                "status": "running" if active or active_calls else "completed",
+                "cumulative_ms": sum(node.get("duration_ms") or 0 for node in attempts if node.get("status") != "running"),
+                "running_elapsed_ms": sum(_milliseconds(node.get("started_at")) or 0 for node in active),
+                "input_tokens": inputs, "output_tokens": outputs,
+                "cached_input_tokens": sum(call.get("cached_input_tokens") or 0 for call in stage_calls),
+                "total_tokens": inputs + outputs, "llm_call_count": len(stage_calls),
+                "unknown_usage_calls": sum(call.get("input_tokens") is None or call.get("output_tokens") is None for call in stage_calls),
+                "started_at": max((node.get("started_at", "") for node in active), default=None),
+                "task_id": ", ".join(dict.fromkeys(node.get("task_id", "") for node in active)),
+            })
+            result.append(group)
+        return result
+
+
+class HistoricalDashboardServer(DashboardServer):
+    """Use the existing offline page with an independent read-only viewer UI."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        extension = Path(__file__).with_name("static").joinpath("history.js").read_text()
+        self._html = self._html.replace(b"</body>", ("<script>\n" + extension + "\n</script>\n</body>").encode())

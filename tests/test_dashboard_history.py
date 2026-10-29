@@ -13,7 +13,7 @@ from urllib.request import urlopen
 
 from sheets_factory.core.audit import AuditStore
 from sheets_factory.dashboard import DashboardServer
-from sheets_factory.dashboard.read_only import ReadOnlyAuditView
+from sheets_factory.dashboard.read_only import ReadOnlyAuditView, HistoricalDashboardServer
 
 
 class HistoricalDashboardTests(unittest.TestCase):
@@ -51,6 +51,42 @@ class HistoricalDashboardTests(unittest.TestCase):
         self.assertTrue(call["usage_pending"])
         self.assertIsNone(call["usage"])
         self.assertGreaterEqual(call["duration_ms"], 0)
+
+    def test_stage_aggregation_counts_cache_once_and_keeps_raw_attempts(self):
+        self.audit.record("nodes", {"node": "plan", "task_id": "t1", "duration_ms": 1000, "status": "completed"})
+        self.audit.record("nodes", {"node": "plan", "task_id": "t2", "duration_ms": 500, "status": "failed"})
+        self.audit.record("nodes", {"node": "plan", "task_id": "t3", "status": "running", "started_at": "2026-10-29T00:00:00+00:00"})
+        self.audit.record("calls", {"call_id": "c1", "stage": "plan", "input_tokens": 100, "cached_input_tokens": 80, "output_tokens": 10})
+        self.audit.emit("llm.started", call_id="c2", role="planner", stage="plan")
+        value = self.view.snapshot()
+        stage = value["nodes"][0]
+        self.assertEqual(stage["count"], 3)
+        self.assertEqual(stage["cumulative_ms"], 1500)
+        self.assertEqual(stage["running_count"], 1)
+        self.assertEqual(stage["failed_count"], 1)
+        self.assertEqual(stage["total_tokens"], 110)
+        self.assertEqual(stage["cached_input_tokens"], 80)
+        self.assertEqual(stage["unknown_usage_calls"], 1)
+        self.assertEqual(len(value["node_attempts"]), 3)
+
+    def test_rejection_error_and_recorded_elapsed_are_visible_without_db_change(self):
+        self.audit.task("t1", status="rejected", error="Source lacks a cross-sheet dependency", created_at="2026-10-29T00:00:00+00:00")
+        self.audit.emit("task.rejected", task_id="t1", reason="Source lacks a cross-sheet dependency")
+        task = self.view.snapshot()["tasks"][0]
+        self.assertEqual(task["rejection_reason"], "Source lacks a cross-sheet dependency")
+        self.assertGreaterEqual(task["duration_ms"], 0)
+        persisted = json.loads(self.audit.db.execute("SELECT payload FROM tasks WHERE id='t1'").fetchone()[0])
+        self.assertNotIn("rejection_reason", persisted)
+        self.assertNotIn("duration_ms", persisted)
+
+    def test_enhanced_server_includes_independent_stage_ui(self):
+        with HistoricalDashboardServer(self.view.snapshot, self.view.events, port=0) as server:
+            with urlopen(server.url, timeout=3) as response:
+                body = response.read().decode()
+            self.assertIn("节点明细", body)
+            self.assertIn("filter-stage", body)
+            self.assertIn("待 Harbor 验证", body)
+            self.assertNotIn(".innerHTML", body)
 
     def test_projection_deduplicates_when_final_call_record_appears(self):
         self.audit.emit("llm.started", call_id="c1", role="planner")
