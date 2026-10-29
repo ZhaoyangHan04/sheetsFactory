@@ -20,7 +20,10 @@ import tarfile
 from uuid import uuid4
 import zipfile
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
+from sheets_factory.checkers.unsafe_regions import evaluate_native_risk_guard
 from sheets_factory.evaluation.harbor import inspect_export, matched_controls, control_summary_paths
 from sheets_factory.reporting import generate_report, read_run
 from sheets_factory.workbook.compare import compare_workbooks
@@ -232,7 +235,38 @@ harbor run --path SpreadsheetEval --agent nop
     return payload, metadata
 
 
-def _validate_task(run_dir, task, tracked, secret_values=()):
+def _latest_native_risk_check(root, run_dir, task, base, export, comparison, tracked, registry_path):
+    """Bind current facts to the final computed delta without changing proofs."""
+    delta_path = base / 'private/expected_delta.json'
+    changes, delta_hash = comparison['expected_changes'], None
+    artifact_status = 'missing'
+    if delta_path.is_file():
+        artifact_status = 'unavailable'
+        raw = _file(delta_path, run_dir, tracked)
+        delta_hash = _sha(raw)
+        try:
+            delta = json.loads(raw)
+        except (ValueError, UnicodeError):
+            delta = None
+        candidate = delta.get('expected_changes') if isinstance(delta, dict) else None
+        if isinstance(candidate, (dict, list)) and all(isinstance(cell, str) for cell in candidate):
+            _require(set(candidate) == set(changes),
+                     f"{task['id']}: final expected delta differs from exported values")
+            artifact_status = 'verified'
+    result = evaluate_native_risk_guard(changes, task.get('source_id'), project_root=root,
+        sheet_names=comparison['goal_sheets'], registry_path=registry_path)
+    _require(not result['blocking'],
+             f"{task['id']}: latest native-risk registry confirms an unsafe output intersection")
+    return {key: result[key] for key in ('state', 'source_sha256', 'registry_path', 'registry_sha256',
+        'registered_risk_count', 'baseline_business_correctness_certified')} | {
+        'expected_delta_path': str(delta_path), 'expected_delta_sha256': delta_hash,
+        'expected_delta_artifact_status': artifact_status,
+        'computed_delta_sha256': _sha(json.dumps(changes, separators=(',', ':')).encode()),
+        'goal_sha256': tracked[str((export / 'tests/reference.xlsx').absolute())],
+        'evidence_request_count': len(result['evidence_requests'])}
+
+
+def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, registry_path=None):
     task_id = task['id']
     _require(isinstance(task_id, str) and re.fullmatch(r'[A-Za-z0-9._-]+', task_id)
              and task_id not in {'.', '..'}, 'Unsafe task ID')
@@ -374,8 +408,10 @@ def _validate_task(run_dir, task, tracked, secret_values=()):
     for key, path in (('replay_output_sha256', replay_output), ('recovered_sha256', recovered_path)):
         if recovery.get(key):
             _require(recovery[key] == tracked[str(path.absolute())], f'{task_id}: recorded recovery output hash differs')
-    comparison = compare_workbooks(public_input, goal_path, recovered_path)
+    comparison = compare_workbooks(public_input, export / 'tests/reference.xlsx', recovered_path)
     _require(comparison.get('reward') == 1, f'{task_id}: current recovery workbook does not match goal')
+    native_risk_check = _latest_native_risk_check(
+        project_root, run_dir, task, base, export, comparison, tracked, registry_path)
     diagnostic_ids = {diagnosis['diagnostic_run_id']}
     diagnostic_ids.update(batch['origin_diagnostic_run_id'] for batch in diagnosis.get('llm_batches', [])
                           if isinstance(batch, dict) and batch.get('cache_hit') is True
@@ -405,6 +441,7 @@ def _validate_task(run_dir, task, tracked, secret_values=()):
         'source_id': task['source_id'], 'source_file': task.get('source'),
         'variant': task.get('variant', 0), 'revision': revision, 'revision_hash': revision_hash,
         'harbor_export_binding': binding,
+        'native_risk_check': native_risk_check,
         'controls': controls, 'control_summaries': summaries,
         'diagnosis': {**_receipt(diagnosis_path, tracked),
                       'diagnostic_run_id': diagnosis['diagnostic_run_id'],
@@ -443,7 +480,11 @@ def package_release(run_dir, per_mode=10, output_dir=None, *, project_root=None)
     key_file = root / '.secrets/api_key'
     secrets = [key_file.read_bytes().strip()] if key_file.is_file() else []
     secrets = [secret for secret in secrets if len(secret) >= 12]
-    validated = [_validate_task(run_dir, task, tracked, secrets) for task in selected]
+    config_path = run_dir / 'resolved_config.yaml'
+    config = yaml.safe_load(_file(config_path, run_dir, tracked)) if config_path.is_file() else {}
+    registry_path = ((config or {}).get('native_risks') or {}).get('registry_path')
+    validated = [_validate_task(run_dir, task, tracked, secrets, project_root=root,
+                               registry_path=registry_path) for task in selected]
     runtime_tracked = {}
     runtime_payload, runtime_metadata = _prepare_runtime(root, run_dir, validated, runtime_tracked, secrets)
     manifest = {
@@ -495,6 +536,12 @@ def package_release(run_dir, per_mode=10, output_dir=None, *, project_root=None)
             _require(_sha(_file(path, root / 'src/sheets_factory/workbook', {})) == expected,
                      'Runtime recipe changed during packaging')
         for task in validated:
+            native = task['native_risk_check']
+            for name in ('registry', 'expected_delta'):
+                path = Path(native[name + '_path'])
+                current = _sha(path.read_bytes()) if path.is_file() else None
+                _require(current == native[name + '_sha256'],
+                         'Native-risk evidence changed during packaging')
             _require(_check_payload(run_dir / 'SpreadsheetEval' / task['task_id'], run_dir, {}, secrets)
                      == task['harbor_export_binding'], 'Source export changed during packaging')
             for proof in task['controls'].values():

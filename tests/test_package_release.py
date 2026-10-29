@@ -39,6 +39,7 @@ def fixture_task(run, audit, mode, suffix='a', source='source-a'):
     base = run / 'tasks' / task_id / 'revisions/000'
     workbook(base / 'public/input.xlsx', 1)
     workbook(base / 'private/goal.xlsx', 2)
+    write_json(base / 'private/expected_delta.json', {'expected_changes': ['Sheet!A1']})
     instruction = 'Set A1 to 2 and save /app/output.xlsx. Offline test fixture.\n'
     (base / 'public/instruction.md').write_text(instruction)
     revision_hash = hashlib.sha256((base / 'public/input.xlsx').read_bytes() + instruction.encode()).hexdigest()
@@ -122,6 +123,107 @@ def fixture_run(tmp_path, monkeypatch):
 
 def pair(run, audit):
     return [fixture_task(run, audit, mode) for mode in release.MODES]
+
+
+def native_registry(root, *, source='a' * 64, cell='A1', path='data/manifests/native_risks.json'):
+    registry = root / path
+    write_json(registry, {'sources': [{'source_sha256': source, 'risks': [{
+        'risk_id': 'offline-native-fact', 'certainty': 'confirmed',
+        'unsafe_regions': [f'Sheet!{cell}'], 'evidence': ['Observed offline fixture defect']}]}]})
+    return registry
+
+
+def test_new_native_fact_refuses_unchanged_old_harbor_proofs(fixture_run):
+    root, run, audit = fixture_run
+    tasks = [fixture_task(run, audit, mode, source='a' * 64) for mode in release.MODES]
+    before = {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
+              for directory in [run / 'SpreadsheetEval', run / 'offline_control_fixtures']
+              for path in directory.rglob('*') if path.is_file()}
+    assert release.package_release(run, 1, root / 'before-fact', project_root=root)['task_count'] == 2
+    native_registry(root)
+    with pytest.raises(release.ReleaseError, match='latest native-risk registry confirms'):
+        release.package_release(run, 1, root / 'after-fact', project_root=root)
+    assert not (root / 'after-fact').exists()
+    assert all(hashlib.sha256(Path(path).read_bytes()).hexdigest() == digest for path, digest in before.items())
+    assert all(task['status'] == 'qualified' for task in audit.snapshot()['tasks'])
+
+
+@pytest.mark.parametrize('risk_source,cell,state,count', [
+    ('a' * 64, 'B1', 'clear', 1), ('b' * 64, 'A1', 'not_applicable', 0)],
+    ids=['same-source-disjoint-region', 'other-exact-source'])
+def test_native_risk_check_respects_configured_registry_and_exact_intersections(
+        fixture_run, risk_source, cell, state, count):
+    root, run, audit = fixture_run
+    tasks = [fixture_task(run, audit, mode, source='a' * 64) for mode in release.MODES]
+    native_registry(root)  # The default would block; explicit configuration must win.
+    registry = native_registry(root, source=risk_source, cell=cell, path='config/native-fixture.json')
+    write_json(run / 'resolved_config.yaml', {'native_risks': {'registry_path': 'config/native-fixture.json'}})
+    result = release.package_release(run, 1, root / 'release', project_root=root)
+    manifest = json.loads(Path(result['manifest']).read_text())
+    for task, (_, base, export) in zip(manifest['tasks'], tasks):
+        receipt = task['native_risk_check']
+        assert receipt['state'] == state and receipt['registered_risk_count'] == count
+        assert receipt['source_sha256'] == 'a' * 64
+        assert receipt['registry_sha256'] == hashlib.sha256(registry.read_bytes()).hexdigest()
+        assert receipt['expected_delta_sha256'] == hashlib.sha256((base / 'private/expected_delta.json').read_bytes()).hexdigest()
+        assert receipt['expected_delta_artifact_status'] == 'verified'
+        assert receipt['goal_sha256'] == hashlib.sha256((export / 'tests/reference.xlsx').read_bytes()).hexdigest()
+        assert receipt['baseline_business_correctness_certified'] is False
+
+
+@pytest.mark.parametrize('artifact_status', ['missing', 'unavailable'])
+def test_missing_or_damaged_private_delta_cannot_bypass_actual_native_intersection(fixture_run, artifact_status):
+    root, run, audit = fixture_run
+    tasks = [fixture_task(run, audit, mode, source='a' * 64) for mode in release.MODES]
+    native_registry(root)
+    for _, base, _ in tasks:
+        path = base / 'private/expected_delta.json'
+        if artifact_status == 'missing':
+            path.unlink()
+        else:
+            path.write_text('{broken')
+    with pytest.raises(release.ReleaseError, match='latest native-risk registry confirms'):
+        release.package_release(run, 1, root / 'release', project_root=root)
+    assert not (root / 'release').exists()
+
+
+@pytest.mark.parametrize('artifact_status', ['missing', 'unavailable'])
+def test_absent_private_delta_without_known_risk_keeps_separate_artifact_status(fixture_run, artifact_status):
+    root, run, audit = fixture_run
+    tasks = [fixture_task(run, audit, mode, source='a' * 64) for mode in release.MODES]
+    write_json(root / 'data/manifests/native_risks.json', {'sources': []})
+    for _, base, _ in tasks:
+        path = base / 'private/expected_delta.json'
+        if artifact_status == 'missing':
+            path.unlink()
+        else:
+            path.write_text('{broken')
+    result = release.package_release(run, 1, root / 'release', project_root=root)
+    manifest = json.loads(Path(result['manifest']).read_text())
+    for task in manifest['tasks']:
+        receipt = task['native_risk_check']
+        assert receipt['state'] == 'not_applicable' and receipt['evidence_request_count'] == 0
+        assert receipt['expected_delta_artifact_status'] == artifact_status
+        assert (receipt['expected_delta_sha256'] is None) == (artifact_status == 'missing')
+        assert receipt['computed_delta_sha256'] == hashlib.sha256(b'["Sheet!A1"]').hexdigest()
+        assert receipt['baseline_business_correctness_certified'] is False
+
+
+def test_registry_changed_during_copy_prevents_publication(fixture_run, monkeypatch):
+    root, run, audit = fixture_run
+    [fixture_task(run, audit, mode, source='a' * 64) for mode in release.MODES]
+    native_registry(root, cell='B1')
+    copy_payload = release._copy_payload
+
+    def copy_then_register_new_fact(*args, **kwargs):
+        copy_payload(*args, **kwargs)
+        native_registry(root)
+
+    monkeypatch.setattr(release, '_copy_payload', copy_then_register_new_fact)
+    with pytest.raises(release.ReleaseError, match='Native-risk evidence changed during packaging'):
+        release.package_release(run, 1, root / 'release', project_root=root)
+    assert not (root / 'release').exists()
+    assert not list(root.glob('.*.partial-*'))
 
 
 def test_shortfall_refuses_before_creating_output(fixture_run):
