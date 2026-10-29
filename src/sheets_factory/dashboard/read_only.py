@@ -209,7 +209,7 @@ class ReadOnlyAuditView:
                 "total_tokens": inputs + outputs, "llm_call_count": len(stage_calls),
                 "unknown_usage_calls": sum(call.get("input_tokens") is None or call.get("output_tokens") is None for call in stage_calls),
                 "started_at": max((node.get("started_at", "") for node in active), default=None),
-                "task_id": ", ".join(dict.fromkeys(node.get("task_id", "") for node in active)),
+                "task_id": ", ".join(dict.fromkeys(str(node.get("task_id")) for node in active if node.get("task_id"))),
             })
             result.append(group)
         return result

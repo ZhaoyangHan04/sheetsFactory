@@ -69,6 +69,12 @@ class HistoricalDashboardTests(unittest.TestCase):
         self.assertEqual(stage["unknown_usage_calls"], 1)
         self.assertEqual(len(value["node_attempts"]), 3)
 
+    def test_source_level_active_node_may_have_no_task_id(self):
+        self.audit.record("nodes", {"node": "profile", "task_id": None, "status": "running"})
+        stage = self.view.snapshot()["nodes"][0]
+        self.assertEqual(stage["running_count"], 1)
+        self.assertEqual(stage["task_id"], "")
+
     def test_rejection_error_and_recorded_elapsed_are_visible_without_db_change(self):
         self.audit.task("t1", status="rejected", error="Source lacks a cross-sheet dependency", created_at="2026-10-29T00:00:00+00:00")
         self.audit.emit("task.rejected", task_id="t1", reason="Source lacks a cross-sheet dependency")
