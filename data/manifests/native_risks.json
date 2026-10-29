@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "scope": "Evidence registry only; does not modify any baseline. Block only a confirmed unsafe-region intersection with the complete changed-value set. Fixed upstream errors alone do not block a disjoint task. Independent LLM Q09 remains required.",
+  "sources": [
+    {
+      "source_sha256": "bbcce4d0b5921ebc42fb5d2772293e35a114c784c74e184a38c3d94eb767fca6",
+      "reference_name": "bbcce4d0b5_my_financial_model.xls",
+      "risks": [
+        {
+          "risk_id": "income-total-excludes-street-sales",
+          "certainty": "confirmed",
+          "unsafe_regions": [
+            {
+              "sheet": "Income",
+              "range": "E12:P12"
+            }
+          ],
+          "claim": "Total Sales sums online row10 only and omits Street Sales row11.",
+          "evidence": [
+            {
+              "cell": "Income!E12",
+              "formula": "=SUM(E10:E10)",
+              "cached_value": 320000
+            },
+            {
+              "cell": "Income!E10",
+              "cached_value": 320000
+            },
+            {
+              "cell": "Income!E11",
+              "cached_value": 480000
+            },
+            {
+              "independent_expected_total": 800000,
+              "method": "Online Sales plus Street Sales"
+            }
+          ]
+        },
+        {
+          "risk_id": "annual-depreciation-deducted-from-monthly-profit",
+          "certainty": "confirmed",
+          "unsafe_regions": [
+            {
+              "sheet": "Income",
+              "range": "E31:P31"
+            },
+            {
+              "sheet": "Income",
+              "range": "E33:P34"
+            }
+          ],
+          "claim": "Annual depreciation is deducted in monthly net profit, which is then annualized again.",
+          "evidence": [
+            {
+              "cell": "Income!B19",
+              "value": "Gross Profit (monthly)"
+            },
+            {
+              "cell": "Income!B33",
+              "value": "Net Profit (monthly)"
+            },
+            {
+              "cell": "Income!B34",
+              "value": "Annualized Basis"
+            },
+            {
+              "cell": "Income!E31",
+              "formula": "=Depreciation!E7",
+              "annual_amount": 142857.142857143
+            },
+            {
+              "cell": "Income!E33",
+              "formula": "=E19-E29-E31"
+            },
+            {
+              "cell": "Income!E34",
+              "formula": "=E33*12"
+            },
+            {
+              "cell": "Depreciation!E7",
+              "formula": "=IF(E6>0,$D$6/$D$7,0)",
+              "meaning": "Annual charge for year2002 from 1000000 asset divided by7 years"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source_sha256": "678e9a09ff75c86e0d31063b332b064985ed8e96128204c1ca0440d388043e41",
+      "reference_name": "678e9a09ff_AAAsolution.xls",
+      "risks": [
+        {
+          "risk_id": "net-income-adds-positive-income-tax-expense",
+          "certainty": "confirmed",
+          "unsafe_regions": [
+            {
+              "sheet": "Financial Model",
+              "range": "D73:M73"
+            }
+          ],
+          "claim": "Net Income adds positive Income Tax Expense to Earnings before Income Taxes.",
+          "evidence": [
+            {
+              "cell": "Financial Model!B68",
+              "label": "Earnings before Income Taxes"
+            },
+            {
+              "cell": "Financial Model!B70",
+              "label": "Income Tax Expense"
+            },
+            {
+              "cell": "Financial Model!B73",
+              "label": "Net Income"
+            },
+            {
+              "cell": "Financial Model!M68",
+              "cached_value": 8578.39353358504
+            },
+            {
+              "cell": "Financial Model!M70",
+              "cached_value": 1286.75903003776
+            },
+            {
+              "cell": "Financial Model!M73",
+              "formula": "=M68+M70",
+              "cached_value": 9865.1525636228,
+              "independent_expected": 7291.63450354728
+            },
+            {
+              "observed_formula_region": "D73:M73",
+              "note": "N73 is blank in the normalized original; no invented formula fact for N73."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source_sha256": "2cd5472c57c82aec2fd4a6df0de5cf5dee2cd05b5fef86ed785e9226ae8a9d17",
+      "reference_name": "2cd5472c57_agent_goal-setting_tool_3.0.xls",
+      "risks": [
+        {
+          "risk_id": "buyer-appointments-reference-listing-closings",
+          "certainty": "confirmed",
+          "unsafe_regions": [
+            {
+              "sheet": "Entry",
+              "range": "B28:C28"
+            }
+          ],
+          "claim": "New buyer appointments divides listing closings by buyer appointment conversion, instead of required buyer contracts.",
+          "evidence": [
+            {
+              "cell": "Entry!A28",
+              "label": "New Buyer Appointments"
+            },
+            {
+              "cell": "Entry!A12",
+              "label": "% of new buyer appointments who go to contract"
+            },
+            {
+              "cell": "Entry!B12",
+              "value": 0.5
+            },
+            {
+              "cell": "Entry!A25",
+              "label": "Buyer Contracts I Must Write"
+            },
+            {
+              "cell": "Entry!B25",
+              "cached_value": 36
+            },
+            {
+              "cell": "Entry!A24",
+              "label": "Listings I Must Close"
+            },
+            {
+              "cell": "Entry!B28",
+              "formula": "=B24/B12",
+              "cached_value": 36,
+              "independent_expected": 72
+            },
+            {
+              "cell": "Entry!C28",
+              "formula": "=B28/12",
+              "cached_value": 3,
+              "independent_expected": 6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source_sha256": "3a831edabe9ac0abd56c3e98c607c33708f2aef223dcdfd959a8b5c3bc983d77",
+      "reference_name": "3a831edabe_eg_spreadsheets.xls",
+      "risks": [
+        {
+          "risk_id": "working-capital-increase-double-minus",
+          "certainty": "confirmed",
+          "unsafe_regions": [
+            {
+              "sheet": "Annex D - App. of Funds",
+              "range": "C17:E17"
+            }
+          ],
+          "claim": "Additional working capital requirement uses two minus signs, adding the prior balance instead of subtracting it.",
+          "evidence": [
+            {
+              "cell": "Annex D - App. of Funds!A17",
+              "label": "1. Additional working capital requirements (=d less e)"
+            },
+            {
+              "cell": "Annex D - App. of Funds!A14",
+              "label": "d) Net working capital (a+b-c)"
+            },
+            {
+              "cell": "Annex D - App. of Funds!A15",
+              "label": "e) Working capital b/f end of previous year "
+            },
+            {
+              "cell": "Annex D - App. of Funds!C17",
+              "formula": "=SUM(C14--C15)"
+            },
+            {
+              "cell": "Annex D - App. of Funds!D17",
+              "formula": "=SUM(D14--D15)"
+            },
+            {
+              "cell": "Annex D - App. of Funds!E17",
+              "formula": "=SUM(E14--E15)"
+            },
+            {
+              "method": "Double unary minus adds the prior balance; label explicitly requires d less e. Zero original balances hide this defect until a populated scenario."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

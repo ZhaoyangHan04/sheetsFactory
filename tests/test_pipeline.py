@@ -293,3 +293,57 @@ def test_variant_modes_are_opt_in_and_use_mode_specific_productivity_and_quota(t
     audit.task('financial-structurally-invalid', source_id='a' * 64, mode='financial_modeling',
                status='rejected', error='Source contains no genuine cross-sheet formula dependency')
     assert factory.variant_candidates(seeds, 1) == []
+
+
+@pytest.mark.parametrize('intersecting', [True, False])
+def test_construct_persists_full_delta_native_guard_before_program_rejection(tmp_path, intersecting):
+    import hashlib
+    from sheets_factory.nodes.construction import ConstructNode
+    ctx = context(tmp_path)
+    source_id = hashlib.sha256(ctx.source.read_bytes()).hexdigest()
+    registry = tmp_path / 'native_registry.json'
+    registry.write_text(json.dumps({'sources': [{'source_sha256': source_id, 'risks': [{
+        'risk_id': 'fixture-known-native-region', 'certainty': 'confirmed',
+        'unsafe_regions': [{'sheet': 'Forecast', 'range': 'B1' if intersecting else 'B99'}],
+        'evidence': ['Explicit fixture fact for guard control flow; does not certify real business formulas.']}]}]}))
+    ctx.config['native_risks'] = {'registry_path': str(registry)}
+    ctx.data.update(baseline=ctx.source, source_id=source_id)
+    if intersecting:
+        with pytest.raises(TaskRejected, match='Q09: confirmed native unsafe region'):
+            ConstructNode().execute(ctx)
+        assert ctx.data['native_risk_guard']['blocking']
+        assert ctx.data['native_risk_guard']['issues'][0]['affected_cells'] == ['Forecast!B1']
+    else:
+        result = ConstructNode().execute(ctx)
+        assert result['native_risk_guard']['state'] == 'clear'
+        assert not result['native_risk_guard']['blocking']
+    artifact = json.loads((ctx.revision_dir / 'private/native_risk_guard.json').read_text())
+    assert artifact['full_delta_size'] == 6
+    assert artifact['llm_q09_still_required']
+    assert (ctx.revision_dir / 'private/expected_delta.json').is_file()
+    assert (ctx.revision_dir / 'private/plan.json').is_file()
+
+
+def test_repair_payload_preserves_numbered_native_guard_and_legacy_warnings(tmp_path):
+    from sheets_factory.nodes.quality import RepairNode
+    from sheets_factory.checkers import DiagnosisRunner
+    from sheets_factory.checkers.router import route_issues
+    captured = []
+    class Reviewer:
+        def complete(self, text, **kwargs):
+            captured.append(json.loads(text.rsplit('\nINPUT JSON:\n', 1)[1]))
+            return {'repaired_task': None}
+    ctx = context(tmp_path, Reviewer())
+    ctx.config['run'] = {'max_steps': 3}
+    issue = {'issue_id': 'native-exact-region', 'problem_id': 'Q09', 'certainty': 'confirmed',
+             'severity': 'blocker', 'claim': 'Actual changed-value set crosses a known unsafe cell.',
+             'evidence': [{'cell': 'Forecast!B1'}], 'depends_on_issue_ids': []}
+    catalog = DiagnosisRunner(ROOT).catalog
+    ctx.data.update(profile={'sheet_count': 4, 'nonempty_sheet_count': 4, 'formula_count': 6,
+        'errors': [], 'external_references': [], 'sheets': []},
+        diagnosis={'issues': [issue]}, repair_routes=route_issues([issue], catalog),
+        native_risk_guard={'state': 'flagged', 'issues': [issue]},
+        source_business_issues=['Legacy warning is still available for LLM review.'])
+    RepairNode().execute(ctx)
+    assert captured[0]['native_risk_guard']['issues'][0]['issue_id'] == 'native-exact-region'
+    assert captured[0]['source_business_issues'] == ctx.data['source_business_issues']

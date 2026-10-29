@@ -11,6 +11,7 @@ import openpyxl
 
 from ..core.node import BaseNode, TaskRejected
 from ..workbook import profile_workbook, compare_workbooks, formula_references
+from ..checkers.unsafe_regions import evaluate_native_risk_guard
 
 
 def digest(path):
@@ -248,6 +249,23 @@ class ConstructNode(BaseNode):
         if ctx.mode == 'financial_modeling' and any(
                 e['sheet'] + '!' + e['cell'] not in delta['expected_changes'] for e in edits):
             raise TaskRejected('Q06: at least one masked target has no observable value change')
+        native_guard = evaluate_native_risk_guard(delta['expected_changes'], ctx.data.get('source_id'),
+            project_root=ctx.config['project_root'], sheet_names=delta.get('goal_sheets', []),
+            registry_path=ctx.config.get('native_risks', {}).get('registry_path'),
+            legacy_risks=ctx.data.get('source_business_issues', []))
+        # Persist before rejection so the repair planner receives the actual D
+        # intersection, including downstream cells outside physical edits.
+        ctx.save('plan.json', ctx.data['plan']); ctx.save('expected_delta.json', delta)
+        ctx.save('native_risk_guard.json', native_guard)
+        ctx.data['native_risk_guard'] = native_guard
+        ctx.audit.emit('native_risk_guard.result', task_id=ctx.task_id, revision=ctx.revision,
+                       state=native_guard['state'], blocking=native_guard['blocking'],
+                       risk_ids=[issue['risk_id'] for issue in native_guard['issues']])
+        if native_guard['blocking']:
+            affected = sorted({cell for issue in native_guard['issues'] if issue['certainty'] == 'confirmed'
+                               for cell in issue['affected_cells']})
+            raise TaskRejected('Q09: confirmed native unsafe region intersects complete changed-value set: '
+                               + ', '.join(affected[:16]) + '; see private/native_risk_guard.json')
         # Every root must have an effect by itself, not merely a syntactic edit.
         root_impacts = []
         if ctx.mode == 'debugging':
@@ -273,7 +291,8 @@ class ConstructNode(BaseNode):
         ctx.save('expected_delta.json', delta); ctx.save('root_impacts.json', root_impacts)
         ctx.save('profile.json', public_profile, private=False)
         return {'input': input_file, 'goal': goal, 'public_profile': public_profile,
-                'delta': delta, 'construction_validation': validation, 'root_impacts': root_impacts}
+                'delta': delta, 'construction_validation': validation, 'root_impacts': root_impacts,
+                'native_risk_guard': native_guard}
 
 
 class InstructionNode(BaseNode):

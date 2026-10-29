@@ -96,6 +96,8 @@ class DiagnoseNode(BaseNode):
                    'expected_delta': ctx.data['delta'], 'root_impacts': ctx.data['root_impacts'],
                    'independent_recovery': ctx.data['recovery'],
                    'source_assessment': ctx.data.get('source_assessment', {}),
+                   'native_risk_guard': ctx.data.get('native_risk_guard', {}),
+                   'source_business_issues': ctx.data.get('source_business_issues', []),
                    'native_errors': ctx.data['profile']['errors']}
         health = {'healthy': all(not t.get('infrastructure_error') for t in ctx.data['traces']),
                   'checks': [{'probe': 'codex_native_cli', 'model': ctx.llm.model},
@@ -162,6 +164,8 @@ class RepairNode(BaseNode):
         payload = {'task_mode': ctx.mode, 'current_plan': ctx.data['plan'],
                    'diagnosis': ctx.data.get('diagnosis'), 'construction_error': ctx.data.get('construction_error'),
                    'assigned_repair_routes': routes,
+                   'native_risk_guard': ctx.data.get('native_risk_guard', {}),
+                   'source_business_issues': ctx.data.get('source_business_issues', []),
                    'source_profile': compact_profile(ctx.data['profile']),
                    'remaining_steps': ctx.config['run']['max_steps'] - ctx.revision}
         result = ctx.llm.complete(prompt(ctx, 'repair.md') + '\nINPUT JSON:\n' + json.dumps(payload, ensure_ascii=False, default=str),
