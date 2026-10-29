@@ -6,6 +6,7 @@ import math
 from pathlib import Path
 import re
 import shutil
+import sys
 
 import openpyxl
 
@@ -21,6 +22,56 @@ def digest(path):
 def prompt(ctx, name):
     filename = ctx.config.get('prompt_overrides', {}).get(name, name)
     return (Path(ctx.config['project_root']) / 'prompts' / filename).read_text()
+
+
+def construction_contract(mode=None):
+    """Machine-readable executor limits, distinct from authoring preferences."""
+    modes = {
+        'financial_modeling': {'edit_count': {'min': 6, 'max': 80}, 'after_must_be_null': True,
+                              'every_masked_target_must_change_normalized_value': True},
+        'debugging': {'edit_count': {'min': 2, 'max': 80}, 'after_must_be_different_excel_formula': True,
+                      'each_root_requires_individual_and_combined_marginal_impact': True},
+    }
+    if mode is not None and mode not in modes:
+        raise ValueError('Unsupported construction mode: ' + str(mode))
+    return {'version': 1, 'active_mode': mode, 'modes': modes,
+        'planning_preferences_only': {'financial_modeling_edit_count': [6, 20],
+                                      'debugging_edit_count': [2, 4]},
+        'scenario_inputs': {'max_count': 40, 'allowed_original_cells': ['numeric', 'blank'],
+            'original_must_not_be_formula': True, 'before_must_match_original_exactly': True,
+            'after_must_be_finite_numeric_and_not_boolean': True,
+            'cannot_overwrite_labels_dates_or_text': True,
+            'must_be_explicit_public_hypothetical_inputs': True},
+        'target_requirements': {'original_must_be_existing_formula': True,
+            'before_must_equal_original_formula_exactly': True, 'unique_existing_coordinates': True,
+            'required_nonempty_fields': ['public_instruction', 'public_rules', 'reference_evidence'],
+            'at_least_one_finite_numeric_target_with_absolute_value_above': 0.005},
+        'dependency_requirements': {'true_cross_sheet_formula_edge_in_target_closure': True,
+            'independent_local_targets_on_two_sheets_do_not_suffice': True,
+            'max_dependency_closure_cells': 20000, 'no_native_calculation_errors': True,
+            'all_formula_references_must_be_supported': True,
+            'forbidden_volatile_functions': ['NOW', 'TODAY', 'RAND', 'RANDBETWEEN']},
+        'source_requirements': {'min_nonempty_sheets': 4, 'min_formula_count': 6,
+                                'max_profile_cells': 200000},
+        'reference_scope': {'complete_recalculated_changed_value_set': True,
+            'baseline_formula_correction_supported': False, 'immutable_source_and_baseline': True,
+            'verbal_scope_exclusions_cannot_remove_affected_cells': True,
+            'missing_source_evidence_requires_unrepairable_not_invented_data': True}}
+
+
+def authoring_source_context(ctx):
+    """Give authors exact immutable artifacts; absent fixture paths stay absent."""
+    baseline = ctx.data.get('baseline')
+    cache = ctx.data.get('source_cache')
+    profile = Path(cache) / 'profile.json' if cache else None
+    candidate = Path(ctx.config['project_root']) / '.venv312/bin/python'
+    executable = candidate.absolute() if candidate.is_file() else Path(sys.executable).absolute()
+    return {'source_file': ctx.source.name, 'source_path': str(ctx.source.resolve()),
+            'baseline_path': str(Path(baseline).resolve()) if baseline else None,
+            'baseline_is_immutable': True,
+            'full_profile_path': str(profile.resolve()) if profile else None,
+            'full_profile_available': bool(profile and profile.is_file()),
+            'python_executable': str(executable)}
 
 
 def compact_profile(profile, formula_limit=45, literal_limit=55):
@@ -109,11 +160,10 @@ class PlanNode(BaseNode):
                 previous.extend({'mode': mode, 'title': task.get('title'),
                                  'cells': [(e['sheet'], e['cell']) for e in task.get('edits', [])]}
                                 for mode, task in prior.items() if mode in ['financial_modeling', 'debugging'] and task)
-            payload = {'source_file': ctx.source.name, 'baseline_path': str(ctx.data['baseline']),
+            payload = {**authoring_source_context(ctx), 'construction_contract': construction_contract(),
                        'variant': variant, 'previous_target_groups': previous,
                        'known_source_business_issues': ctx.data.get('source_business_issues', []),
                        'finance_module_evidence': ctx.data.get('finance_evidence', {}),
-                       'python_executable': str(Path(ctx.config['project_root']) / '.venv312/bin/python'),
                        'profile': compact_profile(ctx.data['profile'])}
             plans = ctx.llm.complete(prompt(ctx, 'planning.md') + '\nINPUT JSON:\n' + json.dumps(payload, ensure_ascii=False),
                                      role='planner', task_id=ctx.task_id, stage=self.node_id,
@@ -136,8 +186,11 @@ class PlanNode(BaseNode):
 
 def validate_plan(plan, baseline, mode):
     edits = plan.get('edits', [])
-    if len(edits) < (6 if mode == 'financial_modeling' else 2) or len(edits) > 80:
-        raise TaskRejected('Q06: target group size outside supported construction contract')
+    contract = construction_contract(mode)
+    bounds = contract['modes'][mode]['edit_count']
+    if len(edits) < bounds['min'] or len(edits) > bounds['max']:
+        raise TaskRejected('Q06: target group size outside supported construction contract '
+                           f'(mode={mode}, actual={len(edits)}, min={bounds["min"]}, max={bounds["max"]})')
     if not plan.get('public_instruction') or not plan.get('public_rules') or not plan.get('reference_evidence'):
         raise TaskRejected('Q01/Q04: missing public derivation rules or reference evidence')
     book = openpyxl.load_workbook(baseline, data_only=False, keep_links=False)
@@ -150,7 +203,7 @@ def validate_plan(plan, baseline, mode):
         if key in visited:
             return
         visited.add(key)
-        if len(visited) > 20000:
+        if len(visited) > contract['dependency_requirements']['max_dependency_closure_cells']:
             raise TaskRejected('Target dependency closure exceeds supported analysis scope')
         if sheet_name not in book.sheetnames:
             raise TaskRejected('Q10: target dependency references a missing sheet')
@@ -218,8 +271,9 @@ class ConstructNode(BaseNode):
         goal = private / 'goal.xlsx'
         scenario = ctx.data['plan'].get('scenario_inputs', [])
         if scenario:
-            if len(scenario) > 40:
-                raise TaskRejected('Scenario input set exceeds supported scope')
+            scenario_limit = construction_contract(ctx.mode)['scenario_inputs']['max_count']
+            if len(scenario) > scenario_limit:
+                raise TaskRejected(f'Scenario input set exceeds supported scope (actual={len(scenario)}, max={scenario_limit})')
             base = openpyxl.load_workbook(ctx.data['baseline'], keep_links=False)
             for item in scenario:
                 cell = base[item['sheet']][item['cell']]
