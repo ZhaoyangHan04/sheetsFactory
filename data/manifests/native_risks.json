@@ -82,6 +82,49 @@
               "meaning": "Annual charge for year2002 from 1000000 asset divided by7 years"
             }
           ]
+        },
+        {
+          "risk_id": "annual-cashflow-aggregates-monthly-profit-and-annual-components",
+          "certainty": "confirmed",
+          "unsafe_regions": [
+            {
+              "sheet": "Cashflow",
+              "range": "D13:N13"
+            }
+          ],
+          "claim": "The annual Net Change In Cash aggregation combines monthly net profit with annual depreciation and financing/investment amounts without reconciling the period. Rebuilding these annual outputs reproduces a native business defect.",
+          "evidence": [
+            {
+              "cell": "Cashflow!D4",
+              "value": 2002,
+              "meaning": "Annual cashflow period header"
+            },
+            {
+              "cell": "Cashflow!D6",
+              "formula": "=Income!E33",
+              "referenced_label": "Income!B33 = Net Profit (monthly)",
+              "value": -10557.1428571429
+            },
+            {
+              "cell": "Cashflow!D7",
+              "formula": "=Depreciation!E7",
+              "meaning": "Annual depreciation: 1000000 asset divided by 7 years",
+              "value": 142857.142857143
+            },
+            {
+              "cell": "Cashflow!D13",
+              "formula": "=SUM(D6:D12)",
+              "value": 1232300,
+              "defect": "Only one monthly operating contribution is combined with annual components, while public task labels the result annual net cash change."
+            },
+            {
+              "boundary": "Block only the registered annual aggregation cells when they actually change. Balance Sheet total-asset cells are not blanket unsafe regions; tasks may preserve fixed source cash inputs while reconstructing a distinct sound module."
+            },
+            {
+              "read_only_review_task": "fm-bbcce4d0b592-v1 revision000",
+              "scope": "35 changed values include eleven reconstructed cashflow outputs and their linked/carryforward cash and total-asset outputs. No baseline formulas corrected."
+            }
+          ]
         }
       ]
     },
