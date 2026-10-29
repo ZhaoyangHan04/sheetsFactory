@@ -573,8 +573,13 @@ class FactoryPipeline(BasePipeline):
         self.audit.emit('run.construction_started', sources=len(seeds), targets=self.targets)
         repair_manifest = self.config['run'].get('external_repair_manifest')
         if repair_manifest:
-            for specification in json.loads(Path(repair_manifest).read_text()):
-                self.process_external_repair(specification)
+            specifications = json.loads(Path(repair_manifest).read_text())
+            if specifications:
+                workers = min(len(specifications), int(self.config['run']['max_parallel_sources']))
+                with ThreadPoolExecutor(max_workers=workers) as pool:
+                    futures = [pool.submit(self.process_external_repair, item) for item in specifications]
+                    for future in futures:
+                        future.result()
             self._validate_exports()
         attempted_jobs = self._construct_batch(seeds)
         self._validate_exports()
