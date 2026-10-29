@@ -68,7 +68,7 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(self.get_json("api/events?after=2"), {"events": []})
 
     def test_sse_last_event_id_reconnect(self):
-        request = Request(self.url + "api/stream", headers={"Last-Event-ID": "1"})
+        request = Request(self.url + "api/stream?after=0", headers={"Last-Event-ID": "1"})
         with urlopen(request, timeout=3) as response:
             self.assertEqual(response.headers["Content-Type"], "text/event-stream; charset=utf-8")
             block = []

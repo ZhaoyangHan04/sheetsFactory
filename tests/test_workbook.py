@@ -1,7 +1,6 @@
 from datetime import datetime
 import os
 from pathlib import Path
-import shutil
 
 import openpyxl
 import pytest
@@ -86,6 +85,20 @@ def test_profile_context_and_conservative_dependencies(tmp_path):
     limited = profile_workbook(path, max_cells=1)
     assert limited["truncated"] is True
     assert limited["formula_count"] == 2
+
+
+def test_array_formula_profile_is_serializable_and_marked_unsupported(tmp_path):
+    import json
+    from openpyxl.worksheet.formula import ArrayFormula
+    path = save_book(tmp_path/"array.xlsx", {"A1": 1, "A2": 2})
+    book = openpyxl.load_workbook(path)
+    book["Forecast"]["B1"] = ArrayFormula(ref="B1:B2", text="=A1:A2*2")
+    book.save(path)
+    profile = profile_workbook(path)
+    json.dumps(profile)
+    cell = next(c for c in profile["sheets"][0]["cells"] if c["cell"] == "B1")
+    assert cell["dependencies"]["fully_supported"] is False
+    assert cell["formula_group"]["ref"] == "B1:B2"
 
 
 @pytest.mark.skipif(os.environ.get("SF_TEST_LIBREOFFICE") != "1", reason="Requires Docker LibreOffice image")

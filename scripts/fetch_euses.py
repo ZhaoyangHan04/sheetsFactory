@@ -24,7 +24,7 @@ def sha256(data: bytes) -> str:
 
 def inspect_xls(data: bytes) -> dict:
     import xlrd
-    book = xlrd.open_workbook(file_contents=data, on_demand=True)
+    book = xlrd.open_workbook(file_contents=data, on_demand=True, logfile=io.StringIO())
     sheets = []
     for sheet in book.sheets():
         nonempty = sum(1 for row in sheet.get_rows() for cell in row
@@ -69,6 +69,8 @@ def financial_score(path: str, stats: dict) -> float:
 
 def fetch(destination: Path, manifest_path: Path, max_files: int = 70,
           min_sheets: int = 4, min_formulas: int = 30) -> dict:
+    if max_files < 1 or min_sheets < 1 or min_formulas < 1:
+        raise ValueError("Selection counts must be positive")
     archive_path = destination.parent / "euses_financial.zip"
     destination.mkdir(parents=True, exist_ok=True)
     if not archive_path.exists():

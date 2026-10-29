@@ -124,7 +124,13 @@ class DashboardServer:
                 parsed = urlsplit(self.path)
                 query = parse_qs(parsed.query)
                 try:
-                    after = max(0, int(query.get("after", [self.headers.get("Last-Event-ID", "0")])[0]))
+                    # EventSource reconnects to its original URL while advancing
+                    # Last-Event-ID. Honor the newer cursor rather than replaying.
+                    after = max(
+                        0,
+                        int(query.get("after", ["0"])[0]),
+                        int(self.headers.get("Last-Event-ID", "0")),
+                    )
                 except (ValueError, TypeError):
                     self._json({"error": "invalid_event_cursor"}, 400)
                     return

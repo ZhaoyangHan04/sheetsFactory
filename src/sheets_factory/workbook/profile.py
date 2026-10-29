@@ -18,6 +18,9 @@ def json_value(value):
         return value.isoformat()
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
+    if value.__class__.__name__ in {"ArrayFormula", "DataTableFormula"}:
+        return {"formula_object_type": value.__class__.__name__,
+                "ref": getattr(value, "ref", None), "text": getattr(value, "text", None)}
     return str(value)
 
 
@@ -94,8 +97,13 @@ def profile_workbook(path: Path, max_cells: int = 30000) -> dict:
                     "data_type": cell.data_type, "number_format": cell.number_format,
                     "row_labels": row_labels, "column_labels": column_labels}
             if cell.data_type == "f":
-                dependencies = formula_references(cell.value, sheet.title)
-                item.update({"formula": cell.value,
+                formula_text = cell.value if isinstance(cell.value, str) else getattr(cell.value, "text", "")
+                dependencies = formula_references(formula_text, sheet.title)
+                if not isinstance(cell.value, str):
+                    dependencies["fully_supported"] = False
+                    dependencies["unsupported"].append("formula_group:" + cell.value.__class__.__name__)
+                    item["formula_group"] = json_value(cell.value)
+                item.update({"formula": formula_text,
                              "cached_value": json_value(cached[sheet.title][cell.coordinate].value),
                              "dependencies": dependencies})
                 all_external.extend({"sheet": sheet.title, "cell": cell.coordinate, "reference": ref}

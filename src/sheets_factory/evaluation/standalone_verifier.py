@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import json
 import math
@@ -16,19 +16,21 @@ from openpyxl import load_workbook
 from openpyxl.utils.datetime import from_excel, to_excel
 
 
-def normalize(value, expected_date=False, epoch=None):
+def normalize(value, expected_date=False, epoch=None, expected_duration=False):
     if value is None or value == "":
         return ("empty", None)
     if isinstance(value, bool):
         return ("bool", value)
     if expected_date and isinstance(value, (int, float, Decimal)):
-        value = from_excel(float(value), epoch=epoch)
+        value = from_excel(float(value), epoch=epoch, timedelta=expected_duration)
     if isinstance(value, datetime):
         return ("datetime", value.isoformat(timespec="milliseconds"))
     if isinstance(value, date):
         return ("datetime", datetime.combine(value, time()).isoformat(timespec="milliseconds"))
     if isinstance(value, time):
         return ("time", value.isoformat(timespec="milliseconds"))
+    if isinstance(value, timedelta):
+        return ("duration", round(value.total_seconds(), 3))
     if isinstance(value, (int, float, Decimal)):
         number = Decimal(str(value))
         if not number.is_finite():
@@ -66,7 +68,7 @@ def compare_files(original: str | Path, goal: str | Path, output: str | Path) ->
         for key in keys:
             reference = maps[1].get(key) or maps[0].get(key)
             reference_value = reference.value if reference is not None else None
-            expected_date = isinstance(reference_value, (datetime, date, time))
+            expected_date = isinstance(reference_value, (datetime, date, time, timedelta))
             for index, (book, cells) in enumerate(zip(workbooks, maps)):
                 cell = cells.get(key)
                 if cell is not None and cell.data_type == "e":
@@ -76,9 +78,9 @@ def compare_files(original: str | Path, goal: str | Path, output: str | Path) ->
                     # A candidate number format must not redefine the expected
                     # value type. openpyxl decodes date-formatted numerics eagerly.
                     if isinstance(reference_value, (int, float, Decimal)) and not isinstance(reference_value, bool):
-                        if isinstance(raw, (datetime, date, time)):
+                        if isinstance(raw, (datetime, date, time, timedelta)):
                             raw = to_excel(raw, epoch=book.epoch)
-                    value = normalize(raw, expected_date, book.epoch)
+                    value = normalize(raw, expected_date, book.epoch, isinstance(reference_value, timedelta))
                 normalized[index][key] = value
         baseline, expected, actual = normalized
         goal_delta = {key for key in keys if baseline[key] != expected[key]}

@@ -1,6 +1,5 @@
 """Container-only LibreOffice UNO runner; no network access is needed."""
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
