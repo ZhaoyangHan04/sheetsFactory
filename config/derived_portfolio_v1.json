@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "portfolio_id": "twelve-project-advanced-tax-portfolio-v1",
+  "source_catalog": "config/derived_advanced_tax_scenarios_v1.json",
+  "base_config": "config/derived_advanced_tax_brief_v1.json",
+  "minimum_numeric_financial_formulas": 50000,
+  "ownership_fraction": 1,
+  "intercompany_transactions": false,
+  "parent_operating_balances": false,
+  "entities": [
+    {
+      "id": "T01",
+      "catalog_case": "T01"
+    },
+    {
+      "id": "T02",
+      "catalog_case": "T02"
+    },
+    {
+      "id": "T03",
+      "catalog_case": "T03"
+    },
+    {
+      "id": "T04",
+      "catalog_case": "T04"
+    },
+    {
+      "id": "T05",
+      "catalog_case": "T05"
+    },
+    {
+      "id": "T06",
+      "catalog_case": "T06"
+    },
+    {
+      "id": "T07",
+      "catalog_case": "T07"
+    },
+    {
+      "id": "T08",
+      "catalog_case": "T08"
+    },
+    {
+      "id": "T09",
+      "catalog_case": "T09"
+    },
+    {
+      "id": "T10",
+      "catalog_case": "T10"
+    },
+    {
+      "id": "T11",
+      "name": "Delayed refresh commissioning with constrained interest deductions",
+      "mechanism": "Refresh equipment is paid in month 15 but enters service in month 25, while the ten-percent EBITDA interest capacity creates real competing interest vintages and the higher coverage covenant changes reserve allocation.",
+      "hypothetical_patch": {
+        "refresh_paid_month": 15,
+        "refresh_service_month": 25,
+        "revolver_limit": 8000000
+      },
+      "covenant_patch": {
+        "covenant_dscr_threshold": "1.60",
+        "dsra_normal_payment_months": 2,
+        "dsra_trap_payment_months": 4
+      },
+      "advanced_tax_patch": {
+        "interest_deduction_ebitda_fraction": ".10"
+      },
+      "required_regimes": [
+        "tax_interest_fifo_competition",
+        "tax_interest_carry_creation",
+        "tax_interest_carry_use",
+        "lock_enter",
+        "one_pass_still_locked",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release"
+      ]
+    },
+    {
+      "id": "T12",
+      "name": "Funded startup losses with trapped-only reserve and competing loss vintages",
+      "mechanism": "Additional paid-in capital finances a larger initial cash balance and startup loss. Two-year losses compete under FIFO while the reserve has zero unlocked target and a five-payment trapped target.",
+      "hypothetical_patch": {
+        "startup_expense": 4000000,
+        "equity_paid_in": 10000000,
+        "opening_cash": 5000000,
+        "revolver_limit": 8000000
+      },
+      "covenant_patch": {
+        "dsra_normal_payment_months": 0,
+        "dsra_trap_payment_months": 5
+      },
+      "advanced_tax_patch": {
+        "nol_carryforward_years": 2
+      },
+      "required_regimes": [
+        "tax_nol_fifo_competition",
+        "tax_nol_creation",
+        "tax_nol_use",
+        "zero_normal_reserve",
+        "lock_enter",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release"
+      ]
+    }
+  ]
+}
