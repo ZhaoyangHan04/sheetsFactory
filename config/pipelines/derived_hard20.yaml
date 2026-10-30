@@ -39,6 +39,7 @@ agents:
 prompt_overrides:
   planning.md: planning_integrated_project.md
   repair.md: repair_hard.md
+  diagnosis.md: diagnosis_financial.md
 diagnosis:
   selection:
     include: all
