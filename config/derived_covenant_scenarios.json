@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "base_config": "config/derived_covenant_project_v1.json",
+  "verification_status": "not_verified_until_real_builder_and_regime_audit",
+  "description": "Explicit hypothetical financial and contract variants. These are proposed sources, not ten qualified tasks or ten demonstrated difficulty classes.",
+  "cases": [
+    {
+      "id": "C01",
+      "name": "Quarterly lock, cure and liquidity reserve",
+      "mechanism": "Baseline economics with quarter-nine entry, a two-quarter cure and higher reserve while locked. Require an economically binding first-pass lock and actual reserve funding, support and release.",
+      "hypothetical_patch": {},
+      "covenant_patch": {},
+      "required_regimes": ["lock_enter", "one_pass_still_locked", "binding_one_pass_lock", "two_pass_cure", "dsra_funding", "dsra_support", "dsra_release", "nonterminal_dividend", "post_cure_dividend"]
+    },
+    {
+      "id": "C02",
+      "name": "Short debt amortization and reserve release after payoff",
+      "mechanism": "Eighteen original amortizing payments and higher stated sales allow Loan A to clear. Require a subsequent actual zero-target reserve release rather than assuming that payoff or a cure occurred.",
+      "hypothetical_patch": {"loan_a_amort_payments": 18, "steady_annual_sales": 40000000, "revolver_limit": 8000000},
+      "covenant_patch": {},
+      "required_regimes": ["lock_enter", "one_pass_still_locked", "two_pass_cure", "dsra_funding", "dsra_release", "loan_a_paid_off", "payoff_followed_by_reserve_release", "nonterminal_dividend"]
+    },
+    {
+      "id": "C03",
+      "name": "Zero-interest Loan A with a still-active covenant",
+      "mechanism": "An explicit subsidized spread offsets Loan A interest. The reserve still uses the original zero-rate level payment, and the measured multi-facility covenant and cure govern distributions.",
+      "hypothetical_patch": {"loan_a_spread": "-0.0509"},
+      "covenant_patch": {},
+      "required_regimes": ["loan_a_zero_rate", "lock_enter", "one_pass_still_locked", "two_pass_cure", "dsra_funding", "dsra_support", "dsra_release", "nonterminal_dividend"]
+    },
+    {
+      "id": "C04",
+      "name": "Covenant starts after the commissioning quarter",
+      "mechanism": "The first contractual test is month twelve. Earlier quarter diagnostics cannot activate a lock or reserve. A later actual breach must still enter and cure under the unchanged two-successful-test rule.",
+      "hypothetical_patch": {},
+      "covenant_patch": {"covenant_first_test_month": 12},
+      "required_regimes": ["lock_enter", "one_pass_still_locked", "two_pass_cure", "dsra_funding", "dsra_support", "dsra_release", "post_cure_dividend"]
+    },
+    {
+      "id": "C05",
+      "name": "Higher coverage threshold prolongs the initial lock",
+      "mechanism": "A publicly specified 1.50 coverage threshold changes the test outcomes and reserve-holding period. No state flags are supplied as inputs, and financial feasibility is checked rather than repaired.",
+      "hypothetical_patch": {},
+      "covenant_patch": {"covenant_dscr_threshold": "1.50"},
+      "required_regimes": ["lock_enter", "one_pass_still_locked", "two_pass_cure", "dsra_funding", "dsra_support", "dsra_release", "post_cure_dividend"]
+    },
+    {
+      "id": "C06",
+      "name": "Reserve only while locked",
+      "mechanism": "There is no normal reserve requirement and a five-payment reserve during a lock. Require an active unlocked zero target with positive Loan A and actual release of previously funded reserve.",
+      "hypothetical_patch": {"revolver_limit": 8000000},
+      "covenant_patch": {"dsra_normal_payment_months": 0, "dsra_trap_payment_months": 5},
+      "required_regimes": ["lock_enter", "one_pass_still_locked", "two_pass_cure", "zero_normal_reserve", "dsra_funding", "dsra_release", "post_cure_dividend"]
+    },
+    {
+      "id": "C07",
+      "name": "Cross-year commissioning interrupts the cure",
+      "mechanism": "Construction lasts twelve months, with service and amortization beginning in month thirteen and covenant tests from month fifteen. Require a failed test to reset a one-pass cure streak, followed by a real later cure.",
+      "hypothetical_patch": {"construction_months": 12, "initial_asset_service_month": 13, "loan_a_amort_start": 13, "revolver_limit": 8000000},
+      "covenant_patch": {"covenant_first_test_month": 15},
+      "required_regimes": ["commissioning_crosses_tax_year", "lock_enter", "one_pass_still_locked", "interrupted_cure", "two_pass_cure", "dsra_funding", "dsra_release", "nonterminal_dividend"]
+    },
+    {
+      "id": "C08",
+      "name": "Startup losses and a binding annual NOL cap",
+      "mechanism": "Additional explicitly equity-funded startup expense changes tax and CFADS. Require the annual NOL cap to bind in the actual extended ledger together with a measured covenant entry and cure.",
+      "hypothetical_patch": {"startup_expense": 4000000, "equity_paid_in": 10000000, "opening_cash": 5000000, "revolver_limit": 8000000},
+      "covenant_patch": {},
+      "required_regimes": ["nol_utilization_cap_binding", "lock_enter", "one_pass_still_locked", "two_pass_cure", "dsra_funding", "dsra_release", "post_cure_dividend"]
+    },
+    {
+      "id": "C09",
+      "name": "Refresh funding precedes service across tax years",
+      "mechanism": "The refresh is paid in month fifteen but first depreciated in month twenty-five. The 1.60 threshold and two/four-payment normal/trapped reserve requirements are explicit contractual changes; their activation must be measured.",
+      "hypothetical_patch": {"refresh_paid_month": 15, "refresh_service_month": 25, "revolver_limit": 8000000},
+      "covenant_patch": {"covenant_dscr_threshold": "1.60", "dsra_normal_payment_months": 2, "dsra_trap_payment_months": 4},
+      "required_regimes": ["refresh_payment_service_cross_tax_year", "lock_enter", "one_pass_still_locked", "two_pass_cure", "dsra_funding", "dsra_support", "dsra_release", "post_cure_dividend"]
+    },
+    {
+      "id": "C10",
+      "name": "Working-capital drag and interrupted higher-threshold cure",
+      "mechanism": "Longer receivable/inventory days and shorter supplier terms increase cash funding needs. A 2.20 coverage covenant requires an actual interrupted cure and a later observed two-pass release; reject the case if those paths do not occur.",
+      "hypothetical_patch": {"dso": 60, "dio": 45, "dpo": 20, "revolver_limit": 8000000},
+      "covenant_patch": {"covenant_dscr_threshold": "2.20"},
+      "required_regimes": ["lock_enter", "one_pass_still_locked", "interrupted_cure", "two_pass_cure", "dsra_funding", "dsra_release", "post_cure_dividend"]
+    }
+  ]
+}
