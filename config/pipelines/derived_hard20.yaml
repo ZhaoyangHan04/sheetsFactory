@@ -60,3 +60,8 @@ difficulty:
   evaluation_concurrency: 4
   timeout_seconds: 1800
   dashboard_port: 0
+
+  hardening:
+    enabled: true
+    policy_path: config/difficulty_hardening.yaml
+    prior_evaluations: []

@@ -1,0 +1,31 @@
+schema_version: 1
+threshold: 0.2
+measurement_policy:
+  strongest_model: gpt-6.1-sol
+  reasoning_effort: xhigh
+  timeout_seconds: 1800
+  normal_first_attempts_only: true
+  complete_frozen_pilot_can_trigger_directional_escalation: true
+  final_delivery_requires_ten_per_mode: true
+  preserve_prior_scores_and_versions: true
+tiers:
+- tier: 0
+  name: baseline
+  operations: []
+  min_target_sheets: 2
+  max_edit_count: {financial_modeling: 800, debugging: 80}
+- tier: 1
+  name: complete_connected_families
+  operations: [whole_formula_family_mask, whole_effective_business_family_bug, cross_sheet_dependency_closure]
+  min_target_sheets: 2
+  max_edit_count: {financial_modeling: 8192, debugging: 512}
+- tier: 2
+  name: interacting_edge_regimes
+  operations: [whole_formula_family_mask, whole_effective_business_family_bug, cross_sheet_dependency_closure, verified_nested_edge_mechanisms]
+  min_target_sheets: 3
+  max_edit_count: {financial_modeling: 8192, debugging: 1024}
+- tier: 3
+  name: verified_economic_fixed_point
+  operations: [whole_formula_family_mask, whole_effective_business_family_bug, cross_sheet_dependency_closure, verified_nested_edge_mechanisms, independently_verified_economic_cycle_source]
+  min_target_sheets: 3
+  max_edit_count: {financial_modeling: 8192, debugging: 1024}

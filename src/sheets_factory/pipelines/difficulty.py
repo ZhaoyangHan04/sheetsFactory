@@ -32,6 +32,7 @@ from ..llm import CodexCLI
 from ..resume import ProducerLease
 from ..workbook import LibreOfficeEngine
 from .factory import FactoryPipeline, cooperative_sigint
+from .hardening import HardeningPolicy, HardeningError
 
 
 MODES = ('financial_modeling', 'debugging')
@@ -176,6 +177,7 @@ class DifficultyPipeline:
         self.stop_event = stop_event if stop_event is not None else threading.Event()
         self.config = deepcopy(config)
         self.settings = self.config.get('difficulty', {})
+        self.hardening_policy = HardeningPolicy(self.root, self.settings.get('hardening', {}))
         self.per_mode = int(self.settings.get('per_mode', 10))
         self.max_rounds = int(self.settings.get('max_rounds', 4))
         if self.per_mode < 10 or self.max_rounds < 1:
@@ -211,7 +213,8 @@ class DifficultyPipeline:
             'config_sha256': hashlib.sha256(yaml.safe_dump(self.config, sort_keys=True).encode()).hexdigest(),
             'code_revision': self.code_revision, 'pipeline_sha256': _sha(Path(__file__)),
             'budget_policy': 'Round limit is exact. Token/wall caps are checked between complete stages; in-flight work is retained.',
-            'max_rounds': self.max_rounds, 'rounds': [], 'children': [], 'final_publication': None}
+            'max_rounds': self.max_rounds, 'rounds': [], 'children': [], 'final_publication': None,
+            'hardening': self.hardening_policy.initial_state()}
         self.lock = threading.RLock()
         self._sync_lock = threading.RLock()
         self._children = []
@@ -553,6 +556,15 @@ class DifficultyPipeline:
                 'tasks': compact, 'generation_requirements': feedback['generation_requirements'],
                 'trace_policy': 'Read the hash-bound feedback file for task-specific trajectory excerpts; do not infer unsaved causes.'}
 
+    def _observe_hardening(self, evaluation_path, *, label=None):
+        state,event=self.hardening_policy.observe(self.manifest['hardening'],evaluation_path,label=label)
+        self.manifest['hardening']=state
+        self.audit.emit('difficulty.structural_hardening', **event)
+        self._save()
+        if event['status']=='structural_policy_exhausted':
+            raise HardeningError('Highest structural tier remains too easy; new verified mechanism/source required')
+        return event
+
     def run(self):
         with cooperative_sigint(self.stop_event):
             return self._run()
@@ -572,6 +584,11 @@ class DifficultyPipeline:
                 self._preflight()
             with self._stage('seed_selection', 0):
                 seeds = self._select_seeds()
+            if self.hardening_policy.enabled:
+                for prior in self.settings.get('hardening',{}).get('prior_evaluations',[]):
+                    item={'path':prior} if isinstance(prior,str) else prior
+                    path=Path(item['path'])
+                    self._observe_hardening(path if path.is_absolute() else self.root/path,label=item.get('label'))
             for number in range(1, self.max_rounds + 1):
                 self._budget()
                 entry = {'round': number, 'status': 'running', 'started_at': utcnow()}
@@ -579,7 +596,12 @@ class DifficultyPipeline:
                 config = deepcopy(self.config)
                 config['generation_feedback'] = deepcopy(feedback)
                 config['generation_feedback']['seen_modules'] = list(self.seen_modules.values())
-                config['run']['seed_manifest'] = str(self._round_seeds(seeds, number, seen_sources))
+                round_seeds=seeds
+                hardening_contract=None
+                if self.hardening_policy.enabled:
+                    config,round_seeds,hardening_contract=self.hardening_policy.prepare_round(config,seeds,self.manifest['hardening'],self.directory/f'rounds/{number:03d}')
+                    entry['hardening']={'tier':hardening_contract['tier'],'status':'planned'}
+                config['run']['seed_manifest'] = str(self._round_seeds(round_seeds, number, seen_sources))
                 quality = self.directory / f'rounds/{number:03d}/quality'
                 entry.update(quality_directory=str(quality), seed_manifest=config['run']['seed_manifest'])
                 self._save()
@@ -611,6 +633,9 @@ class DifficultyPipeline:
                 with self._stage('strict_packaging', number):
                     packaged = self._package(quality, self.directory / f'rounds/{number:03d}/release')
                     versions = self._version_fingerprints(packaged)
+                    if hardening_contract is not None:
+                        proof=self.hardening_policy.verify_release(quality,packaged,round_seeds,hardening_contract,self.directory/f'rounds/{number:03d}')
+                        entry['hardening']={'tier':hardening_contract['tier'],'status':'applied' if hardening_contract['tier'] else 'baseline','evidence':proof}
                 entry['release'] = packaged
                 checksums = versions['checksums']
                 entry['version_fingerprints'] = {key: sorted(values) for key, values in versions.items()}
@@ -635,6 +660,8 @@ class DifficultyPipeline:
                 entry['feedback'] = {'path': feedback['path'], 'sha256': feedback['sha256']}
                 if result['score']['overall_pass_at_1'] > .2:
                     entry.update(status='development_too_easy', finished_at=utcnow())
+                    if self.hardening_policy.enabled:
+                        entry['hardening_escalation']=self._observe_hardening(development/'evaluation_manifest.json',label='development')
                     self._save()
                     continue
                 confirmation = self.directory / f'rounds/{number:03d}/confirmation'
@@ -651,6 +678,8 @@ class DifficultyPipeline:
                     break
                 if result.get('gate_passed') is not True or result['score']['overall_pass_at_1'] > .2:
                     feedback = self._feedback(number, quality, packaged, result, 'confirmation_too_easy')
+                    if self.hardening_policy.enabled:
+                        entry['hardening_escalation']=self._observe_hardening(confirmation/'evaluation_manifest.json',label='confirmation')
                     entry.update(status='confirmation_too_easy', feedback={'path': feedback['path'], 'sha256': feedback['sha256']},
                                  finished_at=utcnow())
                     self._save()
@@ -665,6 +694,9 @@ class DifficultyPipeline:
                 self._checkpoint()
                 status, reason = 'completed', 'Fresh confirmation passed Overall Pass@1 <= 0.2; real dataset published'
                 break
+        except HardeningError as exc:
+            status,reason='hardening_blocked',str(exc)
+            self.audit.emit('difficulty.structural_hardening_blocked',reason=reason)
         except _BudgetExhausted as exc:
             status, reason = 'budget_exhausted', str(exc)
         except CooperativeCancelled:
