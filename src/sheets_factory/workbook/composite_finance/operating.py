@@ -16,6 +16,33 @@ from ..derived_gold.ledger import simulate
 from ..derived_gold.validate import ledger_invariants_pass
 
 
+OPERATING_CASH_STAGE_POLICY = (
+    'Cash before allocation is operating cash after CFO, refresh capital spending and scheduled '
+    'Loan A and Loan B principal, before DSRA transfers, revolver draws or repayments, optional '
+    'prepayment and dividends. Cash gap is the unmet operating minimum after reserve support and '
+    'the permitted revolver draw. Available excess is operating cash above minimum after DSRA '
+    'transfers and revolver repayment, before optional prepayment and dividends. The optional '
+    'allocation allowed flag is one from the stated allocation-start month onward and zero before, '
+    'independently of the distribution lock and reserve shortfall.'
+)
+
+
+def clarify_operating_cash_stages(book, spec, sheet_name):
+    """Add explicit stage definitions without changing financial inputs or formulas."""
+    rules = spec['public_rules']
+    if not isinstance(rules, list) or any(not isinstance(rule, str) for rule in rules):
+        raise ValueError('Operating public policies must be an explicit list of text rules')
+    if OPERATING_CASH_STAGE_POLICY in rules:
+        raise ValueError('Operating cash-stage policy already exists')
+    rules.append(OPERATING_CASH_STAGE_POLICY)
+    sheet = book[sheet_name]
+    row = sheet.max_row + 2
+    sheet.cell(row, 1, 'Cash reporting stages')
+    sheet.cell(row, 2, OPERATING_CASH_STAGE_POLICY)
+    return {'sheet': sheet_name, 'cell': 'B' + str(row), 'public_policy': OPERATING_CASH_STAGE_POLICY,
+            'scope': 'Clarifies existing cash-reporting stage definitions; no financial formula, parameter or result is changed.'}
+
+
 def checked_json(reference):
     path = Path(reference['path'])
     payload = path.read_bytes()
@@ -38,8 +65,10 @@ def rewrite_formula(formula, mapping):
     return tokens.render()
 
 
-def append_operating_entity(book, manifest_path, *, entity_id='T01', prefix='Operating '):
+def append_operating_entity(book, manifest_path, *, entity_id='T01', prefix='Operating ', contract_revision=1):
     manifest_path = Path(manifest_path)
+    if type(contract_revision) is not int or contract_revision not in (1, 2):
+        raise ValueError('Unsupported explicit operating public-contract revision')
     manifest = json.loads(manifest_path.read_text())
     if manifest.get('financial_audit_passed') is not True:
         raise ValueError('An actually financially audited portfolio source is required')
@@ -99,6 +128,10 @@ def append_operating_entity(book, manifest_path, *, entity_id='T01', prefix='Ope
     finally:
         source.close()
 
+    policy_adapters = []
+    if contract_revision == 2:
+        policy_adapters.append(clarify_operating_cash_stages(book, spec, mapping['Read Me']))
+
     def reference(sheet, address):
         return "'" + mapping[sheet].replace("'", "''") + "'!" + address
 
@@ -118,4 +151,5 @@ def append_operating_entity(book, manifest_path, *, entity_id='T01', prefix='Ope
                         'portfolio_manifest_sha256': hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
                         'portfolio_workbook_sha256': manifest['derived_workbook_sha256'],
                         'entity_id': entity_id, 'original_dates_preserved': True,
-                        'original_currency': 'USD', 'independent_journal_recomputed': True}}
+                        'original_currency': 'USD', 'independent_journal_recomputed': True,
+                        'public_contract_revision': contract_revision, 'public_policy_adapters': policy_adapters}}

@@ -22,7 +22,7 @@ from ..holding_treasury.ledger import simulate_parent
 from ..holding_treasury.excel import emit_parent
 from ..holding_treasury.validate import audit_workbook as holding_audit
 from ..engine import LibreOfficeEngine
-from ..compare import compare_workbooks
+from ..compare import compare_workbooks, workbook_values
 from .operating import append_operating_entity
 
 
@@ -67,10 +67,47 @@ def emit_public_specs(book, specs):
     sheet.column_dimensions['B'].width = 115
 
 
+def audit_provided_context(source, goal, adapters):
+    """The provided forecast must not become a balancing input for new modules."""
+    original, source_sheets = workbook_values(source)
+    completed, goal_sheets = workbook_values(goal)
+    permitted = {(item['sheet'], item['cell']) for item in adapters}
+    if permitted - {('Cover', 'G4')}:
+        raise ValueError('Only the declared nonfinancial cover identifier may be adapted')
+    missing_sheets = set(source_sheets) - set(goal_sheets)
+    keys = set(original) | {key for key in completed if key[0] in source_sheets}
+    mismatches = [{'address': sn + '!' + cell, 'before': original.get((sn, cell)),
+                   'after': completed.get((sn, cell))}
+                  for sn, cell in sorted(keys - permitted)
+                  if original.get((sn, cell), ('empty', '')) != completed.get((sn, cell), ('empty', ''))]
+    return {'passed': not mismatches and not missing_sheets, 'checked_cells': len(keys - permitted),
+            'missing_sheets': sorted(missing_sheets), 'mismatches': mismatches,
+            'metadata_adapters': adapters, 'source': ref(source), 'completed': ref(goal),
+            'scope': 'All provided upstream typed values, except the explicitly declared cover display identifier.'}
+
+
+def recipe_references(config_path, config):
+    """Capture actual calculation and input bytes before building any outputs."""
+    modules = ('composite_finance/build.py', 'composite_finance/operating.py',
+        'derived_gold/ledger.py', 'derived_gold/validate.py',
+        'derived_regulatory/source.py', 'derived_regulatory/ledger.py',
+        'derived_regulatory/excel.py', 'derived_regulatory/schema.py',
+        'derived_regulatory/policy.py', 'derived_regulatory/POLICY.md', 'derived_regulatory/validate.py',
+        'lease_finance/contract.py', 'lease_finance/ledger.py', 'lease_finance/excel.py',
+        'lease_finance/validate.py', 'lease_finance/CONTRACT.md',
+        'holding_treasury/ledger.py', 'holding_treasury/schema.py',
+        'holding_treasury/excel.py', 'holding_treasury/validate.py')
+    paths = [Path(__file__).parent.parent / name for name in modules]
+    paths.extend(Path(config[key]) for key in ('regulatory_config', 'lease_config', 'holding_config', 'operating_manifest'))
+    paths.append(Path(config_path))
+    return {str(path.resolve()): ref(path) for path in paths}
+
+
 def build(config_path, output, project_root):
     started = time.monotonic()
     project_root, config_path, output = Path(project_root), Path(config_path), Path(output)
     config = json.loads(config_path.read_text())
+    recipe = recipe_references(config_path, config)
     output.mkdir(parents=True, exist_ok=False)
     private = output / 'private'
     private.mkdir()
@@ -89,7 +126,9 @@ def build(config_path, output, project_root):
         private / 'with_programme.xlsx', public_policy(include_leases=True),
         external_annual_refs=lease_binding['annual_refs'])
     book = openpyxl.load_workbook(private / 'with_programme.xlsx', keep_links=False)
-    operating = append_operating_entity(book, config['operating_manifest'])
+    operating = append_operating_entity(book, config['operating_manifest'],
+        entity_id=config.get('operating_entity', 'T01'),
+        contract_revision=config.get('operating_contract_revision', 1))
     parent = simulate_parent(parent_spec, annual_bridge(reg_spec, programme),
                              operating['ledger'], operating['public_scenario'])
     if not all(parent['observed_regimes'].get(key) for key in parent_spec['required_observed_regimes']):
@@ -112,6 +151,10 @@ def build(config_path, output, project_root):
     if runtime['image_id'] != RUNTIME_ID:
         raise ValueError('Unexpected composed-source calculation runtime')
     goal = engine.recalculate(raw, output / 'composite_model.xlsx')
+    context_audit = audit_provided_context(reg_config['source_path'], goal, reg_binding['metadata_adapter'])
+    write(private / 'provided_context_audit.json', context_audit)
+    if not context_audit['passed']:
+        raise ValueError('Provided upstream context changed: ' + str(context_audit['mismatches'][:3]))
     audits = {
         'lease': audit_lease_workbook(goal, lease_spec, lease, lease_binding),
         'programme': regulatory_audit(goal, reg_spec, programme),
@@ -135,6 +178,8 @@ def build(config_path, output, project_root):
     write(private / 'stability.json', stable)
     if not stable['stable']:
         raise ValueError('Composed source caches change under ordinary subsequent recalculation')
+    if any(ref(path)['sha256'] != binding['sha256'] for path, binding in recipe.items()):
+        raise ValueError('A calculation implementation or scenario input changed while building the source')
     manifest = {'schema_version': 1, 'status': 'independently_verified_composed_financial_seed',
         'qualified': False, 'task_count': 0, 'created_at': datetime.now(timezone.utc).isoformat(),
         'local_path': str(goal.resolve()), 'derived_workbook_sha256': ref(goal)['sha256'],
@@ -143,7 +188,9 @@ def build(config_path, output, project_root):
         'financial_audit_passed': True, 'financial_audits': summary,
         'financial_audit': ref(private / 'financial_audit_summary.json'),
         'stability': ref(private / 'stability.json'), 'runtime': runtime,
-        'config': ref(config_path), 'api_calls': 0, 'elapsed_seconds': time.monotonic() - started,
+        'config': ref(config_path), 'calculation_implementations': recipe,
+        'provided_context_audit': ref(private / 'provided_context_audit.json'),
+        'api_calls': 0, 'elapsed_seconds': time.monotonic() - started,
         'observed_holding_regimes': parent['observed_regimes'],
         'formula_count': sum(a.get('formula_count', a.get('new_formula_count', 0)) for a in audits.values()),
         'independently_checked_cells': sum(a['checked_cells'] for a in audits.values())}

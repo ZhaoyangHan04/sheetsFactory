@@ -1,0 +1,11 @@
+{
+  "schema_version": 2,
+  "regulatory_config": "config/derived_regulatory_reopener_v1.json",
+  "lease_config": "config/derived_lease_contract_v1.json",
+  "holding_config": "config/derived_holding_treasury_v2.json",
+  "operating_manifest": "outputs/research/portfolio_source_20261030T101350Z/manifest.json",
+  "operating_entity": "T01",
+  "operating_contract_revision": 2,
+  "lease_allowable_fraction": "0.85",
+  "engine_timeout_seconds": 300
+}
