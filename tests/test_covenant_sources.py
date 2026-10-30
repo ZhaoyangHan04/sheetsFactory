@@ -204,3 +204,34 @@ def test_fresh_audit_decimal_checks_compare_in_persisted_json_form(environment,m
     monkeypatch.setattr(API,"audit_workbook",lambda *args:fresh)
     checked,_,_ = API._inspect(out,cfg,seed,offline=False)
     assert checked["fixture_only"]  # No selected list or production batch is created.
+
+
+@pytest.mark.parametrize("allocation_start,reserve_shortfall,expected", [
+    (7,"0",True), (25,"0",False), (7,".01",False), (25,".01",False),
+])
+def test_binding_one_pass_lock_excludes_other_distribution_barriers(environment,allocation_start,reserve_shortfall,expected):
+    root,_,_,_ = environment
+    public = resolve_spec(root,root/"config/base.json")
+    ledger = simulate(public)
+    assert API.observed_regimes(public,ledger)["binding_one_pass_lock"]["periods"] == [24]
+    # Test the observation predicate with an explicit barrier. These altered
+    # diagnostics are not a financial proof and are never offered as a seed.
+    public["parameters"]["cash_allocation_start"] = allocation_start
+    ledger["monthly"][23]["dsra_shortfall"] = reserve_shortfall
+    assert API.observed_regimes(public,ledger)["binding_one_pass_lock"]["observed"] is expected
+
+
+def test_v2_catalog_keeps_old_positive_cases_and_does_not_weaken_rejected_requirements():
+    old,_,_,_ = API.load_catalog(ROOT,"config/derived_covenant_scenarios.json")
+    new,_,cases,_ = API.load_catalog(ROOT,"config/derived_covenant_scenarios_v2.json")
+    previous = {case["id"]:case for case in old["cases"]}
+    current = {case["id"]:case for case in cases}
+    retained = {"C01","C03","C04","C05","C06","C08","C09"}
+    assert set(current) == retained | {"C11","C12","C13"}
+    for identifier in retained:
+        assert current[identifier] == previous[identifier]
+    for identifier,predecessor in (("C11","C02"),("C12","C07"),("C13","C10")):
+        assert current[identifier]["required_regimes"] == previous[predecessor]["required_regimes"]
+        assert (current[identifier]["hypothetical_patch"],current[identifier]["covenant_patch"]) != (
+            previous[predecessor]["hypothetical_patch"],previous[predecessor]["covenant_patch"])
+    assert new["verification_status"] == "independent_ledger_prechecked_not_real_LO_verified"

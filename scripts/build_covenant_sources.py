@@ -116,7 +116,8 @@ def observed_regimes(public, ledger):
 
     record("lock_enter", periods(lambda r:r["lock_open"] == 0 and r["lock_close"] == 1), "Actual 0-to-1 closing distribution-lock transitions")
     record("one_pass_still_locked", periods(lambda r:r["test_due"] == 1 and r["test_passed"] == 1 and r["passes_close"] == 1 and r["lock_close"] == 1), "One successful test does not cure a lock")
-    record("binding_one_pass_lock", periods(lambda r:r["test_due"] == 1 and r["test_passed"] == 1 and r["passes_close"] == 1 and r["lock_close"] == 1 and value(r,"allocation_excess") > value(r,"loan_a_extra_principal") and value(r,"dividend") == 0), "After the first pass, positive otherwise-distributable excess is actually withheld")
+    allocation_start = int(public["parameters"]["cash_allocation_start"])
+    record("binding_one_pass_lock", periods(lambda r:r["period"] >= allocation_start and r["test_due"] == 1 and r["test_passed"] == 1 and r["passes_close"] == 1 and r["lock_close"] == 1 and value(r,"dsra_shortfall") == 0 and value(r,"allocation_excess") > value(r,"loan_a_extra_principal") and value(r,"dividend") == 0), "After allocation has begun and DSRA is fully funded, a one-pass lock actually withholds positive otherwise-distributable excess")
     record("two_pass_cure", periods(lambda r:r["lock_open"] == 1 and r["lock_close"] == 0 and r["passes_close"] == 2), "Actual two-consecutive-pass lock releases")
     record("interrupted_cure", periods(lambda r:r["test_due"] == 1 and r["test_passed"] == 0 and r["lock_open"] == 1 and r["passes_open"] == 1 and r["passes_close"] == 0), "A failed eligible test interrupts a one-pass cure streak")
     for key in ("dsra_funding", "dsra_support", "dsra_release", "dsra_shortfall"):
