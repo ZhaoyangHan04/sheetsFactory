@@ -2,7 +2,12 @@
 from copy import deepcopy
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
+from types import SimpleNamespace
 import pytest
 import yaml
 from sheets_factory.core.audit import AuditStore
@@ -55,6 +60,8 @@ def test_prepare_binds_complete_audits_and_fixed_quota_without_models(batch,tmp_
  output=tmp_path/'prepared';receipt=cohort.prepare_cohort(batch,output,mode=mode)
  config=yaml.safe_load((output/'resolved_config.yaml').read_text());selected=cohort.read(output/'seed_manifest.json')['selected']
  assert receipt['actual_model_calls']==0 and receipt['qualified'] is False
+ assert config['host_runtime']==receipt['host_runtime']
+ assert receipt['host_runtime']['temporary_directory']==str(output/'temporary')
  assert config['run']['targets']=={'financial_modeling':10,'debugging':10}
  assert config['run']['max_sources']==20 and config['run']['max_candidates_per_seed']==1
  assert all(e['modes']==[mode] and e['variant']==0 for e in selected)
@@ -183,3 +190,132 @@ def test_prepared_run_with_existing_direct_audit_database_cannot_reinitialize(ba
  monkeypatch.setattr(cohort.CohortCodex,'__init__',lambda *a,**k:pytest.fail('Refuse restart before model initialization'))
  with pytest.raises(ValueError,match='explicit resume'):cohort.execute_prepared(output)
  assert cohort.sha(output/'run.sqlite')==before
+
+
+def test_real_openpyxl_and_tempfile_spill_only_into_this_data_run(tmp_path,monkeypatch):
+ from openpyxl import Workbook
+ from openpyxl.worksheet import _writer
+ run=tmp_path/'temp-io-run';run.mkdir()
+ assert run.resolve().is_relative_to(Path('/data')),'Run this test with TMPDIR and pytest basetemp under /data'
+ settings=cohort.host_runtime_settings(run,0)
+ observed=[];create=_writer.create_temporary_file
+ def capture(*args,**kwargs):
+  path=Path(create(*args,**kwargs));observed.append(path)
+  assert path.is_relative_to(run/'temporary') and not path.is_relative_to(Path('/tmp'))
+  return str(path)
+ monkeypatch.setattr(_writer,'create_temporary_file',capture)
+ monkeypatch.setenv('TMPDIR','/tmp')
+ monkeypatch.setattr(tempfile,'tempdir','/tmp')
+ with cohort.host_temporary_environment(run,settings) as receipt:
+  assert os.environ['TMPDIR']==str(run/'temporary')
+  assert tempfile.gettempdir()==str(run/'temporary')
+  with tempfile.NamedTemporaryFile() as temporary:
+   assert Path(temporary.name).is_relative_to(run/'temporary')
+  book=Workbook()
+  for index in range(100):book.active.append([index,index*2,'=A'+str(index+1)+'+B'+str(index+1)])
+  book.save(run/'actual_saved.xlsx');book.close()
+  child=subprocess.run([sys.executable,'-c',
+   'import json,tempfile; f=tempfile.NamedTemporaryFile(); print(json.dumps({"directory":tempfile.gettempdir(),"file":f.name})); f.close()'],
+   capture_output=True,text=True,check=True,timeout=10)
+  child_report=json.loads(child.stdout)
+  assert child_report['directory']==str(run/'temporary')
+  assert Path(child_report['file']).is_relative_to(run/'temporary')
+  saved=cohort.read(receipt['path'])
+  assert saved['effective_tempfile_directory']==str(run/'temporary')
+  assert saved['model_calls_performed_by_setup']==saved['libreoffice_calls_performed_by_setup']==0
+ assert observed and (run/'actual_saved.xlsx').is_file()
+ assert os.environ['TMPDIR']=='/tmp' and tempfile.tempdir=='/tmp'
+
+
+@pytest.mark.parametrize('body_fails',[False,True])
+@pytest.mark.parametrize('resume',[False,True])
+def test_execute_enters_temporary_scope_before_runtime_and_restores_on_every_exit(batch,tmp_path,monkeypatch,body_fails,resume):
+ output=tmp_path/'prepared';cohort.prepare_cohort(batch,output)
+ run=tmp_path/'existing-run' if resume else output
+ if resume:cohort.prepare_cohort(batch,run)
+ previous_env=os.environ.get('TMPDIR');previous_cache=tempfile.tempdir
+ seen=[]
+ def body(prepared,**kwargs):
+  seen.append(kwargs['host_runtime_receipt'])
+  assert prepared==output and tempfile.gettempdir()==str(run/'temporary')
+  assert os.environ['TMPDIR']==str(run/'temporary')
+  assert Path(kwargs['host_runtime_receipt']['path']).is_relative_to(run/'runtime_supplements')
+  if body_fails:raise RuntimeError('offline body failure before models')
+  return 17
+ monkeypatch.setattr(cohort,'_execute_prepared',body)
+ monkeypatch.setattr(cohort.CohortCodex,'__init__',lambda *a,**k:pytest.fail('No model initialization in this offline routing test'))
+ if body_fails:
+  with pytest.raises(RuntimeError,match='offline body failure'):cohort.execute_prepared(output,resume=run if resume else None)
+ else:assert cohort.execute_prepared(output,resume=run if resume else None)==17
+ assert seen and os.environ.get('TMPDIR')==previous_env and tempfile.tempdir==previous_cache
+
+
+def test_legacy_preparation_adds_only_new_runtime_supplement_without_rewriting_frozen_files(batch,tmp_path,monkeypatch):
+ output=tmp_path/'legacy-prepared';cohort.prepare_cohort(batch,output)
+ config=yaml.safe_load((output/'resolved_config.yaml').read_text());config.pop('host_runtime')
+ (output/'resolved_config.yaml').write_text(yaml.safe_dump(config))
+ frozen=cohort.read(output/'preflight_manifest.json');frozen.pop('host_runtime')
+ frozen['resolved_config']=cohort.ref(output/'resolved_config.yaml');dump(output/'preflight_manifest.json',frozen)
+ tracked={name:(output/name).read_bytes() for name in ('preflight_manifest.json','resolved_config.yaml','seed_manifest.json')}
+ monkeypatch.setattr(cohort,'_execute_prepared',lambda *a,**kw:0)
+ assert cohort.execute_prepared(output)==0
+ assert all((output/name).read_bytes()==raw for name,raw in tracked.items())
+ receipts=list((output/'runtime_supplements').glob('host_temporary_directory_*.json'))
+ assert len(receipts)==1
+ setup=cohort.read(receipts[0]);assert setup['legacy_preparation_fallback'] is True
+ assert setup['frozen_preparation_modified'] is False
+ assert setup['preflight_manifest.json']['sha256']==cohort.sha(output/'preflight_manifest.json')
+ assert setup['resolved_config.yaml']['sha256']==cohort.sha(output/'resolved_config.yaml')
+ assert setup['host_runtime']['temporary_directory']==str(output/'temporary')
+
+
+@pytest.mark.parametrize('kind',['temp_symlink','foreign_run','supplement_symlink','run_outside_data'])
+def test_host_temporary_setup_rejects_escapes_before_external_writes(tmp_path,kind):
+ run=tmp_path/'run';run.mkdir();outside=tmp_path/'outside';outside.mkdir()
+ settings=cohort.host_runtime_settings(run,0)
+ if kind=='temp_symlink':(run/'temporary').symlink_to(outside,target_is_directory=True)
+ elif kind=='foreign_run':settings['temporary_directory']=str(outside/'temporary')
+ elif kind=='supplement_symlink':(run/'runtime_supplements').symlink_to(outside,target_is_directory=True)
+ else:
+  alias=tmp_path/'run-alias';alias.symlink_to('/tmp',target_is_directory=True);run=alias
+ with pytest.raises(ValueError):
+  with cohort.host_temporary_environment(run,settings):pytest.fail('Escaping directory must never be entered')
+ assert list(outside.iterdir())==[]
+
+
+def test_host_runtime_configuration_cannot_disagree_with_preflight(batch,tmp_path,monkeypatch):
+ output=tmp_path/'prepared';cohort.prepare_cohort(batch,output)
+ config=yaml.safe_load((output/'resolved_config.yaml').read_text())
+ config['host_runtime']['minimum_free_bytes']+=1
+ (output/'resolved_config.yaml').write_text(yaml.safe_dump(config))
+ monkeypatch.setattr(cohort,'_execute_prepared',lambda *a,**k:pytest.fail('Reject drift before runtime setup'))
+ with pytest.raises(ValueError,match='differs from frozen'):cohort.execute_prepared(output)
+ assert not (output/'temporary').exists()
+
+
+def test_low_space_emits_configurable_warning_and_never_falls_back(tmp_path,monkeypatch):
+ run=tmp_path/'low-space-run';run.mkdir();settings=cohort.host_runtime_settings(run,128)
+ monkeypatch.setattr(cohort.shutil,'disk_usage',lambda p:SimpleNamespace(total=1000,used=999,free=1))
+ with pytest.warns(RuntimeWarning,match='configured 128-byte warning threshold'):
+  with cohort.host_temporary_environment(run,settings) as receipt:
+   assert tempfile.gettempdir()==str(run/'temporary')
+   assert cohort.read(receipt['path'])['low_space_warning'] is True
+ with cohort.host_temporary_environment(run,cohort.host_runtime_settings(run,0)) as receipt:
+  assert cohort.read(receipt['path'])['low_space_warning'] is False
+
+
+def test_temporary_scope_restores_an_absent_environment_variable_and_unset_cache(tmp_path,monkeypatch):
+ run=tmp_path/'no-prior-temp';run.mkdir()
+ monkeypatch.delenv('TMPDIR',raising=False);monkeypatch.setattr(tempfile,'tempdir',None)
+ with cohort.host_temporary_environment(run,cohort.host_runtime_settings(run,0)):
+  assert os.environ['TMPDIR']==str(run/'temporary')
+  assert tempfile.gettempdir()==str(run/'temporary')
+ assert 'TMPDIR' not in os.environ and tempfile.tempdir is None
+
+
+@pytest.mark.parametrize('threshold',[-1,True,1.5])
+def test_invalid_temporary_warning_threshold_rejects_before_preparation(batch,tmp_path,threshold):
+ output=tmp_path/'prepared'
+ with pytest.raises(ValueError,match='nonnegative integer'):
+  cohort.prepare_cohort(batch,output,host_temp_min_free_bytes=threshold)
+ assert not output.exists()

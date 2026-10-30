@@ -2,6 +2,7 @@
 """Prepare audited mode-specific seeds; explicitly run the normal quality factory."""
 from __future__ import annotations
 import argparse
+from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
@@ -10,7 +11,11 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import shutil
+import tempfile
 import time
+from uuid import uuid4
+import warnings
 import yaml
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -25,6 +30,8 @@ from sheets_factory.workbook.engine import LibreOfficeEngine
 IMAGE='sheetsfactory-lo:24.2-iterative-openpyxl315-v1'
 IMAGE_ID='sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043'
 MODES=('financial_modeling','debugging')
+HOST_DATA_ROOT=Path('/data')
+DEFAULT_TEMP_MIN_FREE_BYTES=1024**3
 
 
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -39,6 +46,91 @@ def checked(reference):
  path=Path(reference['path']).resolve()
  require(path.is_file() and sha(path)==reference['sha256'],'Changed or missing audited artifact: '+str(path))
  return path
+
+
+def host_runtime_settings(run,minimum_free_bytes=DEFAULT_TEMP_MIN_FREE_BYTES):
+ run=Path(run).resolve()
+ settings={'temporary_directory':str(run/'temporary'),'minimum_free_bytes':minimum_free_bytes,
+           'low_space_policy':'warn'}
+ validate_host_runtime(run,settings)
+ return settings
+
+
+def validate_host_runtime(run,settings):
+ """Host spill files belong to this run, on the data filesystem."""
+ run=Path(run).resolve();data_root=HOST_DATA_ROOT.resolve()
+ require(run!=data_root and run.is_relative_to(data_root),'The execution run must be under /data')
+ require(isinstance(settings,dict) and set(settings)=={'temporary_directory','minimum_free_bytes','low_space_policy'},
+         'Host runtime requires explicit temporary_directory, minimum_free_bytes and low_space_policy')
+ require(isinstance(settings['temporary_directory'],str),'Host temporary directory must be an absolute path')
+ directory=Path(settings['temporary_directory'])
+ require(directory.is_absolute() and directory==run/'temporary',
+         'Host temporary directory must be the current run/temporary directory')
+ require(directory.resolve()==run/'temporary','Host temporary directory contains a symlink escape')
+ require(type(settings['minimum_free_bytes']) is int and settings['minimum_free_bytes']>=0,
+         'Host minimum_free_bytes must be a nonnegative integer')
+ require(settings['low_space_policy']=='warn','Host low-space policy must be warn')
+ return directory
+
+
+def prepared_host_runtime(run):
+ """Old preparations gain a new setup receipt, never rewritten frozen files."""
+ run=Path(run).resolve();frozen=read(run/'preflight_manifest.json')
+ config=yaml.safe_load((run/'resolved_config.yaml').read_text())
+ declared=frozen.get('host_runtime');configured=config.get('host_runtime')
+ legacy='host_runtime' not in frozen and 'host_runtime' not in config
+ if legacy:return host_runtime_settings(run),True
+ require(declared is not None and configured==declared,'Prepared host runtime differs from frozen configuration')
+ validate_host_runtime(run,declared)
+ return deepcopy(declared),False
+
+
+@contextmanager
+def host_temporary_environment(run,settings,*,legacy_preparation=False):
+ """Pin TMPDIR before engine/model setup; restore process environment and cache.
+
+ All worker threads share this one producer scope. Spawned subprocesses inherit
+ TMPDIR. No daemon, system directory, or unrelated process is changed.
+ """
+ run=Path(run).resolve();directory=validate_host_runtime(run,settings)
+ require(run.is_dir(),'Host temporary setup requires its existing run directory')
+ directory.mkdir(exist_ok=True)
+ require(directory.is_dir() and directory.resolve()==run/'temporary','Host temporary directory is not a real run directory')
+ supplements=run/'runtime_supplements'
+ require(supplements.resolve()==run/'runtime_supplements','Runtime supplements directory contains a symlink escape')
+ supplements.mkdir(exist_ok=True)
+ # Verify writes with an explicit path before touching tempfile's global cache;
+ # an unwritable target must never fall back to the system temporary directory.
+ probe=directory/('.write-check-'+uuid4().hex)
+ with probe.open('xb') as stream:stream.write(b'host temporary directory write check')
+ probe.unlink()
+ previous_tmpdir=os.environ.get('TMPDIR');previous_cache=tempfile.tempdir
+ had_tmpdir='TMPDIR' in os.environ
+ try:
+  os.environ['TMPDIR']=str(directory)
+  tempfile.tempdir=None
+  # The validated writable directory is pinned explicitly. This also prevents
+  # tempfile from silently choosing /tmp if another process changes permissions.
+  tempfile.tempdir=str(directory)
+  usage=shutil.disk_usage(directory)
+  low_space=usage.free<settings['minimum_free_bytes']
+  receipt={'kind':'host_temporary_directory_setup','created_at':utcnow(),'run_directory':str(run),
+   'host_runtime':deepcopy(settings),'effective_tempfile_directory':tempfile.gettempdir(),
+   'legacy_preparation_fallback':legacy_preparation,'frozen_preparation_modified':False,
+   'implementation':ref(__file__),'free_bytes_at_setup':usage.free,'low_space_warning':low_space,
+   'process_scope':'TMPDIR and tempfile.tempdir restored on exit; subprocesses inherit this run TMPDIR',
+   'model_calls_performed_by_setup':0,'libreoffice_calls_performed_by_setup':0}
+  for name in ('preflight_manifest.json','resolved_config.yaml'):
+   if (run/name).is_file():receipt[name]=ref(run/name)
+  path=supplements/('host_temporary_directory_'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'_'+uuid4().hex[:8]+'.json')
+  write(path,receipt)
+  if low_space:
+   warnings.warn(f'Run temporary directory has {usage.free} free bytes, below the configured {settings["minimum_free_bytes"]}-byte warning threshold',RuntimeWarning)
+  yield {**ref(path),'temporary_directory':str(directory)}
+ finally:
+  if had_tmpdir:os.environ['TMPDIR']=previous_tmpdir
+  else:os.environ.pop('TMPDIR',None)
+  tempfile.tempdir=previous_cache
 
 def track_references(value,bindings):
  if isinstance(value,dict):
@@ -114,10 +206,12 @@ def validate_seed(entry,attempt=None):
          'original_build_verification_sha256':hashlib.sha256(json.dumps(verification,sort_keys=True).encode()).hexdigest()}
 
 
-def prepare_cohort(source_manifest,output,*,mode='financial_modeling',count=10,project_root=ROOT):
+def prepare_cohort(source_manifest,output,*,mode='financial_modeling',count=10,project_root=ROOT,
+                   host_temp_min_free_bytes=DEFAULT_TEMP_MIN_FREE_BYTES):
  root=Path(project_root).resolve();source_manifest=Path(source_manifest).resolve();output=Path(output).resolve()
  require(mode in MODES and type(count) is int and count==10,'A cohort admission contains exactly ten sources in one mode')
  require(not output.exists(),'Preparation output already exists; frozen preparations are never overwritten')
+ host_runtime=host_runtime_settings(output,host_temp_min_free_bytes)
  raw=source_manifest.read_bytes();batch=json.loads(raw)
  entries=[];identities=set();task_ids=set();bindings={str(source_manifest):hashlib.sha256(raw).hexdigest()}
  selected=validate_batch(batch,bindings)
@@ -148,6 +242,7 @@ def prepare_cohort(source_manifest,output,*,mode='financial_modeling',count=10,p
  config['agents']={**llm,**config['agents'],'roles':{**agent.get('roles',{}),**config['agents'].get('roles',{})}}
  config['prompt_overrides']={**agent.get('prompts',{}),**config.get('prompt_overrides',{})}
  config.update(project_root=str(root),run_dir=str(output));config['run']['seed_manifest']=str(output/'seed_manifest.json')
+ config['host_runtime']=deepcopy(host_runtime)
  for p,h in bindings.items():require(sha(p)==h,'Original source evidence changed during preflight: '+p)
  output.mkdir(parents=True)
  prepared={'schema_version':1,'kind':'audited_mode_specific_factory_sources','qualified':False,'task_count':0,
@@ -173,7 +268,7 @@ def prepare_cohort(source_manifest,output,*,mode='financial_modeling',count=10,p
   'prepared_seed_manifest':ref(output/'seed_manifest.json'),'resolved_config':ref(output/'resolved_config.yaml'),
   'recipe_sha256':{str(p):sha(p) for p in recipe_paths},'normal_factory_routing':True,
   'actual_model_calls':0,'qualified':False,'final_cohort_confirmation_pending':True,
-  'private_diagnostic_timeout_seconds':2400,'trajectory_timeout_seconds':600}
+  'private_diagnostic_timeout_seconds':2400,'trajectory_timeout_seconds':600,'host_runtime':deepcopy(host_runtime)}
  write(output/'preflight_manifest.json',frozen)
  return frozen
 
@@ -205,6 +300,13 @@ class CohortCodex(CodexCLI):
 
 
 def execute_prepared(output,*,resume=None,port=0):
+ output=Path(output).resolve();run=Path(resume).resolve() if resume else output
+ settings,legacy=prepared_host_runtime(run)
+ with host_temporary_environment(run,settings,legacy_preparation=legacy) as receipt:
+  return _execute_prepared(output,resume=resume,port=port,host_runtime_receipt=receipt)
+
+
+def _execute_prepared(output,*,resume=None,port=0,host_runtime_receipt=None):
  output=Path(output).resolve();frozen=read(output/'preflight_manifest.json')
  for group in ('source_artifacts_sha256','recipe_sha256'):
   for p,h in frozen[group].items():require(sha(p)==h,'Frozen cohort artifact changed: '+p)
@@ -226,12 +328,15 @@ def execute_prepared(output,*,resume=None,port=0):
  try:
   server=DashboardServer(audit.snapshot,audit.events,host='127.0.0.1',port=port);url=server.start()
   audit.update_run(dashboard_url=url,producer_pid=os.getpid(),producer_active=True,code_revision=revision)
+  audit.update_run(host_temporary_directory=host_runtime_receipt['temporary_directory'],
+                   host_runtime_receipt=host_runtime_receipt)
   dashboard=run/('dashboard_'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'.json');write(dashboard,{'url':url})
   llm=CohortCodex(root,run,audit,config['agents']);llm._credentials()
   engine=LibreOfficeEngine(root,IMAGE,config['engine']['timeout_seconds']);runtime=engine.metadata()
   require(runtime['image_id']==IMAGE_ID,'The execution runtime differs from the audited source runtime')
   audit.emit('run.preflight',frozen_preparation=ref(output/'preflight_manifest.json'),runtime=runtime,
-             private_diagnostic_timeout_seconds=2400,trajectory_timeout_seconds=600)
+             private_diagnostic_timeout_seconds=2400,trajectory_timeout_seconds=600,
+             host_runtime_receipt=host_runtime_receipt)
   print(json.dumps({'run_dir':str(run),'dashboard_url':url,'prepared_manifest':str(output/'preflight_manifest.json')}),flush=True)
   status=0 if AuditedSourceFactory(config,audit,llm,engine).run() else 2
   for p,h in frozen['recipe_sha256'].items():require(sha(p)==h,'Frozen cohort recipe changed during execution: '+p)
@@ -253,13 +358,18 @@ def main(argv=None):
  parser.add_argument('--output',type=Path);parser.add_argument('--prepared',type=Path)
  parser.add_argument('--run',action='store_true',help='Explicitly run models and the complete normal FactoryPipeline')
  parser.add_argument('--resume',type=Path);parser.add_argument('--port',type=int,default=0)
+ parser.add_argument('--host-temp-min-free-mb',type=int,
+                     help='Warning threshold for this run temporary directory (default 1024 MiB)')
  args=parser.parse_args(argv)
  if args.prepared:
   if args.source_manifest or args.output:parser.error('--prepared cannot be combined with source preparation arguments')
+  if args.host_temp_min_free_mb is not None:parser.error('Prepared host temporary settings are frozen; set the warning threshold during preparation')
   output=args.prepared
  else:
   if not args.source_manifest or not args.output:parser.error('Preparation requires --source-manifest and --output')
-  frozen=prepare_cohort(args.source_manifest,args.output,mode=args.mode,count=args.count)
+  threshold=DEFAULT_TEMP_MIN_FREE_BYTES if args.host_temp_min_free_mb is None else args.host_temp_min_free_mb*1024**2
+  frozen=prepare_cohort(args.source_manifest,args.output,mode=args.mode,count=args.count,
+                        host_temp_min_free_bytes=threshold)
   output=args.output;print(json.dumps({'prepared':str(output),'source_count':frozen['source_count'],'models_started':False}),flush=True)
  if args.run:return execute_prepared(output,resume=args.resume,port=args.port)
  return 0
