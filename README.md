@@ -4,7 +4,7 @@
 
 上一轮已完成 20 道 Financial Modeling、20 道 Debugging 的质量验收并保留冻结发布包；该批次没有通过难度验收。当前正在迭代两类各至少 10 题，构造与诊断使用 Codex CLI `gpt-6-sol` / `high`，难度门禁固定使用 Codex CLI `gpt-6.1-sol` / `xhigh`，累计工具执行时间严格小于 1800 秒，排除模型思考与生成时间，冻结确认集 Overall Pass@1 ≤ 0.2。新执行合同另有不计模型失败的运行保护时限；旧合同及成绩保留，详见 [评测要求](docs/evaluation_requirements.md)。未完成最终确认前，不作难度达标声明。
 
-截至 2026-10-30 20:43 UTC，最终难度交付计数仍为 0。首道明确场景输入优先级的 Financial Modeling 修复版通过了 11 项适用质量检查（Q08 留待整组确认），真实 Harbor oracle=1、nop=0；最强模型首次开发测试正常得到 reward=0，工具执行 226.613269849 秒。但该输出只是新增了隐藏辅助表：独立实际重算后，原 75 张表的全部值及 46,466 处应修改集合都与参考一致。公开说明没有充分明确辅助表和辅助单元格的提交边界，故该版本按新发现的 Q03 问题暂停准出，不作为财务算术难度证明。旧成绩、诊断与文件保持不变。证据位于本地 `outputs/research/C01_priority_r1_output_forensics_20261030T182500Z/final_forensic_conclusion.json`；精确导出版本的 Harbor 控制证据位于 `outputs/research/C01_priority_r1_exact_Harbor_20261030T181500Z/verification_addendum.json`。
+截至 2026-10-30 20:49 UTC，最终难度交付计数仍为 0。首道明确场景输入优先级的 Financial Modeling 修复版通过了 11 项适用质量检查（Q08 留待整组确认），真实 Harbor oracle=1、nop=0；最强模型首次开发测试正常得到 reward=0，工具执行 226.613269849 秒。但该输出只是新增了隐藏辅助表：独立实际重算后，原 75 张表的全部值及 46,466 处应修改集合都与参考一致。公开说明没有充分明确辅助表和辅助单元格的提交边界，故该版本按新发现的 Q03 问题暂停准出，不作为财务算术难度证明。旧成绩、诊断与文件保持不变。证据位于本地 `outputs/research/C01_priority_r1_output_forensics_20261030T182500Z/final_forensic_conclusion.json`；精确导出版本的 Harbor 控制证据位于 `outputs/research/C01_priority_r1_exact_Harbor_20261030T181500Z/verification_addendum.json`。
 
 后续 revision 002 已明确原有工作表名称、顺序和禁止新增辅助单元格的提交边界，数值参考、业务规则和目标保持不变；它重新通过五项实际本地控制、仅公开输入的独立恢复，以及同一正常导出版本的真实 Harbor oracle=1、nop=0。新版本的 `gpt-6.1-sol` / `xhigh` 首次开发测试正常得到 reward=1，累计工具执行 482.967168152 秒，无基础设施异常、计时缺失或运行保护截断。这是单题开发结果，不是完整 20 题的 Overall Pass@1；停止扩大同一财务输出遮蔽模板，继续开发包含合同状态和控制计算的完整补全任务。实际控制收据为 `outputs/research/C01_scope_r2_actual_harbor_20261030T190700Z/actual_control_receipt.json`，开发测试位于 `outputs/difficulty/composite-cohort-C01-scope-r2-20261030T190400Z/evaluation/`。
 
@@ -18,7 +18,7 @@
 
 另有独立的 V3 缺陷提供器组合真实账户、期间、计量、边界和优先级错误，原财务来源及其审计不变。主样本和原 10 个场景的全部非零目标均离线编译通过，没有删除或截断目标；主样本实际注入 20,895 处公式修改，两次重算稳定，完整变化集合为 20,225，其中 20,069 个被编辑位置有值变化，826 个无值变化的公式修改单列。源表无错误，注入后有 2 个错误值；这 2 次工程计算只证明构造、稳定性和完整变化集合，不证明独立恢复、质量或难度。工程记录位于 `outputs/research/semantic_graph_v3_engineering_20261030T192657Z/`，离线交接位于 `outputs/research/composite_semantic_v3_batch_20261030T190830Z/handoff.json`。
 
-两种完整调试提供器已分别进入新的实际质量运行：`outputs/runs/20261030T200048Z-joint-controls-v2-dev/` 与 `outputs/runs/20261030T200335Z-joint-controls-v3-dev/`。这些阶段仅明确替换负控选择节点，按固定顺序实际执行单漏改候选，首个真实零分才能成为负控，并保留所有失败尝试。两版实际五项控制均为 1/0/1/0/0，独立公开恢复均已 verified，完整质量诊断仍在进行，后续真实 Harbor 控制尚待完成。精确冻结输入的首次最强模型开发测试已分别在 `outputs/difficulty/joint-v2-first-20261030T202933Z/evaluation/` 和 `outputs/difficulty/joint-v3-first-20261030T203605Z/evaluation/` 实际启动，当前均无评分。候选、单题验收与完整确认集分别计数，不把新阶段启动或离线通过计为难度合格。
+两种完整调试提供器已分别进入新的实际质量运行：`outputs/runs/20261030T200048Z-joint-controls-v2-dev/` 与 `outputs/runs/20261030T200335Z-joint-controls-v3-dev/`。这些阶段仅明确替换负控选择节点，按固定顺序实际执行单漏改候选，首个真实零分才能成为负控，并保留所有失败尝试。两版实际五项控制均为 1/0/1/0/0，独立公开恢复均已 verified。V2 已完成完整单题质量验收：12 项检查全部覆盖、11 项 clear、Q08 not_applicable，无阻塞或未知项，真实 Harbor oracle=1、nop=0。根校验复核了实际任务目录哈希、文件及与首次强测完全相同的冻结导出，证据位于 `outputs/research/joint_v2_quality_terminal_20261030T204704Z/receipt.json`。V3 完整质量诊断和后续真实 Harbor 控制尚待完成。精确冻结输入的首次最强模型开发测试已分别在 `outputs/difficulty/joint-v2-first-20261030T202933Z/evaluation/` 和 `outputs/difficulty/joint-v3-first-20261030T203605Z/evaluation/` 实际启动，当前均无评分。候选、单题验收与完整确认集分别计数，不把新阶段启动或离线通过计为难度合格。
 
 配置位于 `config/`，角色提示词位于 `prompts/`，节点与模板位于 `src/sheets_factory/`，输入位于 `data/`，运行数据和面板审计位于 `outputs/`。密钥仅保存在环境变量或被忽略的 `.secrets/`。
 
@@ -89,7 +89,7 @@ EUSES 下载与候选筛选可单独执行：
 
 统计分开记录源使用数、有产出源数、候选数和最终题量。源转化率、候选转化率及每源产量各自说明分母。Token 来自实际 CLI 事件；费用没有可靠证据时显示未知。
 
-2026-10-30 的组合难度迭代另有只读核算快照：12:30 UTC 起的明确实验范围、主生产轮、四个开发样题及三个后续质量运行合计 49 次逻辑模型调用，已知 token 下界为 49,445,579，15 次调用的核心用量未知，部分中断调用也可能存在未报告尾部；没有可归因的精确供应商账单。该范围排除更早的项目、组合资产与循环模型实验，不与下面的历史 40 题统计混加。逐调用去重清单位于本地 `outputs/research/composite_accounting_20261030T195200Z/receipt.json`，未知用量没有按零计；原 18:45 快照保留。
+2026-10-30 的组合难度迭代另有只读核算快照：12:30 UTC 起的明确实验范围、主生产轮、七个开发样题及五个后续质量运行合计 61 次逻辑模型调用，已知 token 下界为 55,163,286，21 次调用的核心用量未知，28 次调用有未报告或可能未报告的尾部；其中两次强模型测试及部分诊断仍在运行，不能将未知部分算为零。没有可归因的精确供应商账单，运行器按本地价格表计算的估价不作供应商实付。该范围排除更早的项目、组合资产与循环模型实验，不与下面的历史 40 题统计混加。逐调用去重清单位于本地 `outputs/research/composite_accounting_20261030T204802Z/receipt.json`，原快照保留。
 
 完成运行 `20261029T121133Z-7bf764`：实际使用 49 个来源工作簿，创建 83 个候选，合格 40 题（两类各 20 题），拒绝 43 个候选。候选转化率为 40/83 = 48.19%；22 个来源贡献合格题，源转化率为 22/49 = 44.90%。离线画像数量、种子池数量与正式使用数量分别统计。
 
