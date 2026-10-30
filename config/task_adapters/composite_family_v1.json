@@ -1,0 +1,16 @@
+{
+  "adapter": "composite_monetary_complete_v1",
+  "version": 1,
+  "families": [
+    "lease.measurement_pv", "lease.depreciation", "lease.interest", "lease.nominal_payment",
+    "regulatory.real_return", "operating.loan_interest", "holding.claims_haircut",
+    "contingent.variable_rent", "waterfall.preference_accrual"
+  ],
+  "max_roots": 100000,
+  "source_presentation": "only_independently_audited_exact_finite_numeric_zero_formulas",
+  "root_impact_validation": "mixed_DAG_SCC_pending",
+  "source_certification": "original_audits_and_unique_source_cycle_with_new_full_exact_value_and_formula_allowlist_proof_required",
+  "counterfactual_certification": "local_fixed_point_own_value_lower_bounds_in_both_contexts_no_global_uniqueness_claim",
+  "actual_LO_permitted_for_this_preflight": false,
+  "difficulty_measured": false
+}
