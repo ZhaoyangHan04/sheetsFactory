@@ -178,7 +178,7 @@ class RepairNode(BaseNode):
         if not routes or any(route['route_class'] != 'repair'
             or issues.get(route['issue_id'], {}).get('certainty') != 'confirmed' for route in routes):
             raise TaskRejected('Content repair requires confirmed repair-class routes; collect evidence or retry infrastructure first')
-        payload = {**authoring_source_context(ctx), 'construction_contract': construction_contract(ctx.mode),
+        payload = {**authoring_source_context(ctx), 'construction_contract': construction_contract(ctx.mode, ctx.config),
                    'task_mode': ctx.mode, 'current_plan': ctx.data['plan'],
                    'diagnosis': ctx.data.get('diagnosis'), 'construction_error': ctx.data.get('construction_error'),
                    'assigned_repair_routes': routes,

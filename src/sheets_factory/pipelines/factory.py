@@ -110,6 +110,9 @@ class FactoryPipeline(BasePipeline):
         return context
 
     def _claim_targets(self, context):
+        if 'mask_ranges' in context.data['plan']:
+            from ..nodes.construction import compile_mask_ranges
+            context.data['plan'] = compile_mask_ranges(context.data['plan'], context.data['baseline'], context.mode, context.config)
         targets = frozenset((edit['sheet'], edit['cell']) for edit in context.data['plan'].get('edits', []))
         if not targets:
             raise TaskRejected('Q06: task plan contains no target cells')

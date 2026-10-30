@@ -85,7 +85,7 @@ def main(argv=None):
         agent_file = root / 'config/agents.yaml'
         agent_settings = yaml.safe_load(agent_file.read_text()) if agent_file.exists() else {}
         config['agents'] = {**llm_settings, 'roles': agent_settings.get('roles', {}), **config.get('agents', {})}
-        config['prompt_overrides'] = agent_settings.get('prompts', {})
+        config['prompt_overrides'] = {**agent_settings.get('prompts', {}), **config.get('prompt_overrides', {})}
         if args.count is not None:
             if args.count < 2:
                 parser.error('--count must be at least 2 to include both task modes')

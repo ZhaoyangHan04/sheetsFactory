@@ -3,12 +3,14 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from copy import deepcopy
 from pathlib import Path
 import re
 import shutil
 import sys
 
 import openpyxl
+from openpyxl.utils.cell import range_boundaries
 
 from ..core.node import BaseNode, TaskRejected
 from ..workbook import profile_workbook, compare_workbooks, formula_references
@@ -24,7 +26,7 @@ def prompt(ctx, name):
     return (Path(ctx.config['project_root']) / 'prompts' / filename).read_text()
 
 
-def construction_contract(mode=None):
+def construction_contract(mode=None, config=None):
     """Machine-readable executor limits, distinct from authoring preferences."""
     modes = {
         'financial_modeling': {'edit_count': {'min': 6, 'max': 80}, 'after_must_be_null': True,
@@ -34,9 +36,20 @@ def construction_contract(mode=None):
     }
     if mode is not None and mode not in modes:
         raise ValueError('Unsupported construction mode: ' + str(mode))
-    return {'version': 1, 'active_mode': mode, 'modes': modes,
-        'planning_preferences_only': {'financial_modeling_edit_count': [6, 20],
-                                      'debugging_edit_count': [2, 4]},
+    settings = (config or {}).get('construction', {})
+    for name, maximum in settings.get('max_edit_count', {}).items():
+        if name not in modes or type(maximum) is not int or not modes[name]['edit_count']['min'] <= maximum <= 4096:
+            raise ValueError('Invalid configured construction edit limit')
+        modes[name]['edit_count']['max'] = maximum
+    preferences = {'financial_modeling_edit_count': [6, 20], 'debugging_edit_count': [2, 4]}
+    preferences.update(settings.get('planning_preferences_only', {}))
+    return {'version': 2, 'active_mode': mode, 'modes': modes,
+        'planning_preferences_only': preferences,
+        'range_authoring': {'financial_modeling_only': True, 'field': 'mask_ranges',
+            'item_fields': ['sheet', 'range', 'reason', 'business_rule'],
+            'existing_formula_cells_only': True, 'nonformula_cells_preserved': True,
+            'before_assertions_compiled_from_immutable_baseline': True,
+            'overlapping_targets_rejected': True, 'max_ranges': 64},
         'scenario_inputs': {'max_count': 40, 'allowed_original_cells': ['numeric', 'blank'],
             'original_must_not_be_formula': True, 'before_must_match_original_exactly': True,
             'after_must_be_finite_numeric_and_not_boolean': True,
@@ -57,6 +70,66 @@ def construction_contract(mode=None):
             'baseline_formula_correction_supported': False, 'immutable_source_and_baseline': True,
             'verbal_scope_exclusions_cannot_remove_affected_cells': True,
             'missing_source_evidence_requires_unrepairable_not_invented_data': True}}
+
+
+def compile_mask_ranges(plan, baseline, mode, config=None):
+    """Expand declarative masks to asserted edits, without changing a workbook.
+
+    Range proposals save authors from transcribing hundreds of source formulas.
+    Every resulting edit still passes the normal per-cell business, impact and
+    full-closure quality gates. No reference correctness follows from expansion.
+    """
+    if 'mask_ranges' not in plan:
+        return plan
+    ranges = plan['mask_ranges']
+    if mode != 'financial_modeling' or not isinstance(ranges, list) or not 1 <= len(ranges) <= 64:
+        raise TaskRejected('Q06: mask_ranges requires 1 through 64 financial-modeling ranges')
+    result = deepcopy(plan)
+    edits = result.setdefault('edits', [])
+    if not isinstance(edits, list) or any(not isinstance(e, dict) or not e.get('sheet') or not e.get('cell') for e in edits):
+        raise TaskRejected('Q06: explicit mask edits are malformed')
+    seen = {(e['sheet'], e['cell']) for e in edits}
+    if len(seen) != len(edits):
+        raise TaskRejected('Q06: duplicate explicit mask targets')
+    maximum = construction_contract(mode, config)['modes'][mode]['edit_count']['max']
+    book = openpyxl.load_workbook(baseline, keep_links=False)
+    receipts = []
+    try:
+        for group in ranges:
+            if not isinstance(group, dict) or any(not isinstance(group.get(k), str) or not group[k].strip()
+                    for k in ('sheet', 'range', 'reason', 'business_rule')):
+                raise TaskRejected('Q06: a mask range lacks its coordinates or business evidence')
+            if group['sheet'] not in book.sheetnames or not re.fullmatch(
+                    r'\$?[A-Z]{1,3}\$?[1-9][0-9]{0,6}(?::\$?[A-Z]{1,3}\$?[1-9][0-9]{0,6})?', group['range']):
+                raise TaskRejected('Q06: invalid mask range or nonexistent sheet')
+            left, top, right, bottom = range_boundaries(group['range'])
+            if left > right or top > bottom or right > 16384 or bottom > 1048576 or (right-left+1)*(bottom-top+1) > 200000:
+                raise TaskRejected('Q06: mask range exceeds supported profile coverage')
+            added = []
+            for row in book[group['sheet']].iter_rows(min_row=top, max_row=bottom, min_col=left, max_col=right):
+                for cell in row:
+                    if cell.data_type != 'f':
+                        continue
+                    key = (group['sheet'], cell.coordinate)
+                    if key in seen:
+                        raise TaskRejected('Q06: mask ranges overlap another target')
+                    if not isinstance(cell.value, str):
+                        raise TaskRejected('Q10: range contains unsupported array or shared formula objects')
+                    seen.add(key)
+                    edits.append({'sheet': group['sheet'], 'cell': cell.coordinate,
+                        'before': cell.value, 'after': None, 'reason': group['reason'], 'business_rule': group['business_rule']})
+                    added.append(cell.coordinate)
+                    if len(edits) > maximum:
+                        raise TaskRejected(f'Q06: expanded mask exceeds configured maximum={maximum}')
+            if not added:
+                raise TaskRejected('Q06: mask range contains no existing formulas')
+            receipts.append({'proposal': deepcopy(group), 'expanded_formula_cells': added})
+    finally:
+        book.close()
+    result.pop('mask_ranges')
+    result['range_authoring_receipt'] = {'baseline_sha256': digest(baseline), 'groups': receipts,
+        'expanded_edit_count': len(edits), 'source_workbook_modified': False}
+    return result
 
 
 def authoring_source_context(ctx):
@@ -166,7 +239,7 @@ class PlanNode(BaseNode):
                 previous.extend({'mode': mode, 'title': task.get('title'),
                                  'cells': [(e['sheet'], e['cell']) for e in task.get('edits', [])]}
                                 for mode, task in prior.items() if mode in ['financial_modeling', 'debugging'] and task)
-            payload = {**authoring_source_context(ctx), 'construction_contract': construction_contract(),
+            payload = {**authoring_source_context(ctx), 'construction_contract': construction_contract(config=ctx.config),
                        'variant': variant, 'previous_target_groups': previous,
                        'known_source_business_issues': ctx.data.get('source_business_issues', []),
                        'finance_module_evidence': ctx.data.get('finance_evidence', {}),
@@ -178,6 +251,10 @@ class PlanNode(BaseNode):
         plan = plans.get(ctx.mode)
         if not plan:
             raise TaskRejected('Planner rejected source for this mode: ' + str(plans.get('source_assessment'))[:600])
+        # The revision controller expands range proposals before claiming their
+        # exact cells; duplicate checks there use the complete compiled set.
+        if plan.get('mask_ranges'):
+            return {'plan': plan, 'source_assessment': plans.get('source_assessment', {})}
         selected = {(e['sheet'], e['cell']) for e in plan.get('edits', [])}
         for item in ctx.data['source_cache'].glob('task_plans_v*.json'):
             if item == path:
@@ -190,9 +267,9 @@ class PlanNode(BaseNode):
         return {'plan': plan, 'source_assessment': plans.get('source_assessment', {})}
 
 
-def validate_plan(plan, baseline, mode):
+def validate_plan(plan, baseline, mode, config=None):
     edits = plan.get('edits', [])
-    contract = construction_contract(mode)
+    contract = construction_contract(mode, config)
     bounds = contract['modes'][mode]['edit_count']
     if len(edits) < bounds['min'] or len(edits) > bounds['max']:
         raise TaskRejected('Q06: target group size outside supported construction contract '
@@ -277,7 +354,7 @@ class ConstructNode(BaseNode):
         goal = private / 'goal.xlsx'
         scenario = ctx.data['plan'].get('scenario_inputs', [])
         if scenario:
-            scenario_limit = construction_contract(ctx.mode)['scenario_inputs']['max_count']
+            scenario_limit = construction_contract(ctx.mode, ctx.config)['scenario_inputs']['max_count']
             if len(scenario) > scenario_limit:
                 raise TaskRejected(f'Scenario input set exceeds supported scope (actual={len(scenario)}, max={scenario_limit})')
             base = openpyxl.load_workbook(ctx.data['baseline'], keep_links=False)
@@ -295,7 +372,7 @@ class ConstructNode(BaseNode):
             ctx.save('scenario_inputs.json', scenario)
         else:
             shutil.copy2(ctx.data['baseline'], goal)
-        validation = validate_plan(ctx.data['plan'], goal, ctx.mode)
+        validation = validate_plan(ctx.data['plan'], goal, ctx.mode, ctx.config)
         book = openpyxl.load_workbook(goal, keep_links=False)
         edits = ctx.data['plan']['edits']
         for edit in edits:
