@@ -2,16 +2,18 @@
 import asyncio
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 
 from openpyxl import Workbook
 import pytest
 
 from sheets_factory.evaluation.frontier import (
-    EFFORT, MODEL, FrontierError, LocalCodex, _job_config, _persist_failure, classify_result,
+    EFFORT, MODEL, FrontierError, LocalCodex, _execution_environment, _job_config, _persist_failure, classify_result,
     collect_attempts, freeze_selection, run_evaluation, summarize,
 )
 from sheets_factory.evaluation.harbor import export_harbor, inspect_export
+from sheets_factory.llm.codex import CodexCLI
 
 
 def make_release(tmp_path, count=2):
@@ -184,6 +186,7 @@ def test_job_uses_actual_harbor_agent_and_no_retries(tmp_path, frozen):
     assert config.agents[0].override_timeout_sec == 1800
     assert config.agents[0].kwargs['reasoning_effort'] == EFFORT
     assert config.agents[0].skip_model_parsing is True
+    assert config.agents[0].model_api_format.value == 'openai_responses'
     LocalCodex.preflight(config.agents[0].kwargs)
     assert all(str(task.path) == frozen['tasks'][index]['task_directory'] for index, task in enumerate(config.tasks))
 
@@ -222,6 +225,39 @@ def test_error_diagnostics_keep_cause_without_credentials(tmp_path, monkeypatch)
     assert report['exception_type'] == 'ValueError'
     assert 'Unknown native_binary option' in report['message']
     assert 'ValueError' in report['traceback'] and '[REDACTED]' in report['traceback']
+
+
+@pytest.mark.parametrize('failure', [False, True])
+def test_worker_environment_bypasses_proxy_and_restores_on_error(tmp_path, monkeypatch, failure):
+    for name in ['HTTPS_PROXY', 'all_proxy', 'NO_PROXY', 'PROXY']:
+        monkeypatch.setenv(name, 'fixture-inherited-proxy')
+    monkeypatch.setenv('SHEETS_FACTORY_API_KEY', 'fixture-original-credential')
+    monkeypatch.setenv('UNRELATED_SETTING', 'preserved')
+    original = dict(os.environ)
+    backend = CodexCLI(tmp_path, tmp_path, None, {})
+    try:
+        with _execution_environment(backend, 'fixture-runtime-credential'):
+            assert not any(name.upper().endswith('_PROXY') or name.upper() == 'PROXY' for name in os.environ)
+            assert os.environ['SHEETS_FACTORY_API_KEY'] == 'fixture-runtime-credential'
+            assert os.environ['UNRELATED_SETTING'] == 'preserved'
+            if failure:
+                raise RuntimeError('fixture setup error')
+    except RuntimeError:
+        assert failure
+    assert dict(os.environ) == original
+
+
+def test_explicit_protocol_resolves_credentials_without_litellm_catalog(tmp_path, frozen, monkeypatch):
+    import harbor.agents.agent_auth_resolution as auth
+    from harbor.agents.factory import AgentFactory
+
+    def forbidden_catalog(provider):
+        raise AssertionError('Explicit native protocol must not require the LiteLLM provider catalog')
+
+    monkeypatch.setattr(auth, '_is_litellm_provider', forbidden_catalog)
+    monkeypatch.setenv('SHEETS_FACTORY_API_KEY', 'fixture-preflight-credential')
+    config = _job_config(tmp_path, frozen, concurrency=1, binary='/usr/bin/codex', base_url='https://test.invalid/v1')
+    AgentFactory.run_preflight(config.agents[0], skip_credential_checks=False)
 
 
 @pytest.mark.parametrize('mutate,infra', [(False, False), (True, False), (False, True)])

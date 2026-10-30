@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import Counter
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
@@ -109,6 +110,29 @@ def _persist_failure(run_dir, exc, *, secrets=()):
     _write(Path(run_dir) / 'private/evaluation_error.json', {
         'exception_type': type(exc).__name__, 'message': redact(str(exc)),
         'traceback': redact(''.join(traceback.format_exception(exc)))})
+
+
+@contextmanager
+def _execution_environment(backend, key):
+    """Use backend direct-connect rules for this worker and restore its environment."""
+    clean = backend._environment(key)
+    clean['SHEETS_FACTORY_API_KEY'] = key
+    changed = {name for name in os.environ if name not in clean}
+    changed.update({backend.env_key, 'SHEETS_FACTORY_API_KEY'})
+    original = {name: os.environ.get(name) for name in changed}
+    try:
+        for name in changed:
+            if name in clean:
+                os.environ[name] = clean[name]
+            else:
+                os.environ.pop(name, None)
+        yield
+    finally:
+        for name, value in original.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
 
 
 class LocalCodexOptions(CodexOptions):
@@ -276,6 +300,7 @@ def _job_config(run_dir, selection, *, concurrency, binary, base_url):
         'extra_instructions': [PROMPT],
         'agents': [{'import_path': 'sheets_factory.evaluation.frontier:LocalCodex',
             'model_name': MODEL, 'base_url': base_url, 'model_api_key_name': 'SHEETS_FACTORY_API_KEY',
+            'model_api_format': 'openai_responses',
             'skip_model_parsing': True,
             'override_timeout_sec': selection['timeout_seconds'], 'override_setup_timeout_sec': 180,
             'kwargs': {'reasoning_effort': EFFORT, 'native_binary': str(binary),
@@ -288,8 +313,8 @@ async def execute_evaluation(run_dir, selection, audit, *, concurrency=4, backen
     run_dir = Path(run_dir).resolve()
     backend = CodexCLI(Path(__file__).resolve().parents[3], run_dir, audit, backend_config or {})
     key, endpoint = backend._credentials()
-    previous = os.environ.get('SHEETS_FACTORY_API_KEY')
-    os.environ['SHEETS_FACTORY_API_KEY'] = key
+    environment = _execution_environment(backend, key)
+    environment.__enter__()
     try:
         config = _job_config(run_dir, selection, concurrency=concurrency, binary=backend.binary, base_url=endpoint)
         _write(run_dir / 'harbor_job_config.json', json.loads(config.model_dump_json()))
@@ -333,10 +358,7 @@ async def execute_evaluation(run_dir, selection, audit, *, concurrency=4, backen
         _persist_failure(run_dir, exc, secrets=(key,))
         raise
     finally:
-        if previous is None:
-            os.environ.pop('SHEETS_FACTORY_API_KEY', None)
-        else:
-            os.environ['SHEETS_FACTORY_API_KEY'] = previous
+        environment.__exit__(None, None, None)
 
 
 def run_evaluation(source_manifest, run_dir, *, phase, task_ids=None, task_root=None,
