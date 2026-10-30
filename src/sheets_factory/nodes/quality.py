@@ -9,7 +9,8 @@ import subprocess
 import uuid
 import re
 
-from ..core.node import BaseNode, TaskRejected
+from ..core.node import BaseNode, TaskRejected, CooperativeCancelled
+from ..core.audit import utcnow
 from ..workbook import compare_workbooks
 from ..checkers import DiagnosisRunner
 from ..checkers.router import route_issues
@@ -77,13 +78,170 @@ def candidate_difficulty_context(config):
             'fresh_frozen_confirmation_required': True}}
 
 
+def _recovery_sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def _recovery_artifacts(ctx, result):
+    work, replay = Path(result['workspace']), Path(result['replay']['directory'])
+    attempt = Path(result['attempt_record_path']).parent
+    return {'workspace_input': work / 'input.xlsx', 'workspace_instruction': work / 'instruction.md',
+        'workspace_profile': work / 'public_profile.json', 'workspace_program': work / 'recovery.py',
+        'replay_input': replay / 'input.xlsx', 'replay_program': replay / 'recovery.py',
+        'replay_output': replay / 'output.xlsx', 'attempt_recovered': attempt / 'recovered.xlsx',
+        'recovered': ctx.revision_dir / 'private/recovered.xlsx'}
+
+
+def _recovery_binding(ctx, result):
+    return {'version': 1, 'task_id': ctx.task_id, 'revision': ctx.revision,
+        'task_revision_hash': ctx.data.get('revision_hash'),
+        'input_sha256': _recovery_sha(ctx.data['input']),
+        'instruction_sha256': hashlib.sha256(ctx.data['instruction'].encode()).hexdigest(),
+        'goal_sha256': _recovery_sha(ctx.data['goal']),
+        'program_sha256': hashlib.sha256(result['program'].encode()).hexdigest(),
+        'artifacts': {name: {'path': str(path.resolve()), 'sha256': _recovery_sha(path)}
+                      for name, path in _recovery_artifacts(ctx, result).items()}}
+
+
+def _recovery_local_file(path, ctx):
+    path, root = Path(path).absolute(), ctx.revision_dir.resolve()
+    return (path.is_relative_to(root) and path.resolve().is_relative_to(root) and path.is_file()
+        and not any(p.is_symlink() for p in (path, *path.parents) if p.is_relative_to(root)))
+
+
+def _recovery_replay_command(ctx, replay):
+    return ['docker', 'run', '--rm', '--user', '0', '--network', 'none',
+        '--cap-drop', 'ALL', '--cap-add', 'DAC_OVERRIDE', '--security-opt', 'no-new-privileges',
+        '--memory', '2g', '--pids-limit', '256', '--volume', str(Path(replay).resolve()) + ':/workspace:rw',
+        '--workdir', '/workspace', '--entrypoint', '/usr/bin/python3',
+        ctx.config['engine']['image'], '/workspace/recovery.py']
+
+
+def _recovery_public_execution_valid(ctx, candidate):
+    compiler, replay = candidate.get('compiler') or {}, candidate.get('replay') or {}
+    program = candidate.get('program')
+    if (candidate.get('public_information_only') is not True or not ctx.data.get('revision_hash')
+            or compiler.get('assumptions_added') or compiler.get('unresolved_questions')
+            or type(replay.get('returncode')) is not int or replay['returncode'] != 0
+            or replay.get('fresh_network_disabled_container') is not True
+            or not isinstance(program, str) or not program or compiler.get('code') != program
+            or replay.get('command') != _recovery_replay_command(ctx, replay['directory'])):
+        return False
+    files = _recovery_artifacts(ctx, candidate)
+    required = ('workspace_input', 'workspace_instruction', 'workspace_profile', 'workspace_program',
+                'replay_input', 'replay_program', 'replay_output', 'attempt_recovered')
+    if not all(_recovery_local_file(files[name], ctx) for name in required):
+        return False
+    return (files['workspace_input'].read_bytes() == Path(ctx.data['input']).read_bytes()
+        and files['replay_input'].read_bytes() == Path(ctx.data['input']).read_bytes()
+        and files['workspace_instruction'].read_bytes() == ctx.data['instruction'].encode()
+        and files['workspace_profile'].read_bytes() == json.dumps(ctx.data.get('public_profile', {}), ensure_ascii=False).encode()
+        and files['workspace_program'].read_bytes() == program.encode()
+        and files['replay_program'].read_bytes() == program.encode()
+        and replay.get('initial_files') == {'input.xlsx': _recovery_sha(ctx.data['input']),
+            'recovery.py': hashlib.sha256(program.encode()).hexdigest()})
+
+
+def _valid_recovery_witness(ctx, candidate):
+    """Validate an actual new receipt and bytes, never a bare verified flag."""
+    try:
+        if not isinstance(candidate, dict) or candidate.get('verified') is not True:
+            return False
+        record_path = Path(candidate['attempt_record_path'])
+        checksum_path = record_path.parent / 'attempt.sha256'
+        if (record_path.parent.parent.absolute() != (ctx.revision_dir / 'private/recovery_attempts').absolute()
+                or not _recovery_local_file(record_path, ctx) or not _recovery_local_file(checksum_path, ctx)):
+            return False
+        raw = record_path.read_bytes()
+        checksum = _recovery_sha(record_path)
+        if (candidate.get('attempt_record_sha256') != checksum
+                or checksum_path.read_text().strip() != checksum):
+            return False
+        stored = json.loads(raw)
+        if stored != {k: v for k, v in candidate.items() if k != 'attempt_record_sha256'}:
+            return False
+        if not _recovery_public_execution_valid(ctx, candidate):
+            return False
+        files = _recovery_artifacts(ctx, candidate)
+        if not all(_recovery_local_file(path, ctx) for path in files.values()):
+            return False
+        binding = candidate.get('witness_binding') or {}
+        if not binding.get('task_revision_hash') or binding != _recovery_binding(ctx, candidate):
+            return False
+        if files['attempt_recovered'].read_bytes() != files['recovered'].read_bytes():
+            return False
+        actual = compare_workbooks(ctx.data['input'], ctx.data['goal'], files['recovered'])
+        return actual.get('reward') == 1 and actual == candidate.get('comparison')
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return False
+
+
+def _reusable_recovery(ctx):
+    candidates = [ctx.data.get('recovery')]
+    aggregate = ctx.revision_dir / 'private/independent_recovery.json'
+    if aggregate.is_file():
+        try:
+            candidates.append(json.loads(aggregate.read_text()))
+        except (OSError, ValueError):
+            pass
+    for path in sorted((ctx.revision_dir / 'private/recovery_attempts').glob('attempt_*/attempt.json')):
+        try:
+            candidate = json.loads(path.read_text())
+            candidate['attempt_record_sha256'] = (path.parent / 'attempt.sha256').read_text().strip()
+            candidates.append(candidate)
+        except (OSError, ValueError, TypeError):
+            continue
+    seen = set()
+    for candidate in candidates:
+        # The current context, aggregate and immutable history often contain the
+        # same receipt. Recheck its workbook once, without treating duplicates as
+        # another opportunity to obtain a passing comparison.
+        fingerprint = json.dumps(candidate, sort_keys=True, default=str)
+        if fingerprint in seen:
+            continue
+        seen.add(fingerprint)
+        if _valid_recovery_witness(ctx, candidate):
+            return candidate
+    return None
+
+
+def _recovery_calls(ctx):
+    snapshot = getattr(ctx.audit, 'snapshot', None)
+    if not callable(snapshot):
+        return {}
+    calls = snapshot().get('llm_calls', [])
+    return {call['call_id']: call for call in calls if call.get('call_id')
+            and call.get('task_id') == ctx.task_id and call.get('stage') == 'independent_recovery'}
+
+
 class RecoveryNode(BaseNode):
     node_id = 'independent_recovery'
 
     def execute(self, ctx):
-        work = prepare_workspace(ctx, 'recovery_public')
-        result = {'public_information_only': True, 'workspace': str(work), 'verified': False}
+        reusable = _reusable_recovery(ctx)
+        if reusable is not None:
+            ctx.save('independent_recovery.json', reusable)
+            ctx.audit.emit('recovery.witness_reused', task_id=ctx.task_id, revision=ctx.revision,
+                attempt_id=reusable['attempt_id'], binding_sha256=hashlib.sha256(json.dumps(
+                    reusable['witness_binding'], sort_keys=True).encode()).hexdigest())
+            return {'recovery': reusable}
+        history = ctx.revision_dir / 'private/recovery_attempts'
+        history.mkdir(parents=True, exist_ok=True)
+        index = 0
+        while True:
+            attempt = history / f'attempt_{index:06d}'
+            try:
+                attempt.mkdir(mode=0o700)
+                break
+            except FileExistsError:
+                index += 1
+        result = {'public_information_only': True, 'verified': False, 'attempt_id': attempt.name,
+            'attempt_record_path': str(attempt / 'attempt.json'), 'started_at': utcnow(),
+            'task_revision_hash': ctx.data.get('revision_hash')}
+        previous_calls = set(_recovery_calls(ctx))
         try:
+            work = prepare_workspace(ctx, 'recovery_public')
+            result['workspace'] = str(work)
             (work / 'public_profile.json').write_text(json.dumps(ctx.data.get('public_profile', {}), ensure_ascii=False))
             public_payload = {'instruction': ctx.data['instruction'],
                 'profile': compact_profile(ctx.data['public_profile']) if ctx.data.get('public_profile') else {}}
@@ -94,7 +252,10 @@ class RecoveryNode(BaseNode):
             if compiler.get('assumptions_added') or compiler.get('unresolved_questions'):
                 raise ValueError('Public reconstruction requires unresolved or newly invented assumptions')
             code = compiler.get('code')
+            if not isinstance(code, str) or not code.strip():
+                raise ValueError('Compiler did not return a runnable recovery program')
             if isinstance(code, str) and code.strip():
+                result['program'] = code
                 compile(code, 'recovery.py', 'exec')
                 (work / 'recovery.py').write_text(code)
                 # Re-execute the witness from only public input and its program in a
@@ -104,23 +265,57 @@ class RecoveryNode(BaseNode):
                 replay.mkdir(parents=True)
                 shutil.copy2(ctx.data['input'], replay / 'input.xlsx')
                 shutil.copy2(work / 'recovery.py', replay / 'recovery.py')
-                execution = subprocess.run(['docker', 'run', '--rm', '--user', '0', '--network', 'none',
-                    '--cap-drop', 'ALL', '--cap-add', 'DAC_OVERRIDE', '--security-opt', 'no-new-privileges',
-                    '--memory', '2g', '--pids-limit', '256', '--volume', str(replay.resolve()) + ':/workspace:rw',
-                    '--workdir', '/workspace', '--entrypoint', '/usr/bin/python3',
-                    ctx.config['engine']['image'], '/workspace/recovery.py'], capture_output=True, text=True, timeout=120)
-                result['replay'] = {'directory': str(replay), 'returncode': execution.returncode,
-                                    'stdout': execution.stdout[-4000:], 'stderr': execution.stderr[-4000:]}
+                command = _recovery_replay_command(ctx, replay)
+                initial = {'input.xlsx': _recovery_sha(replay / 'input.xlsx'),
+                           'recovery.py': _recovery_sha(replay / 'recovery.py')}
+                result['replay'] = {'directory': str(replay), 'returncode': None,
+                                    'fresh_network_disabled_container': True, 'initial_files': initial,
+                                    'command': command}
+                execution = subprocess.run(command, capture_output=True, text=True, timeout=120)
+                (attempt / 'replay.stdout.txt').write_text(execution.stdout)
+                (attempt / 'replay.stderr.txt').write_text(execution.stderr)
+                result['replay'].update(returncode=execution.returncode,
+                    stdout=execution.stdout[-4000:], stderr=execution.stderr[-4000:],
+                    stdout_file=str(attempt / 'replay.stdout.txt'), stderr_file=str(attempt / 'replay.stderr.txt'))
                 if execution.returncode or not (replay / 'output.xlsx').is_file():
                     raise ValueError('Independent recovery program did not reproduce an output from public input')
-                calculated = ctx.engine.recalculate(replay / 'output.xlsx', ctx.revision_dir / 'private/recovered.xlsx')
+                calculated = ctx.engine.recalculate(replay / 'output.xlsx', attempt / 'recovered.xlsx')
+                if not _recovery_public_execution_valid(ctx, result):
+                    raise ValueError('Recovery execution is not bound to the unchanged public inputs and returned program')
                 comparison = compare_workbooks(ctx.data['input'], ctx.data['goal'], calculated)
                 result['comparison'] = comparison
-                result['verified'] = comparison.get('reward') == 1
-                result['program'] = (work / 'recovery.py').read_text()
+                if comparison.get('reward') == 1:
+                    shutil.copy2(calculated, ctx.revision_dir / 'private/recovered.xlsx')
+                    result['replay_output_sha256'] = _recovery_sha(replay / 'output.xlsx')
+                    result['recovered_sha256'] = _recovery_sha(calculated)
+                    result['witness_binding'] = _recovery_binding(ctx, result)
+                    result['verified'] = True
+        except CooperativeCancelled:
+            result.update(status='cancelled', error='Explicit cooperative stop before further recovery work')
+            raise
         except Exception as exc:
             result['error'] = str(exc)
-        ctx.save('independent_recovery.json', result)
+            result['error_type'] = type(exc).__name__
+        finally:
+            calls = _recovery_calls(ctx)
+            keys = ('call_id', 'model', 'reasoning_effort', 'status', 'input_tokens', 'cached_input_tokens',
+                    'cache_write_input_tokens', 'output_tokens', 'reasoning_output_tokens', 'duration_ms')
+            result['usage_calls'] = [{k: call.get(k) for k in keys} for call_id, call in calls.items()
+                                     if call_id not in previous_calls]
+            result['usage_attribution'] = 'audit_call_ids' if result['usage_calls'] else 'unavailable'
+            result['finished_at'] = utcnow()
+            result.setdefault('status', 'verified' if result['verified'] else 'unverified')
+            raw = (json.dumps(result, ensure_ascii=False, indent=2, default=str) + '\n').encode()
+            record = attempt / 'attempt.json'
+            with record.open('xb') as stream:
+                stream.write(raw)
+            checksum = hashlib.sha256(raw).hexdigest()
+            with (attempt / 'attempt.sha256').open('x') as stream:
+                stream.write(checksum + '\n')
+            record.chmod(0o444)
+            (attempt / 'attempt.sha256').chmod(0o444)
+            result['attempt_record_sha256'] = checksum
+            ctx.save('independent_recovery.json', result)
         return {'recovery': result}
 
 
