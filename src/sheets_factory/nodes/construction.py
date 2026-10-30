@@ -41,7 +41,7 @@ def construction_contract(mode=None, config=None):
         raise ValueError('Unsupported construction mode: ' + str(mode))
     settings = (config or {}).get('construction', {})
     root_impact_method = settings.get('root_impact_validation', 'strict')
-    if root_impact_method not in {'strict', 'separated_roots', 'batched_separated_roots'}:
+    if root_impact_method not in {'strict', 'separated_roots', 'batched_separated_roots', 'shadow_roots'}:
         raise ValueError('Invalid construction.root_impact_validation')
     max_root_impact_batches = settings.get('max_root_impact_batches', 256)
     if type(max_root_impact_batches) is not int or not 1 <= max_root_impact_batches <= 2048:
@@ -689,6 +689,28 @@ class ConstructNode(BaseNode):
                 'actual_batch_LO_execution_count': certificate['actual_batch_LO_execution_count'],
                 'individual_LO_executions': False, 'marginal_LO_executions': False,
                 'counts_are_lower_bounds': True}
+        elif ctx.mode == 'debugging' and root_method == 'shadow_roots':
+            from ..checkers.shadow_roots import prove_shadow_root_impacts
+            from uuid import uuid4
+            limits = construction_contract(ctx.mode, ctx.config)['dependency_requirements']
+            certificate = prove_shadow_root_impacts(goal=goal, combined_input=input_file,
+                edits=edits, engine=ctx.engine,
+                directory=private / 'shadow_root_impact_probes' / uuid4().hex,
+                max_dependency_cells=limits['max_dependency_closure_cells'],
+                per_formula_reference_cells=limits['per_formula_reference_cells'])
+            ctx.save('shadow_roots_certificate.json', certificate)
+            ctx.audit.emit('root_impact_validation.result', task_id=ctx.task_id, revision=ctx.revision,
+                method=root_method, state=certificate.get('state'), passed=certificate.get('passed'),
+                root_count=len(edits), actual_shadow_LO_executions=certificate.get('actual_LO_execution_count'),
+                duration_ms=certificate.get('duration_ms'))
+            if certificate.get('state') == 'execution_error':
+                raise RuntimeError('Shadow root-impact recalculation failed: ' + str(certificate.get('reason')))
+            root_impacts = validate_shadow_root_certificate(certificate, goal, input_file, edits)
+            validation['root_impact_validation'] = {'method': root_method,
+                'proof_method': certificate['proof_method'], 'root_count': len(root_impacts),
+                'actual_shadow_LO_execution_count': certificate['actual_LO_execution_count'],
+                'individual_LO_executions': False, 'marginal_LO_executions': False,
+                'counts_are_lower_bounds': True, 'complete_per_root_changed_sets_claimed': False}
         elif ctx.mode == 'debugging':
             for index, edit in enumerate(edits):
                 one = openpyxl.load_workbook(goal, keep_links=False)
@@ -717,6 +739,61 @@ class ConstructNode(BaseNode):
         return {'input': input_file, 'goal': goal, 'public_profile': public_profile,
                 'delta': delta, 'construction_validation': validation, 'root_impacts': root_impacts,
                 'native_risk_guard': native_guard}
+
+
+def validate_shadow_root_certificate(certificate, goal, combined_input, edits):
+    """Accept complete two-context witnesses without claiming 2N executions."""
+    def reject(reason):
+        raise TaskRejected('Q06: shadow root-impact proof rejected: ' + reason)
+
+    if (certificate.get('passed') is not True or certificate.get('blocking') is not False
+            or certificate.get('state') != 'proven'):
+        reject(str(certificate.get('reason', 'incomplete proof')))
+    if (certificate.get('proof_method') != 'two_actual_scalar_shadow_contexts_under_complete_union_DAG'
+            or certificate.get('actual_LO_started_count') != 2
+            or certificate.get('actual_LO_execution_count') != 2
+            or certificate.get('counts_are_lower_bounds') is not True
+            or certificate.get('complete_per_root_changed_sets_claimed') is not False):
+        reject('invalid two-context execution or lower-bound contract')
+    edit_hash = hashlib.sha256(json.dumps(edits, sort_keys=True, ensure_ascii=False,
+        separators=(',', ':'), allow_nan=False).encode()).hexdigest()
+    if (certificate.get('goal_sha256') != digest(goal)
+            or certificate.get('combined_input_sha256') != digest(combined_input)
+            or certificate.get('edits_sha256') != edit_hash):
+        reject('context or edit identity does not match construction')
+    graph = certificate.get('union_graph', {})
+    if (graph.get('state') != 'proven' or graph.get('acyclic') is not True
+            or graph.get('all_reference_branches_included') is not True
+            or graph.get('all_before_after_formulas_included') is not True
+            or graph.get('frontier_omitted') is not False
+            or graph.get('all_ancestor_functions_pure_and_position_independent') is not True):
+        reject('complete pure union DAG is unproven')
+    contexts = certificate.get('contexts', [])
+    if (len(contexts) != 2 or {item.get('kind') for item in contexts} != {'individual', 'combined_marginal'}
+            or any(item.get('all_business_definitions_unchanged') is not True
+                or item.get('all_business_exact_typed_values_unchanged') is not True
+                or item.get('shadow_count') != len(edits) for item in contexts)):
+        reject('both complete invariant contexts are required')
+    impacts = certificate.get('root_impacts', [])
+    expected = [edit['sheet'] + '!' + edit['cell'] for edit in edits]
+    if len(impacts) != len(expected):
+        reject('certificate does not prove every declared root')
+    for index, (root, impact) in enumerate(zip(expected, impacts)):
+        check, marginal = impact.get('evidence', {}), impact.get('combined_marginal', {})
+        if (impact.get('root_index') != index or check.get('root_index') != index
+                or check.get('root') != root or check.get('individual_active') is not True
+                or check.get('combined_marginal_active') is not True
+                or marginal.get('edits_reversed') is not True
+                or marginal.get('base') != 'full_combined_mutation'):
+            reject('certificate does not prove every declared root')
+        for proof in (impact, marginal):
+            if (proof.get('proof_method') != 'actual_scalar_shadow_value_and_complete_union_DAG'
+                    or proof.get('expected_change_count') != 1 or proof.get('expected_changes') != [root]
+                    or proof.get('counts_are_lower_bounds') is not True
+                    or proof.get('actual_individual_LO_execution') is not False
+                    or proof.get('actual_context_shadow_LO_execution') is not True):
+                reject('root lower-bound evidence is incomplete or overstated')
+    return impacts
 
 
 def compact_target_regions(edits):
