@@ -218,6 +218,11 @@ class RecoveryNode(BaseNode):
     node_id = 'independent_recovery'
 
     def execute(self, ctx):
+        compiler_backend = ctx.config.get('recovery', {}).get('compiler_backend', 'llm')
+        if compiler_backend not in {'llm', 'project_journal'}:
+            raise ValueError('Unsupported recovery.compiler_backend')
+        if compiler_backend == 'project_journal' and ctx.data.get('finance_evidence', {}).get('financial_seed_verified') is not True:
+            raise TaskRejected('Journal reconstruction requires a verified financial source')
         reusable = _reusable_recovery(ctx)
         if reusable is not None:
             ctx.save('independent_recovery.json', reusable)
@@ -237,7 +242,7 @@ class RecoveryNode(BaseNode):
                 index += 1
         result = {'public_information_only': True, 'verified': False, 'attempt_id': attempt.name,
             'attempt_record_path': str(attempt / 'attempt.json'), 'started_at': utcnow(),
-            'task_revision_hash': ctx.data.get('revision_hash')}
+            'task_revision_hash': ctx.data.get('revision_hash'), 'compiler_backend': compiler_backend}
         previous_calls = set(_recovery_calls(ctx))
         try:
             work = prepare_workspace(ctx, 'recovery_public')
@@ -245,9 +250,16 @@ class RecoveryNode(BaseNode):
             (work / 'public_profile.json').write_text(json.dumps(ctx.data.get('public_profile', {}), ensure_ascii=False))
             public_payload = {'instruction': ctx.data['instruction'],
                 'profile': compact_profile(ctx.data['public_profile']) if ctx.data.get('public_profile') else {}}
-            compiler = ctx.llm.complete(prompt(ctx, 'recovery.md') + '\nPUBLIC INPUT JSON:\n' + json.dumps(public_payload, ensure_ascii=False),
-                role='recovery_compiler', task_id=ctx.task_id, stage=self.node_id, workspace=work, isolated=True,
-                timeout=ctx.config['agents']['timeout_seconds'])
+            if compiler_backend == 'project_journal':
+                from ..workbook.derived_gold.public_recovery import compile_public_project_recovery
+                compiler = {'code': compile_public_project_recovery(),
+                    'public_evidence_used': ['Public Scenario assumptions, model labels and business policies'],
+                    'assumptions_added': [], 'unresolved_questions': [],
+                    'implementation': 'independent_decimal_journal', 'is_llm_attempt': False}
+            else:
+                compiler = ctx.llm.complete(prompt(ctx, 'recovery.md') + '\nPUBLIC INPUT JSON:\n' + json.dumps(public_payload, ensure_ascii=False),
+                    role='recovery_compiler', task_id=ctx.task_id, stage=self.node_id, workspace=work, isolated=True,
+                    timeout=ctx.config['agents']['timeout_seconds'])
             result['compiler'] = compiler
             if compiler.get('assumptions_added') or compiler.get('unresolved_questions'):
                 raise ValueError('Public reconstruction requires unresolved or newly invented assumptions')
@@ -302,7 +314,8 @@ class RecoveryNode(BaseNode):
                     'cache_write_input_tokens', 'output_tokens', 'reasoning_output_tokens', 'duration_ms')
             result['usage_calls'] = [{k: call.get(k) for k in keys} for call_id, call in calls.items()
                                      if call_id not in previous_calls]
-            result['usage_attribution'] = 'audit_call_ids' if result['usage_calls'] else 'unavailable'
+            result['usage_attribution'] = ('audit_call_ids' if result['usage_calls'] else
+                'not_applicable_programmatic' if compiler_backend == 'project_journal' else 'unavailable')
             result['finished_at'] = utcnow()
             result.setdefault('status', 'verified' if result['verified'] else 'unverified')
             raw = (json.dumps(result, ensure_ascii=False, indent=2, default=str) + '\n').encode()
