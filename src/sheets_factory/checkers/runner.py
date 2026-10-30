@@ -184,7 +184,22 @@ class DiagnosisRunner:
                                         "artifact_scope": ["public_input|public_instruction|reference_goal|verifier|runtime|solver_output|solver_trace|unknown"]}],
                             "evidence_requests": []}}
             if visibility != "public_only":
-                payload["private"] = task_bundle.get("private", {})
+                private_config = (config or {}).get('diagnosis', config or {}).get('execution', {})
+                transport = private_config.get('reference_evidence_transport', 'complete_inline')
+                if transport == 'audited_summary':
+                    from .reference_evidence import reference_review_evidence
+                    directory = private_config.get('private_evidence_directory',
+                        self.root / 'outputs' / 'diagnostic_private_evidence')
+                    payload['private_evidence'] = reference_review_evidence(
+                        task_bundle.get('private', {}), directory)
+                    payload['private'] = payload['private_evidence']['private_summary']
+                    reference_prompt = self.root / 'prompts' / 'diagnosis_reference.md'
+                    payload['reference_review_instructions'] = reference_prompt.read_text()
+                    payload['reference_review_prompt_sha256'] = hashlib.sha256(reference_prompt.read_bytes()).hexdigest()
+                elif transport == 'complete_inline':
+                    payload["private"] = task_bundle.get("private", {})
+                else:
+                    raise ValueError('Unsupported privileged reference evidence transport')
                 payload["public_diagnosis"] = {k: v for k, v in assessments.items()
                                                if self.specs[k]["visibility"] == "public_only"}
             stable_payload = {key: value for key, value in payload.items() if key != 'diagnostic_run_id'}
