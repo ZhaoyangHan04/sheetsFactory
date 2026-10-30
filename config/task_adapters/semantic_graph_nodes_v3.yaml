@@ -1,0 +1,13 @@
+version: 1
+nodes:
+  normalize: sheets_factory.nodes.construction:NormalizeNode
+  profile: sheets_factory.nodes.construction:ProfileNode
+  plan: sheets_factory.pipelines.semantic_graph_admission:SemanticGraphPlanNode
+  construct: sheets_factory.pipelines.semantic_graph_admission:SemanticGraphConstructNode
+  instruction: sheets_factory.nodes.construction:InstructionNode
+  precheck: sheets_factory.nodes.construction:ControlsNode
+  independent_recovery: sheets_factory.nodes.quality:RecoveryNode
+  trajectory: sheets_factory.nodes.quality:TrajectoryNode
+  diagnose: sheets_factory.nodes.quality:DiagnoseNode
+  repair: sheets_factory.task_adapters.public_workbook_scope:ScopeRepairNode
+  export: sheets_factory.nodes.quality:ExportNode
