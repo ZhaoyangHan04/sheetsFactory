@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "base_config": "config/derived_gold_project_v1.json",
+  "verification_status": "not_verified",
+  "cases": [
+    {
+      "id": "S01",
+      "name": "Commissioning with a refinancing cliff",
+      "mechanism": "Baseline commissioning, working-capital ramp, temporary revolving borrowing, optional Loan A prepayment and annual NOL creation and use. These required regimes must be measured for this case when the batch runs.",
+      "parameter_patch": {},
+      "required_regimes": [
+        "revolver_draw",
+        "revolver_repayment",
+        "loan_a_extra_principal",
+        "annual_nol_added",
+        "annual_nol_used"
+      ]
+    },
+    {
+      "id": "S02",
+      "name": "Year-one bullet maturity",
+      "mechanism": "Move Loan B maturity into month 12 so its principal competes with commissioning liquidity and the first annual loss posting; provide an explicit eight-million-dollar revolving limit.",
+      "parameter_patch": {
+        "loan_b_bullet_month": 12,
+        "revolver_limit": 8000000
+      },
+      "required_regimes": [
+        "year_one_bullet",
+        "revolver_draw"
+      ]
+    },
+    {
+      "id": "S03",
+      "name": "Subsidized zero-interest Loan A",
+      "mechanism": "Offset the source borrowing-rate anchor with a negative spread to activate zero-rate Loan A amortization while preserving principal, cash-priority and annual tax rules. Verify that the resolved rate is actually zero.",
+      "parameter_patch": {
+        "loan_a_spread": "-0.0509"
+      },
+      "required_regimes": [
+        "loan_a_zero_rate"
+      ]
+    },
+    {
+      "id": "S04",
+      "name": "Short amortization during ramp-up",
+      "mechanism": "Use 18 amortizing payments under a publicly specified higher sales scale. Scheduled and optional principal must remain capped, and Loan A payoff must be demonstrated within the forecast.",
+      "parameter_patch": {
+        "loan_a_amort_payments": 18,
+        "steady_annual_sales": 40000000,
+        "revolver_limit": 8000000
+      },
+      "required_regimes": [
+        "loan_a_paid_off"
+      ]
+    },
+    {
+      "id": "S05",
+      "name": "Commissioning crosses a tax year",
+      "mechanism": "Keep all twelve first-year months in construction, place the initial asset in service in month 13 and begin Loan A amortization then. Sales ramp, depreciation, interest-only debt service and annual loss recognition must use their stated periods.",
+      "parameter_patch": {
+        "construction_months": 12,
+        "initial_asset_service_month": 13,
+        "loan_a_amort_start": 13,
+        "revolver_limit": 8000000
+      },
+      "required_regimes": [
+        "commissioning_crosses_tax_year"
+      ]
+    },
+    {
+      "id": "S06",
+      "name": "Binding annual NOL utilization cap",
+      "mechanism": "Increase the explicitly funded startup expense to build a larger loss vintage. The intended annual NOL cap must bind in a profitable year; reject or disclose an unmet regime instead of treating this design intent as a measured result.",
+      "parameter_patch": {
+        "startup_expense": 4000000,
+        "equity_paid_in": 10000000,
+        "opening_cash": 5000000,
+        "revolver_limit": 8000000
+      },
+      "required_regimes": [
+        "nol_utilization_cap_binding"
+      ]
+    },
+    {
+      "id": "S07",
+      "name": "Initial-vintage depreciation cliff",
+      "mechanism": "Depreciate the initial asset over twelve service months, exhaust its basis and stop depreciation before the refresh service period. Preserve the independent vintage and annual tax timing rules.",
+      "parameter_patch": {
+        "initial_asset_life": 12
+      },
+      "required_regimes": [
+        "initial_basis_exhausted"
+      ]
+    },
+    {
+      "id": "S08",
+      "name": "Refresh payment and service cross tax years",
+      "mechanism": "Pay for the refresh in month 15 but begin service in month 25. The cash-funded asset remains undepreciated during installation, and cash funding and the first depreciation posting occur in different tax years.",
+      "parameter_patch": {
+        "refresh_paid_month": 15,
+        "refresh_service_month": 25,
+        "revolver_limit": 8000000
+      },
+      "required_regimes": [
+        "refresh_payment_service_cross_tax_year"
+      ]
+    },
+    {
+      "id": "S09",
+      "name": "Short-life refresh vintage",
+      "mechanism": "Depreciate the refresh over six service months, cap the final charge at remaining basis and stop further charges while the initial vintage continues separately.",
+      "parameter_patch": {
+        "refresh_life": 6
+      },
+      "required_regimes": [
+        "refresh_basis_exhausted"
+      ]
+    },
+    {
+      "id": "S10",
+      "name": "Full cash sweep allocation",
+      "mechanism": "Allocate all excess cash remaining after revolver repayment to Loan A, capped at remaining principal. Distribute any unused sweep after payoff. Require the full-sweep allocation regime and disclose actual payoff separately; payoff is not assumed by this configuration.",
+      "parameter_patch": {
+        "cash_sweep_fraction": "1"
+      },
+      "required_regimes": [
+        "full_sweep_allocation"
+      ]
+    }
+  ]
+}
