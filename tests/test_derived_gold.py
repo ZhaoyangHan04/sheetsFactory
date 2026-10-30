@@ -1,6 +1,6 @@
 """Offline financial-contract tests; the integration check uses real LO separately."""
 from copy import deepcopy
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP, localcontext
 import hashlib
 import json
 from pathlib import Path
@@ -179,6 +179,47 @@ def test_exit_proceeds_remain_outside_entity_books(contract):
     assert last["cash_close"] == D("500000")
     assert valuation["equity_npv"] == D("13410828.42")
     assert abs(valuation["annual_equity_irr"] - D(".5709221098253903")) < D("1e-15")
+
+
+def test_public_contract_resolves_fee_base_and_npv_rounding(contract):
+    spec = contract[0]
+    result = simulate(spec)
+    valuation, closing = result["valuation"], result["monthly"][-1]
+    cent = lambda value: value.quantize(D(".01"), rounding=ROUND_HALF_UP)
+    gross_equity = (valuation["enterprise_value"] + closing["cash_close"]
+                    - closing["loan_a_close"] - closing["loan_b_close"] - closing["revolver_close"])
+    alternative_fee = cent(gross_equity * D(spec["parameters"]["exit_fee_fraction"]))
+    assert valuation["exit_fee"] != alternative_fee
+    assert valuation["equity_exit"] != gross_equity - alternative_fee
+    with localcontext() as context:
+        context.prec = 60
+        flows, rate = valuation["owner_cashflows"], valuation["monthly_discount_rate"]
+        displayed_pv_sum = sum((cent(flow / (1 + rate) ** t) for t, flow in enumerate(flows)), D(0))
+    assert valuation["equity_npv"] == D("13410828.42")
+    assert displayed_pv_sum == D("13410828.41")
+    rules = " ".join(spec["public_rules"])
+    assert spec["public_contract_version"] >= 3
+    assert "fee base is enterprise value" in rules
+    assert "do not sum that rounded display row" in rules
+
+
+def test_public_contract_resolves_depreciation_and_annual_snapshot(contract):
+    spec = contract[0]
+    result = simulate(spec)
+    # Rounding cumulative exact straight-line amounts gives a different third
+    # charge. The contract explicitly selects a fixed cent charge, then a cap.
+    exact_charge = D(spec["parameters"]["initial_asset_cost"]) / D(spec["parameters"]["initial_asset_life"])
+    cent = lambda value: value.quantize(D(".01"), rounding=ROUND_HALF_UP)
+    assert result["monthly"][8]["depreciation_initial"] == D("238095.24")
+    assert cent(3 * exact_charge) - cent(2 * exact_charge) == D("238095.23")
+    first_year = result["monthly"][:12]
+    annual = result["annual"][0]
+    assert annual["cash_before_allocation"] == first_year[-1]["cash_before_allocation"]
+    assert annual["cash_before_allocation"] != sum(row["cash_before_allocation"] for row in first_year)
+    assert annual["owner_cashflow"] == sum(row["owner_cashflow"] for row in first_year)
+    rules = " ".join(spec["public_rules"])
+    assert "fixed monthly charge" in rules
+    assert "December pre-allocation snapshot" in rules
 
 
 def test_formula_emitter_and_unrecalculated_book_cannot_self_certify(contract, tmp_path):

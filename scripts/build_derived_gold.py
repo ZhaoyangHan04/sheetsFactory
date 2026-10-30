@@ -41,6 +41,7 @@ def build(project_root: Path, config_path: Path, output: Path) -> dict:
     passed = audit["passed"] and stable["reward"] == 1 and not profile["errors"] and not profile["truncated"]
     manifest = {
         "scenario_id": spec["scenario_id"], "created_at": datetime.now(timezone.utc).isoformat(),
+        "public_contract_version": spec["public_contract_version"],
         "status": "independently_verified_experimental_seed" if passed else "failed_experimental_seed",
         "qualified": False, "task_count": 0, "integrated_in_hard20": False,
         "source_ancestor_sha256": spec["source_lineage"]["sha256"],
