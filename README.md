@@ -1,8 +1,8 @@
 # sheetsFactory
 
-从 EUSES financial 种子自动构造可审计的财务补全与公式调试任务。
+从公开财务工作簿自动构造可审计的财务补全与公式调试任务。
 
-已完成本轮目标：20 道 Financial Modeling、20 道 Debugging，并冻结了完整 40 题发布包。构造、诊断与自然尝试使用 Codex CLI `gpt-6-sol` / `high`。本轮明确暂缓难度门禁，保留其他质量门禁与真实 oracle/nop 验证。
+上一轮已完成 20 道 Financial Modeling、20 道 Debugging 的质量验收并保留冻结发布包；该批次没有通过难度验收。当前正在迭代两类各至少 10 题，构造与诊断使用 Codex CLI `gpt-6-sol` / `high`，难度门禁固定使用 Codex CLI `gpt-6.1-sol` / `xhigh`、每题 1800 秒，要求冻结确认集 Overall Pass@1 ≤ 0.2。未完成最终确认前，不作难度达标声明。
 
 配置位于 `config/`，角色提示词位于 `prompts/`，节点与模板位于 `src/sheets_factory/`，输入位于 `data/`，运行数据和面板审计位于 `outputs/`。密钥仅保存在环境变量或被忽略的 `.secrets/`。
 
@@ -34,6 +34,10 @@ Git 仓库包含代码、配置、提示词、测试、文档和来源清单。�
 
 # 无图形环境仍启动面板，结束后自动退出
 ./scripts/run.sh --headless --exit-on-finish
+
+# 难度迭代：来源筛选、完整质量门禁、开发测试、独立确认、根目录发布
+./scripts/run_difficulty.sh --config config/pipelines/hard20.yaml \
+  --seed-manifest data/manifests/hard_financial_sources.json
 ```
 
 每次运行会输出实际面板地址和审计目录。端口占用时自动分配空闲端口。默认结束后保留面板，Ctrl+C 关闭。
@@ -88,9 +92,9 @@ EUSES 下载与候选筛选可单独执行：
 | --- | --- | --- |
 | 真实 Harbor oracle / nop | 完整冻结 40 题逐题得到 1 / 0，原始结果与发布清单绑定。 | 参考产物可被接受、原样不作答会被拒绝；这是正反控制，不是模型能力分数。 |
 | `gpt-6-sol` / `high` 自然 trajectory | 已用于构建过程中的诊断，包含不同版本和部分尝试。 | 不汇总为正式冻结任务集的 Overall Pass@1；成功与失败都不是题目质量的单独判据。 |
-| 后续 `gpt-6.1-sol` / `xhigh` 难度评估 | 尚未执行。 | `Overall Pass@1 <= 0.2` 尚未验证，不作达标声明。 |
+| `gpt-6.1-sol` / `xhigh` 旧 40 题开发筛查 | 主动早停前已有 13 次正常成功；40 题整体通过率下界为 32.5%，未完成的测试没有记零。 | 旧批次不满足 ≤20%；这不是完整批次的正式 Overall Pass@1。新来源和新模块正在迭代。 |
 
-正式模型分数应在冻结任务集上逐题做一次独立求解，按二值 reward 的算术平均计算 Overall Pass@1；基础设施异常需单列。本轮报告产量与质量控制，难度评估留待后续运行。
+正式模型分数在事先冻结的任务集上逐题做一次独立求解，按二值 reward 的算术平均计算 Overall Pass@1；开发测试与重新独立调用的确认测试分开。基础设施异常单列，仅确证的基础故障可以受限恢复，有效的零分不会重测；正常时间预算耗尽须复核原始执行、模型用量和独立评分证据。当前难度迭代还在运行，最终真实 `SpreadsheetEval/` 目录和完整 oracle 执行结果将在确认通过后交付。
 
 ## 打包交付
 
