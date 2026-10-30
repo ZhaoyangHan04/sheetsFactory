@@ -18,7 +18,7 @@ BASE_BRIEF = (
 )
 
 COVENANT_BRIEF = (
-    "Quarter-end tests start as stated. CFADS is cash CFO plus all interest less refresh spending; service covers all interest, scheduled Loan A and Loan B bullet principal. Compare quarter-to-date coverage against the cent-rounded requirement; zero service passes. Failure locks distributions/resets streak; two consecutive passes cure. Non-tests carry state; initial lock/streak/reserve are zero without payoff resets.",
+    "Quarter-end tests start as stated. CFADS is cash CFO plus all interest less refresh spending; service covers all interest, scheduled Loan A and Loan B bullet principal. Compare quarter-to-date coverage against the cent-rounded requirement; zero service passes. Failure locks distributions/resets streak; two consecutive passes cure. The cure streak saturates at two. Non-tests carry state; initial lock/streak/reserve are zero without payoff resets.",
     "Reserve target is original payment times normal/trapped coverage, capped at Loan A after scheduled/before optional repayment, from first test using closing lock. Cash priority is surplus reserve release, support capped by operating shortfall/service, limited draw, reserve funding from excess, revolving repayment, sweep, then dividends if unlocked/fully funded. Sweep remains allowed while locked. Internal transfers separate operating/reserve/total cash; sale includes reserve once at par.",
 )
 
@@ -50,6 +50,7 @@ def project_business_brief(spec: dict) -> dict:
         raise ValueError("Business brief exceeds its 600-word presentation budget")
     result["public_rules"] = rules
     result["presentation_style"] = "business_brief"
+    result["presentation_version"] = 2
     return result
 
 
