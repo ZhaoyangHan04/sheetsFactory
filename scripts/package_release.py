@@ -27,6 +27,7 @@ from sheets_factory.checkers.unsafe_regions import evaluate_native_risk_guard
 from sheets_factory.evaluation.harbor import inspect_export, matched_controls, control_summary_paths
 from sheets_factory.reporting import generate_report, read_run
 from sheets_factory.workbook.compare import compare_workbooks
+from sheets_factory.nodes.quality import validate_reference_policy_selection, reference_review_assessments
 
 
 MODES = ('financial_modeling', 'debugging')
@@ -266,7 +267,66 @@ def _latest_native_risk_check(root, run_dir, task, base, export, comparison, tra
         'evidence_request_count': len(result['evidence_requests'])}
 
 
-def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, registry_path=None):
+def _validate_reference_review(base, task_id, revision, diagnosis, recovery, original, instruction_raw, goal, tracked):
+    """Read/recheck current review evidence without claiming a solver replay."""
+    binding = {'task_id': task_id, 'revision': revision,
+        'task_revision_hash': _sha(original + instruction_raw), 'input_sha256': _sha(original),
+        'instruction_sha256': _sha(instruction_raw), 'goal_sha256': _sha(goal)}
+    _require(len(diagnosis.get('enabled_check_ids', [])) == 12
+             and set(diagnosis.get('enabled_check_ids', [])) == {f'Q{n:02d}' for n in range(1, 13)}
+             and not diagnosis.get('disabled_check_ids'), f'{task_id}: reference review requires all diagnostic checks')
+    support = reference_review_assessments(diagnosis, binding)
+    _require(support['passed'], f'{task_id}: reference review lacks supported clear mandatory checks')
+    _require(diagnosis.get('reference_binding') == binding
+             and diagnosis.get('reference_validation_method') == 'reference_review'
+             and recovery.get('verified') is False and recovery.get('public_information_only') is False
+             and recovery.get('status') == 'not_applicable' and recovery.get('binding') == binding,
+             f'{task_id}: reference review or skipped recovery binding differs')
+    path = base / 'private/reference_review.json'
+    receipt = _json(path, base, tracked)
+    _require(receipt == diagnosis.get('reference_review') and receipt.get('passed') is True
+             and receipt.get('binding') == binding and receipt.get('q04_receipt') == support['q04_receipt']
+             and receipt.get('diagnostic_run_id') == diagnosis['diagnostic_run_id']
+             and receipt.get('check_plan_hash') == diagnosis['check_plan_hash'],
+             f'{task_id}: current reference review receipt differs')
+    required = {'edit_validation.json', 'expected_delta.json', 'native_error_probe.json',
+                'native_risk_guard.json', 'local_controls.json', 'reference_evidence_context.json'}
+    _require(set(receipt.get('artifacts', {})) == required, f'{task_id}: reference review evidence is incomplete')
+    evidence = {}
+    for name, record in receipt['artifacts'].items():
+        artifact = base / 'private' / name
+        evidence[name] = _json(artifact, base, tracked)
+        _require(record == _receipt(artifact, tracked), f'{task_id}: stale reference review artifact: {name}')
+    context = evidence['reference_evidence_context.json']
+    financial = context.get('financial_validation', {})
+    _require(context.get('binding') == binding
+             and any(context.get('source_business_evidence', {}).get(key) for key in ('source_assessment', 'finance_evidence'))
+             and financial.get('construction') == evidence['edit_validation.json']
+             and financial.get('local_controls') == evidence['local_controls.json']
+             and all(financial.get('engine_report', {}).get(key) is True
+                     for key in ('normalization_ok', 'recalculation_ok', 'stable')),
+             f'{task_id}: reference review lacks actual business or financial validation context')
+    input_path, goal_path = base / 'public/input.xlsx', base / 'private/goal.xlsx'
+    comparison = compare_workbooks(input_path, goal_path, goal_path)
+    probe = evidence['native_error_probe.json']
+    _require(probe.get('blocking') is False and probe.get('goal_sha256') == binding['goal_sha256']
+             and probe.get('revision') == revision
+             and set(probe.get('required_delta', [])) == set(comparison.get('expected_changes', []))
+             and evidence['native_risk_guard.json'].get('blocking') is False,
+             f'{task_id}: reference review lacks current complete-D native-error proof')
+    controls = evidence['local_controls.json']
+    for name, expected in (('oracle', 1), ('nop', 0), ('equivalent', 1), ('missed_root', 0), ('extra_change', 0)):
+        output = goal_path if name == 'oracle' else input_path if name == 'nop' else base / 'private/controls' / (name + '.xlsx')
+        _file(output, base, tracked)
+        actual = compare_workbooks(input_path, goal_path, output)
+        _require(actual.get('reward') == expected and controls.get(name) == actual,
+                 f'{task_id}: current reference-review local control differs: {name}')
+    return {**_receipt(path, tracked), 'method': 'reference_review', 'verified_public_recovery': False,
+            'binding': binding, 'financial_check_count': len(support['q04_receipt']['financial_validation_checks'])}, comparison
+
+
+def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, registry_path=None,
+                   reference_policy='independent_public_recovery'):
     task_id = task['id']
     _require(isinstance(task_id, str) and re.fullmatch(r'[A-Za-z0-9._-]+', task_id)
              and task_id not in {'.', '..'}, 'Unsafe task ID')
@@ -367,6 +427,8 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
 
     diagnosis_path = base / 'private/diagnosis.json'
     diagnosis = _json(diagnosis_path, base, tracked)
+    _require(diagnosis.get('reference_evidence_policy', 'independent_public_recovery') == reference_policy,
+             f'{task_id}: diagnostic reference policy differs from frozen run configuration')
     enabled = diagnosis.get('enabled_check_ids')
     coverage = diagnosis.get('coverage') or {}
     _require(diagnosis.get('releasable') is True and diagnosis.get('task_revision_hash') == revision_hash
@@ -379,37 +441,44 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
              f'{task_id}: latest diagnosis is missing, stale, or not releasable')
     recovery_path = base / 'private/independent_recovery.json'
     recovery = _json(recovery_path, base, tracked)
-    compiler = recovery.get('compiler') or {}
-    replay = recovery.get('replay') or {}
-    _require(recovery.get('verified') is True and recovery.get('public_information_only') is True
-             and replay.get('returncode') == 0 and (recovery.get('comparison') or {}).get('reward') == 1
-             and not compiler.get('assumptions_added') and not compiler.get('unresolved_questions'),
-             f'{task_id}: independent recovery did not pass')
-    if recovery.get('task_revision_hash'):
-        _require(recovery['task_revision_hash'] == revision_hash, f'{task_id}: stale recovery revision hash')
-    # Older records lack a revision hash. Bind the actual replay inputs, public
-    # instruction and program to this revision instead of trusting verified=true.
-    workspace = Path(recovery.get('workspace', ''))
-    replay_dir = Path(replay.get('directory', ''))
-    _require(_file(workspace / 'input.xlsx', base, tracked) == original
-             and _file(workspace / 'instruction.md', base, tracked) == instruction_raw
-             and _file(replay_dir / 'input.xlsx', base, tracked) == original,
-             f'{task_id}: recovery used a different public revision')
-    program = recovery.get('program')
-    _require(isinstance(program, str) and bool(program) and compiler.get('code') == program
-             and _file(workspace / 'recovery.py', base, tracked).decode() == program
-             and _file(replay_dir / 'recovery.py', base, tracked).decode() == program,
-             f'{task_id}: recovery program binding differs')
-    recovered_path = base / 'private/recovered.xlsx'
-    _file(recovered_path, base, tracked)
-    replay_output = replay_dir / 'output.xlsx'
-    _file(replay_output, base, tracked)
-    _require(zipfile.is_zipfile(replay_output), f'{task_id}: replay output is not an XLSX workbook')
-    for key, path in (('replay_output_sha256', replay_output), ('recovered_sha256', recovered_path)):
-        if recovery.get(key):
-            _require(recovery[key] == tracked[str(path.absolute())], f'{task_id}: recorded recovery output hash differs')
-    comparison = compare_workbooks(public_input, export / 'tests/reference.xlsx', recovered_path)
-    _require(comparison.get('reward') == 1, f'{task_id}: current recovery workbook does not match goal')
+    review_receipt = None
+    if reference_policy == 'independent_public_recovery':
+        compiler = recovery.get('compiler') or {}
+        replay = recovery.get('replay') or {}
+        _require(recovery.get('verified') is True and recovery.get('public_information_only') is True
+                 and replay.get('returncode') == 0 and (recovery.get('comparison') or {}).get('reward') == 1
+                 and not compiler.get('assumptions_added') and not compiler.get('unresolved_questions'),
+                 f'{task_id}: independent recovery did not pass')
+        if recovery.get('task_revision_hash'):
+            _require(recovery['task_revision_hash'] == revision_hash, f'{task_id}: stale recovery revision hash')
+        # Older records lack a revision hash. Bind the actual replay inputs, public
+        # instruction and program to this revision instead of trusting verified=true.
+        workspace = Path(recovery.get('workspace', ''))
+        replay_dir = Path(replay.get('directory', ''))
+        _require(_file(workspace / 'input.xlsx', base, tracked) == original
+                 and _file(workspace / 'instruction.md', base, tracked) == instruction_raw
+                 and _file(replay_dir / 'input.xlsx', base, tracked) == original,
+                 f'{task_id}: recovery used a different public revision')
+        program = recovery.get('program')
+        _require(isinstance(program, str) and bool(program) and compiler.get('code') == program
+                 and _file(workspace / 'recovery.py', base, tracked).decode() == program
+                 and _file(replay_dir / 'recovery.py', base, tracked).decode() == program,
+                 f'{task_id}: recovery program binding differs')
+        recovered_path = base / 'private/recovered.xlsx'
+        _file(recovered_path, base, tracked)
+        replay_output = replay_dir / 'output.xlsx'
+        _file(replay_output, base, tracked)
+        _require(zipfile.is_zipfile(replay_output), f'{task_id}: replay output is not an XLSX workbook')
+        for key, path in (('replay_output_sha256', replay_output), ('recovered_sha256', recovered_path)):
+            if recovery.get(key):
+                _require(recovery[key] == tracked[str(path.absolute())], f'{task_id}: recorded recovery output hash differs')
+        comparison = compare_workbooks(public_input, export / 'tests/reference.xlsx', recovered_path)
+        _require(comparison.get('reward') == 1, f'{task_id}: current recovery workbook does not match goal')
+    elif reference_policy == 'reference_review':
+        review_receipt, comparison = _validate_reference_review(
+            base, task_id, revision, diagnosis, recovery, original, instruction_raw, goal, tracked)
+    else:
+        raise ReleaseError('Unsupported reference evidence policy')
     native_risk_check = _latest_native_risk_check(
         project_root, run_dir, task, base, export, comparison, tracked, registry_path)
     diagnostic_ids = {'review': {diagnosis['diagnostic_run_id']}, 'public_only': set()}
@@ -439,6 +508,12 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
             if visibility == 'review':
                 _require((evidence.get('private') or {}).get('independent_recovery') == recovery,
                          f'{task_id}: latest diagnosis reviewed different recovery evidence')
+                if reference_policy == 'reference_review':
+                    private = evidence.get('private') or {}
+                    _require(private.get('goal_sha256') == _sha(goal)
+                             and private.get('reference_review_context') == _json(base / 'private/reference_evidence_context.json', base, candidate_files)
+                             and _file(evidence_path.parent / 'reference.xlsx', base, candidate_files) == goal,
+                             f'{task_id}: private reference review inspected a different goal or context')
             _require(_file(evidence_path.parent / 'input.xlsx', base, candidate_files) == original
                      and _file(evidence_path.parent / 'instruction.md', base, candidate_files) == instruction_raw,
                      f'{task_id}: diagnostic evidence used a different public revision')
@@ -454,7 +529,14 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
                 matched_batches.add(index)
             tracked.update(candidate_files)
             receipts.append(_receipt(evidence_path, tracked))
-    _require(bool(reviewed_recovery), f'{task_id}: missing diagnosis evidence for current recovery')
+    _require(bool(reviewed_recovery), f'{task_id}: missing diagnosis evidence for current '
+             + ('reference review' if reference_policy == 'reference_review' else 'recovery'))
+    if reference_policy == 'reference_review':
+        _require(bool(public_diagnosis) and bool(batches)
+                 and all(batch.get('status') == 'completed' for _, _, batch in batches)
+                 and set().union(*(set(batch.get('assigned_check_ids', [])) for visibility, _, batch in batches if visibility == 'public_only')) >= {'Q01', 'Q02', 'Q03'}
+                 and set().union(*(set(batch.get('assigned_check_ids', [])) for visibility, _, batch in batches if visibility == 'review')) >= {'Q04'},
+                 f'{task_id}: reference review lacks actual public/private diagnostic receipts')
     _require(len(matched_batches) == len(batches), f'{task_id}: missing matching diagnostic batch evidence')
     return {
         'task_id': task_id, 'task_name': binding['task_name'], 'mode': task['mode'],
@@ -466,9 +548,15 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
         'diagnosis': {**_receipt(diagnosis_path, tracked),
                       'diagnostic_run_id': diagnosis['diagnostic_run_id'],
                       'check_plan_hash': diagnosis['check_plan_hash'],
-                      'enabled_check_ids': enabled, 'reviewed_recovery_evidence': reviewed_recovery,
+                      'enabled_check_ids': enabled,
+                      **({'reviewed_reference_evidence': reviewed_recovery} if reference_policy == 'reference_review'
+                         else {'reviewed_recovery_evidence': reviewed_recovery}),
                       'public_diagnosis_evidence': public_diagnosis},
-        'independent_recovery': {**_receipt(recovery_path, tracked),
+        'reference_validation_method': reference_policy,
+        'reference_review': review_receipt,
+        'independent_recovery': ({**_receipt(recovery_path, tracked), 'verified': False,
+            'public_information_only': False, 'status': 'not_applicable'}
+            if reference_policy == 'reference_review' else {**_receipt(recovery_path, tracked),
             'recovered_workbook': _receipt(recovered_path, tracked),
             'public_input': _receipt(workspace / 'input.xlsx', tracked),
             'public_instruction': _receipt(workspace / 'instruction.md', tracked),
@@ -476,7 +564,7 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
             'replay_program': _receipt(replay_dir / 'recovery.py', tracked),
             'replay_output': _receipt(replay_output, tracked),
             'execution_evidence': 'Persisted successful replay record and artifacts; release does not rerun code.',
-            'current_value_comparison_reward': comparison['reward']},
+            'current_value_comparison_reward': comparison['reward']}),
         'payload_files': {relative: tracked[str((export / relative).absolute())] for relative in sorted(EXPORT_FILES)},
     }
 
@@ -504,8 +592,9 @@ def package_release(run_dir, per_mode=10, output_dir=None, *, project_root=None)
     config_path = run_dir / 'resolved_config.yaml'
     config = yaml.safe_load(_file(config_path, run_dir, tracked)) if config_path.is_file() else {}
     registry_path = ((config or {}).get('native_risks') or {}).get('registry_path')
+    policy = validate_reference_policy_selection({**(config or {}), 'project_root': str(root)})
     validated = [_validate_task(run_dir, task, tracked, secrets, project_root=root,
-                               registry_path=registry_path) for task in selected]
+                               registry_path=registry_path, reference_policy=policy) for task in selected]
     runtime_tracked = {}
     runtime_payload, runtime_metadata = _prepare_runtime(root, run_dir, validated, runtime_tracked, secrets)
     manifest = {
@@ -514,6 +603,7 @@ def package_release(run_dir, per_mode=10, output_dir=None, *, project_root=None)
         'release_id': destination.name,
         'selection_policy': 'stable_source_round_robin_then_variant_revision_task_id',
         'requested_per_mode': per_mode, 'task_count': len(validated),
+        'reference_evidence_policy': policy,
         'counts_by_mode': {mode: sum(task['mode'] == mode for task in validated) for mode in MODES},
         'selected_task_ids': [task['task_id'] for task in validated], 'tasks': validated,
         'runtime': runtime_metadata,

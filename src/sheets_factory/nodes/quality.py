@@ -32,6 +32,93 @@ PRIVATE_DIAGNOSTIC_EVIDENCE_INSTRUCTIONS = (
     'sample the required scope or mark it clear. Inspect input.xlsx/instruction.md and the allowed '
     'private reference as necessary. Return JSON only.\nEVIDENCE FILE RECEIPT:\n')
 
+REFERENCE_POLICIES = {'independent_public_recovery', 'reference_review'}
+REFERENCE_REVIEW_CHECKS = ('Q01', 'Q02', 'Q03', 'Q04')
+REFERENCE_REVIEW_PREFIX = 'reference_review_json:'
+
+
+def reference_evidence_policy(config):
+    policy = config.get('diagnosis', {}).get('reference_evidence_policy', 'independent_public_recovery')
+    if not isinstance(policy, str) or policy not in REFERENCE_POLICIES:
+        raise ValueError('Unsupported diagnosis.reference_evidence_policy')
+    return policy
+
+
+def validate_reference_policy_selection(config, runner=None):
+    policy = reference_evidence_policy(config)
+    if policy == 'reference_review':
+        runner = runner or DiagnosisRunner(config.get('project_root'))
+        plan = runner.resolve(config)
+        if set(plan['enabled_check_ids']) != {f'Q{number:02d}' for number in range(1, 13)}:
+            raise ValueError('reference_review requires all twelve diagnostic checks enabled')
+    return policy
+
+
+def reference_revision_binding(ctx):
+    input_raw = Path(ctx.data['input']).read_bytes()
+    instruction_raw = ctx.data['instruction'].encode()
+    revision_hash = hashlib.sha256(input_raw + instruction_raw).hexdigest()
+    if ctx.data.get('revision_hash') != revision_hash:
+        raise ValueError('Reference evidence has a stale public revision hash')
+    return {'task_id': ctx.task_id, 'revision': ctx.revision, 'task_revision_hash': revision_hash,
+        'input_sha256': hashlib.sha256(input_raw).hexdigest(),
+        'instruction_sha256': hashlib.sha256(instruction_raw).hexdigest(),
+        'goal_sha256': _recovery_sha(ctx.data['goal'])}
+
+
+def reference_review_assessments(report, binding):
+    """Validate actual supported conclusions; an exact solving witness is absent."""
+    problems = []
+    for check in REFERENCE_REVIEW_CHECKS:
+        assessment = report.get('assessments', {}).get(check, {})
+        if (assessment.get('state') != 'clear' or not assessment.get('reason')
+                or not assessment.get('evidence') or assessment.get('execution_status', 'completed') != 'completed'):
+            problems.append(check + ': supported clear assessment required')
+    receipts = []
+    for item in report.get('assessments', {}).get('Q04', {}).get('evidence', []):
+        if isinstance(item, str) and item.startswith(REFERENCE_REVIEW_PREFIX):
+            try:
+                receipts.append(json.loads(item[len(REFERENCE_REVIEW_PREFIX):]))
+            except (ValueError, TypeError):
+                problems.append('Q04: invalid reference review JSON receipt')
+    receipt = receipts[0] if len(receipts) == 1 and isinstance(receipts[0], dict) else {}
+    if len(receipts) != 1:
+        problems.append('Q04: exactly one explicit reference review receipt required')
+    if receipt.get('binding') != binding:
+        problems.append('Q04: reference review receipt is stale or unbound')
+    if (not isinstance(receipt.get('business_evidence'), list) or not receipt['business_evidence']
+            or any(not isinstance(item, (str, dict)) or not item for item in receipt['business_evidence'])):
+        problems.append('Q04: source business evidence required')
+    checks = receipt.get('financial_validation_checks')
+    if (not isinstance(checks, list) or not checks
+            or any(not isinstance(check, dict) or check.get('passed') is not True
+                   or not isinstance(check.get('check'), str) or not check['check'].strip()
+                   or not isinstance(check.get('method'), str) or not check['method'].strip()
+                   or not isinstance(check.get('evidence'), list) or not check['evidence'] for check in checks)):
+        problems.append('Q04: supported independent financial validation checks required')
+    return {'passed': not problems, 'required_check_ids': list(REFERENCE_REVIEW_CHECKS),
+        'binding': binding, 'problems': problems, 'q04_receipt': receipt,
+        'method': 'reference_review', 'independent_public_recovery': False}
+
+
+def _reference_review_context(ctx, binding):
+    source_business = {key: deepcopy(ctx.data.get(key, {} if key != 'source_business_issues' else []))
+        for key in ('source_assessment', 'finance_evidence', 'source_business_issues')}
+    context = {'binding': binding, 'source_business_evidence': source_business,
+        'financial_validation': {'construction': ctx.data['construction_validation'],
+            'engine_report': ctx.data['engine_report'], 'local_controls': ctx.data['controls']},
+        'policy': 'reference_review', 'independent_public_recovery': False}
+    ctx.save('reference_evidence_context.json', context)
+    names = ('edit_validation.json', 'expected_delta.json', 'native_error_probe.json',
+             'native_risk_guard.json', 'local_controls.json', 'reference_evidence_context.json')
+    artifacts = {}
+    for name in names:
+        path = ctx.revision_dir / 'private' / name
+        if not path.is_file():
+            raise ValueError('Reference review lacks actual evidence: ' + name)
+        artifacts[name] = {'path': str(path.resolve()), 'sha256': _recovery_sha(path)}
+    return context, artifacts
+
 
 def prepare_workspace(ctx, name):
     workspace = ctx.revision_dir / (name + '-' + uuid.uuid4().hex[:8])
@@ -218,6 +305,15 @@ class RecoveryNode(BaseNode):
     node_id = 'independent_recovery'
 
     def execute(self, ctx):
+        policy = validate_reference_policy_selection(ctx.config)
+        if policy == 'reference_review':
+            result = {'status': 'not_applicable', 'skipped': True, 'verified': False,
+                'public_information_only': False, 'reference_evidence_policy': policy,
+                'binding': reference_revision_binding(ctx), 'task_revision_hash': ctx.data['revision_hash'],
+                'reason': 'Reference correctness is reviewed by supported Q01–Q04 diagnostics; no public-solving witness was attempted.',
+                'usage_calls': [], 'usage_attribution': 'not_applicable_no_solver_call'}
+            ctx.save('independent_recovery.json', result)
+            return {'recovery': result}
         compiler_backend = ctx.config.get('recovery', {}).get('compiler_backend', 'llm')
         if compiler_backend not in {'llm', 'project_journal'}:
             raise ValueError('Unsupported recovery.compiler_backend')
@@ -355,6 +451,11 @@ class DiagnoseNode(BaseNode):
 
     def execute(self, ctx):
         from ..llm.schemas import diagnosis_output_schema
+        policy = validate_reference_policy_selection(ctx.config)
+        binding, review_context, review_artifacts = None, None, None
+        if policy == 'reference_review':
+            binding = reference_revision_binding(ctx)
+            review_context, review_artifacts = _reference_review_context(ctx, binding)
         diagnosis_prompt = prompt(ctx, 'diagnosis.md')
         public = {'instruction': ctx.data['instruction'], 'profile': compact_profile(ctx.data['public_profile']),
                   'rules': ctx.data['plan']['public_rules'], 'task_mode': ctx.mode,
@@ -368,6 +469,19 @@ class DiagnoseNode(BaseNode):
                    'source_business_issues': ctx.data.get('source_business_issues', []),
                    'goal_sha256': hashlib.sha256(Path(ctx.data['goal']).read_bytes()).hexdigest(),
                    'native_errors': ctx.data['profile']['errors']}
+        if policy == 'reference_review':
+            public['reference_evidence_policy'] = policy
+            private['reference_review_context'] = review_context
+            private['reference_review_requirements'] = {
+                'policy': policy, 'binding': binding,
+                'goal_artifact': 'reference.xlsx',
+                'instructions': 'Q04 must inspect the actual reference.xlsx, source business evidence, complete expected delta, financial identities and independent calculations. Existing formula existence alone is not truth. No exact public solver is required or claimed. Q01/Q02/Q03 must independently establish public sufficiency and scope.',
+                'required_Q04_evidence_string': REFERENCE_REVIEW_PREFIX + json.dumps({
+                    'binding': binding, 'business_evidence': ['Concrete source business policy and inspected public evidence'],
+                    'financial_validation_checks': [{'check': 'Concrete financial identity or independent recalculation',
+                        'method': 'Describe the independent calculation actually performed',
+                        'passed': True, 'evidence': ['Actual inspected cells, calculation and observed result']}]}),
+            }
         health = {'healthy': all(not t.get('infrastructure_error') for t in ctx.data['traces']),
                   'checks': [{'probe': 'codex_native_cli', 'model': ctx.llm.model},
                              {'probe': 'libreoffice_full_recalculation', 'engine': ctx.data['engine_report']}]}
@@ -389,6 +503,8 @@ class DiagnoseNode(BaseNode):
             instruction = (diagnosis_prompt + '\nRead /workspace/evidence.json for all assigned '
                            'checks and evidence. Inspect input.xlsx/instruction.md as necessary. Return JSON only.')
             if not is_public:
+                if policy == 'reference_review':
+                    shutil.copy2(ctx.data['goal'], work / 'reference.xlsx')
                 receipt = {'file': 'evidence.json', 'sha256': hashlib.sha256(evidence).hexdigest(),
                            'bytes': len(evidence), 'assigned_check_ids': payload['assigned_check_ids']}
                 instruction = diagnosis_prompt + PRIVATE_DIAGNOSTIC_EVIDENCE_INSTRUCTIONS + json.dumps(receipt)
@@ -403,7 +519,23 @@ class DiagnoseNode(BaseNode):
         report = runner.diagnose(bundle, ctx.data['traces'], ctx.data['controls'], review, ctx.config,
                                 batch_cache=ctx.data.setdefault('diagnostic_batch_cache', {}))
         ctx.save('diagnostic_batch_cache.json', ctx.data['diagnostic_batch_cache'])
-        if not ctx.data['recovery']['verified']:
+        if policy == 'reference_review':
+            receipt = reference_review_assessments(report, binding)
+            receipt['artifacts'] = review_artifacts
+            receipt['diagnostic_run_id'] = report['diagnostic_run_id']
+            receipt['check_plan_hash'] = report['check_plan_hash']
+            ctx.save('reference_review.json', receipt)
+            report.update(reference_evidence_policy=policy, reference_validation_method=policy,
+                reference_binding=binding, reference_review=receipt,
+                mandatory_gates={'reference_review': {'passed': receipt['passed'], 'required_check_ids': list(REFERENCE_REVIEW_CHECKS)}})
+            if not receipt['passed']:
+                report['issues'].append({'issue_id': ctx.task_id + '-Q12-reference-review',
+                    'problem_id': 'Q12', 'severity': 'blocker', 'certainty': 'confirmed',
+                    'claim': 'Reference review lacks current supported public and financial evidence',
+                    'revision_hash': ctx.data['revision_hash'], 'depends_on_issue_ids': [],
+                    'evidence': receipt['problems']})
+            evidence_passed = receipt['passed']
+        elif not ctx.data['recovery']['verified']:
             issue = {'issue_id': ctx.task_id + '-Q12-recovery', 'problem_id': 'Q12',
                 'severity': 'blocker', 'certainty': 'confirmed',
                 'claim': 'Independent public-information reconstruction has not matched reference values',
@@ -418,14 +550,16 @@ class DiagnoseNode(BaseNode):
                 assessment.update(state='flagged', reason=issue['claim'])
                 assessment.setdefault('evidence', []).extend(issue['evidence'])
                 assessment.setdefault('issue_ids', []).append(issue['issue_id'])
+            evidence_passed = False
         else:
             report['mandatory_gates'] = {'independent_recovery': {'passed': True}}
+            evidence_passed = True
         report['routes'] = route_issues(report['issues'], runner.catalog,
                                         ctx.config.get('diagnosis', {}).get('difficulty_deferred', False))
         report['coverage']['blocking_issue_ids'] = [issue['issue_id'] for issue in report['issues']
             if issue.get('severity', 'blocker') == 'blocker'
             and not (issue['problem_id'] == 'Q08' and runner.resolve(ctx.config)['difficulty_deferred'])]
-        report['releasable'] = (report['releasable'] and ctx.data['recovery']['verified']
+        report['releasable'] = (report['releasable'] and evidence_passed
                                 and not report['coverage']['blocking_issue_ids'])
         ctx.save('diagnosis.json', report)
         ctx.audit.task(ctx.task_id, issues=report['issues'], diagnosis_scope=report['scope'])

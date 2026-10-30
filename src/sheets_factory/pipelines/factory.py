@@ -122,6 +122,8 @@ class FactoryPipeline(BasePipeline):
     """Template-driven quota controller with distinct bounded repair budgets."""
 
     def __init__(self, config, audit, llm, engine, *, stop_event=None):
+        from ..nodes.quality import validate_reference_policy_selection
+        self.reference_validation_method = validate_reference_policy_selection(config)
         super().__init__(config)
         self.audit, self.engine = audit, engine
         self.stop_event = stop_event if stop_event is not None else threading.Event()
@@ -349,7 +351,9 @@ class FactoryPipeline(BasePipeline):
                 self.run_phase(context, 'export')
                 self.audit.task(context.task_id, status='ready', node='harbor_pending',
                                 title=context.data['plan']['title'], revision=context.revision,
-                                export_dir=str(context.data['export_dir']), independent_recovery=True, error=None,
+                                export_dir=str(context.data['export_dir']),
+                                independent_recovery=context.data.get('recovery', {}).get('verified') is True,
+                                reference_validation_method=self.reference_validation_method, error=None,
                                 harbor_controls=None)
                 self.audit.emit('task.ready', task_id=context.task_id, mode=context.mode, revision=context.revision)
                 break
