@@ -315,9 +315,9 @@ class RecoveryNode(BaseNode):
             ctx.save('independent_recovery.json', result)
             return {'recovery': result}
         compiler_backend = ctx.config.get('recovery', {}).get('compiler_backend', 'llm')
-        if compiler_backend not in {'llm', 'project_journal'}:
+        if compiler_backend not in {'llm', 'project_journal', 'portfolio_journal'}:
             raise ValueError('Unsupported recovery.compiler_backend')
-        if compiler_backend == 'project_journal' and ctx.data.get('finance_evidence', {}).get('financial_seed_verified') is not True:
+        if compiler_backend in {'project_journal', 'portfolio_journal'} and ctx.data.get('finance_evidence', {}).get('financial_seed_verified') is not True:
             raise TaskRejected('Journal reconstruction requires a verified financial source')
         reusable = _reusable_recovery(ctx)
         if reusable is not None:
@@ -346,12 +346,20 @@ class RecoveryNode(BaseNode):
             (work / 'public_profile.json').write_text(json.dumps(ctx.data.get('public_profile', {}), ensure_ascii=False))
             public_payload = {'instruction': ctx.data['instruction'],
                 'profile': compact_profile(ctx.data['public_profile']) if ctx.data.get('public_profile') else {}}
-            if compiler_backend == 'project_journal':
-                from ..workbook.derived_gold.public_recovery import compile_public_project_recovery
-                compiler = {'code': compile_public_project_recovery(),
-                    'public_evidence_used': ['Public Scenario assumptions, model labels and business policies'],
+            if compiler_backend in {'project_journal', 'portfolio_journal'}:
+                if compiler_backend == 'portfolio_journal':
+                    from ..workbook.derived_gold.portfolio_public_recovery import compile_public_portfolio_recovery
+                    program = compile_public_portfolio_recovery()
+                else:
+                    from ..workbook.derived_gold.public_recovery import compile_public_project_recovery
+                    program = compile_public_project_recovery()
+                compiler = {'code': program,
+                    'public_evidence_used': ['Public Scenario assumptions, model labels and business policies'] + (
+                        ['Public Portfolio Index namespace mapping and explicit fully owned separate-tax consolidation policy']
+                        if compiler_backend == 'portfolio_journal' else []),
                     'assumptions_added': [], 'unresolved_questions': [],
-                    'implementation': 'independent_decimal_journal', 'is_llm_attempt': False}
+                    'implementation': ('independent_decimal_portfolio_journals' if compiler_backend == 'portfolio_journal'
+                                       else 'independent_decimal_journal'), 'is_llm_attempt': False}
             else:
                 compiler = ctx.llm.complete(prompt(ctx, 'recovery.md') + '\nPUBLIC INPUT JSON:\n' + json.dumps(public_payload, ensure_ascii=False),
                     role='recovery_compiler', task_id=ctx.task_id, stage=self.node_id, workspace=work, isolated=True,
@@ -411,7 +419,7 @@ class RecoveryNode(BaseNode):
             result['usage_calls'] = [{k: call.get(k) for k in keys} for call_id, call in calls.items()
                                      if call_id not in previous_calls]
             result['usage_attribution'] = ('audit_call_ids' if result['usage_calls'] else
-                'not_applicable_programmatic' if compiler_backend == 'project_journal' else 'unavailable')
+                'not_applicable_programmatic' if compiler_backend in {'project_journal', 'portfolio_journal'} else 'unavailable')
             result['finished_at'] = utcnow()
             result.setdefault('status', 'verified' if result['verified'] else 'unverified')
             raw = (json.dumps(result, ensure_ascii=False, indent=2, default=str) + '\n').encode()
