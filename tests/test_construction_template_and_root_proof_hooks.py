@@ -25,23 +25,27 @@ class NoModels:
         raise AssertionError("No model call is allowed in these integration fixtures")
 
 
-def test_portfolio_template_uses_verified_source_and_exact_backend_cache(tmp_path, monkeypatch):
+@pytest.mark.parametrize('backend,module_name,function_name', [
+    ('portfolio_template', 'sheets_factory.workbook.derived_gold.portfolio_tasks', 'propose_portfolio_task'),
+    ('composite_template', 'sheets_factory.workbook.composite_finance.tasks', 'propose_task'),
+])
+def test_portfolio_template_uses_verified_source_and_exact_backend_cache(tmp_path, monkeypatch, backend, module_name, function_name):
     baseline = tmp_path / "baseline.xlsx"
     baseline.write_bytes(b"explicit routing fixture")
     calls = []
     def propose(path, mode):
         calls.append((path, mode))
         return {"title": "Fixture portfolio", "edits": [], "mask_ranges": [{"sheet": "Fixture", "range": "A1:A6"}]}
-    fake = types.ModuleType("sheets_factory.workbook.derived_gold.portfolio_tasks")
-    fake.propose_portfolio_task = propose
+    fake = types.ModuleType(module_name)
+    setattr(fake, function_name, propose)
     monkeypatch.setitem(sys.modules, fake.__name__, fake)
     ctx = TaskContext("run", "fm-fixture", "financial_modeling", baseline, tmp_path / "task",
-        {"construction": {"authoring_backend": "portfolio_template", "planning_scope": "per_mode"}},
+        {"construction": {"authoring_backend": backend, "planning_scope": "per_mode"}},
         Audit(), NoModels(), None, data={"baseline": baseline, "source_cache": tmp_path,
                                       "finance_evidence": {"financial_seed_verified": True}})
     result = module.PlanNode().execute(ctx)
     assert result["plan"]["title"] == "Fixture portfolio"
-    cache = tmp_path / "task_plans_v0_financial_modeling_portfolio_template.json"
+    cache = tmp_path / f"task_plans_v0_financial_modeling_{backend}.json"
     assert cache.is_file()
     assert calls == [(baseline, "financial_modeling")]
     assert ctx.audit.events[0][1]["llm_calls"] == 0
@@ -50,8 +54,9 @@ def test_portfolio_template_uses_verified_source_and_exact_backend_cache(tmp_pat
 
 
 @pytest.mark.parametrize("verified,variant", [(False, 0), (True, 1)])
-def test_portfolio_template_does_not_bypass_source_verification_or_variant_identity(tmp_path, verified, variant):
-    ctx = types.SimpleNamespace(config={"construction": {"authoring_backend": "portfolio_template"}},
+@pytest.mark.parametrize('backend', ['portfolio_template', 'composite_template'])
+def test_portfolio_template_does_not_bypass_source_verification_or_variant_identity(tmp_path, verified, variant, backend):
+    ctx = types.SimpleNamespace(config={"construction": {"authoring_backend": backend}},
         data={"variant": variant, "finance_evidence": {"financial_seed_verified": verified}})
     with pytest.raises(TaskRejected, match="verified financial source"):
         module.PlanNode().execute(ctx)

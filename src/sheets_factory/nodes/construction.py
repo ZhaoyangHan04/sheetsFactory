@@ -261,9 +261,10 @@ class PlanNode(BaseNode):
     def execute(self, ctx):
         variant = ctx.data.get('variant', 0)
         backend = ctx.config.get('construction', {}).get('authoring_backend', 'llm')
-        if backend not in {'llm', 'project_template', 'portfolio_template'}:
+        templates = {'project_template', 'portfolio_template', 'composite_template'}
+        if backend not in {'llm', *templates}:
             raise ValueError('Unsupported construction.authoring_backend')
-        if backend in {'project_template', 'portfolio_template'} and (
+        if backend in templates and (
                 ctx.data.get('finance_evidence', {}).get('financial_seed_verified') is not True or variant != 0):
             raise TaskRejected('Financial template requires a verified financial source and a new source identity')
         scope = ctx.config.get('construction', {}).get('planning_scope', 'both_modes')
@@ -275,12 +276,14 @@ class PlanNode(BaseNode):
         path = ctx.data['source_cache'] / f'task_plans_v{variant}{suffix}{backend_suffix}.json'
         if path.exists():
             plans = json.loads(path.read_text())
-        elif backend in {'project_template', 'portfolio_template'}:
+        elif backend in templates:
             evidence = ctx.data.get('finance_evidence', {})
             if backend == 'project_template':
                 from ..workbook.derived_gold.task_templates import propose_project_task as propose
-            else:
+            elif backend == 'portfolio_template':
                 from ..workbook.derived_gold.portfolio_tasks import propose_portfolio_task as propose
+            else:
+                from ..workbook.composite_finance.tasks import propose_task as propose
             plans = {'source_assessment': {'financial_evidence': evidence,
                                           'authoring_backend': backend, 'known_risks': []},
                      'financial_modeling': None, 'debugging': None}

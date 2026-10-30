@@ -157,7 +157,8 @@ def prepare_probe(run, source_id, mode, output):
         cache = run / "sources" / identity[:12]
         baseline = cache / "baseline.xlsx"
         backend = config.get("construction", {}).get("authoring_backend", "llm")
-        suffixes = {"llm": "", "project_template": "_project_template", "portfolio_template": "_portfolio_template"}
+        suffixes = {"llm": "", "project_template": "_project_template", "portfolio_template": "_portfolio_template",
+                    "composite_template": "_composite_template"}
         if backend not in suffixes:
             raise ValueError("Unsupported cached proposal authoring backend")
         proposal = cache / ("task_plans_v0_" + mode + suffixes[backend] + ".json")
