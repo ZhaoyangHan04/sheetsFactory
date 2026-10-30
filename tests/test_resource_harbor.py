@@ -72,6 +72,28 @@ def test_explicit_capacity_profile_is_consistent_in_agent_and_verifier(task, tmp
         assert actual['solver_tool_budget']['seconds'] == 1800
 
 
+@pytest.mark.parametrize('actual,code', ((None, 1), ('sha256:' + '0' * 64, 0), ('expected', 0)))
+def test_actual_local_base_tag_identity_requires_success_and_exact_config_id(monkeypatch, actual, code):
+    from types import SimpleNamespace
+    profile = load_runtime_profile()
+    commands = []
+    def inspect(command, **kwargs):
+        commands.append(command)
+        assert kwargs['timeout'] == 30 and kwargs['capture_output'] is True
+        value = profile['image']['id'] if actual == 'expected' else actual
+        return SimpleNamespace(returncode=code, stdout=(value or '') + '\n', stderr='')
+    monkeypatch.setattr(export.subprocess, 'run', inspect)
+    if actual == 'expected':
+        record = export.verify_local_base_image(profile)
+        assert record['actual_local_image_verified'] is True
+        assert record['actual_container_resources_verified'] is False
+        assert record['actual_image_id'] == profile['image']['id']
+    else:
+        with pytest.raises(ValueError, match='exact approved image ID'):
+            export.verify_local_base_image(profile)
+    assert commands == [['docker', 'image', 'inspect', profile['image']['tag'], '--format', '{{.Id}}']]
+
+
 def test_real_harbor_schema_exact_resources_and_original_control_binding(exported):
     from harbor.models.task.task import Task
     task = Task(exported)
@@ -107,7 +129,7 @@ def test_agent_boundary_and_same_immutable_image_and_real_oracle(exported, task)
         assert (exported / relative).read_bytes() == (task / 'private/goal.xlsx').read_bytes()
     assert 'cp /solution/reference.xlsx /app/output.xlsx' in (exported / 'solution/solve.sh').read_text()
     assert not list(exported.rglob('do-not-export.txt'))
-    image = load_runtime_profile()['image']['id']
+    image = load_runtime_profile()['image']['tag']
     for folder in ('environment', 'tests'):
         assert (exported / folder / 'Dockerfile').read_text().startswith('FROM ' + image + '\n')
     recalculate = (environment / 'recalculate').read_text()
@@ -144,7 +166,7 @@ def test_semantic_inspection_rejects_even_rehashed_export(exported, mutation):
         path.write_text(text)
     elif mutation == 'image':
         path = exported / 'tests/Dockerfile'
-        path.write_text(path.read_text().replace(load_runtime_profile()['image']['id'], 'mutable:tag'))
+        path.write_text(path.read_text().replace(load_runtime_profile()['image']['tag'], 'mutable:tag'))
     elif mutation in ('core', 'wrapper'):
         path = exported / 'tests' / ('streaming_core.py' if mutation == 'core' else 'verify.py')
         path.write_text('raise RuntimeError("different verifier")\n')

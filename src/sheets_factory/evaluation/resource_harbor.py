@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+import subprocess
 import tomllib
 
 from . import harbor, resource_streaming_verifier, streaming_verifier
@@ -68,6 +69,20 @@ def _toml(task_id, metadata, profile):
         'storage_mb = 2048\nnetwork_mode = "no-network"\n')
 
 
+def verify_local_base_image(runtime_profile=DEFAULT_PROFILE):
+    """Inspect the actual local tag before building; never pull or substitute."""
+    profile = load_runtime_profile(runtime_profile)
+    command = ['docker', 'image', 'inspect', profile['image']['tag'], '--format', '{{.Id}}']
+    result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+    _require(result.returncode == 0 and result.stdout.strip() == profile['image']['id'],
+             'The local Dockerfile base tag must resolve to the exact approved image ID')
+    return {'kind': 'actual_local_resource_base_image_binding', 'version': 1,
+            'command': command, 'base_reference': profile['image']['tag'],
+            'expected_image_id': profile['image']['id'], 'actual_image_id': result.stdout.strip(),
+            'actual_local_image_verified': True, 'actual_container_resources_verified': False,
+            'quality_or_difficulty_certified': False}
+
+
 def export_resource_harbor(task_dir, export_dir, metadata=None, project_root=None,
                            runtime_profile=DEFAULT_PROFILE):
     """Create a fresh complete export. This does not execute or certify containers."""
@@ -95,6 +110,9 @@ def export_resource_harbor(task_dir, export_dir, metadata=None, project_root=Non
                 'execution_budget': dict(resource_streaming_verifier.EXECUTION_BUDGET),
                 'operational_guard_is_model_failure': False,
                 'actual_container_resources_verified': False,
+                'build_base_reference': profile['image']['tag'],
+                'required_local_base_image_id': profile['image']['id'],
+                'actual_local_base_image_verification_required_before_build': True,
                 'harbor_pid_limit_configured': False,
                 'pid_limit_note': 'The installed Harbor task schema has no PID-limit field; verify real HostConfig separately.',
                 'quality_or_difficulty_certified': False}
@@ -114,9 +132,9 @@ def export_resource_harbor(task_dir, export_dir, metadata=None, project_root=Non
     if '/app/output.xlsx' not in instruction:
         instruction += '\n\nRead `/app/input.xlsx` and save the completed workbook to `/app/output.xlsx`.\n'
     (destination / 'instruction.md').write_text(instruction)
-    image_id = profile['image']['id']
+    image_reference = profile['image']['tag']
     (destination / 'environment/Dockerfile').write_text(
-        f'FROM {image_id}\nUSER root\nENTRYPOINT []\nWORKDIR /app\n'
+        f'FROM {image_reference}\nUSER root\nENTRYPOINT []\nWORKDIR /app\n'
         'COPY input.xlsx /app/input.xlsx\n'
         'COPY resource_runner.py runtime_profile.json /opt/sheetsfactory/\n'
         'COPY --chmod=755 recalculate /usr/local/bin/recalculate\n'
@@ -125,7 +143,7 @@ def export_resource_harbor(task_dir, export_dir, metadata=None, project_root=Non
         '#!/bin/sh\nexec /usr/bin/python3 /opt/sheetsfactory/resource_runner.py recalculate '
         '"$@" --profile /opt/sheetsfactory/runtime_profile.json\n')
     (destination / 'tests/Dockerfile').write_text(
-        f'FROM {image_id}\nUSER root\nENTRYPOINT []\nWORKDIR /app\nCOPY . /tests/\n')
+        f'FROM {image_reference}\nUSER root\nENTRYPOINT []\nWORKDIR /app\nCOPY . /tests/\n')
     (destination / 'solution/solve.sh').write_text(
         '#!/bin/sh\nset -eu\ncp /solution/reference.xlsx /app/output.xlsx\n')
     (destination / 'tests/test.sh').write_text(
@@ -163,6 +181,10 @@ def inspect_resource_export(export_dir):
              and contract.get('operational_guard_is_model_failure') is False
              and contract.get('quality_or_difficulty_certified') is False,
              'An export cannot certify execution, quality or difficulty')
+    _require(contract.get('build_base_reference') == profile['image']['tag']
+             and contract.get('required_local_base_image_id') == profile['image']['id']
+             and contract.get('actual_local_base_image_verification_required_before_build') is True,
+             'The local build tag and exact expected image identity must both remain bound')
     config = tomllib.loads((path / 'task.toml').read_text())
     for name, role in (('agent', config['environment']), ('verifier', config['verifier']['environment'])):
         _require(type(role.get('cpus')) is int and role['cpus'] == 2
@@ -186,8 +208,8 @@ def inspect_resource_export(export_dir):
     for folder in ('environment', 'tests'):
         _require(json.loads((path / folder / 'runtime_profile.json').read_text()) == profile,
                  'The packaged runtime profile differs')
-        _require((path / folder / 'Dockerfile').read_text().startswith('FROM ' + profile['image']['id'] + '\n'),
-                 'Agent/verifier base image is not the same immutable ID')
+        _require((path / folder / 'Dockerfile').read_text().startswith('FROM ' + profile['image']['tag'] + '\n'),
+                 'Agent/verifier must use the same verified local base reference')
     profile_binding = contract['profile_binding']
     if 'path' in profile_binding:
         _require(profile_binding == _reference(profile_binding['path'])
