@@ -1,0 +1,9 @@
+{
+  "adapter": "lease_monetary_complete_v1",
+  "version": 1,
+  "families": ["measurement_pv", "depreciation", "interest", "nominal_payment"],
+  "max_roots": 100000,
+  "root_impact_validation": "shadow_roots",
+  "source_presentation": "exact_source_audited_numeric_zero_formulas_only",
+  "difficulty_measured": false
+}

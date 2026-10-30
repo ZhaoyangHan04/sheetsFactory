@@ -1,0 +1,16 @@
+{
+  "adapter": "lease_monetary_complete_v1",
+  "version": 2,
+  "mutation_profile": "contract_conditioned_v2",
+  "families": ["measurement_pv", "depreciation", "interest", "nominal_payment"],
+  "max_roots": 100000,
+  "root_impact_validation": "shadow_roots",
+  "source_presentation": "exact_source_audited_numeric_zero_formulas_only",
+  "contract_conditioned_faults": {
+    "zero_current_discount_rate_and_payment_frequency_gt_one": "PV and nominal cash mistake monthly base rent for the full periodic payment by omitting the payment-frequency factor.",
+    "positive_current_discount_rate": "PV uses payments-in-advance timing and nominal cash applies a one-period discount.",
+    "positive_interest_schedule": "Interest uses nominal annual/12 instead of the contractual effective monthly rate.",
+    "depreciation": "Rolling remaining-life charge includes an extra period."
+  },
+  "difficulty_measured": false
+}
