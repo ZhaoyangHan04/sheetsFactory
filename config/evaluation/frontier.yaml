@@ -1,0 +1,10 @@
+# Phase must always be supplied explicitly by the evaluator's caller.
+model: gpt-6.1-sol
+reasoning_effort: xhigh
+timeout_seconds: 1800
+concurrency: 4
+n_attempts: 1
+overall_pass_at_1_threshold: 0.2
+confirmation_minimum_by_mode:
+  financial_modeling: 10
+  debugging: 10
