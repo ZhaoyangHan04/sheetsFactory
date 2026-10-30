@@ -45,12 +45,17 @@ def project_business_brief(spec: dict) -> dict:
         rules.extend(ADVANCED_TAX_BRIEF)
     else:
         rules.extend(SIMPLE_TAX_BRIEF)
+    cyclic = spec.get("cyclic_financing_parameters")
+    cyclic_enabled = cyclic is not None and int(cyclic["enabled"]) == 1
+    if cyclic_enabled:
+        from .spec import cyclic_financing_rule
+        rules.append(cyclic_financing_rule())
     # This bound is part of the presentation contract, not a data truncation.
     if len(" ".join(rules).split()) > 600:
         raise ValueError("Business brief exceeds its 600-word presentation budget")
     result["public_rules"] = rules
     result["presentation_style"] = "business_brief"
-    result["presentation_version"] = 2
+    result["presentation_version"] = 3 if cyclic_enabled else 2
     return result
 
 

@@ -253,3 +253,22 @@ def test_ambiguous_twelve_character_hash_prefix_is_rejected(source_run, stub_nod
 def test_accidental_model_call_is_forbidden_without_backend_instantiation():
     with pytest.raises(RuntimeError, match="must not invoke a model"):
         probe._NoModelCalls().complete("forbidden")
+
+
+@pytest.mark.parametrize('backend', ['project_template', 'portfolio_template'])
+def test_template_backend_uses_only_exact_machine_cached_proposal(source_run, stub_nodes, backend):
+    item = source_run
+    config_path = item['run'] / 'resolved_config.yaml'
+    config = yaml.safe_load(config_path.read_text())
+    config['construction']['authoring_backend'] = backend
+    config_path.write_text(yaml.safe_dump(config))
+    ordinary = item['cache'] / 'task_plans_v0_financial_modeling.json'
+    exact = ordinary.with_name('task_plans_v0_financial_modeling_' + backend + '.json')
+    ordinary.rename(exact)
+    # A stale llm cache must never be selected as a fallback or preferred source.
+    ordinary.write_text('not the requested machine-authoring backend')
+    manifest = probe.prepare_probe(item['run'], item['identity'], 'financial_modeling', item['output'])
+    assert manifest['planning_origin']['authoring_backend'] == backend
+    assert manifest['planning_origin']['path'] == str(exact)
+    assert manifest['planning_origin']['sha256'] == probe._sha(exact)
+    assert manifest['llm_calls'] == 0

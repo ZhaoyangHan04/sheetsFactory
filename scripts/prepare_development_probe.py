@@ -156,7 +156,11 @@ def prepare_probe(run, source_id, mode, output):
             raise ValueError("Source run audit does not match the selected raw source identity")
         cache = run / "sources" / identity[:12]
         baseline = cache / "baseline.xlsx"
-        proposal = cache / ("task_plans_v0_" + mode + ".json")
+        backend = config.get("construction", {}).get("authoring_backend", "llm")
+        suffixes = {"llm": "", "project_template": "_project_template", "portfolio_template": "_portfolio_template"}
+        if backend not in suffixes:
+            raise ValueError("Unsupported cached proposal authoring backend")
+        proposal = cache / ("task_plans_v0_" + mode + suffixes[backend] + ".json")
         if not baseline.is_file() or not proposal.is_file():
             raise ValueError("Source run lacks the exact cached mode proposal or normalized baseline")
         if not baseline.resolve().is_relative_to(cache.resolve()) or not proposal.resolve().is_relative_to(cache.resolve()):

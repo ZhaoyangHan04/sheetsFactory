@@ -17,7 +17,7 @@ from openpyxl.utils import get_column_letter as L
 
 _BASE_SHEETS = ("Operations", "Assets", "Debt", "Tax", "Cash Flow", "Balance Sheet",
                 "Equity Value", "Annual Statements")
-_OPTIONAL_SHEETS = ("Covenants", "Tax Vintages")
+_OPTIONAL_SHEETS = ("Covenants", "Tax Vintages", "DebtSizing")
 _CENT = Decimal(".01")
 
 
@@ -91,6 +91,19 @@ def _recognize(book):
             raise ValueError("Unrecognized annual tax vintage schema")
         if not all(term in policy_text for term in ("deferred", "vintage", "expire")):
             raise ValueError("Advanced tax model lacks its explicit public tax policy")
+    if "DebtSizing" in book:
+        required_cyclic = ("cyclic enabled", "cyclic bankcap", "cyclic target dscr", "cyclic tranche",
+                           "loan a principal", "equity paid in")
+        if any(name not in rows["Scenario"] for name in required_cyclic):
+            raise ValueError("Debt underwriting lacks its explicit public financing assumptions")
+        if not all(term in policy_text for term in ("underwriting", "capacity", "tranche", "equity")):
+            raise ValueError("Debt underwriting lacks its explicit public sizing policy")
+        if _number(book["Scenario"].cell(rows["Scenario"]["cyclic enabled"], 2).value) != 1:
+            raise ValueError("Debt underwriting template requires an explicitly enabled public contract")
+        for key in ("loan a principal", "equity paid in"):
+            cell = book["Scenario"].cell(rows["Scenario"][key], 2)
+            if cell.data_type != "f" or "DebtSizing" not in cell.value:
+                raise ValueError("Endogenous financing must be linked to its public underwriting schedule")
     return rows, columns, policies
 
 
@@ -138,6 +151,10 @@ def _modeling_ranges(book, rows):
                  if cell.data_type == "f" and cell.row not in date_rows and not cell.is_date}
         count += len(cells)
         groups.extend(_formula_rectangles(name, cells))
+    if "DebtSizing" in book:
+        endogenous = {(rows["Scenario"][key], 2) for key in ("loan a principal", "equity paid in")}
+        count += len(endogenous)
+        groups.extend(_formula_rectangles("Scenario", endogenous))
     if not 6 <= count <= 8192 or not 1 <= len(groups) <= 64:
         raise ValueError("Project formula families exceed supported task authoring bounds")
     return groups
@@ -263,6 +280,9 @@ def propose_project_task(baseline: Path, mode: str) -> dict:
     try:
         rows, columns, policies = _recognize(book)
         targets = [name for name in (*_BASE_SHEETS, *_OPTIONAL_SHEETS) if name in book]
+        cyclic = "DebtSizing" in book
+        if cyclic:
+            targets.append("Scenario")
         if mode == "financial_modeling":
             instruction = (
                 "Complete the missing formulas in this hypothetical project financing model for all thirty-six monthly periods "
@@ -272,6 +292,8 @@ def propose_project_task(baseline: Path, mode: str) -> dict:
                 "existing inputs, labels, dates and unaffected formulas while allowing dependent results to recalculate. "
                 "Read /app/input.xlsx and save the completed workbook as /app/output.xlsx.")
             edits, masks = [], _modeling_ranges(book, rows)
+            if cyclic:
+                instruction = instruction.replace("financing,", "underwriting and financing,")
         else:
             values = openpyxl.load_workbook(baseline, data_only=True, keep_links=False)
             edits, masks = _debug_edits(book, values, rows, columns), None
@@ -295,6 +317,20 @@ def propose_project_task(baseline: Path, mode: str) -> dict:
                                  for name in ("Read Me", "Source Inputs", "Scenario", "Calendar")],
             "native_issues": [], "involved_sheets": list(book.sheetnames),
         }
+        if cyclic:
+            # Endogenous funding formulas are targets; all primitive inputs and
+            # their labels/statuses stay protected. Do not protect a target as
+            # if it were an immutable input constant.
+            task["protected_inputs"] = [item for item in task["protected_inputs"]
+                                        if not item.startswith("'Scenario'!")]
+            end = book["Scenario"].max_row
+            task["protected_inputs"].extend((f"'Scenario'!A1:A{end}", f"'Scenario'!C1:C{end}"))
+            excluded = sorted(rows["Scenario"][key] for key in ("loan a principal", "equity paid in"))
+            start = 1
+            for row in [*excluded, end + 1]:
+                if start < row:
+                    task["protected_inputs"].append(f"'Scenario'!B{start}:B{row - 1}")
+                start = row + 1
         if masks is not None:
             task["mask_ranges"] = masks
         return task

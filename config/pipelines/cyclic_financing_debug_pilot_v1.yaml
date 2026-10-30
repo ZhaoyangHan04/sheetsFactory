@@ -1,0 +1,84 @@
+run:
+  name: cyclic-financing-debugging-business-pilot
+  scheduler: rolling
+  targets:
+    financial_modeling: 0
+    debugging: 1
+  max_sources: 1
+  max_parallel_sources: 1
+  max_candidates_per_seed: 1
+  variant_modes:
+  - debugging
+  max_steps: 1
+  max_evidence_rounds_per_revision: 1
+  infrastructure_retries_per_stage: 2
+  seed_manifest: outputs/research/cyclic_business_lane_20261030T101355Z/verified_source/seed_manifest.json
+construction:
+  planning_scope: per_mode
+  authoring_backend: llm
+  instruction_style: business_brief
+  max_edit_count:
+    financial_modeling: 8192
+    debugging: 12
+  root_impact_validation: strict
+  planning_preferences_only:
+    debugging_edit_count:
+    - 6
+    - 10
+engine:
+  image: sheetsfactory-lo:24.2-iterative-v1
+  timeout_seconds: 240
+agents:
+  model: gpt-6-sol
+  reasoning_effort: high
+  max_parallel_calls: 4
+  timeout_seconds: 1200
+  trajectory_timeout_seconds: 600
+  roles:
+    public_diagnostician:
+      model: gpt-6-sol
+      reasoning_effort: high
+      timeout_seconds: 900
+    reference_diagnostician:
+      model: gpt-6-sol
+      reasoning_effort: high
+      timeout_seconds: 1200
+    trace_agent:
+      model: gpt-6-sol
+      reasoning_effort: high
+      timeout_seconds: 600
+prompt_overrides:
+  planning.md: planning_business.md
+  recovery.md: recovery_business.md
+  diagnosis.md: diagnosis_business.md
+  repair.md: repair_business.md
+diagnosis:
+  selection:
+    include: all
+    exclude: []
+  execution:
+    llm_batching: all_in_one
+  difficulty_deferred: false
+  reference_evidence_policy: reference_review
+dashboard:
+  host: 127.0.0.1
+  port: 0
+  open_browser: true
+harbor:
+  execute_controls: true
+  concurrency: 4
+difficulty:
+  max_rounds: 4
+  per_mode: 10
+  evaluation_concurrency: 4
+  timeout_seconds: 1800
+  dashboard_port: 0
+generation_feedback:
+  development_axis: Real endogenous debt underwriting and tax/cash feedback, with
+    public primitive assumptions preserved.
+  debugging_focus: Prefer plausible nonlocal underwriting capacity, annuity service
+    factor, tranche rounding or funding references coupled to actual debt/tax/cash
+    schedules. Use only existing formulas. Avoid cosmetic or zero-impact roots and
+    do not add secret rules. The source has a unique independent correct solution.
+  independent_difficulty_evaluation: After actual controls, the frozen task receives
+    an independent strongest-model development attempt.

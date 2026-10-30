@@ -208,3 +208,64 @@ def test_public_circular_policy_is_short_complete_and_has_no_solution_algorithm(
     assert not any(term in rule.lower() for term in ("iterate", "solver", "fixed point", "11129000"))
     assert contract[0]["public_contract_version"] == 8
     assert contract[0]["status"] == "experimental_seed_not_a_qualified_task"
+
+
+def test_business_brief_keeps_exact_cyclic_policy_and_old_versions(contract):
+    from sheets_factory.workbook.derived_gold.presentation import project_business_brief
+    spec = contract[0]
+    compact = project_business_brief(spec)
+    assert compact['parameters'] == spec['parameters']
+    assert compact['cyclic_financing_parameters'] == spec['cyclic_financing_parameters']
+    assert compact['presentation_version'] == 3
+    assert compact['public_rules'][-1] == cyclic_financing_rule()
+    assert len(' '.join(compact['public_rules']).split()) <= 600
+    old = deepcopy(spec)
+    old.pop('cyclic_financing_parameters')
+    assert project_business_brief(old)['presentation_version'] == 2
+    assert cyclic_financing_rule() not in project_business_brief(old)['public_rules']
+
+
+def test_cyclic_template_masks_financial_families_but_preserves_primitive_scenario_inputs(contract, tmp_path):
+    from openpyxl.utils.cell import range_boundaries
+    from sheets_factory.nodes.construction import compile_mask_ranges
+    from sheets_factory.workbook.derived_gold.presentation import project_business_brief
+    from sheets_factory.workbook.derived_gold.task_templates import propose_project_task
+    path = tmp_path / 'public_business_cyclic.xlsx'
+    bindings = emit_workbook(project_business_brief(contract[0]), path)
+    proposal = propose_project_task(path, 'financial_modeling')
+    compiled = compile_mask_ranges(proposal, path, 'financial_modeling',
+                                   {'construction': {'max_edit_count': {'financial_modeling': 8192}}})
+    targets = {(item['sheet'], item['cell']) for item in compiled['edits']}
+    endogenous = {('Scenario', 'B' + str(bindings['parameter_rows'][key]))
+                  for key in ('loan_a_principal', 'equity_paid_in')}
+    assert {item for item in targets if item[0] == 'Scenario'} == endogenous
+    assert {item for item in targets if item[0] == 'DebtSizing'} == {('DebtSizing', 'B' + str(row)) for row in range(2, 13)}
+    assert not {item for item in targets if item[0] in {'Read Me', 'Calendar', 'Source Inputs'}}
+    assert len(targets) == len(compiled['edits'])
+    assert 60 <= len(proposal['public_instruction'].split()) <= 100
+    assert 'underwriting' in proposal['public_instruction']
+    book = openpyxl.load_workbook(path)
+    for sheet, address in targets:
+        assert book[sheet][address].data_type == 'f'
+        assert not book[sheet][address].is_date
+    for region in proposal['protected_inputs']:
+        sheet, area = region.split('!', 1)
+        sheet = sheet.strip("'")
+        left, top, right, bottom = range_boundaries(area)
+        assert all((sheet, cell.coordinate) not in targets for row in book[sheet].iter_rows(
+            min_row=top, max_row=bottom, min_col=left, max_col=right) for cell in row)
+    for key, row in bindings['parameter_rows'].items():
+        if key not in {'loan_a_principal', 'equity_paid_in'}:
+            assert ('Scenario', 'B' + str(row)) not in targets
+    book.close()
+
+
+def test_cyclic_template_rejects_missing_public_policy(contract, tmp_path):
+    from sheets_factory.workbook.derived_gold.presentation import project_business_brief
+    from sheets_factory.workbook.derived_gold.task_templates import propose_project_task
+    spec = project_business_brief(contract[0])
+    spec['public_rules'] = spec['public_rules'][:-1]
+    path = tmp_path / 'missing_sizing_policy.xlsx'
+    emit_workbook(spec, path)
+    with pytest.raises(ValueError, match='public sizing policy'):
+        propose_project_task(path, 'financial_modeling')
