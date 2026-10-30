@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "scenario_id": "holding-programme-associate-waterfall-annual-v3",
+  "status": "hypothetical-development-source-not-qualified",
+  "years": [
+    2024,
+    2025,
+    2026,
+    2027,
+    2028,
+    2029,
+    2030,
+    2031,
+    2032,
+    2033,
+    2034,
+    2035,
+    2036,
+    2037,
+    2038,
+    2039,
+    2040,
+    2041,
+    2042,
+    2043
+  ],
+  "parameters": {
+    "opening_cash": "250000.00",
+    "minimum_cash": "250000.00",
+    "facility_limit": "15000000",
+    "additional_lp_commitment": "250000000.00",
+    "rav_advance_rate": "0.80",
+    "claim_advance_rate": "0.80",
+    "operating_ownership": "0.25",
+    "gbp_per_usd": "0.80"
+  },
+  "annual_inputs": [
+    {
+      "year": 2024,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2025,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2026,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2027,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2028,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2029,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2030,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2031,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "1.00"
+    },
+    {
+      "year": 2032,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.60"
+    },
+    {
+      "year": 2033,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2034,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2035,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2036,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2037,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2038,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2039,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2040,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2041,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2042,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    },
+    {
+      "year": 2043,
+      "bank_rate": "0.075",
+      "management_fee": "200000.00",
+      "claim_haircut": "0.25"
+    }
+  ],
+  "required_observed_regimes": [
+    "bank_draw",
+    "mandatory_margin",
+    "optional_repayment",
+    "lp_call",
+    "operating_acquisition",
+    "operating_exit",
+    "borrowing_base_binding"
+  ],
+  "credit_policy": "In FY2031 disputed programme claims are wholly ineligible as collateral; other FY haircuts are explicitly listed. RAV advances remain 80% of nominal closing RAV, net of senior programme debt and lease liabilities."
+}
