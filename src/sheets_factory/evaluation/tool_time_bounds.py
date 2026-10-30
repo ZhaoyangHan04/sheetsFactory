@@ -1,6 +1,6 @@
 """Prospective, conservative timing bounds for contained static pending tools.
 
-The legacy exact parser is unchanged. A bound needs an identity captured while
+The default legacy exact behavior is unchanged. A bound needs an identity captured while
 the exact trial container was alive and an authoritative later stop observation.
 Missing native durations remain unknown; they are never replaced with zero.
 """
@@ -218,6 +218,15 @@ def _validated_stop(result_file, receipt_file):
 def account_trial_tool_time_bounds(result_file, *, stop_receipt_file=None, budget_seconds=1800):
     """A future policy may certify a budget from a safe upper bound, never exactify it."""
     exact = account_trial_tool_time(result_file, budget_seconds=budget_seconds)
+    if exact['state'] != 'verified' and 'Native execution has no launching wrapper' in exact['problems']:
+        mixed = account_trial_tool_time(result_file, budget_seconds=budget_seconds,
+                                        allow_mixed_file_change_polls=True)
+        if mixed['state'] == 'verified':
+            return {**mixed, 'policy_version': 2, 'exact_timing_state': 'verified',
+                    'legacy_exact_parser_problems': exact['problems'],
+                    'ownership_extension': 'single_literal_patch_exact_paths_with_independent_poll',
+                    'lower_bound_seconds': mixed['cumulative_tool_seconds'],
+                    'upper_bound_seconds': mixed['cumulative_tool_seconds']}
     if exact['state'] == 'verified':
         return {**exact, 'policy_version': 2, 'exact_timing_state': 'verified',
                 'lower_bound_seconds': exact['cumulative_tool_seconds'],
@@ -235,7 +244,8 @@ def account_trial_tool_time_bounds(result_file, *, stop_receipt_file=None, budge
         if stop_receipt_file is None:
             raise ToolTimingError('The exact timing is incomplete and no prospective stop receipt exists')
         stop, captured, stop_ref = _validated_stop(result_file, stop_receipt_file)
-        if not started <= captured <= finished <= stop:
+        trial_started = _timestamp(raw_result['started_at']) if raw_result.get('started_at') else started
+        if not trial_started <= started or not trial_started <= captured <= finished <= stop:
             raise ToolTimingError('Live capture, agent execution and stop bound are out of order')
         records, calls, outputs, native = [], {}, {}, []
         fingerprints = set()
@@ -299,6 +309,12 @@ def account_trial_tool_time_bounds(result_file, *, stop_receipt_file=None, budge
                 path = Path(directory) / 'derived-prefix.jsonl'
                 path.write_bytes(prefix_raw)
                 completed = account_tool_time([path], budget_seconds=budget_seconds, execution_window=window)
+                if (completed['state'] != 'verified'
+                        and 'Native execution has no launching wrapper' in completed['problems']):
+                    completed = account_tool_time([path], budget_seconds=budget_seconds,
+                        execution_window=window, allow_mixed_file_change_polls=True)
+                    if completed['state'] == 'verified':
+                        completed['ownership_extension'] = 'single_literal_patch_exact_paths_with_independent_poll'
             if completed['state'] != 'verified':
                 raise ToolTimingError('Completed-prefix timing is incomplete: ' + '; '.join(completed['problems']))
             # The raw sessions are the durable evidence; no deleted temp path is

@@ -82,6 +82,36 @@ def test_pending_bound_never_becomes_an_invented_exact_duration(tmp_path):
     assert receipt['completed_prefix']['derived_event_subset_sha256']
 
 
+def test_live_identity_can_precede_agent_start_within_the_actual_trial_window(tmp_path):
+    result, stop, _ = fixture(tmp_path)
+    document = json.loads(result.read_text())
+    document['started_at'] = stamp(-10)
+    document['agent_execution']['started_at'] = stamp(0)
+    result.write_text(json.dumps(document))
+    bound = json.loads(stop.read_text())
+    identity_path = Path(bound['identity_file']['path'])
+    identity = json.loads(identity_path.read_text())
+    identity['captured_at'] = stamp(-.001)
+    identity['running_observation'].update(utc_before=stamp(-.002), utc_after=stamp(-.001))
+    identity['daemon_observation'].update(utc_before=stamp(-.003), utc_after=stamp(-.002))
+    dump(identity_path, identity)
+    bound.update(identity_file=ref(identity_path), result_file=ref(result))
+    dump(stop, bound)
+    receipt = account_trial_tool_time_bounds(result, stop_receipt_file=stop)
+    assert receipt['state'] == 'bounded' and receipt['passed'] is True, receipt['problems']
+    assert receipt['upper_bound_seconds'] == 92
+
+
+def test_capture_before_trial_start_is_still_rejected(tmp_path):
+    result, stop, _ = fixture(tmp_path)
+    document = json.loads(result.read_text())
+    document['started_at'] = stamp(6)  # Capture at5 cannot belong to this trial.
+    result.write_text(json.dumps(document))
+    bound = json.loads(stop.read_text()); bound['result_file'] = ref(result); dump(stop, bound)
+    receipt = account_trial_tool_time_bounds(result, stop_receipt_file=stop)
+    assert receipt['state'] == 'unknown' and receipt['passed'] is None
+
+
 def test_all_parallel_pending_wrappers_and_static_children_add_separately(tmp_path):
     pending = [wrapper('a', 10, 'await Promise.all([tools.exec_command({cmd:"one"}),tools.exec_command({cmd:"two"})]);'),
                wrapper('b', 15, 'await tools.exec_command({cmd:"three"});')]

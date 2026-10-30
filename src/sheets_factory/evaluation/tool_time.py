@@ -158,7 +158,44 @@ def _matches_command(parent, item):
     return False
 
 
-def account_tool_time(session_files, *, budget_seconds=1800, execution_window=None):
+def _matches_literal_file_change(parent, item):
+    """Bind one literal patch in a mixed patch/poll wrapper by exact file paths."""
+    if item.get('type') != 'FileChange' or not item.get('changes'):
+        return False
+    code = parent.get('code', '')
+    literals = re.compile(r'''"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|//[^\n]*|/\*[\s\S]*?\*/''')
+    masked = literals.sub(lambda match: ' ' * len(match.group()), code)
+    starts = list(re.finditer(r'\btools\s*\.\s*apply_patch\s*\(', masked))
+    if len(starts) != 1:
+        return False
+    position = starts[0].end()
+    while position < len(code) and code[position].isspace():
+        position += 1
+    literal = literals.match(code, position)
+    if literal is None or literal.group()[0] not in ('"', "'"):
+        return False
+    if not re.match(r'\s*\)', code[literal.end():]):
+        return False
+    try:
+        patch = ast.literal_eval(literal.group())
+        headers = re.findall(r'^\*\*\* (?:Add|Update|Delete) File: (.+)$', patch, re.M)
+        moves = re.findall(r'^\*\*\* Move to: (.+)$', patch, re.M)
+        changes = item['changes']
+        if not isinstance(changes, dict) or not headers or len(set(headers)) != len(headers):
+            return False
+        observed = set(changes)
+        for change in changes.values():
+            if not isinstance(change, dict):
+                return False
+            if change.get('move_path'):
+                observed.add(change['move_path'])
+        return observed == set(headers + moves)
+    except (ValueError, SyntaxError, TypeError):
+        return False
+
+
+def account_tool_time(session_files, *, budget_seconds=1800, execution_window=None,
+                      allow_mixed_file_change_polls=False):
     """Return a bound receipt; unknown timing never becomes a scored failure."""
     budget = _number(budget_seconds)
     if not budget:
@@ -227,12 +264,14 @@ def account_tool_time(session_files, *, budget_seconds=1800, execution_window=No
                     command = command[-1] if isinstance(command, list) and command else command
                     candidate = {'id': identity, 'type': item_type, 'start': start, 'end': end,
                                  'duration': duration, 'status': status, 'command': command,
+                                 'changes': item.get('changes'),
                                  'process_id': str(item['process_id']) if item.get('process_id') is not None else None}
                     if identity in items:
                         previous = items[identity]
                         if (previous['type'] != item_type or start != previous['start'] or end < previous['end']
                                 or previous['process_id'] != candidate['process_id']
                                 or previous['command'] != command
+                                or (allow_mixed_file_change_polls and previous['changes'] != candidate['changes'])
                                 or (previous['status'] not in {'inprogress', 'running', 'pending'}
                                     and (end != previous['end'] or duration != previous['duration']
                                          or status != previous['status']))):
@@ -265,7 +304,8 @@ def account_tool_time(session_files, *, budget_seconds=1800, execution_window=No
             parents = [parent for parent in wrappers if parent['start'] <= item['start'] <= parent['end']]
             if not parents:
                 raise ToolTimingError('Native execution cannot be bound to a tool call')
-            matched = [parent for parent in parents if _matches_command(parent, item)]
+            matched = [parent for parent in parents if _matches_command(parent, item)
+                       or (allow_mixed_file_change_polls and _matches_literal_file_change(parent, item))]
             if matched:
                 parents = matched
             else:
@@ -334,7 +374,7 @@ def account_tool_time(session_files, *, budget_seconds=1800, execution_window=No
     return result
 
 
-def account_trial_tool_time(result_file, *, budget_seconds=1800):
+def account_trial_tool_time(result_file, *, budget_seconds=1800, allow_mixed_file_change_polls=False):
     path = Path(result_file).resolve()
     try:
         result_raw = path.read_bytes()
@@ -342,7 +382,8 @@ def account_trial_tool_time(result_file, *, budget_seconds=1800):
         if not isinstance(execution_window, dict):
             raise ToolTimingError('Actual agent execution window is missing')
         receipt = account_tool_time((path.parent / 'agent/sessions').rglob('*.jsonl'),
-            budget_seconds=budget_seconds, execution_window=execution_window)
+            budget_seconds=budget_seconds, execution_window=execution_window,
+            allow_mixed_file_change_polls=allow_mixed_file_change_polls)
         receipt['result_file'] = {'path': str(path), 'sha256': hashlib.sha256(result_raw).hexdigest()}
     except (OSError, ValueError, TypeError, AttributeError) as exc:
         receipt = account_tool_time([], budget_seconds=budget_seconds)
