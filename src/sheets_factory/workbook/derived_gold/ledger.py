@@ -298,9 +298,9 @@ def _cyclic_financing_config(spec: dict, parameters: dict) -> dict | None:
     gap = parameters["initial_asset_cost"] + parameters["opening_cash"] - parameters["loan_b_principal"]
     if c["bankcap"] > gap or c["tranche"] > c["bankcap"]:
         raise ValueError("Cyclic bank cap cannot exceed the opening equity funding gap")
-    if (parameters["covenant"] or parameters["advanced_tax"] or parameters["cash_sweep_fraction"] != 0
+    if (parameters["covenant"] or parameters["cash_sweep_fraction"] != 0
             or parameters["cash_allocation_start"] <= parameters["months"] or parameters["opening_retained"] != 0):
-        raise ValueError("Certified cyclic prototype requires simple tax, no covenant/sweep and allocation after the horizon")
+        raise ValueError("Certified cyclic prototype requires no covenant/sweep and allocation after the horizon")
     if int(c["bankcap"] // c["tranche"]) > 100000:
         raise ValueError("Cyclic financing tranche grid exceeds the independently certified bound")
     return c
@@ -602,10 +602,12 @@ def _simulate_cyclic(p: dict[str, Any]) -> dict[str, Any]:
     base = _simulate(parameters_at(_ZERO))
     if any(row["revolver_open"] or row["revolver_draw"] for row in base["monthly"]):
         raise ValueError("The cyclic proof requires no revolving borrowing across the certified grid")
-    gross_cfo = [row["cfo_direct"] + row["tax"] for row in base["monthly"]]
+    advanced = p["advanced_tax"] is not None
+    cash_tax_field = "current_tax" if advanced else "tax"
+    gross_cfo = [row["cfo_direct"] + row[cash_tax_field] for row in base["monthly"]]
     annual_ebit = [sum((row["ebit"] for row in base["monthly"][i:i + 12]), _ZERO) for i in (0, 12, 24)]
     annual_b = [sum((row["loan_b_interest"] for row in base["monthly"][i:i + 12]), _ZERO) for i in (0, 12, 24)]
-    gross_cfads = sum((row["cfo_direct"] + row["interest"] - row["capex"] for row in base["monthly"][24:]), _ZERO) + base["monthly"][-1]["tax"]
+    gross_cfads = sum((row["cfo_direct"] + row["interest"] - row["capex"] for row in base["monthly"][24:]), _ZERO) + base["monthly"][-1][cash_tax_field]
     def project(principal):
         payment = _q(principal * unit)
         balance = principal
@@ -618,12 +620,24 @@ def _simulate_cyclic(p: dict[str, Any]) -> dict[str, Any]:
             scheduled.append(amort)
         nol = _q(p["opening_nol"])
         taxes = []
+        tax_state = _AnnualTaxState(p, p["advanced_tax"]) if advanced else None
         for year in range(3):
-            ebt = annual_ebit[year] - annual_b[year] - sum(interests[year * 12:year * 12 + 12], _ZERO)
-            positive = max(ebt, _ZERO)
-            use = min(nol, _q(positive * p["nol_utilization_cap"]))
-            taxes.append(_q((positive - use) * p["tax_rate"]))
-            nol += max(-ebt, _ZERO) - use
+            cash_interest = annual_b[year] + sum(interests[year * 12:year * 12 + 12], _ZERO)
+            if tax_state:
+                yearly = base["monthly"][year * 12:year * 12 + 12]
+                closing = yearly[-1]
+                record = tax_state.close_year(year + 1,
+                    ebitda=sum((row["ebitda"] for row in yearly), _ZERO),
+                    book_depreciation=sum((row["depreciation"] for row in yearly), _ZERO),
+                    cash_interest=cash_interest, book_net_ppe=closing["net_ppe"],
+                    acquired_cost=closing["asset_initial_gross"] + closing["asset_refresh_gross"])
+                taxes.append(record["current_tax"])
+            else:
+                ebt = annual_ebit[year] - cash_interest
+                positive = max(ebt, _ZERO)
+                use = min(nol, _q(positive * p["nol_utilization_cap"]))
+                taxes.append(_q((positive - use) * p["tax_rate"]))
+                nol += max(-ebt, _ZERO) - use
         cash = _q(p["opening_cash"])
         balances = []
         for index, row in enumerate(base["monthly"]):
@@ -633,8 +647,11 @@ def _simulate_cyclic(p: dict[str, Any]) -> dict[str, Any]:
         cfads = gross_cfads - taxes[2]
         capacity = _q(max(cfads, _ZERO) / (c["target_dscr"] * factor))
         sized = (min(capacity, c["bankcap"]) // tranche) * tranche
-        return {"mapped": sized, "capacity": capacity, "cfads": cfads, "taxes": taxes,
-                "interest": interests, "scheduled": scheduled, "cash": balances}
+        result = {"mapped": sized, "capacity": capacity, "cfads": cfads, "taxes": taxes,
+                  "interest": interests, "scheduled": scheduled, "cash": balances}
+        if tax_state:
+            result["tax_annual"] = tax_state.records
+        return result
     grid = {}
     fixed = []
     monotone = feasible = True
@@ -685,9 +702,11 @@ def _simulate_cyclic(p: dict[str, Any]) -> dict[str, Any]:
             cash_tax = projection["taxes"][index // 12] if (index + 1) % 12 == 0 else _ZERO
             if (row["loan_a_interest"] != projection["interest"][index]
                     or row["loan_a_scheduled_principal"] != projection["scheduled"][index]
-                    or row["tax"] != cash_tax or row["cash_close"] != projection["cash"][index]
+                    or row[cash_tax_field] != cash_tax or row["cash_close"] != projection["cash"][index]
                     or row["revolver_open"] or row["revolver_draw"]):
                 raise ArithmeticError("Reduced cyclic proof differs from the full independent financial journal")
+        if advanced and full["tax_annual"] != projection["tax_annual"]:
+            raise ArithmeticError("Reduced cyclic tax vintages differ from the full independent journal")
     result = reports[chosen]
     projection = project(chosen)
     result["debt_sizing"] = {"year3_cfads": projection["cfads"], "unit_monthly_payment_factor": unit,
@@ -700,6 +719,8 @@ def _simulate_cyclic(p: dict[str, Any]) -> dict[str, Any]:
         "projection_full_journal_comparisons": len(reports), "principal_interior": True,
         "adjacent_tranche_year3_cash_tax_response": tax_response,
         "adjacent_tranche_year3_cfads_response": cfads_response}
+    if advanced:
+        result["cyclic_financing_proof"]["projection_tax_vintage_records_compared"] = len(reports) * 3
     result["checks"].update({"cyclic_financing_enabled": True, "cyclic_financing_unique_fixed_point": True,
         "cyclic_financing_endpoint_convergence": True, "cyclic_financing_grid_feasible": True,
         "cyclic_financing_tax_feedback": True, "cyclic_financing_projection_matches": True,

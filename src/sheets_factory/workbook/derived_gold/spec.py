@@ -28,6 +28,7 @@ PUBLIC_CONTRACT_VERSION = 4
 COVENANT_CONTRACT_VERSION = 6
 ADVANCED_TAX_CONTRACT_VERSION = 7
 CYCLIC_FINANCING_CONTRACT_VERSION = 8
+CYCLIC_ADVANCED_TAX_CONTRACT_VERSION = 9
 CYCLIC_FINANCING_FIELDS = ("enabled", "bankcap", "target_dscr", "tranche")
 COVENANT_FIELDS = ("covenant_enabled", "covenant_first_test_month", "covenant_dscr_threshold",
                    "dsra_normal_payment_months", "dsra_trap_payment_months")
@@ -154,9 +155,9 @@ def cyclic_financing_parameters(config: dict, parameters: dict, *, covenant_enab
     gap = _decimal(parameters["initial_asset_cost"]) + _decimal(parameters["opening_cash"]) - _decimal(parameters["loan_b_principal"])
     if c["bankcap"] > gap or c["tranche"] > c["bankcap"]:
         raise ValueError("Cyclic bank cap cannot exceed the opening funding gap")
-    if (covenant_enabled or tax_enabled or _decimal(parameters["cash_sweep_fraction"]) != 0
+    if (covenant_enabled or _decimal(parameters["cash_sweep_fraction"]) != 0
             or _decimal(parameters["cash_allocation_start"]) <= 36 or _decimal(parameters["opening_retained"]) != 0):
-        raise ValueError("Certified cyclic prototype requires simple tax, no covenant/sweep and allocation after the horizon")
+        raise ValueError("Certified cyclic prototype requires no covenant/sweep and allocation after the horizon")
     if int(c["bankcap"] // c["tranche"]) > 100000:
         raise ValueError("Cyclic financing tranche grid exceeds the independently certified bound")
     return dict(raw)
@@ -245,7 +246,7 @@ def resolve_spec(project_root: Path, config_path: Path) -> dict:
     if cyclic:
         rules.append(cyclic_financing_rule())
     result = {
-        "schema_version": 1, "public_contract_version": CYCLIC_FINANCING_CONTRACT_VERSION if cyclic else ADVANCED_TAX_CONTRACT_VERSION if tax_enabled else COVENANT_CONTRACT_VERSION if enabled else PUBLIC_CONTRACT_VERSION,
+        "schema_version": 1, "public_contract_version": CYCLIC_ADVANCED_TAX_CONTRACT_VERSION if cyclic and tax_enabled else CYCLIC_FINANCING_CONTRACT_VERSION if cyclic else ADVANCED_TAX_CONTRACT_VERSION if tax_enabled else COVENANT_CONTRACT_VERSION if enabled else PUBLIC_CONTRACT_VERSION,
         "scenario_id": config["scenario_id"],
         "title": "Hypothetical project: commissioning, financing and equity returns",
         "status": "experimental_seed_not_a_qualified_task",
