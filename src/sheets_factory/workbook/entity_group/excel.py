@@ -133,6 +133,7 @@ class _Emitter:
         self.inputs = {}
         self.literals, self.formulas, self.bindings = ((_CountLog(), _CountLog(), _CountLog()) if count_only else ([], [], []))
         self.memo = {}
+        self.next_rows = {}
         self.sheet = None
         rules = book.create_sheet('Group Rules')
         rules.append(['Fixed-plan legal entities: monthly close; no optimisation'])
@@ -143,7 +144,9 @@ class _Emitter:
         text = json.dumps(spec, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
         for start in range(0, len(text), 30000): contract.append(['JSON part ' + str(start // 30000 + 1), text[start:start + 30000]])
         sheet = book.create_sheet('Group Inputs'); sheet.append(['Public primitive path', 'Literal value (Boolean flags: 0=false, 1=true)'])
+        input_row = 1
         def flatten(value, path=()):
+            nonlocal input_row
             if isinstance(value, dict):
                 for key, child in value.items(): flatten(child, (*path, key))
             elif isinstance(value, list):
@@ -151,7 +154,8 @@ class _Emitter:
             else:
                 encoding = 'public_boolean_as_binary_integer' if type(value) is bool else 'identity'
                 stored = int(value) if type(value) is bool else value
-                sheet.append(['/'.join(map(str, path)), stored]); address = 'B' + str(sheet.max_row)
+                sheet.append(['/'.join(map(str, path)), stored]); input_row += 1
+                address = 'B' + str(input_row)
                 self.inputs[path] = _ref(sheet.title, address)
                 self.literals.append({'sheet': sheet.title, 'cell': address, 'path': list(path),
                     'value': value, 'stored_value': stored, 'encoding': encoding})
@@ -167,11 +171,16 @@ class _Emitter:
             result = self.memo.get(identity)
             if result is None:
                 if len(self.formulas) >= self.maximum: raise ValueError('The declared physical formula budget was exceeded; nothing is truncated')
-                row = self.sheet.max_row + 1
+                # Worksheet.max_row scans every existing cell. Read it once
+                # per close sheet, then advance the append-only row cursor.
+                if self.sheet.title not in self.next_rows:
+                    self.next_rows[self.sheet.title] = self.sheet.max_row + 1
+                row = self.next_rows[self.sheet.title]
                 if row > 1048576: raise ValueError('The close exceeded an Excel worksheet row limit')
                 self.sheet.cell(row, 1, label); formula = '=' + expression_formula(expression)
                 if len(formula) > 8192: raise ValueError('A static formula exceeds the supported Excel formula length')
                 self.sheet.cell(row, 2, formula)
+                self.next_rows[self.sheet.title] = row + 1
                 result = _ref(self.sheet.title, 'B' + str(row))
                 self.formulas.append({'sheet': self.sheet.title, 'cell': 'B' + str(row), 'formula': formula,
                     'expression': deepcopy(expression), 'label': label, 'monetary': monetary})

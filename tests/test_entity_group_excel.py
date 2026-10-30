@@ -36,6 +36,29 @@ def emitted(spec=None, maximum=1_000_000):
     return spec, book, binding
 
 
+def test_append_only_emission_does_not_scan_all_previous_cells_per_formula(monkeypatch):
+    from openpyxl.worksheet.worksheet import Worksheet
+    original = Worksheet.max_row.fget
+    calls = []
+    def recorded(sheet):
+        calls.append(sheet.title)
+        return original(sheet)
+    monkeypatch.setattr(Worksheet, 'max_row', property(recorded))
+    spec, book, bindings = emitted()
+    try:
+        assert len(bindings['formula_bindings']) > 2000
+        assert len(calls) < 20
+        assert all(calls.count(sid + ' Close') <= 2 for sid in ('S01', 'S02', 'S03'))
+        assert [item['cell'] for item in bindings['input_bindings']] == [
+            'B' + str(row) for row in range(2, 2 + len(bindings['input_bindings']))]
+        for sid in ('S01', 'S02', 'S03'):
+            formulas = [item for item in bindings['formula_bindings'] if item['sheet'] == sid + ' Close']
+            assert [item['cell'] for item in formulas] == ['B' + str(row) for row in range(2, 2 + len(formulas))]
+        assert expected_values(spec, simulate(spec), bindings)['all_independent_journal_fields_covered']
+    finally:
+        book.close()
+
+
 class Floats(ast.NodeTransformer):
     def visit_Constant(self, node):
         return ast.copy_location(ast.Constant(float(node.value)), node) if type(node.value) is int else node
