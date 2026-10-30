@@ -4,13 +4,13 @@
 
 上一轮已完成 20 道 Financial Modeling、20 道 Debugging 的质量验收并保留冻结发布包；该批次没有通过难度验收。当前正在迭代两类各至少 10 题，构造与诊断使用 Codex CLI `gpt-6-sol` / `high`，难度门禁固定使用 Codex CLI `gpt-6.1-sol` / `xhigh`，累计工具执行时间严格小于 1800 秒，排除模型思考与生成时间，冻结确认集 Overall Pass@1 ≤ 0.2。新执行合同另有不计模型失败的运行保护时限；旧合同及成绩保留，详见 [评测要求](docs/evaluation_requirements.md)。未完成最终确认前，不作难度达标声明。
 
-截至 2026-10-30 20:49 UTC，最终难度交付计数仍为 0。首道明确场景输入优先级的 Financial Modeling 修复版通过了 11 项适用质量检查（Q08 留待整组确认），真实 Harbor oracle=1、nop=0；最强模型首次开发测试正常得到 reward=0，工具执行 226.613269849 秒。但该输出只是新增了隐藏辅助表：独立实际重算后，原 75 张表的全部值及 46,466 处应修改集合都与参考一致。公开说明没有充分明确辅助表和辅助单元格的提交边界，故该版本按新发现的 Q03 问题暂停准出，不作为财务算术难度证明。旧成绩、诊断与文件保持不变。证据位于本地 `outputs/research/C01_priority_r1_output_forensics_20261030T182500Z/final_forensic_conclusion.json`；精确导出版本的 Harbor 控制证据位于 `outputs/research/C01_priority_r1_exact_Harbor_20261030T181500Z/verification_addendum.json`。
+截至 2026-10-30 21:13 UTC，最终难度交付计数仍为 0。首道明确场景输入优先级的 Financial Modeling 修复版通过了 11 项适用质量检查（Q08 留待整组确认），真实 Harbor oracle=1、nop=0；最强模型首次开发测试正常得到 reward=0，工具执行 226.613269849 秒。但该输出只是新增了隐藏辅助表：独立实际重算后，原 75 张表的全部值及 46,466 处应修改集合都与参考一致。公开说明没有充分明确辅助表和辅助单元格的提交边界，故该版本按新发现的 Q03 问题暂停准出，不作为财务算术难度证明。旧成绩、诊断与文件保持不变。证据位于本地 `outputs/research/C01_priority_r1_output_forensics_20261030T182500Z/final_forensic_conclusion.json`；精确导出版本的 Harbor 控制证据位于 `outputs/research/C01_priority_r1_exact_Harbor_20261030T181500Z/verification_addendum.json`。
 
 后续 revision 002 已明确原有工作表名称、顺序和禁止新增辅助单元格的提交边界，数值参考、业务规则和目标保持不变；它重新通过五项实际本地控制、仅公开输入的独立恢复，以及同一正常导出版本的真实 Harbor oracle=1、nop=0。新版本的 `gpt-6.1-sol` / `xhigh` 首次开发测试正常得到 reward=1，累计工具执行 482.967168152 秒，无基础设施异常、计时缺失或运行保护截断。这是单题开发结果，不是完整 20 题的 Overall Pass@1；停止扩大同一财务输出遮蔽模板，继续开发包含合同状态和控制计算的完整补全任务。实际控制收据为 `outputs/research/C01_scope_r2_actual_harbor_20261030T190700Z/actual_control_receipt.json`，开发测试位于 `outputs/difficulty/composite-cohort-C01-scope-r2-20261030T190400Z/evaluation/`。
 
 新的 Financial Modeling 方案在同一固定十源顺序中遮蔽财务输出及合同、租约、分配和契约状态，每题 60,193 个目标，较前版增加 13,854 个状态计算。十源离线核对均通过原五类独立审计与公开恢复程序的覆盖检查，源工作簿未改变；这不代替十题各自的真实恢复、质量或难度验收。离线证据位于 `outputs/research/composite_full_state_fm_offline_v4_20261030T194100Z/preflight_manifest.json`。首源在 `outputs/runs/20261030T195000Z-financial-full-state-dev/` 已完成单题质量验收：完整应修改集合 60,193，五项真实本地控制和独立公开恢复通过，12 项检查全部覆盖、11 项 clear、Q08 not_applicable，实际 Harbor oracle=1、nop=0，无未知检查或阻塞问题。质量终态证据为 `outputs/research/financial_full_state_quality_terminal_20261030T201800Z/receipt.json`；该记录也验证了真实控制任务的文件校验和与实际导出版本。相同实际导出版本的首次最强模型开发测试已正常结束：`gpt-6.1-sol` / `xhigh` 得到 reward=1，累计工具执行 234.131532611 秒，无基础设施异常、计时缺失或运行保护截断；原始评分保留于 `outputs/difficulty/financial-full-state-C01-20261030T200100Z/evaluation/`。该成功说明扩大状态补全仍不足以达到难度要求，不在相同版本重新采样，也不据此扩充同模板十题。下一财务方案正在开发跨情景投资选择与融资、税务和抵押约束的联合模型，目前只有实现工作，尚无新题质量或难度成绩。此测试的 1800 秒累计工具限制与 14400 秒运行保护分开；常规 600 秒轨迹采样的截断不作难度失败。新任务没有继承旧任务的修复授权，质量合格不代表整个确认集难度达标。
 
-206 根 Debugging 已被最强模型解出，累计工具执行 285.472 秒；后续完整四族、1,666 根版本也正常得到 reward=1，工具执行 159.403807054 秒，因此均不扩为最终题集。固定 10+10 配额保持不变；当前财务生产轮让在途诊断自然结束，下一补全方案开发与调试产线验收并行。源表、单题验收和最终交付分别计数。根目录 `SpreadsheetEval/` 将在完整确认和发布核验后创建；历史质量发布包的位置见下文。
+206 根 Debugging 已被最强模型解出，累计工具执行 285.472 秒；后续完整四族、1,666 根版本也正常得到 reward=1，工具执行 159.403807054 秒，因此均不扩为最终题集。固定 10+10 配额保持不变；这些成功版本均保留原始成绩，停止同模板批量造题，继续开发包含未知投资决策的新财务模型。源表、单题验收和最终交付分别计数。根目录 `SpreadsheetEval/` 将在完整确认和发布核验后创建；历史质量发布包的位置见下文。
 
 完整财务依赖图的调试构造已实际注入 20,895 处公式修改，连续两次 LibreOffice 重算得到完全相同的类型化值。20,534 个被编辑位置发生值变化，完整应修改集合覆盖 20,758 个单元格；361 处未产生值变化的公式修改单列，不计作必须修改的值。该任务按共同修复整个财务模型的契约验收，另行保留可选的单根反事实诊断，不把公式修改数量当作独立根因数量或难度证明。完整常规流程的实际控制为 oracle=1、nop=0、equivalent=1、missed_root=1、extra_change=0：首处单独漏改在参考背景下没有值变化，因而该负控不合格。生产者已让在途修复正常结束后退出，真实结果不覆盖；后续必须使用明确绑定的新控制选择阶段，重新执行五项实际控制及其余正常验收，该失败版本没有启动强模型测试。失败记录为 `outputs/research/full_graph_joint_local_control_hold_20261030T194149Z/receipt.json`。
 
@@ -18,7 +18,7 @@
 
 另有独立的 V3 缺陷提供器组合真实账户、期间、计量、边界和优先级错误，原财务来源及其审计不变。主样本和原 10 个场景的全部非零目标均离线编译通过，没有删除或截断目标；主样本实际注入 20,895 处公式修改，两次重算稳定，完整变化集合为 20,225，其中 20,069 个被编辑位置有值变化，826 个无值变化的公式修改单列。源表无错误，注入后有 2 个错误值；这 2 次工程计算只证明构造、稳定性和完整变化集合，不证明独立恢复、质量或难度。工程记录位于 `outputs/research/semantic_graph_v3_engineering_20261030T192657Z/`，离线交接位于 `outputs/research/composite_semantic_v3_batch_20261030T190830Z/handoff.json`。
 
-两种完整调试提供器已分别进入新的实际质量运行：`outputs/runs/20261030T200048Z-joint-controls-v2-dev/` 与 `outputs/runs/20261030T200335Z-joint-controls-v3-dev/`。这些阶段仅明确替换负控选择节点，按固定顺序实际执行单漏改候选，首个真实零分才能成为负控，并保留所有失败尝试。两版实际五项控制均为 1/0/1/0/0，独立公开恢复均已 verified。V2 已完成完整单题质量验收：12 项检查全部覆盖、11 项 clear、Q08 not_applicable，无阻塞或未知项，真实 Harbor oracle=1、nop=0。根校验复核了实际任务目录哈希、文件及与首次强测完全相同的冻结导出，证据位于 `outputs/research/joint_v2_quality_terminal_20261030T204704Z/receipt.json`。V3 完整质量诊断和后续真实 Harbor 控制尚待完成。精确冻结输入的首次最强模型开发测试已分别在 `outputs/difficulty/joint-v2-first-20261030T202933Z/evaluation/` 和 `outputs/difficulty/joint-v3-first-20261030T203605Z/evaluation/` 实际启动，当前均无评分。候选、单题验收与完整确认集分别计数，不把新阶段启动或离线通过计为难度合格。
+两种完整调试提供器已分别进入新的实际质量运行：`outputs/runs/20261030T200048Z-joint-controls-v2-dev/` 与 `outputs/runs/20261030T200335Z-joint-controls-v3-dev/`。这些阶段仅明确替换负控选择节点，按固定顺序实际执行单漏改候选，首个真实零分才能成为负控，并保留所有失败尝试。两版实际五项控制均为 1/0/1/0/0，独立公开恢复均已 verified。V2 已完成完整单题质量验收：12 项检查全部覆盖、11 项 clear、Q08 not_applicable，无阻塞或未知项，真实 Harbor oracle=1、nop=0。根校验复核了实际任务目录哈希、文件及与首次强测完全相同的冻结导出，证据位于 `outputs/research/joint_v2_quality_terminal_20261030T204704Z/receipt.json`。V3 也已完成同等单题质量验收和真实 Harbor oracle=1、nop=0，精确导出与控制任务哈希经独立核对，证据为 `outputs/research/joint_v3_quality_terminal_20261030T210322Z/receipt.json`。精确冻结输入的首次最强模型开发测试均已正常结束：V2 reward=1、累计工具执行 295.482089056 秒，V3 reward=1、累计工具执行 382.012271739 秒；两次均无基础设施异常、计时缺失、工具预算耗尽或运行保护截断。原始成绩分别位于 `outputs/difficulty/joint-v2-first-20261030T202933Z/evaluation/` 和 `outputs/difficulty/joint-v3-first-20261030T203605Z/evaluation/`。两版均不在原版本重新采样，也不扩为最终十题。候选、单题验收与完整确认集分别计数，不把新阶段启动或离线通过计为难度合格。
 
 配置位于 `config/`，角色提示词位于 `prompts/`，节点与模板位于 `src/sheets_factory/`，输入位于 `data/`，运行数据和面板审计位于 `outputs/`。密钥仅保存在环境变量或被忽略的 `.secrets/`。
 
@@ -137,6 +137,9 @@ EUSES 下载与候选筛选可单独执行：
 | 20 年监管资本、税基与收入回收款 | 正常 reward=1；工具累计 47.469 秒 | 独立监管模型仍未达到难度目标，保留唯一有效开发结果。 |
 | 12 项目 × 564 个已验证活跃调试根节点 | 正常 reward=1；工具累计 46.820 秒 | 大量同类公式可被统一修复，未计入难度达标。 |
 | 跨实体现金池与抵押融资 | 原始 reward=0，但辅助行有约定歧义 | 保留原结果；排除该零分的难度证明，另建明确约定的新修订。 |
+| 完整财务与合同状态补全，60,193 个目标 | 正常 reward=1；工具累计 234.131532611 秒 | 质量及实际 oracle/nop 通过；停止扩充相同补全模板。 |
+| 完整依赖图 Debugging V2，20,895 处公式修改 | 正常 reward=1；工具累计 295.482089056 秒 | 正常完整修复，保留成功记录，停止同模板批量。 |
+| 完整依赖图 Debugging V3，组合账户、期间与边界错误 | 正常 reward=1；工具累计 382.012271739 秒 | 多种缺陷组合仍被解出，尚未形成难度达标题集。 |
 
 旧循环任务的工具耗时来自保留原文件的只读补充复算；新评测直接冻结计时规则。上述有效零分没有在相同版本重新采样。
 
