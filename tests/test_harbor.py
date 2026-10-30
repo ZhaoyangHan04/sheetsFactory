@@ -70,17 +70,24 @@ def test_normalization_keeps_types_and_numeric_strings():
         normalize(float("nan"))
 
 
-def test_export_preserves_private_boundary_and_loads_real_harbor_schema(tmp_path):
+@pytest.mark.parametrize('difficulty_status', [None, 'pending'])
+def test_export_preserves_private_boundary_and_loads_real_harbor_schema(tmp_path, difficulty_status):
     task = tmp_path / "source"
     (task / "public").mkdir(parents=True)
     (task / "private").mkdir()
     write(task / "public/input.xlsx", None)
     write(task / "private/goal.xlsx", 20)
     (task / "public/instruction.md").write_text("Restore projected revenue using the public workbook rules.")
-    target = export_harbor(task, tmp_path / "export", {"task_id": "fixture-1", "mode": "financial_modeling"})
+    metadata = {"task_id": "fixture-1", "mode": "financial_modeling"}
+    if difficulty_status is not None:
+        metadata['difficulty_status'] = difficulty_status
+    target = export_harbor(task, tmp_path / "export", metadata)
     config = tomllib.loads((target / "task.toml").read_text())
     assert config["verifier"]["environment_mode"] == "separate"
     assert config["artifacts"] == ["/app/output.xlsx"]
+    assert config['metadata']['difficulty_status'] == (difficulty_status or 'deferred')
+    assert (target / 'environment/recalculate').stat().st_mode & 0o111 == 0o111
+    assert 'RUN chmod 0755 /usr/local/bin/recalculate' in (target / 'environment/Dockerfile').read_text()
     assert not (target / "environment/reference.xlsx").exists()
     assert (target / "solution/reference.xlsx").exists()
     assert (target / "tests/reference.xlsx").exists()

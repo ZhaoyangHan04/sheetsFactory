@@ -115,9 +115,11 @@ def export_harbor(task_dir: str | Path, export_dir: str | Path, metadata: dict |
         f"FROM {base_image}\nUSER root\nENTRYPOINT []\nWORKDIR /app\n"
         "COPY input.xlsx /app/input.xlsx\n"
         "COPY --chmod=755 recalculate /usr/local/bin/recalculate\n"
+        "RUN chmod 0755 /usr/local/bin/recalculate\n"
     )
     (export_dir / "environment/recalculate").write_text(
         '#!/bin/sh\nexec /usr/bin/python3 /opt/uno_recalculate.py "$@"\n')
+    (export_dir / "environment/recalculate").chmod(0o755)
     (export_dir / "tests/Dockerfile").write_text(
         f"FROM {base_image}\nUSER root\nENTRYPOINT []\nWORKDIR /app\nCOPY . /tests/\n"
     )
