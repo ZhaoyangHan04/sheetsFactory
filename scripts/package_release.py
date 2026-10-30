@@ -11,6 +11,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import shlex
@@ -24,6 +25,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from sheets_factory.checkers.unsafe_regions import evaluate_native_risk_guard
+from sheets_factory.checkers.reference_evidence import _compact
 from sheets_factory.evaluation.harbor import inspect_export, matched_controls, control_summary_paths
 from sheets_factory.reporting import generate_report, read_run
 from sheets_factory.workbook.compare import compare_workbooks
@@ -76,6 +78,63 @@ def _json(path, within, tracked):
 def _receipt(path, tracked):
     path = str(Path(path).absolute())
     return {'path': path, 'sha256': tracked[path]}
+
+
+def _review_private(evidence, evidence_root, tracked):
+    """Resolve only the declared, content-addressed complete private artifact."""
+    if 'private_evidence' not in evidence:
+        private = evidence.get('private') or {}
+        _require(isinstance(private, dict), 'Private evidence must be a JSON object')
+        return private, None
+    index = evidence['private_evidence']
+    _require(isinstance(index, dict) and type(index.get('summary_version')) is int
+             and index['summary_version'] == 1
+             and index.get('summary_is_not_a_quality_verdict') is True,
+             'Invalid compact private evidence index')
+    artifact = index.get('full_artifact')
+    _require(isinstance(artifact, dict)
+             and isinstance(artifact.get('path'), str) and bool(artifact['path'])
+             and isinstance(artifact.get('sha256'), str)
+             and re.fullmatch(r'[a-f0-9]{64}', artifact['sha256'])
+             and type(artifact.get('bytes')) is int and artifact['bytes'] > 0
+             and artifact.get('complete') is True
+             and artifact.get('encoding') == 'UTF-8 JSON',
+             'Invalid complete private evidence artifact receipt')
+    path = Path(artifact['path'])
+    expected = Path(evidence_root).absolute() / artifact['sha256'] / 'complete_private_evidence.json'
+    _require(path.is_absolute() and path == expected,
+             'Complete private evidence is outside its declared content-addressed root')
+    try:
+        raw = _file(path, evidence_root, tracked)
+        _require(len(raw) == artifact['bytes'] and _sha(raw) == artifact['sha256'],
+                 'Complete private evidence SHA or byte count differs')
+
+        def unique_object(pairs):
+            value = {}
+            for key, item in pairs:
+                _require(key not in value, 'Duplicate key in complete private evidence')
+                value[key] = item
+            return value
+
+        def invalid_constant(value):
+            raise ReleaseError('Non-finite value in complete private evidence')
+
+        def finite_float(value):
+            parsed = float(value)
+            _require(math.isfinite(parsed), 'Non-finite value in complete private evidence')
+            return parsed
+
+        private = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_object,
+                             parse_constant=invalid_constant, parse_float=finite_float)
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise ReleaseError('Invalid complete private evidence: ' + str(exc)) from exc
+    _require(isinstance(private, dict), 'Complete private evidence must be a JSON object')
+    _require(isinstance(index.get('private_summary'), dict)
+             and index['private_summary'] == evidence.get('private')
+             and index['private_summary'] == _compact(private),
+             'Compact private evidence differs from its complete artifact')
+    return private, {**_receipt(path, tracked), 'bytes': len(raw),
+                     'complete': True, 'encoding': 'UTF-8 JSON'}
 
 
 def select_diverse(tasks, per_mode):
@@ -326,7 +385,12 @@ def _validate_reference_review(base, task_id, revision, diagnosis, recovery, ori
 
 
 def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, registry_path=None,
-                   reference_policy='independent_public_recovery'):
+                   reference_policy='independent_public_recovery', private_evidence_root=None,
+                   private_evidence_tracked=None):
+    if private_evidence_root is None:
+        private_evidence_root = Path(project_root) / 'outputs/diagnostic_private_evidence'
+    if private_evidence_tracked is None:
+        private_evidence_tracked = {}
     task_id = task['id']
     _require(isinstance(task_id, str) and re.fullmatch(r'[A-Za-z0-9._-]+', task_id)
              and task_id not in {'.', '..'}, 'Unsafe task ID')
@@ -505,11 +569,13 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
                     or evidence.get('task_revision_hash') != revision_hash
                     or evidence.get('check_plan_hash') != diagnosis['check_plan_hash']):
                 continue
+            full_artifact = None
             if visibility == 'review':
-                _require((evidence.get('private') or {}).get('independent_recovery') == recovery,
+                private, full_artifact = _review_private(
+                    evidence, private_evidence_root, private_evidence_tracked)
+                _require(private.get('independent_recovery') == recovery,
                          f'{task_id}: latest diagnosis reviewed different recovery evidence')
                 if reference_policy == 'reference_review':
-                    private = evidence.get('private') or {}
                     _require(private.get('goal_sha256') == _sha(goal)
                              and private.get('reference_review_context') == _json(base / 'private/reference_evidence_context.json', base, candidate_files)
                              and _file(evidence_path.parent / 'reference.xlsx', base, candidate_files) == goal,
@@ -528,7 +594,8 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
                     _require(digest == batch['payload_digest'], f'{task_id}: diagnostic batch payload differs')
                 matched_batches.add(index)
             tracked.update(candidate_files)
-            receipts.append(_receipt(evidence_path, tracked))
+            receipts.append({**_receipt(evidence_path, tracked),
+                             **({'full_private_artifact': full_artifact} if full_artifact else {})})
     _require(bool(reviewed_recovery), f'{task_id}: missing diagnosis evidence for current '
              + ('reference review' if reference_policy == 'reference_review' else 'recovery'))
     if reference_policy == 'reference_review':
@@ -593,8 +660,21 @@ def package_release(run_dir, per_mode=10, output_dir=None, *, project_root=None)
     config = yaml.safe_load(_file(config_path, run_dir, tracked)) if config_path.is_file() else {}
     registry_path = ((config or {}).get('native_risks') or {}).get('registry_path')
     policy = validate_reference_policy_selection({**(config or {}), 'project_root': str(root)})
+    private_evidence_root = (((config or {}).get('diagnosis') or {}).get('execution') or {}).get(
+        'private_evidence_directory', root / 'outputs/diagnostic_private_evidence')
+    _require(isinstance(private_evidence_root, (str, Path)) and bool(str(private_evidence_root)),
+             'Invalid declared private evidence directory')
+    private_evidence_root = Path(private_evidence_root)
+    if not private_evidence_root.is_absolute():
+        private_evidence_root = root / private_evidence_root
+    private_evidence_root = private_evidence_root.absolute()
+    _require(private_evidence_root != Path(private_evidence_root.anchor),
+             'Private evidence directory cannot be the filesystem root')
+    private_evidence_tracked = {}
     validated = [_validate_task(run_dir, task, tracked, secrets, project_root=root,
-                               registry_path=registry_path, reference_policy=policy) for task in selected]
+                               registry_path=registry_path, reference_policy=policy,
+                               private_evidence_root=private_evidence_root,
+                               private_evidence_tracked=private_evidence_tracked) for task in selected]
     runtime_tracked = {}
     runtime_payload, runtime_metadata = _prepare_runtime(root, run_dir, validated, runtime_tracked, secrets)
     manifest = {
@@ -643,6 +723,9 @@ def package_release(run_dir, per_mode=10, output_dir=None, *, project_root=None)
         (stage / 'SpreadsheetEval.tar.gz.sha256').write_text(f'{digest}  SpreadsheetEval.tar.gz\n')
         for path, expected in tracked.items():
             _require(_sha(_file(path, run_dir, {})) == expected, 'Source evidence changed during packaging')
+        for path, expected in private_evidence_tracked.items():
+            _require(_sha(_file(path, private_evidence_root, {})) == expected,
+                     'Complete private evidence changed during packaging')
         for path, expected in runtime_tracked.items():
             _require(_sha(_file(path, root / 'src/sheets_factory/workbook', {})) == expected,
                      'Runtime recipe changed during packaging')

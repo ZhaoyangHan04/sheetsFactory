@@ -15,6 +15,7 @@ from dirhash import dirhash
 
 from sheets_factory.core.audit import AuditStore
 from sheets_factory.evaluation.harbor import export_harbor, inspect_export
+from sheets_factory.checkers.reference_evidence import reference_review_evidence
 
 spec = importlib.util.spec_from_file_location('package_release', Path(__file__).parents[1] / 'scripts/package_release.py')
 release = importlib.util.module_from_spec(spec)
@@ -501,6 +502,151 @@ def test_diagnosis_must_have_reviewed_this_recovery_record(fixture_run):
     write_json(path, {**recovery, 'evidence_version': 'changed-after-diagnosis'})
     with pytest.raises(release.ReleaseError, match='reviewed different recovery evidence'):
         release.package_release(run, 1, root / 'release', project_root=root)
+
+
+def compact_private_fixture(root, base, *, artifact_root=None):
+    path = base / 'diagnostic_private-offline-fixture/evidence.json'
+    evidence = json.loads(path.read_text())
+    recovery_path = base / 'private/independent_recovery.json'
+    recovery = json.loads(recovery_path.read_text())
+    # An actually shortened recovery field exercises the original blocker.
+    recovery['complete_audit_rows'] = [{'row': row, 'passed': True} for row in range(12)]
+    write_json(recovery_path, recovery)
+    private = {'independent_recovery': recovery, 'extra_private_note': 'private fixture'}
+    index = reference_review_evidence(private, artifact_root or root / 'outputs/diagnostic_private_evidence')
+    evidence.update(private_evidence=index, private=index['private_summary'])
+    write_json(path, evidence)
+    diagnosis_path = base / 'private/diagnosis.json'
+    diagnosis = json.loads(diagnosis_path.read_text())
+    stable = {key: value for key, value in evidence.items() if key != 'diagnostic_run_id'}
+    diagnosis['llm_batches'] = [{'visibility': 'review', 'status': 'completed',
+        'payload_digest': hashlib.sha256(json.dumps(stable, ensure_ascii=False, sort_keys=True,
+                                                   default=str).encode()).hexdigest()}]
+    write_json(diagnosis_path, diagnosis)
+    return path, evidence, Path(index['full_artifact']['path'])
+
+
+def test_compact_private_review_reads_complete_external_artifact(fixture_run):
+    root, run, audit = fixture_run
+    tasks = pair(run, audit)
+    artifacts = []
+    for _, base, _ in tasks:
+        _, evidence, artifact = compact_private_fixture(root, base)
+        assert evidence['private']['independent_recovery'] != json.loads(
+            (base / 'private/independent_recovery.json').read_text())
+        assert not artifact.is_relative_to(run)
+        artifacts.append(artifact)
+    result = release.package_release(run, 1, root / 'release', project_root=root)
+    manifest = json.loads(Path(result['manifest']).read_text())
+    for task, artifact in zip(manifest['tasks'], artifacts):
+        receipt = task['diagnosis']['reviewed_recovery_evidence'][0]['full_private_artifact']
+        assert receipt == {'path': str(artifact), 'sha256': hashlib.sha256(artifact.read_bytes()).hexdigest(),
+                           'bytes': artifact.stat().st_size, 'complete': True, 'encoding': 'UTF-8 JSON'}
+    with tarfile.open(result['archive']) as archive:
+        assert not any('complete_private_evidence' in name for name in archive.getnames())
+
+
+def test_compact_private_explicit_artifact_root(fixture_run):
+    root, run, audit = fixture_run
+    import yaml
+    artifact_root = root / 'private/custom-diagnostics'
+    (run / 'resolved_config.yaml').write_text(yaml.safe_dump({'diagnosis': {'execution': {
+        'reference_evidence_transport': 'audited_summary',
+        'private_evidence_directory': str(artifact_root)}}}))
+    for _, base, _ in pair(run, audit):
+        compact_private_fixture(root, base, artifact_root=artifact_root)
+    assert release.package_release(run, 1, root / 'release', project_root=root)['task_count'] == 2
+
+
+@pytest.mark.parametrize('mutation', ['sha', 'bytes', 'bool_bytes', 'complete', 'encoding',
+    'missing', 'outside_root', 'wrong_content_folder', 'file_symlink', 'parent_symlink',
+    'not_object', 'invalid_json', 'duplicate_json_key', 'invalid_utf8', 'non_finite', 'overflow_float',
+    'summary', 'inline_summary', 'index_version'])
+def test_compact_private_artifact_invalid_receipts_fail_closed(fixture_run, mutation):
+    root, run, audit = fixture_run
+    tasks = pair(run, audit)
+    path, evidence, artifact = compact_private_fixture(root, tasks[0][1])
+    index = evidence['private_evidence']
+    receipt = index['full_artifact']
+    if mutation == 'sha':
+        artifact.write_bytes(artifact.read_bytes() + b' ')
+    elif mutation in {'bytes', 'bool_bytes', 'complete', 'encoding'}:
+        key, value = {'bytes': ('bytes', receipt['bytes'] + 1), 'bool_bytes': ('bytes', True),
+                      'complete': ('complete', False), 'encoding': ('encoding', 'UTF-16 JSON')}[mutation]
+        receipt[key] = value
+    elif mutation == 'missing':
+        artifact.unlink()
+    elif mutation in {'outside_root', 'wrong_content_folder'}:
+        location = (root / 'elsewhere' if mutation == 'outside_root'
+                    else artifact.parent.parent / ('0' * 64)) / 'complete_private_evidence.json'
+        location.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(artifact, location)
+        receipt['path'] = str(location)
+    elif mutation == 'file_symlink':
+        target = artifact.with_name('target.json')
+        artifact.rename(target)
+        artifact.symlink_to(target)
+    elif mutation == 'parent_symlink':
+        target = artifact.parent.with_name('redirected')
+        artifact.parent.rename(target)
+        artifact.parent.symlink_to(target, target_is_directory=True)
+    elif mutation in {'not_object', 'invalid_json', 'duplicate_json_key', 'invalid_utf8', 'non_finite', 'overflow_float'}:
+        raw = {'not_object': b'[]', 'invalid_json': b'{', 'duplicate_json_key': b'{"x":1,"x":2}',
+               'invalid_utf8': b'{"x":"\xff"}', 'non_finite': b'{"x":NaN}',
+               'overflow_float': b'{"x":1e999}'}[mutation]
+        digest = hashlib.sha256(raw).hexdigest()
+        changed = artifact.parent.parent / digest / artifact.name
+        changed.parent.mkdir()
+        changed.write_bytes(raw)
+        receipt.update(path=str(changed), sha256=digest, bytes=len(raw))
+    elif mutation == 'summary':
+        index['private_summary']['extra_private_note'] = 'altered index'
+    elif mutation == 'inline_summary':
+        evidence['private'] = {'independent_recovery': {'verified': True}}
+    else:
+        index['summary_version'] = 2
+    write_json(path, evidence)
+    with pytest.raises(release.ReleaseError):
+        release.package_release(run, 1, root / 'release', project_root=root)
+    assert not (root / 'release').exists()
+
+
+def test_compact_private_batch_digest_still_binds_the_exact_payload(fixture_run):
+    root, run, audit = fixture_run
+    tasks = pair(run, audit)
+    path, evidence, _ = compact_private_fixture(root, tasks[0][1])
+    evidence['private_evidence']['mutation_boundaries']['examples_are_not_full_root_coverage'] = False
+    write_json(path, evidence)
+    with pytest.raises(release.ReleaseError, match='diagnostic batch payload differs'):
+        release.package_release(run, 1, root / 'release', project_root=root)
+
+
+def test_compact_private_complete_recovery_must_match_current_receipt(fixture_run):
+    root, run, audit = fixture_run
+    tasks = pair(run, audit)
+    compact_private_fixture(root, tasks[0][1])
+    path = tasks[0][1] / 'private/independent_recovery.json'
+    recovery = json.loads(path.read_text())
+    write_json(path, {**recovery, 'changed_after_private_review': True})
+    with pytest.raises(release.ReleaseError, match='reviewed different recovery evidence'):
+        release.package_release(run, 1, root / 'release', project_root=root)
+
+
+def test_compact_private_complete_artifact_rechecked_after_staging(fixture_run, monkeypatch):
+    root, run, audit = fixture_run
+    tasks = pair(run, audit)
+    _, _, artifact = compact_private_fixture(root, tasks[0][1])
+    original = release._copy_payload
+
+    def mutate(source, target):
+        original(source, target)
+        artifact.write_bytes(artifact.read_bytes() + b' ')
+
+    monkeypatch.setattr(release, '_copy_payload', mutate)
+    with pytest.raises(release.ReleaseError, match='Complete private evidence changed during packaging'):
+        release.package_release(run, 1, root / 'release', project_root=root)
+    assert not (root / 'release').exists()
+    assert not list(root.glob('.*.partial-*'))
 
 
 def test_cached_diagnosis_origin_can_bind_same_recovery(fixture_run):
