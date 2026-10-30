@@ -480,7 +480,7 @@ class DifficultyPipeline:
     def _evaluate(self, manifest, directory, phase, number, priors):
         from ..evaluation.frontier import run_evaluation
         self._child(directory, phase, number)
-        return run_evaluation(manifest, directory, phase=phase, timeout_seconds=1800,
+        return run_evaluation(manifest, directory, phase=phase, timeout_seconds=None,
             concurrency=int(self.settings.get('evaluation_concurrency', 4)), project_root=self.root,
             backend_config=self._gate_backend(), prior_selections=priors, port=0)
 
