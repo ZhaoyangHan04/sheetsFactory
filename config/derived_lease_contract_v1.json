@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "start_date": "2023-04-01",
+  "months": 240,
+  "currency": "GBP_nominal",
+  "leases": [
+    {
+      "lease_id": "P01",
+      "asset_description": "Indexed operating premises with a mid-term extension",
+      "start_month": 1,
+      "end_month": 120,
+      "payment_frequency": 1,
+      "monthly_base_rent": "100000.00",
+      "initial_direct_cost": "90000.00",
+      "annual_discount_rate": "0.061",
+      "fixed_step_rate": "0.00",
+      "fixed_step_months": 12,
+      "index_floor_factor": "0.98",
+      "index_cap_factor": "1.05",
+      "events": [
+        {
+          "month": 13,
+          "kind": "index",
+          "index_ratio": "1.035",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 25,
+          "kind": "index",
+          "index_ratio": "0.99",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 37,
+          "kind": "index",
+          "index_ratio": "1.08",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 49,
+          "kind": "index",
+          "index_ratio": "0.96",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 61,
+          "kind": "modification",
+          "index_ratio": "1.02",
+          "annual_discount_rate": "0.072",
+          "new_end_month": 156,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 73,
+          "kind": "index",
+          "index_ratio": "1.025",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 85,
+          "kind": "index",
+          "index_ratio": "1.015",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 97,
+          "kind": "index",
+          "index_ratio": "1.04",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 109,
+          "kind": "index",
+          "index_ratio": "0.97",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 121,
+          "kind": "index",
+          "index_ratio": "1.045",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 133,
+          "kind": "index",
+          "index_ratio": "1.03",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 145,
+          "kind": "index",
+          "index_ratio": "1.01",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        }
+      ]
+    },
+    {
+      "lease_id": "P02",
+      "asset_description": "Quarterly network equipment with fixed rent steps and refinancing",
+      "start_month": 13,
+      "end_month": 192,
+      "payment_frequency": 3,
+      "monthly_base_rent": "75000.00",
+      "initial_direct_cost": "45000.00",
+      "annual_discount_rate": "0.058",
+      "fixed_step_rate": "0.025",
+      "fixed_step_months": 36,
+      "index_floor_factor": "1.00",
+      "index_cap_factor": "1.00",
+      "events": [
+        {
+          "month": 85,
+          "kind": "modification",
+          "index_ratio": null,
+          "annual_discount_rate": "0.067",
+          "new_end_month": 228,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        }
+      ]
+    },
+    {
+      "lease_id": "P03",
+      "asset_description": "Vehicle fleet with a partial surrender and later full exit",
+      "start_month": 7,
+      "end_month": 126,
+      "payment_frequency": 1,
+      "monthly_base_rent": "48000.00",
+      "initial_direct_cost": "18000.00",
+      "annual_discount_rate": "0.075",
+      "fixed_step_rate": "0.015",
+      "fixed_step_months": 24,
+      "index_floor_factor": "0.98",
+      "index_cap_factor": "1.05",
+      "events": [
+        {
+          "month": 31,
+          "kind": "index",
+          "index_ratio": "1.04",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 55,
+          "kind": "partial_termination",
+          "index_ratio": null,
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": "0.60",
+          "cash_fee": "60000.00"
+        },
+        {
+          "month": 103,
+          "kind": "termination",
+          "index_ratio": null,
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": "0",
+          "cash_fee": "125000.00"
+        }
+      ]
+    },
+    {
+      "lease_id": "P04",
+      "asset_description": "Semiannual site equipment spanning the full programme horizon",
+      "start_month": 25,
+      "end_month": 240,
+      "payment_frequency": 6,
+      "monthly_base_rent": "35000.00",
+      "initial_direct_cost": "120000.00",
+      "annual_discount_rate": "0.00",
+      "fixed_step_rate": "0.012",
+      "fixed_step_months": 24,
+      "index_floor_factor": "0.98",
+      "index_cap_factor": "1.05",
+      "events": [
+        {
+          "month": 85,
+          "kind": "index",
+          "index_ratio": "1.03",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 145,
+          "kind": "modification",
+          "index_ratio": "1.02",
+          "annual_discount_rate": "0.045",
+          "new_end_month": 240,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        },
+        {
+          "month": 205,
+          "kind": "index",
+          "index_ratio": "1.045",
+          "annual_discount_rate": null,
+          "new_end_month": null,
+          "retention_fraction": null,
+          "cash_fee": "0.00"
+        }
+      ]
+    }
+  ]
+}
