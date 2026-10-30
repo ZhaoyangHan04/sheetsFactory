@@ -21,6 +21,10 @@ SHEETS={'inputs':'Reopener Inputs','assets':'Reopener Assets','rav':'Reopener RA
 ANNUAL_INPUT_FIELDS=('price_index','real_wacc','tax_rate','claim_carry_rate','debt_rate',
  'collection_cap_nominal','disallowance_real','general_rate','special_rate','general_transfer_fraction')
 BATCH_FIELDS=('id','paid_year','commission_year','regulatory_life','tax_pool','real_cost','nominal_cost')
+LEASE_FIELDS=('lease_cash_rent','lease_book_depreciation','lease_book_interest',
+ 'lease_termination_gain_loss','lease_tax_deduction','lease_regulatory_expense',
+ 'lease_rou_open','lease_rou_close','lease_liability_open','lease_liability_close')
+COMBINED_ANNUAL_FIELDS=ANNUAL_FIELDS+LEASE_FIELDS+('lease_regulatory_allowance','total_liabilities','cfo','cfi','cff')
 
 
 def annual_row(field):return 3+ANNUAL_FIELDS.index(field)

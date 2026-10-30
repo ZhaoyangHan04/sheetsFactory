@@ -8,15 +8,26 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 from .schema import (SHEETS, ANNUAL_FIELDS, ANNUAL_INPUT_FIELDS, RAV_FIELDS, TAX_FIELDS,
-                     CLAIM_FIELDS, LOSS_FIELDS, annual_row, batch_row, vintage_row)
+                     CLAIM_FIELDS, LOSS_FIELDS, COMBINED_ANNUAL_FIELDS, LEASE_FIELDS,
+                     annual_row, batch_row, vintage_row)
 
 PARAMETERS=('gearing','loss_carry_years','loss_use_cap','claim_lag_years','structures_tax_life')
 
-def create_workbook(source, spec, path, public_brief):
+def create_workbook(source, spec, path, public_brief, *, external_annual_refs=None):
     book=openpyxl.load_workbook(source,data_only=False,keep_links=False)
+    integrated=external_annual_refs is not None
+    annual_fields=COMBINED_ANNUAL_FIELDS if integrated else ANNUAL_FIELDS
+    if integrated and 'lease_allowable_fraction' not in spec['parameters']:
+        raise ValueError('Integrated leases require an explicit public lease_allowable_fraction')
     # A path-dependent cover identifier is metadata, never a financial target.
-    old_cover=book['Cover']['G4'].value
-    book['Cover']['G4']='Hypothetical regulatory capital reopener; Ofgem ED2 V5 baseline'
+    adapters=[]
+    if 'Cover' in book:
+        old_cover=book['Cover']['G4'].value
+        if isinstance(old_cover,str) and 'cell(' in old_cover.casefold() and 'filename' in old_cover.casefold():
+            book['Cover']['G4']='Hypothetical regulatory capital reopener; Ofgem ED2 V5 baseline'
+            adapters.append({'sheet':'Cover','cell':'G4','before':old_cover,
+                'after':book['Cover']['G4'].value,
+                'purpose':'Stabilize a path-dependent nonfinancial display identifier; no financial formula changed'})
     for name in SHEETS.values():
         if name in book.sheetnames:raise ValueError('Reopener worksheet already exists')
         sheet=book.create_sheet(name);sheet.freeze_panes='C3';sheet.column_dimensions['A'].width=48
@@ -30,6 +41,8 @@ def create_workbook(source, spec, path, public_brief):
     for number,field in enumerate(ANNUAL_INPUT_FIELDS,3):inputs.cell(number,1,field.replace('_',' '))
     for number,field in enumerate(PARAMETERS,30):
         inputs.cell(number,1,field.replace('_',' '));inputs.cell(number,2,float(spec['parameters'][field]))
+    if integrated:
+        inputs.cell(35,1,'lease allowable fraction');inputs.cell(35,2,float(spec['parameters']['lease_allowable_fraction']))
     assets=book[SHEETS['assets']]
     asset_headers=('id','paid year','commission year','regulatory life','tax pool','real cost GBP 2020/21',
                    'original nominal cost GBP','source address','source GBP millions','programme share')
@@ -48,7 +61,7 @@ def create_workbook(source, spec, path, public_brief):
     for i,row in enumerate(spec['annual_inputs'],3):
         for j,field in enumerate(ANNUAL_INPUT_FIELDS,3):
             inputs.cell(j,i,float(row[field]));inputs.cell(j,i).number_format='0.000000000000' if field in ('price_index','real_wacc','tax_rate','claim_carry_rate','debt_rate','general_rate','special_rate','general_transfer_fraction') else '#,##0.00'
-    for i,field in enumerate(ANNUAL_FIELDS,3):book[SHEETS['annual']].cell(i,1,field.replace('_',' '))
+    for i,field in enumerate(annual_fields,3):book[SHEETS['annual']].cell(i,1,field.replace('_',' '))
     for key,fields in [('rav',RAV_FIELDS),('tax',TAX_FIELDS)]:
         for i,batch in enumerate(batches):
             for field in fields:book[SHEETS[key]].cell(batch_row(i,fields,field),1,batch['id']+' | '+field.replace('_',' '))
@@ -64,8 +77,12 @@ def create_workbook(source, spec, path, public_brief):
     for yi,year in enumerate(years):
         col=get_column_letter(yi+3);prev=get_column_letter(yi+2)
         def inp(field):return ref('inputs',col,3+ANNUAL_INPUT_FIELDS.index(field))
-        def ann(field):return ref('annual',col,annual_row(field))
-        def oldann(field):return ref('annual',prev,annual_row(field)) if yi else '0'
+        def ann(field):return ref('annual',col,3+annual_fields.index(field))
+        def oldann(field):return ref('annual',prev,3+annual_fields.index(field)) if yi else '0'
+        external=(external_annual_refs.get(year,external_annual_refs.get(str(year))) if integrated else None)
+        if integrated and (not isinstance(external,dict) or any(not isinstance(external.get(key),str)
+                or '!' not in external[key] or external[key].startswith('=') for key in LEASE_FIELDS)):
+            raise ValueError('Incomplete formula-bound annual lease interface')
         def rav(i,field):return ref('rav',col,batch_row(i,RAV_FIELDS,field))
         def tax(i,field):return ref('tax',col,batch_row(i,TAX_FIELDS,field))
         def oldrav(i,field):return ref('rav',prev,batch_row(i,RAV_FIELDS,field)) if yi else '0'
@@ -124,6 +141,7 @@ def create_workbook(source, spec, path, public_brief):
         b=ann('pre_allowance_taxable_profit');available=ann('losses_available');u=parameter('loss_use_cap');r=inp('tax_rate')
         continuous_loss='MIN('+available+','+u+'*'+b+'/(1-'+r+'*(1-'+u+')))'
         cf='('+ann('claims_receipts')+'+'+ann('debt_draw')+'-'+ann('capital_spend_nominal')+'-'+ann('debt_repayment')+'-'+ann('debt_interest')+'-'+ann('current_tax_allowance')+')'
+        if integrated:cf='('+cf+'-'+ann('lease_cash_rent')+')'
         expressions={
           'opening_cwip_real':oldann('closing_cwip_real'),'opening_rav_real':oldann('closing_rav_real'),
           'capital_spend_real':paid_sum('B','F'),'commissioning_real':paid_sum('C','F'),
@@ -165,14 +183,26 @@ def create_workbook(source, spec, path, public_brief):
           'balance_check':ann('total_assets')+'-'+ann('debt_close')+'-'+ann('total_equity'),
           'cash_check':ann('cash_close'),
           'claims_check':ann('claims_close')+'-'+ann('claims_open')+'-'+ann('earned_revenue')+'+'+ann('claims_receipts')}
-        if set(expressions)!=set(ANNUAL_FIELDS):raise ValueError('Annual formula/schema coverage mismatch')
-        for field,expression in expressions.items():assign('annual',annual_row(field),expression)
+        if integrated:
+            expressions.update({key:external[key] for key in LEASE_FIELDS})
+            expressions['lease_regulatory_allowance']='ROUND('+ann('lease_regulatory_expense')+"*'"+SHEETS['inputs']+"'!$B$35,2)"
+            expressions['pre_allowance_taxable_profit']+='+'+ann('lease_regulatory_allowance')+'-'+ann('lease_tax_deduction')
+            expressions['capital_entitlement']+='+'+ann('lease_regulatory_allowance')
+            expressions['net_income']+='-'+ann('lease_book_depreciation')+'-'+ann('lease_book_interest')+'+'+ann('lease_termination_gain_loss')
+            expressions['total_assets']+='+'+ann('lease_rou_close')
+            expressions['balance_check']='('+expressions['balance_check']+')-'+ann('lease_liability_close')
+            expressions['total_liabilities']=ann('debt_close')+'+'+ann('lease_liability_close')
+            expressions['cfo']=ann('claims_receipts')+'-'+ann('debt_interest')+'-'+ann('current_tax_allowance')+'-'+ann('lease_cash_rent')
+            expressions['cfi']='-'+ann('capital_spend_nominal')
+            expressions['cff']=ann('debt_draw')+'-'+ann('debt_repayment')+'+'+ann('owner_capital')+'-'+ann('owner_distribution')
+        if set(expressions)!=set(annual_fields):raise ValueError('Annual formula/schema coverage mismatch')
+        for field,expression in expressions.items():assign('annual',3+annual_fields.index(field),expression)
     for sn in SHEETS.values():
         sheet=book[sn]
         for cell in sheet[2]:
             if cell.value is not None:cell.font=Font(bold=True,color='FFFFFF');cell.fill=PatternFill('solid',fgColor='214B63')
     Path(path).parent.mkdir(parents=True,exist_ok=True);book.save(path);book.close()
     return {'formula_cells':formula_cells,'new_formula_count':len(formula_cells),
-        'metadata_adapter':[{'sheet':'Cover','cell':'G4','before':str(old_cover),
-            'after':'Hypothetical regulatory capital reopener; Ofgem ED2 V5 baseline',
-            'purpose':'Stabilize a path-dependent nonfinancial display identifier; no financial formula changed'}]}
+        'metadata_adapter':adapters,'lease_integrated':integrated,
+        'annual_refs':{year:{field:ref('annual',get_column_letter(i+3),3+annual_fields.index(field))
+                            for field in annual_fields} for i,year in enumerate(years)}}

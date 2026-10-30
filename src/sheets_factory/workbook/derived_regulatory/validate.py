@@ -1,15 +1,16 @@
 """Check every new policy output against independently computed journal values."""
 from decimal import Decimal
 import openpyxl
-from .schema import (SHEETS, ANNUAL_FIELDS, RAV_FIELDS, TAX_FIELDS, CLAIM_FIELDS,
+from .schema import (SHEETS, ANNUAL_FIELDS, COMBINED_ANNUAL_FIELDS, RAV_FIELDS, TAX_FIELDS, CLAIM_FIELDS,
                      LOSS_FIELDS, annual_row, batch_row, vintage_row)
 
 
 def expected_cells(spec, ledger):
     result={}
+    annual_fields=COMBINED_ANNUAL_FIELDS if ledger.get('lease_integrated') else ANNUAL_FIELDS
     for yi,year in enumerate(spec['years']):
         col=yi+3
-        for field in ANNUAL_FIELDS:result[(SHEETS['annual'],annual_row(field),col)]=ledger['annual'][yi][field]
+        for field in annual_fields:result[(SHEETS['annual'],3+annual_fields.index(field),col)]=ledger['annual'][yi][field]
         for i,batch in enumerate(spec['batches']):
             for key,fields,records in [('rav',RAV_FIELDS,ledger['rav_batches']),('tax',TAX_FIELDS,ledger['tax_batches'])]:
                 for field in fields:result[(SHEETS[key],batch_row(i,fields,field),col)]=records[batch['id']][yi][field]

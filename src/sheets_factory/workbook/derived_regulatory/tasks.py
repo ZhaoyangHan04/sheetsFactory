@@ -24,9 +24,9 @@ def propose_task(baseline):
             'Reconstruct the missing asset, tax-basis, loss-vintage, revenue-claim and financial-statement schedules. '
             'The completed model must reflect commissioning, disallowances, tax reclassification, tax allowance, delayed receipts and owner funding consistently, '
             'including the closing balances at the end of the stated horizon. Preserve the provided inputs and upstream forecast. '
-            'Save the completed workbook to /workspace/output.xlsx.')
+            'Save the completed workbook to the required output path.')
         return {'public_instruction':instruction,
-            'public_rules':'Use the provided inputs and the explicit hypothetical policies in Reopener Brief for every reconstructed programme schedule.',
+            'public_rules':['Use the provided inputs and the explicit hypothetical policies in Reopener Brief for every reconstructed programme schedule.'],
             'reference_evidence':'All new financial outputs are independently reproduced by a penny-posted Decimal journal, then checked against actual LibreOffice calculation and two further stable normalizations; the published upstream forecast is provided context, not the answer to the new policy model.',
             'edits':[],'mask_ranges':ranges,'scenario_inputs':[]}
     finally:book.close()

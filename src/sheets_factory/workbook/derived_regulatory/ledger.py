@@ -22,13 +22,18 @@ def gross_up(base, available, cap, rate):
     return money(rate * (base - continuous_use) / (1 - rate)), money(continuous_use), ZERO
 
 
-def simulate(spec):
+LEASE_FIELDS=('lease_cash_rent','lease_book_depreciation','lease_book_interest',
+    'lease_termination_gain_loss','lease_tax_deduction','lease_regulatory_expense',
+    'lease_rou_open','lease_rou_close','lease_liability_open','lease_liability_close')
+
+
+def simulate(spec, *, external_lease_annual=None):
     with localcontext() as context:
         context.prec = 50
-        return _simulate(spec)
+        return _simulate(spec, external_lease_annual)
 
 
-def _simulate(spec):
+def _simulate(spec, external_lease_annual=None):
     years = list(spec['years'])
     batches = spec['batches']
     p = spec['parameters']
@@ -44,6 +49,8 @@ def _simulate(spec):
         'cash_reconciled': True, 'rav_reconciled': True, 'claims_reconciled': True,
         'tax_bases_reconciled': True, 'losses_reconciled': True, 'nonnegative_states': True}
     regimes = defaultdict(list)
+    if external_lease_annual is not None and 'lease_allowable_fraction' not in p:
+        raise ValueError('Integrated leases require an explicit public lease_allowable_fraction')
 
     def post(year, label, **entries):
         entries = {key: money(value) for key, value in entries.items() if value}
@@ -54,6 +61,23 @@ def _simulate(spec):
         journal.append({'year': year, 'label': label, 'debit_positive_entries': entries})
 
     for year in years:
+        if external_lease_annual is None:
+            lease={key:ZERO for key in LEASE_FIELDS}
+            lease_allowance=ZERO
+        else:
+            supplied=external_lease_annual.get(year,external_lease_annual.get(str(year)))
+            if not isinstance(supplied,dict) or any(key not in supplied for key in LEASE_FIELDS):
+                raise ValueError('Incomplete independent annual lease interface')
+            lease={key:money(supplied[key]) for key in LEASE_FIELDS}
+            lease_allowance=money(lease['lease_regulatory_expense']*D(str(p['lease_allowable_fraction'])))
+            if not ZERO<=D(str(p['lease_allowable_fraction']))<=1:
+                raise ValueError('Public lease allowance fraction must be between zero and one')
+            if (lease['lease_rou_open']!=accounts['lease_rou'] or lease['lease_liability_open']!=-accounts['lease_liability']):
+                raise ValueError('Lease annual opening balances do not match prior actual closing balances')
+            lease_bridge=(lease['lease_rou_close']-lease['lease_rou_open']+lease['lease_book_depreciation']
+                -(lease['lease_liability_close']-lease['lease_liability_open']+lease['lease_cash_rent']-lease['lease_book_interest'])
+                -lease['lease_termination_gain_loss'])
+            if lease_bridge:raise ValueError('Independent annual lease journal bridge is not zero')
         inputs = annual_inputs[year]
         index = D(str(inputs['price_index']))
         rate, carry_rate = D(str(inputs['tax_rate'])), D(str(inputs['claim_carry_rate']))
@@ -146,7 +170,8 @@ def _simulate(spec):
         if loss_expired:
             regimes['tax_loss_expiry'].append(year)
         available_losses = sum(losses.values(), ZERO)
-        base = depreciation_nom + return_nom + carrying_interest - interest - tax_allowances
+        base = (depreciation_nom + return_nom + carrying_interest + lease_allowance
+                - interest - tax_allowances - lease['lease_tax_deduction'])
         tax, loss_used, loss_added = gross_up(base, available_losses, D(str(p['loss_use_cap'])), rate)
         remaining_use = loss_used
         for vintage in years:
@@ -161,7 +186,7 @@ def _simulate(spec):
             regimes['tax_loss_fifo_use'].append(year)
         if tax:
             regimes['positive_tax_gross_up'].append(year)
-        capital_entitlement = depreciation_nom + return_nom + tax
+        capital_entitlement = depreciation_nom + return_nom + tax + lease_allowance
         earned_revenue = capital_entitlement + carrying_interest
         available_cap = D(str(inputs['collection_cap_nominal']))
         receipts = ZERO
@@ -193,12 +218,28 @@ def _simulate(spec):
         post(year, 'Repay programme debt', debt=debt_repayment, cash=-debt_repayment)
         post(year, 'Pay opening debt interest', interest=interest, cash=-interest)
         post(year, 'Pay current tax', tax=tax, cash=-tax)
+        if external_lease_annual is not None:
+            rou_noncash=lease['lease_rou_close']-lease['lease_rou_open']+lease['lease_book_depreciation']
+            liability_noncash=(lease['lease_liability_close']-lease['lease_liability_open']
+                              +lease['lease_cash_rent']-lease['lease_book_interest'])
+            post(year,'Independent net lease recognition, remeasurement and termination bridge',
+                 lease_rou=rou_noncash,lease_liability=-liability_noncash,
+                 lease_gain=-lease['lease_termination_gain_loss'])
+            post(year,'Lease asset depreciation',lease_depreciation=lease['lease_book_depreciation'],
+                 lease_rou=-lease['lease_book_depreciation'])
+            post(year,'Accrue lease interest',lease_interest=lease['lease_book_interest'],
+                 lease_liability=-lease['lease_book_interest'])
+            post(year,'Total actual lease cash settlement',lease_liability=lease['lease_cash_rent'],
+                 cash=-lease['lease_cash_rent'])
         owner_capital, dividend = max(-accounts['cash'], ZERO), max(accounts['cash'], ZERO)
         post(year, 'Contractual owner funding', cash=owner_capital, capital=-owner_capital)
         post(year, 'Distribute cash surplus', retained=dividend, cash=-dividend)
-        net_income = earned_revenue - depreciation_nom - writeoff_nom - interest - tax
+        net_income = (earned_revenue - depreciation_nom - writeoff_nom - interest - tax
+            - lease['lease_book_depreciation']-lease['lease_book_interest']+lease['lease_termination_gain_loss'])
         post(year, 'Close annual income', revenue=earned_revenue, depreciation=-depreciation_nom,
-             impairment=-writeoff_nom, interest=-interest, tax=-tax, retained=-net_income)
+             impairment=-writeoff_nom, interest=-interest, tax=-tax, retained=-net_income,
+             lease_depreciation=-lease['lease_book_depreciation'],lease_interest=-lease['lease_book_interest'],
+             lease_gain=lease['lease_termination_gain_loss'])
         row = {'opening_cwip_real': open_cwip, 'opening_rav_real': open_rav,
             'capital_spend_real': capex_real, 'commissioning_real': commission_real,
             'depreciation_real': depreciation, 'disallowance_real': writeoff,
@@ -222,10 +263,10 @@ def _simulate(spec):
             'owner_net_cashflow': dividend - owner_capital, 'cash_close': accounts['cash'],
             'paid_in_capital': -accounts['capital'], 'retained_earnings': -accounts['retained'],
             'revaluation_reserve': -accounts['revaluation']}
-        row['total_assets'] = nominal_cwip + nominal_rav + row['claims_close'] + accounts['cash']
+        row['total_assets'] = nominal_cwip + nominal_rav + row['claims_close'] + accounts['cash'] + lease['lease_rou_close']
         row['total_equity'] = row['paid_in_capital'] + row['retained_earnings'] + row['revaluation_reserve']
-        row['balance_check'] = row['total_assets'] - row['debt_close'] - row['total_equity']
-        row['cash_check'] = receipts + debt_draw + owner_capital - capex_nom - debt_repayment - interest - tax - dividend
+        row['balance_check'] = row['total_assets'] - row['debt_close'] - lease['lease_liability_close'] - row['total_equity']
+        row['cash_check'] = receipts + debt_draw + owner_capital - capex_nom - debt_repayment - interest - tax - dividend - lease['lease_cash_rent']
         row['claims_check'] = row['claims_close'] - opening_claims - earned_revenue + receipts
         checks['balance_sheets_balanced'] &= row['balance_check'] == 0
         checks['cash_reconciled'] &= row['cash_check'] == 0 and accounts['cash'] == 0
@@ -235,7 +276,35 @@ def _simulate(spec):
         checks['nonnegative_states'] &= all(value >= 0 for state in cohort.values() for value in state.values()) and all(value >= 0 for value in claims.values()) and all(value >= 0 for value in losses.values())
         if sum(accounts.values(), ZERO):
             raise ValueError('Independent trial balance is not zero')
+        if external_lease_annual is not None:
+            row.update(lease)
+            row['lease_regulatory_allowance']=lease_allowance
+            row['total_liabilities']=row['debt_close']+lease['lease_liability_close']
+            row['cfo']=receipts-interest-tax-lease['lease_cash_rent']
+            row['cfi']=-capex_nom
+            row['cff']=debt_draw-debt_repayment+owner_capital-dividend
         annual.append(row)
-    return {'annual': annual, 'rav_batches': dict(rav_records), 'tax_batches': dict(tax_records),
+    result={'annual': annual, 'rav_batches': dict(rav_records), 'tax_batches': dict(tax_records),
             'claim_vintages': dict(claim_records), 'loss_vintages': dict(loss_records),
             'journal': journal, 'checks': checks, 'observed_regimes': dict(regimes)}
+    if external_lease_annual is not None:result['lease_integrated']=True
+    return result
+
+
+def annual_bridge(spec, ledger):
+    """Explicit nominal-GBP parent interface, with cash reporting conventions."""
+    result={}
+    for year,row in zip(spec['years'],ledger['annual']):
+        lease_liability=row.get('lease_liability_close',ZERO)
+        lease_cash=row.get('lease_cash_rent',ZERO)
+        mapped={**row,'year':year,'period_start':str(year-1)+'-04-01','period_end':str(year)+'-03-31',
+            'units':'nominal absolute GBP except explicitly named real fields',
+            'lease_liability_close':lease_liability,'lease_rou_close':row.get('lease_rou_close',ZERO),
+            'total_liabilities':row['debt_close']+lease_liability,
+            'cfo':row['claims_receipts']-row['debt_interest']-row['current_tax_allowance']-lease_cash,
+            'cfi':-row['capital_spend_nominal'],
+            'cff':row['debt_draw']-row['debt_repayment']+row['owner_capital']-row['owner_distribution']}
+        if mapped['cfo']+mapped['cfi']+mapped['cff']!=row['cash_close']:
+            raise ValueError('Programme parent cash-flow bridge does not reconcile')
+        result[year]=mapped
+    return result

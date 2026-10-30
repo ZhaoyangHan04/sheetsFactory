@@ -75,3 +75,109 @@ def test_schema_covers_all_named_financial_outputs_and_no_missing_full_journal_c
     result=simulate(simple_spec())
     assert set(result['annual'][0])==set(ANNUAL_FIELDS)
     assert len(result['checks'])==8 and all(value is True for value in result['checks'].values())
+
+
+def lease_interface(spec):
+    result={}
+    previous_rou=previous_liability=D(0)
+    for i,year in enumerate(spec['years']):
+        cash=D(45) if i==3 else D(25)
+        liability=D(0) if i==3 else D(80)-D(20)*i
+        rou=D(75)-D(25)*i
+        result[year]={'lease_cash_rent':cash,'lease_book_depreciation':D(25),
+            'lease_book_interest':D(5),'lease_termination_gain_loss':D(0),
+            'lease_tax_deduction':cash,'lease_regulatory_expense':cash,
+            'lease_rou_open':previous_rou,'lease_rou_close':rou,
+            'lease_liability_open':previous_liability,'lease_liability_close':liability}
+        previous_rou,previous_liability=rou,liability
+    return result
+
+
+def test_optional_lease_changes_tax_claims_cash_and_real_balance_sheet_not_parallel_reports():
+    from sheets_factory.workbook.derived_regulatory.ledger import annual_bridge
+    spec=simple_spec();spec['parameters']['lease_allowable_fraction']='.8'
+    base=simulate(spec);result=simulate(spec,external_lease_annual=lease_interface(spec))
+    assert result['lease_integrated'] and all(result['checks'].values())
+    first=result['annual'][0]
+    assert first['pre_allowance_taxable_profit']==base['annual'][0]['pre_allowance_taxable_profit']-D(5)
+    assert first['capital_entitlement']==base['annual'][0]['capital_entitlement']+D(20)
+    assert first['owner_capital']==base['annual'][0]['owner_capital']+D(25)
+    assert first['total_assets']==D(195) and first['total_liabilities']==D(80)
+    assert first['total_equity']==D(115) and first['net_income']==D(-10)
+    assert first['lease_liability_close']==D(80) and first['lease_rou_close']==D(75)
+    assert all(row['balance_check']==0 and row['cash_check']==0 for row in result['annual'])
+    bridge=annual_bridge(spec,result)
+    assert bridge[2024]['period_start']=='2023-04-01' and bridge[2024]['period_end']=='2024-03-31'
+    assert all(row['cfo']+row['cfi']+row['cff']==row['cash_close'] for row in bridge.values())
+
+
+def test_external_lease_interface_requires_continuity_journal_identity_and_explicit_public_fraction():
+    spec=simple_spec();external=lease_interface(spec)
+    with pytest.raises(ValueError,match='explicit public'):simulate(spec,external_lease_annual=external)
+    spec['parameters']['lease_allowable_fraction']='1'
+    broken=deepcopy(external);broken[2024]['lease_cash_rent']+=1
+    with pytest.raises(ValueError,match='journal bridge'):simulate(spec,external_lease_annual=broken)
+    broken=deepcopy(external);broken[2025]['lease_rou_open']+=1
+    with pytest.raises(ValueError,match='opening balances'):simulate(spec,external_lease_annual=broken)
+    broken=deepcopy(external);broken[2024].pop('lease_tax_deduction')
+    with pytest.raises(ValueError,match='Incomplete'):simulate(spec,external_lease_annual=broken)
+
+
+def test_standalone_parent_bridge_explicitly_has_zero_leases_and_reconciles_cash():
+    from sheets_factory.workbook.derived_regulatory.ledger import annual_bridge
+    spec=simple_spec();result=simulate(spec)
+    assert result==simulate(spec,external_lease_annual=None)
+    bridge=annual_bridge(spec,result)
+    assert all(row['lease_liability_close']==0 and row['lease_rou_close']==0 for row in bridge.values())
+    assert all(row['cfo']+row['cfi']+row['cff']==0 for row in bridge.values())
+    assert 'lease_integrated' not in result
+
+
+def emitter_fixture(tmp_path,spec,external=None):
+    import openpyxl
+    from sheets_factory.workbook.derived_regulatory.excel import create_workbook
+    from sheets_factory.workbook.derived_regulatory.ledger import LEASE_FIELDS
+    source=tmp_path/'source.xlsx';book=openpyxl.Workbook();book.active.title='Upstream';book.active['A1']=100
+    refs={}
+    if external is not None:
+        sheet=book.create_sheet('Lease Annual')
+        for yi,(year,row) in enumerate(external.items(),2):
+            refs[year]={}
+            for index,key in enumerate(LEASE_FIELDS,2):
+                sheet.cell(index,yi,float(row[key]));refs[year][key]="'Lease Annual'!"+sheet.cell(index,yi).coordinate
+    book.save(source);book.close()
+    prepared=deepcopy(spec)
+    for batch in prepared['batches']:
+        batch.update(source_address='Upstream!A1',source_millions='.0001',programme_share='1')
+    output=tmp_path/'model.xlsx'
+    binding=create_workbook(source,prepared,output,'Public hypothetical policy',external_annual_refs=refs if external is not None else None)
+    return output,binding
+
+
+def test_excel_lease_hooks_reference_calculated_lease_cells_and_cover_independent_expected_outputs(tmp_path):
+    import openpyxl
+    from sheets_factory.workbook.derived_regulatory.validate import expected_cells
+    spec=simple_spec();spec['parameters']['lease_allowable_fraction']='.8';external=lease_interface(spec)
+    result=simulate(spec,external_lease_annual=external);path,binding=emitter_fixture(tmp_path,spec,external)
+    expected=expected_cells(spec,result)
+    assert len(expected)==binding['new_formula_count']
+    book=openpyxl.load_workbook(path)
+    for (sheet,row,col),_ in expected.items():assert book[sheet].cell(row,col).data_type=='f'
+    refs=binding['annual_refs'][2024]
+    assert 'lease_liability_close' in refs and all(key in refs for key in ('owner_capital','owner_distribution','cfo','cfi','cff','total_equity'))
+    from sheets_factory.workbook.derived_regulatory.schema import COMBINED_ANNUAL_FIELDS
+    lease_row=3+COMBINED_ANNUAL_FIELDS.index('lease_cash_rent')
+    assert book['Reopener Statements'].cell(lease_row,3).value=="='Lease Annual'!B2"
+    assert book['Reopener Inputs']['B35'].value==.8
+    assert binding['metadata_adapter']==[]
+    book.close()
+
+
+def test_public_lease_amendment_replaces_tax_and_owner_cash_clauses_and_preserves_standalone_policy():
+    from sheets_factory.workbook.derived_regulatory.policy import public_policy
+    plain=public_policy();combined=public_policy(include_leases=True)
+    assert 'less cash debt interest and tax capital allowances.' in plain
+    assert 'plus the eligible regulatory lease allowance' in combined
+    assert 'less cash debt interest and tax capital allowances.' not in combined
+    assert 'including direct costs and termination fees' in combined
+    assert 'not an assertion of IFRS cash-flow classification' in combined
