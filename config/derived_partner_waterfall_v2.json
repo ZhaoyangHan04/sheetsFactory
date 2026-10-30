@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "years": [2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035, 2036, 2037, 2038, 2039, 2040, 2041, 2042, 2043],
+  "opening_date": "2023-04-01",
+  "opening_capital": "250000.00",
+  "lp_capital_fraction": "0.90",
+  "preference_rate": "0.02",
+  "initial_carry_rate": "0.20",
+  "flipped_carry_rate": "0.30",
+  "lp_xirr_hurdle": "0.01"
+}

@@ -46,13 +46,13 @@ def operating_bridge(spec,project_ledger,project_spec):
     return result
 
 
-def simulate_parent(spec,programme_annual,project_ledger,project_spec):
+def simulate_parent(spec,programme_annual,project_ledger,project_spec,*,waterfall_spec=None):
     with localcontext() as context:
         context.prec=50
-        return _simulate(spec,programme_annual,project_ledger,project_spec)
+        return _simulate(spec,programme_annual,project_ledger,project_spec,waterfall_spec)
 
 
-def _simulate(spec,programme_annual,project_ledger,project_spec):
+def _simulate(spec,programme_annual,project_ledger,project_spec,waterfall_spec=None):
     years=list(spec['years']);p=spec['parameters'];inputs={int(r['year']):r for r in spec['annual_inputs']}
     if years!=list(range(2024,2044)) or len(spec['annual_inputs'])!=20 or set(inputs)!=set(years):raise ValueError('Twenty complete April–March reporting years FY2024–2043 are required')
     programme_rows=list(programme_annual.values()) if isinstance(programme_annual,dict) else list(programme_annual)
@@ -75,6 +75,13 @@ def _simulate(spec,programme_annual,project_ledger,project_spec):
     if posted(p['facility_limit'])<0 or any(not ZERO<=D(str(p[k]))<=1 for k in ('rav_advance_rate','claim_advance_rate')):
         raise ValueError('Facility limit and collateral advance rates are invalid')
     post(2023,'Opening paid-in partner capital',cash=opening,capital=-opening)
+    partner_state=None;partner_annual=[]
+    if waterfall_spec is not None:
+        from ..partner_waterfall.ledger import initial_state,allocate_year
+        if posted(waterfall_spec['opening_capital'])!=opening:
+            raise ValueError('Partner opening contribution must equal actual parent opening cash')
+        partner_state=initial_state(waterfall_spec)
+        checks['partner_capital_reconciled']=True
     called=ZERO
     for year in years:
         external=programme[year];inp=inputs[year]
@@ -148,13 +155,23 @@ def _simulate(spec,programme_annual,project_ledger,project_spec):
         r['net_income']=r['programme_income']+r['operating_income']+r['operating_sale_gain']-r['bank_interest']-r['management_fee']
         post(year,'Close holding annual income',income=r['programme_income']+r['operating_income']+r['operating_sale_gain'],
              interest=-r['bank_interest'],fee=-r['management_fee'],retained=-r['net_income'])
+        partner_distribution=ZERO
+        if waterfall_spec is not None:
+            allocation=allocate_year(waterfall_spec,partner_state,year,r['lp_capital'],max(ZERO,accounts['cash']-minimum))
+            partner_state=allocation['state'];partner_annual.append(allocation['annual'])
+            for entry in allocation['journal']:
+                account_map={'paid_in_capital':'capital','retained_earnings':'retained','cash':'cash'}
+                post(year,entry['label'],**{account_map[k]:v for k,v in entry['debit_positive_entries'].items()})
+            partner_distribution=allocation['annual']['total_distribution']
+            if partner_state['lp_unreturned']+partner_state['gp_unreturned']!=-accounts['capital']:
+                raise ValueError('Partner capital claims do not match parent paid-in capital')
         r.update(cash_close=accounts['cash'],bank_close=-accounts['bank'],capital_close=-accounts['capital'],
                  retained_close=-accounts['retained'],oci_close=-accounts['oci'])
         r['assets']=r['cash_close']+r['programme_investment_close']+r['operating_investment_close'];r['liabilities']=r['bank_close']
         r['equity']=r['capital_close']+r['retained_close']+r['oci_close'];r['balance_check']=r['assets']-r['liabilities']-r['equity']
         r['cfo']=r['operating_dividend']+r['programme_distribution']-r['bank_interest']-r['management_fee']
         r['cfi']=r['operating_sale']-r['operating_acquisition']-r['programme_capital']
-        r['cff']=r['bank_draw']-repayment+r['lp_capital'];r['cash_check']=r['cash_close']-r['cash_open']-r['cfo']-r['cfi']-r['cff']
+        r['cff']=r['bank_draw']-repayment+r['lp_capital']-partner_distribution;r['cash_check']=r['cash_close']-r['cash_open']-r['cfo']-r['cfi']-r['cff']
         g={'cash_open':r['cash_open']+(posted(programme[year-1]['cash_close']) if year>years[0] else ZERO),
            'cash_close':r['cash_close']+s['cash_close'],'parent_assets':r['assets'],'programme_assets':s['total_assets'],
            'investment_elimination':r['programme_investment_close'],'parent_liabilities':r['liabilities'],
@@ -183,5 +200,12 @@ def _simulate(spec,programme_annual,project_ledger,project_spec):
                           ('operating_acquisition',r['operating_acquisition']),('operating_exit',r['operating_sale'])]:
             if value:regimes[key].append(year)
         if r['bank_draw']>0 and r['lp_capital']>0:regimes['borrowing_base_binding'].append(year)
-    return {'annual':annual,'consolidated':group,'operating_monthly_bridge':op,'journal':journal,
+    result={'annual':annual,'consolidated':group,'operating_monthly_bridge':op,'journal':journal,
             'checks':checks,'observed_regimes':dict(regimes)}
+    if waterfall_spec is not None:
+        from ..partner_waterfall.ledger import observed_regimes
+        result.update(partner_waterfall=partner_annual,waterfall_state=partner_state,
+                      observed_waterfall_regimes=observed_regimes(partner_annual),
+                      partner_opening=[{'lp_net_cashflow':partner_state['lp_cashflows'][0]['amount'],
+                                        'gp_net_cashflow':partner_state['gp_cashflows'][0]['amount']}])
+    return result

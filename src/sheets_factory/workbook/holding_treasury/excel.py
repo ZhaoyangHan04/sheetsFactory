@@ -18,7 +18,7 @@ PUBLIC_RULES=(
 )
 
 
-def emit_parent(book,spec,programme_annual_refs,operating_refs):
+def emit_parent(book,spec,programme_annual_refs,operating_refs,*,waterfall_spec=None):
     """Add five sheets using only public inputs and live source formula references.
 
     programme_annual_refs[FY][field] must be an absolute Excel cell reference.
@@ -37,8 +37,14 @@ def emit_parent(book,spec,programme_annual_refs,operating_refs):
     for key,sheet in sheets.items():
         sheet['A1']=SHEETS[key];sheet['A1'].font=Font(size=14,bold=True)
         sheet.freeze_panes='C3';sheet.column_dimensions['A'].width=39;sheet.column_dimensions['B'].width=18
-    for i,text in enumerate(PUBLIC_RULES,3):sheets['brief'].cell(i,1,text)
-    if spec.get('credit_policy'):sheets['brief'].cell(3+len(PUBLIC_RULES),1,spec['credit_policy'])
+    public_rules=PUBLIC_RULES
+    if waterfall_spec is not None:
+        public_rules=tuple(text.replace('Additional LP commitment','Additional partner commitment')
+            .replace('call finite LP capital','call finite partner capital').replace('No parent distributions occur.',
+            'After this priority, distribute only cash above the minimum through the provided LP/GP Partner Contract. The existing finite additional commitment is total partner capital, split between LP and GP by that contract.') for text in PUBLIC_RULES)
+        public_rules+=('Consolidation elimination rows display the original underlying amount, with its original sign; the consolidated totals subtract the investment, equity, income and OCI rows. Owner capital is a positive parent payment/programme receipt, and owner distribution a positive programme payment/parent receipt. Cash-flow eliminations reverse these actual flows in their original reporting categories. These display rows are not signed adjustment journals.',)
+    for i,text in enumerate(public_rules,3):sheets['brief'].cell(i,1,text)
+    if spec.get('credit_policy'):sheets['brief'].cell(3+len(public_rules),1,spec['credit_policy'])
     sheets['brief'].column_dimensions['A'].width=120
     def reference(key,cell):return "'"+SHEETS[key].replace("'","''")+"'!"+cell
     def live(ref):
@@ -73,6 +79,17 @@ def emit_parent(book,spec,programme_annual_refs,operating_refs):
             put('operating',r,offset,f'ROUND({letter(offset-4)}{r}*{param["gbp_per_usd"]},2)','operating_monthly_bridge',i,field)
     for key,fields in [('parent',PARENT_FIELDS),('group',GROUP_FIELDS)]:
         for field in fields:sheets[key].cell(row(field,fields),1,field)
+    waterfall_meta=None
+    if waterfall_spec is not None:
+        from ..partner_waterfall.excel import emit_waterfall
+        parent_links={}
+        for yi,y in enumerate(years):
+            col=letter(yi+3)
+            field_ref=lambda field:reference('parent',f'{col}{row(field,PARENT_FIELDS)}')
+            parent_links[y]={'capital_called':field_ref('lp_capital'),
+                'distributable_cash':f'MAX(0,{field_ref("funding_after_repayments")}+{field_ref("bank_draw")}+{field_ref("lp_capital")}-{param["minimum_cash"]})'}
+        waterfall_meta=emit_waterfall(book,waterfall_spec,parent_links)
+        bindings.extend(waterfall_meta['bindings'])
     for yi,y in enumerate(years):
         c=yi+3;col=letter(c);prev=letter(c-1)
         for key in ('parent','group'):sheets[key].cell(2,c,y)
@@ -126,6 +143,12 @@ def emit_parent(book,spec,programme_annual_refs,operating_refs):
         F['cfo']=f'{pr("operating_dividend")}+{pr("programme_distribution")}-{pr("bank_interest")}-{pr("management_fee")}'
         F['cfi']=f'{pr("operating_sale")}-{pr("operating_acquisition")}-{pr("programme_capital")}'
         F['cff']=f'{pr("bank_draw")}-{pr("mandatory_margin")}-{pr("optional_repayment")}+{pr("lp_capital")}'
+        if waterfall_meta is not None:
+            wr=waterfall_meta['annual_refs'][y]
+            F['cash_close']+='-'+wr['total_distribution']
+            F['capital_close']+='-'+wr['capital_distribution']
+            F['retained_close']+='-'+wr['profit_distribution']
+            F['cff']+='-'+wr['total_distribution']
         F['cash_check']=f'{pr("cash_close")}-{pr("cash_open")}-{pr("cfo")}-{pr("cfi")}-{pr("cff")}'
         F['programme_investment_check']=pr('programme_investment_close')+'-'+sr('total_equity')
         for field in PARENT_FIELDS:put('parent',row(field,PARENT_FIELDS),c,F[field],'annual',yi,field)
@@ -158,8 +181,12 @@ def emit_parent(book,spec,programme_annual_refs,operating_refs):
         for cell in sheet._cells.values():
             if cell.data_type=='f':cell.font=Font(color='000000')
             elif isinstance(cell.value,(int,float)):cell.font=Font(color='0000AA')
-    return {'bindings':bindings,'sheet_names':SHEETS,'annual_refs':{
+    result={'bindings':bindings,'sheet_names':SHEETS,'annual_refs':{
       y:{f:reference('parent',f'{letter(i+3)}{row(f,PARENT_FIELDS)}') for f in PARENT_FIELDS}
       for i,y in enumerate(years)},'consolidated_refs':{
       y:{f:reference('group',f'{letter(i+3)}{row(f,GROUP_FIELDS)}') for f in GROUP_FIELDS}
       for i,y in enumerate(years)}}
+    if waterfall_meta is not None:
+        result['waterfall_refs']=waterfall_meta['annual_refs']
+        result['waterfall_binding']=waterfall_meta
+    return result

@@ -9,7 +9,7 @@ def expected_cells(ledger,bindings):
     return {(b['sheet'],b['cell']):ledger[b['section']][b['index']][b['field']] for b in bindings}
 
 
-def audit_workbook(path,ledger,bindings,*,spec):
+def audit_workbook(path,ledger,bindings,*,spec,waterfall_spec=None):
     values=openpyxl.load_workbook(path,data_only=True,keep_links=False)
     formulas=openpyxl.load_workbook(path,data_only=False,keep_links=False)
     checked=[];mismatches=[];uncovered=[];errors=[];seen=set();control_mismatches=[]
@@ -21,6 +21,9 @@ def audit_workbook(path,ledger,bindings,*,spec):
                 observed=actual.date() if isinstance(actual,datetime) else actual
                 target=date.fromisoformat(str(expected)[:10]);passed=observed==target
             elif kind=='integer':passed=type(actual) in (int,float) and actual==int(expected)
+            elif kind=='nullable_integer':passed=(actual==0 if expected is None else type(actual) in (int,float) and actual==int(expected))
+            elif kind=='nullable_rate' and expected is None:passed=actual in (None,'')
+            elif kind in ('rate','nullable_rate'):passed=type(actual) in (int,float) and abs(Decimal(str(actual))-Decimal(str(expected)))<Decimal('1e-10')
             else:passed=type(actual) in (int,float) and abs(Decimal(str(actual))-Decimal(str(expected)))<Decimal('.005')
             item={'address':sn+'!'+addr,'kind':kind,'expected':str(expected),'observed':str(actual),'passed':passed}
             checked.append(item)
@@ -35,10 +38,22 @@ def audit_workbook(path,ledger,bindings,*,spec):
             actual=formulas[SHEETS['inputs']][addr]
             if actual.data_type=='f' or type(actual.value) not in (int,float) or Decimal(str(actual.value))!=Decimal(str(goal)):
                 control_mismatches.append({'address':SHEETS['inputs']+'!'+addr,'expected':str(goal),'observed':str(actual.value)})
+        formula_sheets=set(SHEETS.values())
+        if waterfall_spec is not None:
+            from ..partner_waterfall.schema import SHEETS as PARTNER_SHEETS,INPUT_FIELDS
+            formula_sheets.update(PARTNER_SHEETS.values())
+            for i,field in enumerate(INPUT_FIELDS,3):
+                cell=formulas[PARTNER_SHEETS['inputs']][f'B{i}'];actual=cell.value
+                if field=='opening_date':
+                    observed=actual.date() if isinstance(actual,datetime) else actual
+                    passed=cell.data_type!='f' and observed==date.fromisoformat(waterfall_spec[field])
+                else:
+                    passed=cell.data_type!='f' and type(actual) in (int,float) and Decimal(str(actual))==Decimal(str(waterfall_spec[field]))
+                if not passed:control_mismatches.append({'address':PARTNER_SHEETS['inputs']+'!'+cell.coordinate,'expected':str(waterfall_spec[field]),'observed':str(actual)})
         formula_count=0
         for sheet in formulas:
             for cell in sheet._cells.values():
-                if cell.data_type=='f' and sheet.title in SHEETS.values():
+                if cell.data_type=='f' and sheet.title in formula_sheets:
                     formula_count+=1
                     if (sheet.title,cell.coordinate) not in seen:uncovered.append(sheet.title+'!'+cell.coordinate)
                 cached=values[sheet.title][cell.coordinate]
