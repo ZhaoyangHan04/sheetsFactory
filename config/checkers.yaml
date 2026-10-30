@@ -185,7 +185,7 @@
         "normalized_trajectories"
       ],
       "program_handler": "shortcut_complexity_probe",
-      "instructions": "须有可执行捷径或违反预先声明硬约束的测量；完成速度、完成状态和采样偏好均不足以证明过易。",
+      "instructions": "候选阶段审公开表格/轨迹中的具体捷径线索和预声明复杂性硬约束；无适用局部probe则not_applicable并说明后续正式cohort gate pending，不能因尚无后续成绩而unknown。有具体捷径或硬约束但缺核验证据仍unknown；可执行捷径或硬约束违约须有测量。完成速度、单次成功、采样偏好均不足以证明过易。候选结论不授予最终发布资格。",
       "emits_problem_ids": [
         "Q08"
       ],

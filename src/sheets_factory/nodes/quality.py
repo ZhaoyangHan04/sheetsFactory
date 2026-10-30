@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import uuid
+import re
 
 from ..core.node import BaseNode, TaskRejected
 from ..workbook import compare_workbooks
@@ -22,6 +23,43 @@ def prepare_workspace(ctx, name):
     shutil.copy2(ctx.data['input'], workspace / 'input.xlsx')
     (workspace / 'instruction.md').write_text(ctx.data['instruction'])
     return workspace
+
+
+def candidate_difficulty_context(config):
+    """Separate local Q08 evidence from the mandatory later cohort evaluation."""
+    diagnosis = config.get('diagnosis', {})
+    deferred = diagnosis.get('difficulty_deferred') is True
+    required = not deferred and (diagnosis.get('difficulty_deferred') is False or bool(config.get('difficulty')))
+    # This optional contract is explicitly public configuration, never the
+    # private plan, reference, source paths or expected answers.
+    contract = deepcopy(diagnosis.get('template_complexity_contract', []))
+    def check_public(value):
+        if isinstance(value, dict):
+            for key, item in value.items():
+                if re.search(r'private|secret|path', str(key), re.I):
+                    raise ValueError('Q08 complexity contract must contain public constraints, not private paths')
+                check_public(item)
+        elif isinstance(value, list):
+            for item in value:
+                check_public(item)
+        elif isinstance(value, str) and (
+                re.search(r'''(?:^|[\s"'=(])(?:/|~[/\\]|[A-Za-z]:[/\\])\S+''', value)
+                or re.search(r'''(?:^|[\s"'=(])(?:\.\.?/|private/|outputs/|\.secrets/)\S+''', value)
+                or '/private/' in value or '.secrets' in value):
+            raise ValueError('Q08 complexity contract must not expose filesystem paths')
+    check_public(contract)
+    return {'stage': 'candidate_quality', 'template_complexity_contract': contract,
+        'candidate_Q08_scope': 'Declared hard complexity constraints and concrete executable-shortcut evidence only; inspect public artifacts and traces.',
+        'no_applicable_local_probe_state': 'not_applicable',
+        'planning_preferences_are_hard_constraints': False,
+        'missing_future_cohort_score_is_evidence_gap': False,
+        'candidate_assessment_grants_publication': False,
+        'formal_cohort_gate': {'required': required,
+            'status': 'pending' if required else ('deferred_by_explicit_scope' if deferred else 'not_configured'),
+            'model': 'gpt-6.1-sol', 'reasoning_effort': 'xhigh',
+            'timeout_seconds': 1800,
+            'overall_pass_at_1_max': 0.2, 'minimum_tasks_per_mode': 10,
+            'fresh_frozen_confirmation_required': True}}
 
 
 class RecoveryNode(BaseNode):
@@ -97,6 +135,7 @@ class DiagnoseNode(BaseNode):
         diagnosis_prompt = prompt(ctx, 'diagnosis.md')
         public = {'instruction': ctx.data['instruction'], 'profile': compact_profile(ctx.data['public_profile']),
                   'rules': ctx.data['plan']['public_rules'], 'task_mode': ctx.mode,
+                  'difficulty_review_context': candidate_difficulty_context(ctx.config),
                   'input_sha256': hashlib.sha256(Path(ctx.data['input']).read_bytes()).hexdigest()}
         private = {'plan': ctx.data['plan'], 'construction': ctx.data['construction_validation'],
                    'expected_delta': ctx.data['delta'], 'root_impacts': ctx.data['root_impacts'],

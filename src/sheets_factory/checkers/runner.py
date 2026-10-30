@@ -119,6 +119,8 @@ class DiagnosisRunner:
         revision = task_bundle.get("revision_hash", _digest(task_bundle.get("public", {})))
         task_id = task_bundle.get("task_id", "task")
         report = {"diagnostic_run_id": str(uuid4()), "task_revision_hash": revision,
+                  "diagnostic_stage": "candidate_quality",
+                  "difficulty_review_context": deepcopy(task_bundle.get("public", {}).get("difficulty_review_context", {})),
                   "check_plan_hash": plan["check_plan_hash"], "report_scope": "merged",
                   "scope": "all" if not plan["disabled_check_ids"] else "selected",
                   "assigned_check_ids": enabled, "enabled_check_ids": enabled,
@@ -157,6 +159,8 @@ class DiagnosisRunner:
                        "visibility": visibility,
                        "checks": [{"id": c, "instructions": self.specs[c]["instructions"]} for c in active],
                        "public": task_bundle.get("public", {}), "traces": _clean_trace(traces),
+                       "diagnostic_stage": "candidate_quality",
+                       "difficulty_review_context": task_bundle.get("public", {}).get("difficulty_review_context", {}),
                        "rules": ["Diagnose every assigned check regardless of task completion.",
                                  "Only evidence-backed clear/flagged conclusions; otherwise unknown.",
                                  "Do not output accept/reject or route choices.",
