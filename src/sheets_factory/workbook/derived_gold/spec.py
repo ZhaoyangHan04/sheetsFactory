@@ -27,6 +27,8 @@ ANCHORS = {
 PUBLIC_CONTRACT_VERSION = 4
 COVENANT_CONTRACT_VERSION = 6
 ADVANCED_TAX_CONTRACT_VERSION = 7
+CYCLIC_FINANCING_CONTRACT_VERSION = 8
+CYCLIC_FINANCING_FIELDS = ("enabled", "bankcap", "target_dscr", "tranche")
 COVENANT_FIELDS = ("covenant_enabled", "covenant_first_test_month", "covenant_dscr_threshold",
                    "dsra_normal_payment_months", "dsra_trap_payment_months")
 ADVANCED_TAX_FIELDS = ("advanced_tax_enabled", "initial_tax_rate_y1", "initial_tax_rate_y2",
@@ -133,6 +135,39 @@ def advanced_tax_rules(rules: list[str]) -> list[str]:
     return result
 
 
+def cyclic_financing_parameters(config: dict, parameters: dict, *, covenant_enabled=False, tax_enabled=False) -> dict | None:
+    """Validate the opt-in underwriting contract; calculate no forecast here."""
+    raw = config.get("cyclic_financing_parameters")
+    if raw is None:
+        return None
+    if not isinstance(raw, dict) or set(raw) != set(CYCLIC_FINANCING_FIELDS):
+        raise ValueError("Cyclic financing requires exactly four explicit parameters")
+    c = {key: _decimal(value) for key, value in raw.items()}
+    if c["enabled"] not in (0, 1):
+        raise ValueError("Cyclic financing enabled flag must be numeric zero or one")
+    if any(c[key] <= 0 for key in ("bankcap", "target_dscr", "tranche")):
+        raise ValueError("Cyclic financing cap, DSCR and tranche must be positive")
+    if any(c[key] != c[key].quantize(Decimal(".01")) for key in ("bankcap", "tranche")):
+        raise ValueError("Cyclic financing amounts must be posted cents")
+    if not c["enabled"]:
+        return None
+    gap = _decimal(parameters["initial_asset_cost"]) + _decimal(parameters["opening_cash"]) - _decimal(parameters["loan_b_principal"])
+    if c["bankcap"] > gap or c["tranche"] > c["bankcap"]:
+        raise ValueError("Cyclic bank cap cannot exceed the opening funding gap")
+    if (covenant_enabled or tax_enabled or _decimal(parameters["cash_sweep_fraction"]) != 0
+            or _decimal(parameters["cash_allocation_start"]) <= 36 or _decimal(parameters["opening_retained"]) != 0):
+        raise ValueError("Certified cyclic prototype requires simple tax, no covenant/sweep and allocation after the horizon")
+    if int(c["bankcap"] // c["tranche"]) > 100000:
+        raise ValueError("Cyclic financing tranche grid exceeds the independently certified bound")
+    return dict(raw)
+
+
+def cyclic_financing_rule() -> str:
+    return (
+        "Loan A capacity is Year 3 cash CFO plus all interest less refresh spending, floored at zero, divided by underwriting DSCR and twelve times the unrounded monthly unit-annuity payment at its stated rate and term; round capacity to cents. Principal is the smaller of capacity and bank cap, rounded down to a tranche. Equity funds initial equipment and opening cash less both loans. The cap cannot exceed that funding gap."
+    )
+
+
 def _decimal(value) -> Decimal:
     if isinstance(value, bool):
         raise ValueError("Boolean is not a financial number")
@@ -203,11 +238,14 @@ def resolve_spec(project_root: Path, config_path: Path) -> dict:
     enabled = covenant is not None and _decimal(covenant["covenant_enabled"]) == 1
     tax = advanced_tax_parameters(config, p)
     tax_enabled = tax is not None and _decimal(tax["advanced_tax_enabled"]) == 1
+    cyclic = cyclic_financing_parameters(config, p, covenant_enabled=enabled, tax_enabled=tax_enabled)
     rules = covenant_rules() if enabled else list(RULES)
     if tax_enabled:
         rules = advanced_tax_rules(rules)
-    return {
-        "schema_version": 1, "public_contract_version": ADVANCED_TAX_CONTRACT_VERSION if tax_enabled else COVENANT_CONTRACT_VERSION if enabled else PUBLIC_CONTRACT_VERSION,
+    if cyclic:
+        rules.append(cyclic_financing_rule())
+    result = {
+        "schema_version": 1, "public_contract_version": CYCLIC_FINANCING_CONTRACT_VERSION if cyclic else ADVANCED_TAX_CONTRACT_VERSION if tax_enabled else COVENANT_CONTRACT_VERSION if enabled else PUBLIC_CONTRACT_VERSION,
         "scenario_id": config["scenario_id"],
         "title": "Hypothetical project: commissioning, financing and equity returns",
         "status": "experimental_seed_not_a_qualified_task",
@@ -219,3 +257,6 @@ def resolve_spec(project_root: Path, config_path: Path) -> dict:
         "public_rules": rules,
         "qualification": "No task or difficulty qualification. Every future task must pass all existing quality, recovery, Harbor and specified strong-agent difficulty gates.",
     }
+    if cyclic:
+        result["cyclic_financing_parameters"] = cyclic
+    return result

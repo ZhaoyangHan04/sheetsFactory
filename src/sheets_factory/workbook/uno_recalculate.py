@@ -16,6 +16,44 @@ def prop(name, value):
     return item
 
 
+def calculation_snapshot(document):
+    """Capture every used cell, including downstream values outside a cycle."""
+    sheets = document.getSheets()
+    result = []
+    for name in sheets.getElementNames():
+        sheet = sheets.getByName(name)
+        cursor = sheet.createCursor()
+        cursor.gotoEndOfUsedArea(True)
+        address = cursor.getRangeAddress()
+        cells = sheet.getCellRangeByPosition(0, 0, address.EndColumn, address.EndRow)
+        result.append((name, tuple(tuple(row) for row in cells.getDataArray())))
+    return tuple(result)
+
+
+def calculate_to_stability(document, max_outer_passes=64):
+    """Finish imported iterative models or reject bounded non-convergence.
+
+    Calc can finish one local iteration before refreshing an entire cross-sheet
+    feedback chain. Repeating calculateAll propagates that chain. Full-sheet
+    equality, twice consecutively, also covers dependent cells outside the loop.
+    Ordinary workbooks retain the single calculateAll call.
+    """
+    document.calculateAll()
+    if not document.getPropertyValue("IsIterationEnabled"):
+        return {"passes": 1, "iterative": False}
+    previous = calculation_snapshot(document)
+    unchanged = 0
+    for count in range(2, max_outer_passes + 1):
+        document.calculateAll()
+        current = calculation_snapshot(document)
+        unchanged = unchanged + 1 if current == previous else 0
+        if unchanged >= 2:
+            return {"passes": count, "iterative": True, "full_used_area_stable": True}
+        previous = current
+    raise RuntimeError("Iterative workbook did not reach full-sheet stability within "
+                       + str(max_outer_passes) + " calculation passes")
+
+
 def main():
     source = Path(sys.argv[1]).resolve()
     destination = Path(sys.argv[2]).resolve()
@@ -56,13 +94,14 @@ def main():
         if document is None or not document.supportsService("com.sun.star.sheet.SpreadsheetDocument"):
             raise RuntimeError("Input did not open as a spreadsheet")
         document.enableAutomaticCalculation(True)
-        document.calculateAll()
+        calculation = calculate_to_stability(document)
         document.storeAsURL(destination.as_uri(), (
             prop("FilterName", "Calc MS Excel 2007 XML"), prop("Overwrite", True),
         ))
         document.close(True)
         document = None
-        print(json.dumps({"status": "ok", "bytes": destination.stat().st_size}))
+        print(json.dumps({"status": "ok", "bytes": destination.stat().st_size,
+                          "calculation": calculation}))
     finally:
         if document is not None:
             try:

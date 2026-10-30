@@ -81,6 +81,11 @@ TAX_MONTHLY_BINDINGS = {"current_tax": 7, "nol_expired": 8, "interest_cf_close":
                         "deferred_tax_expense": 10, "dta_close": 11, "dtl_close": 12}
 ADVANCED_TAX_ANNUAL = {key: row for row, key in enumerate(
     ("current_tax", "deferred_tax_expense", "nol_expired", "dta_close", "dtl_close", "interest_cf_close"), 73)}
+CYCLIC_FINANCING_PARAMETER_NAMES = ("enabled", "bankcap", "target_dscr", "tranche")
+DEBT_SIZING_BINDINGS = {key: "B" + str(row) for row, key in enumerate((
+    "year3_cfads", "unit_monthly_payment_factor", "annual_service_factor", "target_dscr",
+    "debt_capacity", "bankcap", "sized_principal", "equity_paid_in", "year3_cash_tax",
+    "principal_check", "funding_check"), 2)}
 
 
 def _sheet_ref(sheet, cell):
@@ -160,6 +165,8 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
     enabled = cov is not None and int(cov["covenant_enabled"]) == 1
     tax = spec.get("advanced_tax_parameters")
     tax_enabled = tax is not None and int(tax["advanced_tax_enabled"]) == 1
+    cyclic = spec.get("cyclic_financing_parameters")
+    cyclic_enabled = cyclic is not None and int(cyclic["enabled"]) == 1
     n = int(p["months"])
     book = openpyxl.Workbook()
     book.active.title = "Read Me"
@@ -169,6 +176,8 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
         book.create_sheet("Covenants")
     if tax_enabled:
         book.create_sheet("Tax Vintages")
+    if cyclic_enabled:
+        book.create_sheet("DebtSizing")
     readme = book["Read Me"]
     readme["A1"], readme["B1"] = "Model", spec["title"]
     readme["A2"], readme["B2"] = "Scenario", spec["scenario_id"]
@@ -248,6 +257,35 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
         return _sheet_ref("Scenario", f"$B${tax_parameter_rows[key]}")
     if tax_enabled:
         _emit_tax_vintages(book, param, tax_param)
+    cyclic_parameter_rows = {}
+    if cyclic_enabled:
+        scenario["A74"] = "Explicit hypothetical debt underwriting contract"
+        for row, key in enumerate(CYCLIC_FINANCING_PARAMETER_NAMES, 75):
+            cyclic_parameter_rows[key] = row
+            scenario.cell(row, 1, "cyclic_" + key)
+            scenario.cell(row, 2, float(cyclic[key]))
+            scenario.cell(row, 3, "explicit hypothetical underwriting assumption")
+        ds = book["DebtSizing"]
+        ds["A1"], ds["B1"] = "Loan A underwriting and opening equity", "Posted USD except stated factors"
+        for key, address in DEBT_SIZING_BINDINGS.items():
+            ds["A" + address[1:]] = key.replace("_", " ")
+        cparam = lambda key: _sheet_ref("Scenario", "$B$" + str(cyclic_parameter_rows[key]))
+        y3first, y3last = L(27), L(n + 2)
+        ds["B2"] = "=ROUND(SUM(" + _sheet_ref("Cash Flow", y3first + "3:" + y3last + "3") + ")+SUM(" + _sheet_ref("Debt", y3first + "16:" + y3last + "16") + ")-SUM(" + _sheet_ref("Assets", y3first + "2:" + y3last + "2") + "),2)"
+        ds["B3"] = "=IF(" + param("loan_a_annual_rate") + "=0,1/" + param("loan_a_amort_payments") + ",-PMT(" + param("loan_a_annual_rate") + "/12," + param("loan_a_amort_payments") + ",1))"
+        ds["B4"] = "=12*B3"
+        ds["B5"] = "=" + cparam("target_dscr")
+        ds["B6"] = "=ROUND(MAX(0,B2)/(B5*B4),2)"
+        ds["B7"] = "=" + cparam("bankcap")
+        ds["B8"] = "=ROUNDDOWN(MIN(B6,B7)/" + cparam("tranche") + ",0)*" + cparam("tranche")
+        ds["B9"] = "=ROUND(" + param("initial_asset_cost") + "+" + param("opening_cash") + "-" + param("loan_b_principal") + "-B8,2)"
+        ds["B10"] = "=ROUND(SUM(" + _sheet_ref("Tax", y3first + "7:" + y3last + "7") + "),2)"
+        ds["B11"] = "=ROUND(" + param("loan_a_principal") + "-B8,2)"
+        ds["B12"] = "=ROUND(" + param("equity_paid_in") + "+" + param("loan_a_principal") + "+" + param("loan_b_principal") + "-" + param("initial_asset_cost") + "-" + param("opening_cash") + ",2)"
+        scenario.cell(param_rows["loan_a_principal"], 2, "='DebtSizing'!$B$8")
+        scenario.cell(param_rows["equity_paid_in"], 2, "='DebtSizing'!$B$9")
+        for key in ("loan_a_principal", "equity_paid_in"):
+            scenario.cell(param_rows[key], 3, "derived from public underwriting and opening funding policies")
 
     for sheet, keys in MAPPINGS.items():
         for key, row in keys.items():
@@ -565,9 +603,13 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
     for cell in readme._cells.values():
         cell.alignment = Alignment(wrap_text=True, vertical="top")
     book.calculation = openpyxl.workbook.properties.CalcProperties(calcId=0, fullCalcOnLoad=True, forceFullCalc=True)
+    if cyclic_enabled:
+        book.calculation.iterate = True
+        book.calculation.iterateCount = 10000
+        book.calculation.iterateDelta = 1e-9
     destination.parent.mkdir(parents=True, exist_ok=True)
     book.save(destination)
-    return {"monthly": MONTHLY_BINDINGS, "annual": annual_rows,
+    bindings = {"monthly": MONTHLY_BINDINGS, "annual": annual_rows,
             "valuation": VALUATION_BINDINGS, "parameter_rows": param_rows,
             "source_anchor_rows": anchor_rows, "payment_row": payment_row,
             "covenant": COVENANT_BINDINGS if enabled else {},
@@ -577,3 +619,7 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
             "tax_monthly": TAX_MONTHLY_BINDINGS if tax_enabled else {},
             "tax_annual": TAX_ANNUAL_BINDINGS if tax_enabled else {},
             "advanced_tax_annual": ADVANCED_TAX_ANNUAL if tax_enabled else {}}
+    if cyclic_enabled:
+        bindings.update({"debt_sizing": DEBT_SIZING_BINDINGS,
+                         "cyclic_financing_parameter_rows": cyclic_parameter_rows})
+    return bindings

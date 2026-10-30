@@ -40,6 +40,13 @@ def ledger_invariants_pass(checks: dict) -> bool:
                         "tax_vintage_rollforwards_ok", "tax_interest_capacity_ok",
                         "tax_nol_fifo_ok", "tax_interest_fifo_ok", "tax_bridge_ok",
                         "tax_depreciation_basis_ok")))
+        if checks.get("cyclic_financing_enabled"):
+            base = (base and checks["cyclic_financing_enabled"] is True
+                    and all(checks[key] is True for key in (
+                        "cyclic_financing_unique_fixed_point", "cyclic_financing_endpoint_convergence",
+                        "cyclic_financing_grid_feasible", "cyclic_financing_tax_feedback",
+                        "cyclic_financing_projection_matches"))
+                    and Decimal(str(checks["max_debt_sizing_error"])) == 0)
         return base
     except (KeyError, ArithmeticError, ValueError, TypeError):
         return False
@@ -50,7 +57,10 @@ def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict
     formulas = openpyxl.load_workbook(path, data_only=False, keep_links=False)
     expected = {}
     kinds = {}
-    p = spec["parameters"]
+    p = dict(spec["parameters"])
+    if bindings.get("debt_sizing"):
+        p.update({"loan_a_principal": ledger["debt_sizing"]["sized_principal"],
+                  "equity_paid_in": ledger["debt_sizing"]["equity_paid_in"]})
     covenant = bool(bindings.get("covenant"))
     advanced_tax = bool(bindings.get("tax_annual"))
     dec = lambda value: Decimal(str(value))
@@ -150,6 +160,12 @@ def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict
     for key, rr in bindings.get("tax_parameter_rows", {}).items():
         add("Scenario", "B" + str(rr), spec["advanced_tax_parameters"][key],
             "control" if key in {"advanced_tax_enabled", "nol_carryforward_years"} else "ratio")
+    for key, address in bindings.get("debt_sizing", {}).items():
+        add("DebtSizing", address, ledger["debt_sizing"][key],
+            "ratio" if key in {"unit_monthly_payment_factor", "annual_service_factor", "target_dscr"} else "money")
+    for key, rr in bindings.get("cyclic_financing_parameter_rows", {}).items():
+        add("Scenario", "B" + str(rr), spec["cyclic_financing_parameters"][key],
+            "control" if key == "enabled" else "ratio" if key == "target_dscr" else "source_number")
 
     checks, failed = [], []
     for address, want in sorted(expected.items()):

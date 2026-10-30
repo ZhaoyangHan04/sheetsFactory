@@ -278,6 +278,34 @@ def _advanced_tax_config(spec: dict, parameters: dict) -> dict | None:
     return tax
 
 
+def _cyclic_financing_config(spec: dict, parameters: dict) -> dict | None:
+    raw = spec.get("cyclic_financing_parameters")
+    if raw is None:
+        return None
+    names = {"enabled", "bankcap", "target_dscr", "tranche"}
+    if not isinstance(raw, dict) or set(raw) != names:
+        raise ValueError("Cyclic financing requires exactly four explicit parameters")
+    c = {name: _integer(value, name) if name == "enabled" else _decimal(value, name)
+         for name, value in raw.items()}
+    if c["enabled"] not in (0, 1):
+        raise ValueError("Cyclic financing enabled flag must be zero or one")
+    if any(c[name] <= 0 for name in ("bankcap", "target_dscr", "tranche")):
+        raise ValueError("Cyclic financing limits, DSCR and tranche must be positive")
+    if c["bankcap"] != _q(c["bankcap"]) or c["tranche"] != _q(c["tranche"]):
+        raise ValueError("Cyclic financing amounts must be posted cents")
+    if not c["enabled"]:
+        return None
+    gap = parameters["initial_asset_cost"] + parameters["opening_cash"] - parameters["loan_b_principal"]
+    if c["bankcap"] > gap or c["tranche"] > c["bankcap"]:
+        raise ValueError("Cyclic bank cap cannot exceed the opening equity funding gap")
+    if (parameters["covenant"] or parameters["advanced_tax"] or parameters["cash_sweep_fraction"] != 0
+            or parameters["cash_allocation_start"] <= parameters["months"] or parameters["opening_retained"] != 0):
+        raise ValueError("Certified cyclic prototype requires simple tax, no covenant/sweep and allocation after the horizon")
+    if int(c["bankcap"] // c["tranche"]) > 100000:
+        raise ValueError("Cyclic financing tranche grid exceeds the independently certified bound")
+    return c
+
+
 class _AnnualTaxState:
     """Independent year-end vintage subledger; no workbook or forecast imports.
 
@@ -517,6 +545,7 @@ def _parameters(spec: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("Refresh cannot enter service before it is acquired")
     result["covenant"] = _covenant_config(spec)
     result["advanced_tax"] = _advanced_tax_config(spec, result)
+    result["cyclic_financing"] = _cyclic_financing_config(spec, result)
     return result
 
 
@@ -531,7 +560,151 @@ def simulate(spec: dict[str, Any]) -> dict[str, Any]:
         context.prec = 60
         context.rounding = ROUND_HALF_UP
         p = _parameters(spec)
-        return _simulate(p)
+        return _simulate_cyclic(p) if p["cyclic_financing"] else _simulate(p)
+
+
+def _unit_annuity_factor(rate: Decimal, periods: int) -> Decimal:
+    """Unrounded unit payment, independently solved by the debt recurrence."""
+    if rate == 0:
+        return _ONE / periods
+    low, high = _ZERO, _ONE + rate
+    for _ in range(256):
+        middle = (low + high) / 2
+        if middle == low or middle == high:
+            break
+        balance = _ONE
+        for _ in range(periods):
+            balance = balance * (_ONE + rate) - middle
+        if balance > 0:
+            low = middle
+        else:
+            high = middle
+    return (low + high) / 2
+
+
+def _simulate_cyclic(p: dict[str, Any]) -> dict[str, Any]:
+    """Certify the entire finite underwriting grid, then post the full journal.
+
+    The restricted prototype has no optional repayment, distributions or other
+    facility feedback.  A reduced debt/current-tax recurrence is consequently
+    exact. Every permitted tranche is examined for feasibility and fixed points;
+    endpoint iteration alone is never presented as a uniqueness proof.
+    """
+    c = p["cyclic_financing"]
+    tranche, cap = c["tranche"], (c["bankcap"] // c["tranche"]) * c["tranche"]
+    funding_gap = _q(p["initial_asset_cost"] + p["opening_cash"] - p["loan_b_principal"])
+    rate = p["loan_a_annual_rate"] / 12
+    unit = _unit_annuity_factor(rate, p["loan_a_amort_payments"])
+    factor = unit * 12
+    def parameters_at(principal):
+        return {**p, "cyclic_financing": None, "loan_a_principal": principal,
+                "equity_paid_in": funding_gap - principal}
+    base = _simulate(parameters_at(_ZERO))
+    if any(row["revolver_open"] or row["revolver_draw"] for row in base["monthly"]):
+        raise ValueError("The cyclic proof requires no revolving borrowing across the certified grid")
+    gross_cfo = [row["cfo_direct"] + row["tax"] for row in base["monthly"]]
+    annual_ebit = [sum((row["ebit"] for row in base["monthly"][i:i + 12]), _ZERO) for i in (0, 12, 24)]
+    annual_b = [sum((row["loan_b_interest"] for row in base["monthly"][i:i + 12]), _ZERO) for i in (0, 12, 24)]
+    gross_cfads = sum((row["cfo_direct"] + row["interest"] - row["capex"] for row in base["monthly"][24:]), _ZERO) + base["monthly"][-1]["tax"]
+    def project(principal):
+        payment = _q(principal * unit)
+        balance = principal
+        interests, scheduled = [], []
+        for period in range(1, 37):
+            interest = _q(balance * rate)
+            amort = min(balance, max(_ZERO, payment - interest)) if period >= p["loan_a_amort_start"] else _ZERO
+            balance -= amort
+            interests.append(interest)
+            scheduled.append(amort)
+        nol = _q(p["opening_nol"])
+        taxes = []
+        for year in range(3):
+            ebt = annual_ebit[year] - annual_b[year] - sum(interests[year * 12:year * 12 + 12], _ZERO)
+            positive = max(ebt, _ZERO)
+            use = min(nol, _q(positive * p["nol_utilization_cap"]))
+            taxes.append(_q((positive - use) * p["tax_rate"]))
+            nol += max(-ebt, _ZERO) - use
+        cash = _q(p["opening_cash"])
+        balances = []
+        for index, row in enumerate(base["monthly"]):
+            tax = taxes[index // 12] if (index + 1) % 12 == 0 else _ZERO
+            cash += gross_cfo[index] - interests[index] - tax - row["capex"] - scheduled[index] - row["loan_b_principal"]
+            balances.append(cash)
+        cfads = gross_cfads - taxes[2]
+        capacity = _q(max(cfads, _ZERO) / (c["target_dscr"] * factor))
+        sized = (min(capacity, c["bankcap"]) // tranche) * tranche
+        return {"mapped": sized, "capacity": capacity, "cfads": cfads, "taxes": taxes,
+                "interest": interests, "scheduled": scheduled, "cash": balances}
+    grid = {}
+    fixed = []
+    monotone = feasible = True
+    previous = -tranche
+    for index in range(int(cap / tranche) + 1):
+        principal = tranche * index
+        projection = project(principal)
+        mapped = projection["mapped"]
+        monotone &= mapped >= previous
+        feasible &= min(projection["cash"]) >= p["minimum_cash"]
+        grid[principal] = mapped
+        if mapped == principal:
+            fixed.append(principal)
+        previous = mapped
+    if not monotone or not feasible:
+        raise ValueError("Cyclic financing grid is nonmonotone or requires unsupported revolving funding")
+    if len(fixed) != 1:
+        raise ValueError(f"Cyclic financing has {len(fixed)} fixed points; a unique reachable tranche is required")
+    chosen = fixed[0]
+    if not _ZERO < chosen < cap:
+        raise ValueError("Cyclic financing must have an interior, genuinely capacity-limited principal")
+    paths = []
+    for start in (_ZERO, cap):
+        path, visited = [start], {start}
+        while grid[path[-1]] != path[-1]:
+            following = grid[path[-1]]
+            if following in visited or len(path) >= 10000:
+                raise ValueError("Cyclic financing endpoint iteration cycles or fails to converge")
+            path.append(following)
+            visited.add(following)
+        if path[-1] != chosen:
+            raise ValueError("Cyclic financing endpoints reach different solutions")
+        paths.append(path)
+    adjacent_low, adjacent_high = project(chosen - tranche), project(chosen + tranche)
+    tax_response = abs(adjacent_high["taxes"][2] - adjacent_low["taxes"][2])
+    cfads_response = abs(adjacent_high["cfads"] - adjacent_low["cfads"])
+    if tax_response == 0 or cfads_response == 0:
+        raise ValueError("Cyclic financing lacks effective current-tax/CFADS feedback at the selected tranche")
+    # Check the reduced projection against independently posted full journals at
+    # both endpoints, the chosen tranche and its two neighbours.
+    reports = {_ZERO: base}
+    for principal in sorted({_ZERO, cap, chosen - tranche, chosen, chosen + tranche}):
+        full = reports.setdefault(principal, None)
+        if full is None:
+            full = reports[principal] = _simulate(parameters_at(principal))
+        projection = project(principal)
+        for index, row in enumerate(full["monthly"]):
+            cash_tax = projection["taxes"][index // 12] if (index + 1) % 12 == 0 else _ZERO
+            if (row["loan_a_interest"] != projection["interest"][index]
+                    or row["loan_a_scheduled_principal"] != projection["scheduled"][index]
+                    or row["tax"] != cash_tax or row["cash_close"] != projection["cash"][index]
+                    or row["revolver_open"] or row["revolver_draw"]):
+                raise ArithmeticError("Reduced cyclic proof differs from the full independent financial journal")
+    result = reports[chosen]
+    projection = project(chosen)
+    result["debt_sizing"] = {"year3_cfads": projection["cfads"], "unit_monthly_payment_factor": unit,
+        "annual_service_factor": factor, "target_dscr": c["target_dscr"],
+        "debt_capacity": projection["capacity"], "bankcap": c["bankcap"],
+        "sized_principal": chosen, "equity_paid_in": funding_gap - chosen,
+        "year3_cash_tax": projection["taxes"][2], "principal_check": _ZERO, "funding_check": _ZERO}
+    result["cyclic_financing_proof"] = {"grid_points_checked": len(grid), "fixed_points": fixed,
+        "mapping_monotone": monotone, "all_tranches_feasible": feasible, "endpoint_paths": paths,
+        "projection_full_journal_comparisons": len(reports), "principal_interior": True,
+        "adjacent_tranche_year3_cash_tax_response": tax_response,
+        "adjacent_tranche_year3_cfads_response": cfads_response}
+    result["checks"].update({"cyclic_financing_enabled": True, "cyclic_financing_unique_fixed_point": True,
+        "cyclic_financing_endpoint_convergence": True, "cyclic_financing_grid_feasible": True,
+        "cyclic_financing_tax_feedback": True, "cyclic_financing_projection_matches": True,
+        "max_debt_sizing_error": _ZERO})
+    return result
 
 
 def _simulate(p: dict[str, Any]) -> dict[str, Any]:
