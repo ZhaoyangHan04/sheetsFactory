@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "predeclared_synthetic_capital_allocation_catalog",
+  "seed": 20261030,
+  "currency": "GBP",
+  "project_count": 18,
+  "scenario_count": 3,
+  "years": [2024, 2043],
+  "profiles": [
+    {"id": "K01", "opening_cash_gbp": 5000000, "minimum_cash_gbp": 250000, "lp_commitment_gbp": 11000000, "facility_limit_gbp": 15000000, "advance_rate": "0.55", "tax_rate": "0.25", "discount_rate": "0.090", "loss_carry_years": 3},
+    {"id": "K02", "opening_cash_gbp": 4500000, "minimum_cash_gbp": 300000, "lp_commitment_gbp": 12000000, "facility_limit_gbp": 13500000, "advance_rate": "0.62", "tax_rate": "0.28", "discount_rate": "0.085", "loss_carry_years": 2},
+    {"id": "K03", "opening_cash_gbp": 6000000, "minimum_cash_gbp": 350000, "lp_commitment_gbp": 10000000, "facility_limit_gbp": 16000000, "advance_rate": "0.60", "tax_rate": "0.24", "discount_rate": "0.095", "loss_carry_years": 4},
+    {"id": "K04", "opening_cash_gbp": 4000000, "minimum_cash_gbp": 200000, "lp_commitment_gbp": 14000000, "facility_limit_gbp": 14000000, "advance_rate": "0.65", "tax_rate": "0.27", "discount_rate": "0.080", "loss_carry_years": 3},
+    {"id": "K05", "opening_cash_gbp": 5500000, "minimum_cash_gbp": 400000, "lp_commitment_gbp": 10500000, "facility_limit_gbp": 17000000, "advance_rate": "0.58", "tax_rate": "0.30", "discount_rate": "0.100", "loss_carry_years": 2},
+    {"id": "K06", "opening_cash_gbp": 5000000, "minimum_cash_gbp": 275000, "lp_commitment_gbp": 12500000, "facility_limit_gbp": 12000000, "advance_rate": "0.68", "tax_rate": "0.23", "discount_rate": "0.088", "loss_carry_years": 4},
+    {"id": "K07", "opening_cash_gbp": 6500000, "minimum_cash_gbp": 325000, "lp_commitment_gbp": 9500000, "facility_limit_gbp": 18000000, "advance_rate": "0.57", "tax_rate": "0.26", "discount_rate": "0.092", "loss_carry_years": 3},
+    {"id": "K08", "opening_cash_gbp": 4750000, "minimum_cash_gbp": 225000, "lp_commitment_gbp": 13500000, "facility_limit_gbp": 15500000, "advance_rate": "0.63", "tax_rate": "0.29", "discount_rate": "0.082", "loss_carry_years": 2},
+    {"id": "K09", "opening_cash_gbp": 5750000, "minimum_cash_gbp": 375000, "lp_commitment_gbp": 11500000, "facility_limit_gbp": 14500000, "advance_rate": "0.61", "tax_rate": "0.25", "discount_rate": "0.098", "loss_carry_years": 4},
+    {"id": "K10", "opening_cash_gbp": 5250000, "minimum_cash_gbp": 425000, "lp_commitment_gbp": 12000000, "facility_limit_gbp": 16500000, "advance_rate": "0.59", "tax_rate": "0.27", "discount_rate": "0.086", "loss_carry_years": 3}
+  ]
+}
