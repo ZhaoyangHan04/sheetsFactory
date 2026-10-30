@@ -58,7 +58,8 @@ def test_recursive_proof_bindings_reject_same_shape_changed_bytes(tmp_path):
         entry.bind_transitive(parent)
 
 
-def test_normal_preparation_routes_exact_source_without_starting_services(tmp_path, monkeypatch):
+@pytest.fixture
+def preparation_case(tmp_path, monkeypatch):
     manifest, specs = catalog(tmp_path)
     book = tmp_path / 'placeholder.xlsx'; book.write_bytes(b'offline source-validation boundary fixture')
     spec_ref = write_new(tmp_path / 'source_spec.json', specs[0]['spec'])
@@ -89,6 +90,14 @@ def test_normal_preparation_routes_exact_source_without_starting_services(tmp_pa
         'public_input_priority': {'old': 'must be removed'}}
     (base / 'resolved_config.yaml').write_text(yaml.safe_dump(config))
     output = tmp_path / 'new_quality'
+    return SimpleNamespace(manifest=manifest, source_ref=source_ref, proof=proof, base=base,
+                           output=output, book=book)
+
+
+def test_normal_preparation_routes_exact_source_without_starting_services(preparation_case):
+    case = preparation_case
+    manifest, source_ref, proof, base, output, book = (
+        case.manifest, case.source_ref, case.proof, case.base, case.output, case.book)
     frozen_ref = entry.prepare(source_ref['path'], manifest['path'], base, output)
     frozen, prepared, restored = entry.validate_prepared(output)
     assert reference(output / 'preflight_manifest.json') == frozen_ref and restored == proof
@@ -106,6 +115,50 @@ def test_normal_preparation_routes_exact_source_without_starting_services(tmp_pa
     assert seeds[0]['survey']['normalized_path'] == str(book)
     assert seeds[0]['finance_evidence']['audited_source_binding'] == proof
     assert entry.read(prepared['public_workbook_scope']['manifest'])['tasks'] == {}
+
+
+def test_unused_prior_financial_source_is_not_admitted_as_capital_evidence(preparation_case, tmp_path):
+    case = preparation_case
+    unused = write_new(tmp_path / 'prior_source_recipe.json', {'old_family_only': 1})
+    Path(unused['path']).write_text(json.dumps({'old_family_only': 2}))
+    original = case.base / 'preflight_manifest.json'
+    original.write_text(json.dumps({'recipe_sha256': {}, 'unrelated_historical_source': unused}))
+    result = entry.prepare(case.source_ref['path'], case.manifest['path'], case.base, case.output)
+    frozen, _, _ = entry.validate_prepared(case.output)
+    assert reference(case.output / 'preflight_manifest.json') == result
+    assert frozen['source_artifacts_sha256'][str(original)] == reference(original)['sha256']
+    assert unused['path'] not in frozen['source_artifacts_sha256']
+    provenance = frozen['base_configuration_provenance']
+    assert provenance['preflight'] == reference(original)
+    assert provenance['resolved_config'] == reference(case.base / 'resolved_config.yaml')
+    assert provenance['scope'] == 'configuration_budgets_and_normal_recipe_only'
+    assert provenance['prior_financial_source_proofs_reused'] is False
+    # The directly bound configuration provenance remains immutable afterwards.
+    original.write_text(original.read_text() + '\n')
+    with pytest.raises(ValueError, match='dependency changed'):
+        entry.validate_prepared(case.output)
+
+
+def test_actual_capital_financial_proof_still_requires_complete_transitive_binding(preparation_case, tmp_path):
+    case = preparation_case
+    audit = write_new(tmp_path / 'actual_capital_financial_audit.json', {'passed': True, 'checked_cells': 53741})
+    case.proof['financial_audits'] = [audit]
+    Path(audit['path']).write_text(json.dumps({'passed': True, 'checked_cells': 53740}))
+    with pytest.raises(ValueError, match='bytes or SHA'):
+        entry.prepare(case.source_ref['path'], case.manifest['path'], case.base, case.output)
+    assert not (case.output / 'preflight_manifest.json').exists()
+    assert not (case.output / 'run.sqlite').exists()
+
+
+def test_actual_prior_normal_recipe_remains_required(preparation_case, tmp_path):
+    case = preparation_case
+    implementation = tmp_path / 'normal_node.py'; implementation.write_text('old normal implementation\n')
+    original = case.base / 'preflight_manifest.json'
+    original.write_text(json.dumps({'recipe_sha256': {str(implementation): reference(implementation)['sha256']}}))
+    implementation.write_text('changed normal implementation\n')
+    with pytest.raises(ValueError, match='dependency changed'):
+        entry.prepare(case.source_ref['path'], case.manifest['path'], case.base, case.output)
+    assert not case.output.exists()
 
 
 def test_factory_preserves_source_and_baseline_identity_after_each_phase(tmp_path, monkeypatch):

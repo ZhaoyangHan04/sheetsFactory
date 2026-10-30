@@ -144,7 +144,14 @@ def prepare(source_manifest, catalog_manifest, base_run, output):
     seeds = write_new(output / 'seed_manifest.json', {'unique_workbooks_inspected': 1,
         'download_url': 'local:predeclared-K01-capital-allocation-source', 'archive_sha256': None,
         'selected': [seed], 'qualified': False, 'task_count': 0, 'source_ancestor_unique_count': 2})
-    artifacts = bind_transitive([source_ref, proof, catalog_ref, original_ref, base_ref, source_proof, scope])
+    artifacts = bind_transitive([source_ref, proof, catalog_ref, source_proof, scope])
+    # The prior run supplies configuration and normal code, not capital source
+    # evidence. Its exact files and checked recipe remain bound independently.
+    for provenance in (original_ref, base_ref):
+        checked_bytes(provenance)
+        require(provenance['path'] not in artifacts or artifacts[provenance['path']] == provenance['sha256'],
+                'Conflicting configuration provenance identities')
+        artifacts[provenance['path']] = provenance['sha256']
     recipes = deepcopy(original['recipe_sha256'])
     source = read(source_ref); recipes.update(source['source_recipe_sha256'])
     recovery = importlib.import_module('sheets_factory.workbook.capital_allocation.public_recovery')
@@ -158,6 +165,8 @@ def prepare(source_manifest, catalog_manifest, base_run, output):
         return write_new(output / 'preflight_manifest.json', {'kind': KIND, 'version': 1, 'development_only': True,
             'targets': TARGETS, 'delivery_targets': {'financial_modeling': 10, 'debugging': 10}, 'count': 1,
             'profile_id': 'K01', 'catalog_manifest': catalog_ref, 'source_manifest': source_ref,
+            'base_configuration_provenance': {'preflight': original_ref, 'resolved_config': base_ref,
+                'scope': 'configuration_budgets_and_normal_recipe_only', 'prior_financial_source_proofs_reused': False},
             'source_admission': source_proof, 'prepared_seed_manifest': seeds,
             'resolved_config': reference(output / 'resolved_config.yaml'), 'protected_task_budgets': protected,
             'source_artifacts_sha256': artifacts, 'recipe_sha256': recipes, 'host_runtime': config['host_runtime'],
