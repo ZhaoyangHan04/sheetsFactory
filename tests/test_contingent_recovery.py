@@ -216,6 +216,20 @@ def test_auditor_accepts_independent_fixture_caches_and_rejects_changed_public_t
     assert bad['public_parameters_verified'] is False and bad['passed'] is False
 
 
+def test_payability_is_provided_numeric_input_and_cannot_be_replaced_by_formula(tmp_path):
+    path, book, spec, ledger, binding = emitted_fixture(tmp_path)
+    assert type(book['Contingent Inputs']['C7'].value) is int
+    assert book['Contingent Inputs']['C7'].value == 1
+    fixture_caches(path, book, ledger, binding)
+    assert audit_contingent_workbook(path, spec, ledger, binding)['passed']
+    book['Contingent Inputs']['C7'] = '=TRUE()'
+    book.save(path)
+    fixture_caches(path, book, ledger, binding)
+    report = audit_contingent_workbook(path, spec, ledger, binding)
+    assert not report['complete_formula_coverage']
+    assert not report['public_parameters_verified']
+
+
 def test_audit_rejects_unbound_finance_formula_and_parallel_report_only(tmp_path):
     path, book, spec, ledger, binding = emitted_fixture(tmp_path)
     book['Contingent Annual']['C15'] = '=1+1'

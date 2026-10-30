@@ -9,14 +9,22 @@ from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 from .schema import (SHEETS, ANNUAL_FIELDS, ANNUAL_INPUT_FIELDS, RAV_FIELDS, TAX_FIELDS,
                      CLAIM_FIELDS, LOSS_FIELDS, COMBINED_ANNUAL_FIELDS, LEASE_FIELDS,
-                     annual_row, batch_row, vintage_row)
+                     CONTINGENT_ANNUAL_FIELDS, annual_row, batch_row, vintage_row)
 
 PARAMETERS=('gearing','loss_carry_years','loss_use_cap','claim_lag_years','structures_tax_life')
 
-def create_workbook(source, spec, path, public_brief, *, external_annual_refs=None):
+def create_workbook(source, spec, path, public_brief, *, external_annual_refs=None, contingent_spec=None):
     book=openpyxl.load_workbook(source,data_only=False,keep_links=False)
     integrated=external_annual_refs is not None
     annual_fields=COMBINED_ANNUAL_FIELDS if integrated else ANNUAL_FIELDS
+    if contingent_spec is not None:
+        if not integrated:
+            raise ValueError('Contingent recovery requires the explicit base-lease interface')
+        from ..contingent_recovery.contract import validate_spec
+        contingent_spec=validate_spec(contingent_spec)
+        if [row['year'] for row in contingent_spec['annual_terms']] != list(spec['years']):
+            raise ValueError('Contingent terms must cover every programme reporting year')
+        annual_fields=CONTINGENT_ANNUAL_FIELDS
     if integrated and 'lease_allowable_fraction' not in spec['parameters']:
         raise ValueError('Integrated leases require an explicit public lease_allowable_fraction')
     # A path-dependent cover identifier is metadata, never a financial target.
@@ -72,6 +80,15 @@ def create_workbook(source, spec, path, public_brief, *, external_annual_refs=No
     def asset(i,col):return "'"+SHEETS['assets']+"'!$"+col+'$'+str(i+3)
     def parameter(key):return "'"+SHEETS['inputs']+"'!$B$"+str(30+PARAMETERS.index(key))
     def total(expressions):return 'SUM('+','.join(expressions)+')' if expressions else '0'
+    contingent_binding=None
+    if contingent_spec is not None:
+        from ..contingent_recovery.excel import emit_contingent_workbook
+        annual_refs={year:{field:ref('annual',get_column_letter(i+3),3+annual_fields.index(field))
+                          for field in annual_fields} for i,year in enumerate(years)}
+        contingent_binding=emit_contingent_workbook(book,contingent_spec,annual_refs)
+        book.calculation.iterate=True
+        book.calculation.iterateCount=128
+        book.calculation.iterateDelta=0.000001
     ordered=sorted(range(n),key=lambda i:(batches[i]['commission_year'],i))
     formula_cells=[]
     for yi,year in enumerate(years):
@@ -142,6 +159,7 @@ def create_workbook(source, spec, path, public_brief, *, external_annual_refs=No
         continuous_loss='MIN('+available+','+u+'*'+b+'/(1-'+r+'*(1-'+u+')))'
         cf='('+ann('claims_receipts')+'+'+ann('debt_draw')+'-'+ann('capital_spend_nominal')+'-'+ann('debt_repayment')+'-'+ann('debt_interest')+'-'+ann('current_tax_allowance')+')'
         if integrated:cf='('+cf+'-'+ann('lease_cash_rent')+')'
+        if contingent_spec is not None:cf='('+cf+'-'+ann('variable_lease_cash')+')'
         expressions={
           'opening_cwip_real':oldann('closing_cwip_real'),'opening_rav_real':oldann('closing_rav_real'),
           'capital_spend_real':paid_sum('B','F'),'commissioning_real':paid_sum('C','F'),
@@ -195,6 +213,14 @@ def create_workbook(source, spec, path, public_brief, *, external_annual_refs=No
             expressions['cfo']=ann('claims_receipts')+'-'+ann('debt_interest')+'-'+ann('current_tax_allowance')+'-'+ann('lease_cash_rent')
             expressions['cfi']='-'+ann('capital_spend_nominal')
             expressions['cff']=ann('debt_draw')+'-'+ann('debt_repayment')+'+'+ann('owner_capital')+'-'+ann('owner_distribution')
+        if contingent_spec is not None:
+            variable=contingent_binding['annual_refs'][year]
+            expressions['variable_lease_cash']=variable['variable_lease_cash']
+            expressions['variable_lease_allowance']=variable['variable_lease_allowance']
+            expressions['pre_allowance_taxable_profit']+='+'+ann('variable_lease_allowance')+'-'+ann('variable_lease_cash')
+            expressions['capital_entitlement']+='+'+ann('variable_lease_allowance')
+            expressions['net_income']+='-'+ann('variable_lease_cash')
+            expressions['cfo']+='-'+ann('variable_lease_cash')
         if set(expressions)!=set(annual_fields):raise ValueError('Annual formula/schema coverage mismatch')
         for field,expression in expressions.items():assign('annual',3+annual_fields.index(field),expression)
     for sn in SHEETS.values():
@@ -202,7 +228,9 @@ def create_workbook(source, spec, path, public_brief, *, external_annual_refs=No
         for cell in sheet[2]:
             if cell.value is not None:cell.font=Font(bold=True,color='FFFFFF');cell.fill=PatternFill('solid',fgColor='214B63')
     Path(path).parent.mkdir(parents=True,exist_ok=True);book.save(path);book.close()
-    return {'formula_cells':formula_cells,'new_formula_count':len(formula_cells),
+    result={'formula_cells':formula_cells,'new_formula_count':len(formula_cells),
         'metadata_adapter':adapters,'lease_integrated':integrated,
         'annual_refs':{year:{field:ref('annual',get_column_letter(i+3),3+annual_fields.index(field))
                             for field in annual_fields} for i,year in enumerate(years)}}
+    if contingent_binding is not None:result['contingent_binding']=contingent_binding
+    return result

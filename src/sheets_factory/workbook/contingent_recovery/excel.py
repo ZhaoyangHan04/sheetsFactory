@@ -47,6 +47,7 @@ def emit_contingent_workbook(book, spec, programme_annual_refs):
     inputs['A1'] = 'Supplied same-year contingent-rent terms; nominal GBP'
     inputs['A2'], inputs['A3'] = 'Reporting year starts', 'Reporting year ends'
     inputs['A4'] = 'Separately posted variable expense eligibility fraction'
+    inputs['A5'] = 'Supplied active flags: 1 = payable, 0 = inactive'
     annual['A1'] = 'Same-year contingent rents and recovery feedback; nominal GBP'
     annual['A2'] = 'Reporting year ends'
     for field, row in ANNUAL_ROWS.items():
@@ -75,7 +76,8 @@ def emit_contingent_workbook(book, spec, programme_annual_refs):
         contracts = {contract['lease_id']: contract for contract in terms['contracts']}
         for identity, contract in contracts.items():
             for field, row in input_rows[identity].items():
-                value = contract[field] if field in {'active', 'rounding_mode'} else float(contract[field])
+                value = (int(contract[field]) if field == 'active' else contract[field]
+                         if field == 'rounding_mode' else float(contract[field]))
                 inputs.cell(row, column, value)
                 input_bindings.append({'sheet': inputs.title, 'cell': col + str(row), 'year': year,
                                        'lease_id': identity, 'field': field})

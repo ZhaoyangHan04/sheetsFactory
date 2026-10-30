@@ -4,10 +4,42 @@ from pathlib import Path
 import hashlib
 import json
 import openpyxl
+from .schema import ANNUAL_INPUT_FIELDS
 
 
 def _d(value):return Decimal(str(value))
 def _q(value,places=2):return value.quantize(Decimal(1).scaleb(-places),rounding=ROUND_HALF_UP)
+
+
+def apply_annual_overrides(annual, overrides):
+    """Apply only explicitly dated hypothetical inputs, never forecast outputs."""
+    if not isinstance(overrides, dict):
+        raise ValueError('Annual overrides must be an explicit year-to-input mapping')
+    years={str(row['year']) for row in annual}
+    if any(not isinstance(year,str) or year not in years for year in overrides):
+        raise ValueError('Annual overrides contain an unknown reporting year')
+    result=[]
+    for original in annual:
+        row=dict(original);patch=overrides.get(str(row['year']),{})
+        if not isinstance(patch,dict) or set(patch)-set(ANNUAL_INPUT_FIELDS):
+            raise ValueError('Annual overrides may change only public annual inputs')
+        for field,value in patch.items():
+            if isinstance(value,bool) or not isinstance(value,(str,int)):
+                raise ValueError('An explicit exact decimal annual override is required')
+            amount=_d(value)
+            if not amount.is_finite() or amount<0:
+                raise ValueError('Annual overrides must be finite and nonnegative')
+            if field=='price_index' and amount<=0:
+                raise ValueError('The price index must be positive')
+            if field=='tax_rate' and amount>=1:
+                raise ValueError('The tax rate must be below one')
+            if field in {'general_transfer_fraction','general_rate','special_rate'} and amount>1:
+                raise ValueError('Tax pool fractions must not exceed one')
+            if field in {'collection_cap_nominal','disallowance_real'} and amount!=_q(amount):
+                raise ValueError('Annual cash limits and disallowances must be posted pennies')
+            row[field]=str(amount)
+        result.append(row)
+    return result
 
 
 def prepare_spec(source,config):
@@ -48,6 +80,8 @@ def prepare_spec(source,config):
                 'general_rate':config['general_rate'],'special_rate':config['special_rate'],
                 'general_transfer_fraction':config['general_transfer_fraction'] if year==config['transfer_year'] else '0'})
             prior_index=index
+        if 'annual_input_overrides' in config:
+            annual=apply_annual_overrides(annual,config['annual_input_overrides'])
         return {'contract_version':1,'scenario_id':config['scenario_id'],'years':years,'batches':batches,
             'annual_inputs':annual,'parameters':{k:config[k] for k in ('gearing','loss_carry_years','loss_use_cap','claim_lag_years','structures_tax_life')},
             'source':{'path':str(source.resolve()),'sha256':digest,'official_url':config['official_url'],

@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "scenario_id": "hypothetical-regulatory-capital-reopener-waterfall-v2",
+  "source_path": "/data/hzy/sheetsFactory/outputs/research/regulatory_models_20261030T104604Z/ofgem_actual_lo.xlsx",
+  "source_sha256": "de85acf3105afec3d6415ddf933e2bb0189d110d9641618f1c3e32d04d9d92eb",
+  "official_url": "https://www.ofgem.gov.uk/sites/default/files/2026-06/ED2-PCFM-V5.xlsx",
+  "first_year": 2024,
+  "last_year": 2043,
+  "categories": [
+    {
+      "id": "LOAD",
+      "source_row": 34,
+      "share": "0.08",
+      "commission_lag": 1,
+      "regulatory_life": 7,
+      "tax_pool": "General"
+    },
+    {
+      "id": "REPLACE",
+      "source_row": 35,
+      "share": "0.12",
+      "commission_lag": 2,
+      "regulatory_life": 9,
+      "tax_pool": "Special"
+    },
+    {
+      "id": "OTHER",
+      "source_row": 36,
+      "share": "0.20",
+      "commission_lag": 1,
+      "regulatory_life": 13,
+      "tax_pool": "Structures"
+    }
+  ],
+  "long_run_inflation": "0.02",
+  "long_run_real_wacc": "0.04",
+  "tax_rate_before": "0.25",
+  "tax_rate_after": "0.28",
+  "tax_rate_change_year": 2032,
+  "debt_rate": "0.05",
+  "incremental_tariff_fraction": "0.02",
+  "disallowance_real": "10000000",
+  "disallowance_year": 2031,
+  "general_rate": "0.18",
+  "special_rate": "0.06",
+  "general_transfer_fraction": "0.30",
+  "transfer_year": 2030,
+  "gearing": "0.60",
+  "loss_carry_years": 1,
+  "loss_use_cap": "0.80",
+  "claim_lag_years": 1,
+  "structures_tax_life": 11,
+  "annual_input_overrides": {
+    "2032": {
+      "collection_cap_nominal": "50000000.00"
+    },
+    "2033": {
+      "collection_cap_nominal": "50000000.00"
+    },
+    "2034": {
+      "collection_cap_nominal": "50000000.00"
+    },
+    "2035": {
+      "collection_cap_nominal": "50000000.00"
+    },
+    "2036": {
+      "collection_cap_nominal": "50000000.00"
+    },
+    "2037": {
+      "collection_cap_nominal": "50000000.00"
+    },
+    "2038": {
+      "collection_cap_nominal": "50000000.00"
+    },
+    "2039": {
+      "collection_cap_nominal": "50000000.00"
+    },
+    "2040": {
+      "collection_cap_nominal": "50000000.00"
+    },
+    "2041": {
+      "collection_cap_nominal": "50000000.00"
+    },
+    "2042": {
+      "collection_cap_nominal": "50000000.00"
+    },
+    "2043": {
+      "collection_cap_nominal": "50000000.00"
+    }
+  }
+}

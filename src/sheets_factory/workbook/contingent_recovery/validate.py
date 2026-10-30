@@ -39,7 +39,7 @@ def _money_matches(observed, expected):
 
 def _provided_matches(observed, expected, field):
     if field == 'active':
-        return type(observed) is bool and observed is expected
+        return type(observed) in (int, float) and observed == int(expected)
     if field == 'rounding_mode':
         return type(observed) is str and observed == expected
     if isinstance(observed, bool) or not isinstance(observed, (int, float)) or not math.isfinite(observed):

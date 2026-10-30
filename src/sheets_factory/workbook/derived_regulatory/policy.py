@@ -2,8 +2,10 @@
 from pathlib import Path
 
 
-def public_policy(*, include_leases=False):
+def public_policy(*, include_leases=False, include_contingent=False):
     text=Path(__file__).with_name('POLICY.md').read_text().split('## Final financial outputs and oracle')[0]
+    if include_contingent and not include_leases:
+        raise ValueError('Contingent recovery requires the integrated base-lease policy')
     if not include_leases:return text
     replacements={
       'This is a fictional incremental resilience investment programme, not a statement of current UK law or an amendment to any licensee\'s actual allowed revenue.':
@@ -19,7 +21,7 @@ def public_policy(*, include_leases=False):
     for before,after in replacements.items():
         if before not in text:raise ValueError('Public regulatory policy version does not match lease amendment')
         text=text.replace(before,after)
-    return text+('\n\n## Lease book and cash reporting bridge\n\n'
+    text=text+('\n\n## Lease book and cash reporting bridge\n\n'
       'Use the supplied lease model opening/closing ROU assets and lease liabilities without indexation. '
       'Programme net income deducts lease book depreciation and lease book interest and adds signed lease termination gains, '
       'in addition to the capital programme income and expenses. Total assets include closing lease ROU; total liabilities '
@@ -32,3 +34,22 @@ def public_policy(*, include_leases=False):
       'This is an explicit reporting convention for the programme, not an assertion of IFRS cash-flow classification. '
       'The three cash-flow sections reconcile to the programme cash movement. Parent funding and investments follow '
       'their separately supplied contracts and do not change these programme definitions.\n')
+    if include_contingent:
+        text+=('\n\n## Same-year contingent lease recovery\n\n'
+          'The separately supplied contingent contracts charge current-year cash rent on this same year\'s total '
+          'recovery entitlement. They are additional variable cash payments and book expenses; they do not enter '
+          'the fixed-lease payment schedule, lease PV, ROU asset, lease liability, remeasurement or termination bridge. '
+          'Expense and deduct the complete contingent cash rent in its reporting year. Separately post the '
+          'contingent regulatory allowance as the provided annual eligible fraction times total contingent rent, '
+          'rounded once to pennies. Include that allowance in the current-year claim and pre-allowance taxable '
+          'profit; deduct the full contingent rent from that taxable profit before applying the existing '
+          'loss and gross-up rules. This creates a same-year recovery, tax and rent feedback governed by the '
+          'explicit finite-grid contingent contract. All contingent cash is additional CFO outflow and enters '
+          'the actual programme residual owner funding or distribution calculation.\n\n'
+          'The Statements row labelled capital entitlement reports the TOTAL current-year claim: nominal '
+          'capital depreciation plus nominal allowed return plus current tax allowance plus fixed-lease regulatory '
+          'allowance plus contingent-lease regulatory allowance. It excludes carrying interest on older claims, '
+          'which is reported separately and included in earned revenue. The historical row name does not exclude '
+          'lease allowances. All five components share one current claim vintage, contractual collection lag, '
+          'FIFO priority and actual annual collection cap.\n')
+    return text

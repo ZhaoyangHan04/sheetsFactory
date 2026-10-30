@@ -25,6 +25,7 @@ LEASE_FIELDS=('lease_cash_rent','lease_book_depreciation','lease_book_interest',
  'lease_termination_gain_loss','lease_tax_deduction','lease_regulatory_expense',
  'lease_rou_open','lease_rou_close','lease_liability_open','lease_liability_close')
 COMBINED_ANNUAL_FIELDS=ANNUAL_FIELDS+LEASE_FIELDS+('lease_regulatory_allowance','total_liabilities','cfo','cfi','cff')
+CONTINGENT_ANNUAL_FIELDS=COMBINED_ANNUAL_FIELDS+('variable_lease_cash','variable_lease_allowance')
 
 
 def annual_row(field):return 3+ANNUAL_FIELDS.index(field)

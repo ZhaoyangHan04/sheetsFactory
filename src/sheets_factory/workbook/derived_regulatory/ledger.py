@@ -27,13 +27,13 @@ LEASE_FIELDS=('lease_cash_rent','lease_book_depreciation','lease_book_interest',
     'lease_rou_open','lease_rou_close','lease_liability_open','lease_liability_close')
 
 
-def simulate(spec, *, external_lease_annual=None):
+def simulate(spec, *, external_lease_annual=None, contingent_spec=None):
     with localcontext() as context:
         context.prec = 50
-        return _simulate(spec, external_lease_annual)
+        return _simulate(spec, external_lease_annual, contingent_spec)
 
 
-def _simulate(spec, external_lease_annual=None):
+def _simulate(spec, external_lease_annual=None, contingent_spec=None):
     years = list(spec['years'])
     batches = spec['batches']
     p = spec['parameters']
@@ -49,6 +49,16 @@ def _simulate(spec, external_lease_annual=None):
         'cash_reconciled': True, 'rav_reconciled': True, 'claims_reconciled': True,
         'tax_bases_reconciled': True, 'losses_reconciled': True, 'nonnegative_states': True}
     regimes = defaultdict(list)
+    contingent_annual = {}
+    if contingent_spec is not None:
+        from ..contingent_recovery.contract import validate_spec
+        from ..contingent_recovery.solver import solve_year
+        contingent_spec = validate_spec(contingent_spec)
+        if external_lease_annual is None:
+            raise ValueError('Contingent recovery requires the explicit base-lease interface')
+        contingent_terms = {row['year']: row for row in contingent_spec['annual_terms']}
+        if set(contingent_terms) != set(years):
+            raise ValueError('Contingent terms must cover every programme reporting year')
     if external_lease_annual is not None and 'lease_allowable_fraction' not in p:
         raise ValueError('Integrated leases require an explicit public lease_allowable_fraction')
 
@@ -172,7 +182,25 @@ def _simulate(spec, external_lease_annual=None):
         available_losses = sum(losses.values(), ZERO)
         base = (depreciation_nom + return_nom + carrying_interest + lease_allowance
                 - interest - tax_allowances - lease['lease_tax_deduction'])
-        tax, loss_used, loss_added = gross_up(base, available_losses, D(str(p['loss_use_cap'])), rate)
+        variable_cash = variable_allowance = ZERO
+        if contingent_spec is None:
+            tax, loss_used, loss_added = gross_up(base, available_losses, D(str(p['loss_use_cap'])), rate)
+        else:
+            terms = contingent_terms[year]
+            solved = solve_year(depreciation_nom + return_nom + lease_allowance,
+                base, available_losses, rate, D(str(p['loss_use_cap'])),
+                terms['eligible_fraction'], terms['contracts'])
+            solved['year'] = year
+            contingent_annual[year] = solved
+            variable_cash = solved['variable_rent_total']
+            variable_allowance = solved['variable_lease_allowance']
+            base = solved['taxable_base']
+            tax, loss_used, loss_added = solved['tax'], solved['loss_used'], solved['loss_added']
+            if variable_cash:
+                regimes['positive_contingent_rent'].append(year)
+            if any(item['active'] and item['variable_rent'] > 0 and not item['cap_binding']
+                    for item in solved['contract_details'].values()):
+                regimes['uncapped_contingent_feedback'].append(year)
         remaining_use = loss_used
         for vintage in years:
             used = min(losses[vintage], remaining_use) if vintage < year else ZERO
@@ -186,7 +214,7 @@ def _simulate(spec, external_lease_annual=None):
             regimes['tax_loss_fifo_use'].append(year)
         if tax:
             regimes['positive_tax_gross_up'].append(year)
-        capital_entitlement = depreciation_nom + return_nom + tax + lease_allowance
+        capital_entitlement = depreciation_nom + return_nom + tax + lease_allowance + variable_allowance
         earned_revenue = capital_entitlement + carrying_interest
         available_cap = D(str(inputs['collection_cap_nominal']))
         receipts = ZERO
@@ -218,6 +246,9 @@ def _simulate(spec, external_lease_annual=None):
         post(year, 'Repay programme debt', debt=debt_repayment, cash=-debt_repayment)
         post(year, 'Pay opening debt interest', interest=interest, cash=-interest)
         post(year, 'Pay current tax', tax=tax, cash=-tax)
+        if contingent_spec is not None:
+            post(year, 'Pay and expense same-year contingent lease rent',
+                 variable_lease_expense=variable_cash, cash=-variable_cash)
         if external_lease_annual is not None:
             rou_noncash=lease['lease_rou_close']-lease['lease_rou_open']+lease['lease_book_depreciation']
             liability_noncash=(lease['lease_liability_close']-lease['lease_liability_open']
@@ -235,11 +266,15 @@ def _simulate(spec, external_lease_annual=None):
         post(year, 'Contractual owner funding', cash=owner_capital, capital=-owner_capital)
         post(year, 'Distribute cash surplus', retained=dividend, cash=-dividend)
         net_income = (earned_revenue - depreciation_nom - writeoff_nom - interest - tax
-            - lease['lease_book_depreciation']-lease['lease_book_interest']+lease['lease_termination_gain_loss'])
-        post(year, 'Close annual income', revenue=earned_revenue, depreciation=-depreciation_nom,
+            - lease['lease_book_depreciation']-lease['lease_book_interest']+lease['lease_termination_gain_loss']
+            - variable_cash)
+        closing_entries = dict(revenue=earned_revenue, depreciation=-depreciation_nom,
              impairment=-writeoff_nom, interest=-interest, tax=-tax, retained=-net_income,
              lease_depreciation=-lease['lease_book_depreciation'],lease_interest=-lease['lease_book_interest'],
              lease_gain=lease['lease_termination_gain_loss'])
+        if contingent_spec is not None:
+            closing_entries['variable_lease_expense'] = -variable_cash
+        post(year, 'Close annual income', **closing_entries)
         row = {'opening_cwip_real': open_cwip, 'opening_rav_real': open_rav,
             'capital_spend_real': capex_real, 'commissioning_real': commission_real,
             'depreciation_real': depreciation, 'disallowance_real': writeoff,
@@ -266,7 +301,7 @@ def _simulate(spec, external_lease_annual=None):
         row['total_assets'] = nominal_cwip + nominal_rav + row['claims_close'] + accounts['cash'] + lease['lease_rou_close']
         row['total_equity'] = row['paid_in_capital'] + row['retained_earnings'] + row['revaluation_reserve']
         row['balance_check'] = row['total_assets'] - row['debt_close'] - lease['lease_liability_close'] - row['total_equity']
-        row['cash_check'] = receipts + debt_draw + owner_capital - capex_nom - debt_repayment - interest - tax - dividend - lease['lease_cash_rent']
+        row['cash_check'] = receipts + debt_draw + owner_capital - capex_nom - debt_repayment - interest - tax - dividend - lease['lease_cash_rent'] - variable_cash
         row['claims_check'] = row['claims_close'] - opening_claims - earned_revenue + receipts
         checks['balance_sheets_balanced'] &= row['balance_check'] == 0
         checks['cash_reconciled'] &= row['cash_check'] == 0 and accounts['cash'] == 0
@@ -280,14 +315,20 @@ def _simulate(spec, external_lease_annual=None):
             row.update(lease)
             row['lease_regulatory_allowance']=lease_allowance
             row['total_liabilities']=row['debt_close']+lease['lease_liability_close']
-            row['cfo']=receipts-interest-tax-lease['lease_cash_rent']
+            row['cfo']=receipts-interest-tax-lease['lease_cash_rent']-variable_cash
             row['cfi']=-capex_nom
             row['cff']=debt_draw-debt_repayment+owner_capital-dividend
+        if contingent_spec is not None:
+            row['variable_lease_cash'] = variable_cash
+            row['variable_lease_allowance'] = variable_allowance
         annual.append(row)
     result={'annual': annual, 'rav_batches': dict(rav_records), 'tax_batches': dict(tax_records),
             'claim_vintages': dict(claim_records), 'loss_vintages': dict(loss_records),
             'journal': journal, 'checks': checks, 'observed_regimes': dict(regimes)}
     if external_lease_annual is not None:result['lease_integrated']=True
+    if contingent_spec is not None:
+        result['contingent_recovery'] = {'annual': contingent_annual,
+            'all_years_unique': all(row['unique_fixed_point'] for row in contingent_annual.values())}
     return result
 
 
@@ -301,7 +342,7 @@ def annual_bridge(spec, ledger):
             'units':'nominal absolute GBP except explicitly named real fields',
             'lease_liability_close':lease_liability,'lease_rou_close':row.get('lease_rou_close',ZERO),
             'total_liabilities':row['debt_close']+lease_liability,
-            'cfo':row['claims_receipts']-row['debt_interest']-row['current_tax_allowance']-lease_cash,
+            'cfo':row['claims_receipts']-row['debt_interest']-row['current_tax_allowance']-lease_cash-row.get('variable_lease_cash',ZERO),
             'cfi':-row['capital_spend_nominal'],
             'cff':row['debt_draw']-row['debt_repayment']+row['owner_capital']-row['owner_distribution']}
         if mapped['cfo']+mapped['cfi']+mapped['cff']!=row['cash_close']:
