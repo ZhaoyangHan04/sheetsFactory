@@ -15,14 +15,28 @@ RULES=[
  'The closed-end structures make no owner distributions before month 36. At termination, associates and notes liquidate first. Members settle all opening pool loans from realized cash and any remaining committed capital, then Treasury returns all deposits, repays bank debt, and all entities distribute their remaining cash. No new deposits or internal advances occur. Internal principal and interest balances/flows cancel on consolidation; equity-method project earnings are not counted again as project subsidiary earnings. Dividends received are operating cash flow; associate sales and note principal are investing flows; bank principal, partner capital and owner distributions are financing flows.'
 ]
 
+SNAPSHOT_RULE = (' Cash before allocation is after cash operating flow, capex and scheduled Loan A/Loan B principal, '
+                 'before DSRA transfers and revolving draws or repayments.')
+TERMINATION_REPORTING_RULE = (' At termination every borrowing-base display is zero. The ordinary term-release stage is inactive: '
+    'term requests and returns are zero and its Treasury snapshots precede opening-loan collections. '
+    'All opening loans are then collected before the final withdrawal stage, which returns every account\'s deposits, '
+    'including the term account; term release flags do not redirect liquidation repayments.')
+
 
 def emit_pool(book,spec,source_bindings):
     members=spec['members'];ids=[m['id'] for m in members];terms=spec['treasury'];bindings={}
+    rules=list(RULES)
+    if spec.get('public_contract_version',9)>=10:
+        rules[-1]+=TERMINATION_REPORTING_RULE
+        for member in members:
+            for project in member['projects']:
+                readme=book[project+' Read Me']
+                readme['B7']=str(readme['B7'].value)+SNAPSHOT_RULE
     for name in ('Portfolio Index','Pool Scenario','Pool Commitments','Treasury','Group Statements','Group Summary',*[i+' Holding' for i in ids]):
         if name in book:book.remove(book[name])
         book.create_sheet(name)
     index=book['Portfolio Index'];index['A1']='Cross-entity investment-partnership cashpool'
-    for n,rule in enumerate(RULES,3):index.cell(n,1,rule)
+    for n,rule in enumerate(rules,3):index.cell(n,1,rule)
     params=book['Pool Scenario'];params.append(['Entity','Parameter','Provided value'])
     param={};row=2
     def parameter(entity,key,value):
@@ -145,4 +159,4 @@ def emit_pool(book,spec,source_bindings):
     for sheet in book:
         if sheet.title in ('Pool Scenario','Pool Commitments','Portfolio Index') or sheet.title.endswith(' Holding') or sheet.title in ('Treasury','Group Statements','Group Summary'):
             sheet.column_dimensions['A'].width=40;sheet.freeze_panes='C3'
-    return {'cells':bindings,'member_rows':MR,'treasury_rows':TR,'group_rows':GR,'parameter_cells':{i+':'+k:v for (i,k),v in param.items()},'public_rules':RULES}
+    return {'cells':bindings,'member_rows':MR,'treasury_rows':TR,'group_rows':GR,'parameter_cells':{i+':'+k:v for (i,k),v in param.items()},'public_rules':rules}

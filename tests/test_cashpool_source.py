@@ -62,3 +62,24 @@ def test_one_members_liquidity_changes_treasury_future_interest(inputs):
     assert changed['treasury'][0]['treasury']['bank_close']>baseline['treasury'][0]['treasury']['bank_close']
     assert changed['treasury'][1]['treasury']['bank_interest']>baseline['treasury'][1]['treasury']['bank_interest']
     assert changed['group'][1]['net_income']!=baseline['group'][1]['net_income']
+
+
+def test_contract_10_clarifies_helper_boundaries_without_changing_financial_formulas(inputs):
+    from openpyxl import load_workbook
+    from sheets_factory.workbook.cashpool.excel import emit_pool, SNAPSHOT_RULE, TERMINATION_REPORTING_RULE
+    source=json.loads((ROOT/inputs[0]['verified_source_manifest']).read_text())
+    bindings={e['id']:json.loads(Path(e['bindings']['path']).read_text()) for e in source['entities']}
+    old=load_workbook(source['local_path']);new=load_workbook(source['local_path'])
+    v9=deepcopy(inputs[0]);v10=json.loads((ROOT/'config/derived_cashpool_v2.json').read_text())
+    oldproof=emit_pool(old,v9,bindings);newproof=emit_pool(new,v10,bindings)
+    old_formulas={(s.title,c.coordinate):c.value for s in old for c in s._cells.values() if c.data_type=='f'}
+    new_formulas={(s.title,c.coordinate):c.value for s in new for c in s._cells.values() if c.data_type=='f'}
+    assert old_formulas==new_formulas
+    assert oldproof['cells']==newproof['cells']
+    assert TERMINATION_REPORTING_RULE in new['Portfolio Index']['A9'].value
+    assert TERMINATION_REPORTING_RULE not in old['Portfolio Index']['A9'].value
+    assert newproof['public_rules'][-1]==new['Portfolio Index']['A9'].value
+    for entity in bindings:
+        assert SNAPSHOT_RULE in new[entity+' Read Me']['B7'].value
+        assert SNAPSHOT_RULE not in old[entity+' Read Me']['B7'].value
+    old.close();new.close()
