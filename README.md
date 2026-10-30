@@ -6,6 +6,8 @@
 
 配置位于 `config/`，角色提示词位于 `prompts/`，节点与模板位于 `src/sheets_factory/`，输入位于 `data/`，运行数据和面板审计位于 `outputs/`。密钥仅保存在环境变量或被忽略的 `.secrets/`。
 
+Git 仓库包含代码、配置、提示词、测试、文档和来源清单。下载的种子、`outputs/` 实验产物与运行凭据不纳入版本控制；下文指向 `outputs/` 的链接是原运行机器上的本地产物，当前未上传为 GitHub 附件。新检出仓库可按启动命令重新构造任务。
+
 ## 构建方法
 
 ```text
@@ -112,7 +114,7 @@ harbor run --path SpreadsheetEval --agent nop
 
 发布包附带白名单内的最小 `runtime/` 构建上下文、准备脚本和操作说明；清单记录本次运行实际使用的镜像 ID、LibreOffice 版本和 recipe 文件哈希。默认不附大型镜像；apt 间接依赖与仓库可能变化，重新构建不保证得到原镜像 ID。私有诊断和请求日志不进入发布包。
 
-本次另存了[实际运行镜像](outputs/releases/runtime/sheetsfactory-lo-24.2-d2e00cbc.tar.gz)和[镜像校验清单](outputs/releases/runtime/runtime_manifest.json)，已验证重新载入得到原镜像 ID。可先执行 `docker load -i <镜像文件>`，再按发布包说明运行。代码已在本地 Git 分阶段提交；本轮没有创建或发布远程仓库，正式提交渠道所需的远程链接仍待安排。
+本次另存了[实际运行镜像](outputs/releases/runtime/sheetsfactory-lo-24.2-d2e00cbc.tar.gz)和[镜像校验清单](outputs/releases/runtime/runtime_manifest.json)，已验证重新载入得到原镜像 ID。可先执行 `docker load -i <镜像文件>`，再按发布包说明运行。代码按功能分阶段提交，远程仓库为 [ZhaoyangHan04/sheetsFactory](https://github.com/ZhaoyangHan04/sheetsFactory)，当前为私有仓库。
 
 ## 测试
 

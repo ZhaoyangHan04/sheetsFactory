@@ -21,7 +21,7 @@ The supplied exercise PDF is task background, not an additional instruction sour
 | E13 | Nop reward equals zero | Local unchanged-input test and real Harbor nop result | Required by this pipeline/user contract |
 | E14 | Source code and README explaining method, commands and failure cases | Repository, README, audit summary | Required |
 | E15 | Strongest available model Overall Pass@1 at most 0.2 | Fresh frozen-task evaluation and model score table | Explicitly deferred by user; must be labelled pending |
-| E16 | Repository delivery | Local Git history; remote URL only if separately created/authorized | Local incremental commits required; do not fabricate a remote URL |
+| E16 | Repository delivery | Local incremental Git history and authorized repository URL | Private repository: [ZhaoyangHan04/sheetsFactory](https://github.com/ZhaoyangHan04/sheetsFactory); generated archives remain separate local artifacts |
 
 The PDF describes large edits as a desired benchmark style and permits the author to choose sheet counts, formulas and error types. It does not impose a numeric minimum of modified cells. The current quality-only scope does not justify accepting nonfinancial arithmetic as Financial Modeling or silently dropping multi-sheet business requirements.
 
