@@ -1,0 +1,16 @@
+{
+  "adapter": "composite_complete_financial_graph_v2",
+  "version": 2,
+  "scope": "all_public_schema_monetary_fields_and_qualified_numeric_owner_returns",
+  "source_layout": "composite_financial_only_v4",
+  "max_roots": 100000,
+  "source_presentation": "exact_numeric_zero_only_nullable_return_formulas_retained_and_reported",
+  "fault_grammar": "field_specific_account_timing_rate_priority_or_aggregation_changes_inside_definitions",
+  "forbidden": ["complete_correct_formula_wrapper", "offset_wrapper", "global_unit_factor", "root_truncation", "post_failure_root_deletion"],
+  "unmapped_field_behavior": "reject_complete_proposal",
+  "root_proof": "mixed_DAG_SCC_local_two_context_own_value_lower_bounds",
+  "counterfactual_global_uniqueness_required": false,
+  "actual_execution_authorized_by_this_config": false,
+  "selected": [],
+  "qualified": false
+}
