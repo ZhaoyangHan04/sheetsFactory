@@ -41,8 +41,11 @@ def construction_contract(mode=None, config=None):
         raise ValueError('Unsupported construction mode: ' + str(mode))
     settings = (config or {}).get('construction', {})
     root_impact_method = settings.get('root_impact_validation', 'strict')
-    if root_impact_method not in {'strict', 'separated_roots'}:
+    if root_impact_method not in {'strict', 'separated_roots', 'batched_separated_roots'}:
         raise ValueError('Invalid construction.root_impact_validation')
+    max_root_impact_batches = settings.get('max_root_impact_batches', 256)
+    if type(max_root_impact_batches) is not int or not 1 <= max_root_impact_batches <= 2048:
+        raise ValueError('Invalid construction.max_root_impact_batches')
     for name, maximum in settings.get('max_edit_count', {}).items():
         if name not in modes or type(maximum) is not int or not modes[name]['edit_count']['min'] <= maximum <= 200000:
             raise ValueError('Invalid configured construction edit limit')
@@ -62,6 +65,7 @@ def construction_contract(mode=None, config=None):
     preferences.update(settings.get('planning_preferences_only', {}))
     return {'version': 2, 'active_mode': mode, 'modes': modes,
         'root_impact_validation': root_impact_method,
+        'max_root_impact_batches': max_root_impact_batches,
         'planning_preferences_only': preferences,
         'range_authoring': {'financial_modeling_only': True, 'field': 'mask_ranges',
             'item_fields': ['sheet', 'range', 'reason', 'business_rule'],
@@ -534,6 +538,42 @@ class ConstructNode(BaseNode):
             validation['root_impact_validation'] = {'method': root_method,
                 'proof_method': certificate.get('proof_method'), 'root_count': len(root_impacts),
                 'individual_LO_executions': False, 'marginal_LO_executions': False}
+        elif ctx.mode == 'debugging' and root_method == 'batched_separated_roots':
+            from ..checkers.batched_roots import prove_batched_root_impacts
+            from uuid import uuid4
+            limits = construction_contract(ctx.mode, ctx.config)
+            certificate = prove_batched_root_impacts(goal=goal, combined_input=input_file,
+                edits=edits, batches=ctx.data['plan'].get('root_impact_batches'), engine=ctx.engine,
+                directory=private / 'batched_root_impact_probes' / uuid4().hex,
+                max_batches=limits['max_root_impact_batches'],
+                max_dependency_cells=limits['dependency_requirements']['max_dependency_closure_cells'],
+                per_formula_reference_cells=limits['dependency_requirements']['per_formula_reference_cells'])
+            ctx.save('batched_roots_certificate.json', certificate)
+            ctx.audit.emit('root_impact_validation.result', task_id=ctx.task_id, revision=ctx.revision,
+                method=root_method, state=certificate.get('state'), passed=certificate.get('passed'),
+                root_count=len(edits), batch_count=certificate.get('batch_count'),
+                actual_batch_LO_executions=certificate.get('actual_batch_LO_execution_count'),
+                duration_ms=certificate.get('duration_ms'))
+            if certificate.get('state') == 'execution_error':
+                raise RuntimeError('Batch root-impact recalculation failed: ' + str(certificate.get('reason')))
+            if certificate.get('passed') is not True or certificate.get('blocking') is not False:
+                raise TaskRejected('Q06: batched root-impact proof rejected: ' + str(certificate.get('reason', 'incomplete proof')))
+            root_impacts = certificate.get('root_impacts', [])
+            expected_roots = {edit['sheet'] + '!' + edit['cell'] for edit in edits}
+            proven_roots = {next(iter(impact.get('expected_changes', [])), None) for impact in root_impacts
+                if impact.get('proof_method') == 'batched_separation_and_actual_LO_values'
+                and impact.get('expected_change_count', 0) >= 1
+                and impact.get('combined_marginal', {}).get('expected_change_count', 0) >= 1
+                and impact.get('combined_marginal', {}).get('edits_reversed') is True
+                and impact.get('combined_marginal', {}).get('base') == 'full_combined_mutation'}
+            if len(root_impacts) != len(edits) or proven_roots != expected_roots:
+                raise TaskRejected('Q06: batch certificate does not prove every declared root')
+            validation['root_impact_validation'] = {'method': root_method,
+                'proof_method': certificate['proof_method'], 'root_count': len(root_impacts),
+                'batch_count': certificate['batch_count'],
+                'actual_batch_LO_execution_count': certificate['actual_batch_LO_execution_count'],
+                'individual_LO_executions': False, 'marginal_LO_executions': False,
+                'counts_are_lower_bounds': True}
         elif ctx.mode == 'debugging':
             for index, edit in enumerate(edits):
                 one = openpyxl.load_workbook(goal, keep_links=False)
