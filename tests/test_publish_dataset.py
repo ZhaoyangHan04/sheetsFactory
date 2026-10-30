@@ -17,6 +17,7 @@ from dirhash import dirhash
 from test_package_release import fixture_task, write_json
 from test_frontier import persist_timing
 from sheets_factory.evaluation.frontier import TOOL_TIME_POLICY, apply_tool_time_policy
+from sheets_factory.evaluation.tool_time_bounds import POLICY_V2
 
 
 spec = importlib.util.spec_from_file_location('publish_dataset', Path(__file__).parents[1] / 'scripts/publish_dataset.py')
@@ -73,6 +74,7 @@ def file_hashes(directory):
 
 
 def confirmation(fixture, *, rewards=None, phase='confirmation'):
+    policy = json.loads(fixture['selection'].read_text())['tool_time_policy']
     entries = []
     for index, item in enumerate(fixture['entries']):
         reward = rewards[index] if rewards else 0
@@ -92,7 +94,7 @@ def confirmation(fixture, *, rewards=None, phase='confirmation'):
         persist_timing(result)
         entry = {**deepcopy(item), 'status': 'scored', 'reward': reward,
                  'result_file': str(result), 'result_sha256': digest(result)}
-        apply_tool_time_policy(entry, {'tool_time_policy': TOOL_TIME_POLICY})
+        apply_tool_time_policy(entry, {'tool_time_policy': policy})
         entries.append(entry)
     by_mode = {mode: {'tasks': sum(item['mode'] == mode for item in entries),
                      'scored': sum(item['mode'] == mode for item in entries),
@@ -104,13 +106,48 @@ def confirmation(fixture, *, rewards=None, phase='confirmation'):
     write_json(fixture['evaluation'], {'schema_version': 1, 'phase': phase,
         'status': 'completed', 'model': publish.MODEL, 'reasoning_effort': publish.EFFORT,
         'timeout_seconds': 1800,
-        'tool_time_policy': dict(TOOL_TIME_POLICY),
+        'tool_time_policy': dict(policy),
         'selection_manifest': {'path': str(fixture['selection']), 'sha256': digest(fixture['selection'])},
         'started_at': '2026-10-29T12:01:00Z', 'finished_at': '2026-10-29T12:02:00Z',
         'attempts': entries, 'threshold': .2, 'gate_passed': overall <= .2,
         'score': {'overall_pass_at_1': overall, 'by_mode': by_mode, 'total_tasks': len(entries),
                   'scored_tasks': len(entries), 'infrastructure_errors': 0}})
     return entries
+
+
+def set_timing_policy(fixture, policy):
+    frozen = json.loads(fixture['selection'].read_text())
+    frozen['tool_time_policy'] = deepcopy(policy)
+    frozen['tool_time_policy_version'] = policy.get('version', 1)
+    for entry in fixture['entries']:
+        entry['tool_time_policy'] = deepcopy(policy)
+    frozen['tasks'] = deepcopy(fixture['entries'])
+    write_json(fixture['selection'], frozen)
+
+
+def bounded_confirmation(fixture, *, stop_seconds=100, pending=None):
+    """Offline full publisher fixture with an unresolved static native tail."""
+    from test_tool_time_bounds import fixture as stop_fixture, ref, stamp
+
+    set_timing_policy(fixture, POLICY_V2)
+    confirmation(fixture)
+    manifest = json.loads(fixture['evaluation'].read_text())
+    entry = manifest['attempts'][0]
+    original = Path(entry['result_file'])
+    actual = json.loads(original.read_text())
+    result, stop, session = stop_fixture(original.parent.parent, stop=stop_seconds, pending=pending)
+    actual.update(agent_execution={'started_at': stamp(0), 'finished_at': stamp(20)},
+                  started_at=stamp(0), finished_at=stamp(20))
+    write_json(result, actual)
+    receipt = json.loads(stop.read_text())
+    receipt['result_file'] = ref(result)
+    write_json(stop, receipt)
+    shutil.rmtree(original.parent)
+    entry.update(result_file=str(result), result_sha256=digest(result))
+    apply_tool_time_policy(entry, {'tool_time_policy': POLICY_V2})
+    manifest['finished_at'] = stamp(max(stop_seconds, 21))
+    write_json(fixture['evaluation'], manifest)
+    return manifest, result, stop, session
 
 
 def test_dry_run_is_read_only_and_real_publication_has_no_output_links(fixture_publication):
@@ -600,6 +637,127 @@ def test_publication_requires_reproducible_native_tool_timing(fixture_publicatio
         invoke(f, dry_run=True)
 
 
+def test_v2_exact_receipts_publish_under_their_frozen_policy(fixture_publication):
+    f = fixture_publication
+    set_timing_policy(f, POLICY_V2)
+    confirmation(f)
+    before = file_hashes(f['root'])
+    result = invoke(f, dry_run=True)
+    confirmation_receipt = result['manifest']['confirmation']
+    assert confirmation_receipt['tool_time_policy'] == POLICY_V2
+    for task in confirmation_receipt['tasks']:
+        timing = task['tool_time']
+        assert timing['state'] == timing['exact_timing_state'] == 'verified'
+        assert timing['policy_version'] == 2
+        assert timing['lower_bound_seconds'] == timing['upper_bound_seconds'] == 1
+    assert file_hashes(f['root']) == before
+
+
+def test_v2_bounded_receipt_retains_exact_unknown_and_public_hashes_only(fixture_publication):
+    f = fixture_publication
+    _, _, stop, _ = bounded_confirmation(f)
+    result = invoke(f)
+    confirmation_receipt = result['manifest']['confirmation']
+    timing = confirmation_receipt['tasks'][0]['tool_time']
+    assert confirmation_receipt['tool_time_policy'] == POLICY_V2
+    assert timing['state'] == 'bounded' and timing['exact_timing_state'] == 'unknown'
+    assert timing['cumulative_tool_seconds'] is None and timing['cumulative_tool_nanoseconds'] is None
+    assert timing['lower_bound_seconds'] == 2 and timing['upper_bound_seconds'] == 92
+    assert timing['lower_bound_nanoseconds'] == 2_000_000_000
+    assert timing['upper_bound_nanoseconds'] == 92_000_000_000
+    assert timing['passed'] is True and timing['upper_bound_may_include_idle_cleanup_time'] is True
+    stop_receipt = json.loads(stop.read_text())
+    identity = Path(stop_receipt['identity_file']['path'])
+    identity_receipt = json.loads(identity.read_text())
+    assert timing['evidence_sha256'] == {
+        'stop_receipt_sha256': digest(stop), 'container_identity_sha256': digest(identity),
+        'trial_config_sha256': identity_receipt['trial_config']['sha256']}
+    public = (f['root'] / 'SpreadsheetEval/dataset_manifest.json').read_text()
+    assert str(f['root']) not in public and '"container_id"' not in public
+    assert not list((f['root'] / 'SpreadsheetEval').rglob('stop_receipt.json'))
+
+
+@pytest.mark.parametrize('part', ['evaluation', 'frozen_task', 'attempt', 'version', 'unknown_policy'])
+def test_publisher_rejects_mixed_or_unsupported_frozen_policies(fixture_publication, part):
+    f = fixture_publication
+    set_timing_policy(f, POLICY_V2)
+    confirmation(f)
+    manifest = json.loads(f['evaluation'].read_text())
+    frozen = json.loads(f['selection'].read_text())
+    if part == 'evaluation':
+        manifest['tool_time_policy'] = dict(TOOL_TIME_POLICY)
+    elif part == 'frozen_task':
+        frozen['tasks'][0]['tool_time_policy'] = dict(TOOL_TIME_POLICY)
+    elif part == 'attempt':
+        manifest['attempts'][0]['tool_time_policy'] = dict(TOOL_TIME_POLICY)
+    elif part == 'version':
+        frozen['tool_time_policy_version'] = 1
+    else:
+        frozen['tool_time_policy']['unknown_fanout'] = 'allow'
+    write_json(f['selection'], frozen)
+    manifest['selection_manifest']['sha256'] = digest(f['selection'])
+    write_json(f['evaluation'], manifest)
+    with pytest.raises(publish.PublishError, match='tool budget'):
+        invoke(f, dry_run=True)
+
+
+def test_v1_frozen_policy_does_not_accept_a_v2_pending_bound(fixture_publication):
+    f = fixture_publication
+    manifest, _, _, _ = bounded_confirmation(f)
+    set_timing_policy(f, TOOL_TIME_POLICY)
+    manifest['tool_time_policy'] = dict(TOOL_TIME_POLICY)
+    manifest['selection_manifest']['sha256'] = digest(f['selection'])
+    for entry in manifest['attempts']:
+        entry['tool_time_policy'] = dict(TOOL_TIME_POLICY)
+    write_json(f['evaluation'], manifest)
+    with pytest.raises(publish.PublishError, match='tool timing is incomplete'):
+        invoke(f, dry_run=True)
+
+
+@pytest.mark.parametrize('problem', ['equal_upper', 'straddle', 'unknown_fanout', 'missing_stop', 'forged_bound'])
+def test_v2_publisher_recomputes_bounds_and_rejects_uncertified_timing(fixture_publication, problem):
+    from test_tool_time_bounds import wrapper
+    f = fixture_publication
+    pending = [wrapper('pending', 10, 'for(let i=0;i<n;i++){await tools.exec_command({cmd:"x"});}')] if problem == 'unknown_fanout' else None
+    manifest, _, stop, _ = bounded_confirmation(f,
+        stop_seconds=1808 if problem == 'equal_upper' else (1810 if problem == 'straddle' else 100),
+        pending=pending)
+    entry = manifest['attempts'][0]
+    if problem == 'missing_stop':
+        stop.unlink()
+    elif problem == 'forged_bound':
+        entry['tool_time']['upper_bound_seconds'] = 0
+    # A declared success cannot override an unknown, equal, or straddling bound.
+    entry.update(status='scored', reward=0)
+    write_json(f['evaluation'], manifest)
+    with pytest.raises(publish.PublishError, match='tool timing is incomplete'):
+        invoke(f, dry_run=True)
+
+
+@pytest.mark.parametrize('artifact', ['stop', 'identity', 'config'])
+def test_v2_bound_inputs_changed_during_staging_prevent_publication(fixture_publication, monkeypatch, artifact):
+    f = fixture_publication
+    _, _, stop, _ = bounded_confirmation(f)
+    stop_receipt = json.loads(stop.read_text())
+    identity = Path(stop_receipt['identity_file']['path'])
+    config = Path(json.loads(identity.read_text())['trial_config']['path'])
+    target = {'stop': stop, 'identity': identity, 'config': config}[artifact]
+    copy = publish.release._copy_payload
+    changed = False
+
+    def copy_then_change_bound(*args):
+        nonlocal changed
+        copy(*args)
+        if not changed:
+            target.write_text(target.read_text() + '\n')
+            changed = True
+
+    monkeypatch.setattr(publish.release, '_copy_payload', copy_then_change_bound)
+    with pytest.raises(publish.PublishError, match='evidence changed during staging'):
+        invoke(f)
+    assert not (f['root'] / 'SpreadsheetEval').exists()
+
+
 @pytest.mark.parametrize('problem', ['missing_receipt', 'forged_receipt', 'short_budget', 'provider_error',
                                      'missing_diagnostics', 'recalculate_permission'])
 def test_incomplete_or_infrastructure_timeouts_are_not_scored_as_failures(fixture_publication, problem):
@@ -679,8 +837,10 @@ def recovered_confirmation(fixture):
     return manifest, previous, log
 
 
-def test_authorized_infrastructure_replacement_counts_only_one_scored_attempt(fixture_publication):
+@pytest.mark.parametrize('policy', [TOOL_TIME_POLICY, POLICY_V2])
+def test_authorized_infrastructure_replacement_counts_only_one_scored_attempt(fixture_publication, policy):
     f = fixture_publication
+    set_timing_policy(f, policy)
     recovered_confirmation(f)
     result = invoke(f, dry_run=True)
     history = result['manifest']['confirmation']['infrastructure_history']
@@ -691,7 +851,8 @@ def test_authorized_infrastructure_replacement_counts_only_one_scored_attempt(fi
     assert 'stream disconnected' not in json.dumps(result['manifest'])
 
 
-@pytest.mark.parametrize('problem', ['hidden_history', 'previous_manifest_sha', 'provider_log_sha', 'retried_scored'])
+@pytest.mark.parametrize('problem', ['hidden_history', 'previous_manifest_sha', 'provider_log_sha',
+                                     'retried_scored', 'mixed_policy'])
 def test_infrastructure_history_requires_independent_proof_chain(fixture_publication, problem):
     f = fixture_publication
     manifest, previous, log = recovered_confirmation(f)
@@ -702,6 +863,11 @@ def test_infrastructure_history_requires_independent_proof_chain(fixture_publica
         previous.write_text(previous.read_text() + '\n')
     elif problem == 'provider_log_sha':
         log.write_text(log.read_text() + '\n')
+    elif problem == 'mixed_policy':
+        before = json.loads(previous.read_text())
+        before['tool_time_policy'] = dict(POLICY_V2)
+        write_json(previous, before)
+        retry['previous_manifest_sha256'] = digest(previous)
     else:
         before = json.loads(previous.read_text())
         old = next(item for item in before['attempts'] if item['task_id'] == 'fm-a')

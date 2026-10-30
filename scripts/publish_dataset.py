@@ -224,6 +224,46 @@ def _rename_new(source, destination):
         raise OSError(code, 'Publication rename failed')
 
 
+def _frozen_tool_time_policy(frozen):
+    """Accept only a complete frozen policy; never default or migrate it."""
+    from sheets_factory.evaluation.frontier import TOOL_TIME_POLICY
+    from sheets_factory.evaluation.tool_time_bounds import POLICY_V2
+
+    policy = frozen.get('tool_time_policy')
+    _require(policy in (TOOL_TIME_POLICY, POLICY_V2),
+             'Confirmation must freeze a supported strict cumulative tool budget')
+    version = 2 if policy == POLICY_V2 else 1
+    if 'tool_time_policy_version' in frozen:
+        declared = frozen['tool_time_policy_version']
+        _require(type(declared) is int and declared == version,
+                 'Frozen tool budget policy version differs from its complete policy')
+    return dict(policy)
+
+
+def _track_tool_time_evidence(timing, result_path, tracked):
+    """Bind every durable input used by the exact or bounded accountant."""
+    within = result_path.parent
+
+    def read_reference(source):
+        _require(isinstance(source, dict) and isinstance(source.get('path'), str),
+                 'Native tool timing evidence reference is missing')
+        raw = release._file(Path(source['path']), within, tracked)
+        _require(_sha(raw) == source.get('sha256'), 'Native tool timing evidence changed')
+        return raw
+
+    for source in timing['session_files'] + [timing['native_stream']]:
+        read_reference(source)
+    if timing.get('state') != 'bounded':
+        return {}
+    stop = json.loads(read_reference(timing['stop_receipt']))
+    identity = json.loads(read_reference(stop['identity_file']))
+    read_reference(stop['result_file'])
+    read_reference(identity['trial_config'])
+    return {'stop_receipt_sha256': timing['stop_receipt']['sha256'],
+            'container_identity_sha256': stop['identity_file']['sha256'],
+            'trial_config_sha256': identity['trial_config']['sha256']}
+
+
 def _validate_confirmation_history(evidence, directory, frozen, tracked):
     """Replay retry authorization without counting failed infrastructure as zero."""
     from sheets_factory.evaluation.frontier import collect_attempts, assess_infrastructure_retry
@@ -265,7 +305,8 @@ def _validate_confirmation_history(evidence, directory, frozen, tracked):
         _require(tracked[str(previous_path.absolute())] == retry.get('previous_manifest_sha256')
                  and previous.get('status') == 'infrastructure_failed'
                  and previous.get('phase') == evidence.get('phase')
-                 and previous.get('selection_manifest') == evidence['selection_manifest'],
+                 and previous.get('selection_manifest') == evidence['selection_manifest']
+                 and _frozen_tool_time_policy(previous) == _frozen_tool_time_policy(frozen),
                  'Previous evaluation manifest receipt differs')
         _require(previous.get('infrastructure_retries', []) == retries[:index - 1],
                  'Infrastructure retry manifests do not form the original ledger chain')
@@ -308,7 +349,7 @@ def _validate_confirmation_history(evidence, directory, frozen, tracked):
 def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
     """Check actual first attempts from the predeclared confirmation cohort."""
     from dirhash import dirhash
-    from sheets_factory.evaluation.frontier import TOOL_TIME_POLICY, apply_tool_time_policy
+    from sheets_factory.evaluation.frontier import apply_tool_time_policy
 
     path = Path(path).absolute()
     evidence = _json_file(path, tracked)
@@ -327,8 +368,8 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
     _require(frozen.get('phase') == 'confirmation' and frozen.get('model') == MODEL
              and frozen.get('reasoning_effort') == EFFORT,
              'The frozen cohort must declare the confirmation model and phase')
-    _require(frozen.get('tool_time_policy') == TOOL_TIME_POLICY
-             and evidence.get('tool_time_policy') == TOOL_TIME_POLICY,
+    timing_policy = _frozen_tool_time_policy(frozen)
+    _require(_frozen_tool_time_policy(evidence) == timing_policy,
              'Confirmation must freeze the strict cumulative 1800-second tool budget')
     frozen_at = _timestamp(frozen.get('frozen_at', frozen.get('created_at')), 'Frozen selection')
     started_at = _timestamp(evidence.get('started_at'), 'Confirmation start')
@@ -354,7 +395,8 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
         _require(entry.get('status') == 'scored',
                  'Confirmation needs a completed first attempt without infrastructure error')
         declared = frozen_tasks[task_id]
-        _require(declared.get('tool_time_policy') == TOOL_TIME_POLICY,
+        _require(declared.get('tool_time_policy') == timing_policy
+                 and ('tool_time_policy' not in entry or entry['tool_time_policy'] == timing_policy),
                  'Task differs from the frozen cumulative tool budget')
         task_directory = Path(declared.get('task_directory', ''))
         if not task_directory.is_absolute():
@@ -410,9 +452,7 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
                  and entry.get('raw_verifier_reward') == reward
                  and type(entry.get('reward')) in (int, float) and entry['reward'] == computed['reward'],
                  'Confirmation tool timing is incomplete or differs from native execution evidence')
-        for source in computed['tool_time']['session_files'] + [computed['tool_time']['native_stream']]:
-            raw = release._file(Path(source['path']), result_path.parent, tracked)
-            _require(_sha(raw) == source['sha256'], 'Native tool timing evidence changed')
+        timing_evidence = _track_tool_time_evidence(computed['tool_time'], result_path, tracked)
         raw_reward, reward = int(reward), computed['reward']
         attempt_started = _timestamp(actual.get('started_at'), 'Actual attempt start')
         attempt_finished = _timestamp(actual.get('finished_at'), 'Actual attempt finish')
@@ -424,7 +464,17 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
                          'tool_time': {key: timing[key] for key in ('method', 'budget_seconds',
                              'strict_less_than', 'state', 'passed', 'cumulative_tool_seconds',
                              'cumulative_tool_nanoseconds', 'model_response_time_included',
-                             'parallel_executions', 'threshold_reached')}}
+                             'parallel_executions')}}
+        if 'threshold_reached' in timing:
+            public_result['tool_time']['threshold_reached'] = timing['threshold_reached']
+        if timing.get('policy_version') == 2:
+            public_result['tool_time'].update({key: timing[key] for key in (
+                'policy_version', 'exact_timing_state', 'lower_bound_seconds', 'upper_bound_seconds')})
+            if timing['state'] == 'bounded':
+                public_result['tool_time'].update({key: timing[key] for key in (
+                    'lower_bound_nanoseconds', 'upper_bound_nanoseconds',
+                    'upper_bound_may_include_idle_cleanup_time')})
+                public_result['tool_time']['evidence_sha256'] = timing_evidence
         if resolution:
             public_result['exception_resolution'] = {key: resolution[key] for key in (
                 'classification', 'budget_seconds', 'agent_elapsed_seconds', 'model_output_tokens',
@@ -456,7 +506,7 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
         'started_at': started_at.isoformat(), 'finished_at': finished_at.isoformat(),
         'task_count': len(results), 'passed': passed, 'overall_pass_at_1': overall,
         'maximum_overall_pass_at_1': MAX_PASS_AT_ONE, 'by_mode': by_mode, 'tasks': results,
-        'tool_time_policy': TOOL_TIME_POLICY,
+        'tool_time_policy': timing_policy,
         'infrastructure_history': history}
 
 
