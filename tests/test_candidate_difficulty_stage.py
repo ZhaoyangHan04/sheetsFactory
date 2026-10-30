@@ -65,10 +65,7 @@ def test_default_all_q08_na_does_not_block_q12_and_node_passes_safe_stage_contex
         def __init__(self):
             self.payloads = []
         def complete(self, text, **kwargs):
-            if kwargs['isolated']:
-                payload = json.loads((kwargs['workspace'] / 'evidence.json').read_text())
-            else:
-                payload = json.loads(text.split('\nINPUT JSON:\n', 1)[1].split('\nReturn assessments', 1)[0])
+            payload = json.loads((kwargs['workspace'] / 'evidence.json').read_text())
             self.payloads.append(payload)
             return local_na(payload)
     backend = Backend()

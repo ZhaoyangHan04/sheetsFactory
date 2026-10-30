@@ -17,6 +17,21 @@ from ..evaluation.harbor import export_harbor
 from .construction import prompt, compact_profile, construction_contract, authoring_source_context
 
 
+PRIVATE_DIAGNOSTIC_EVIDENCE_INSTRUCTIONS = (
+    '\nPrivate evidence transport: workspace_json_file_v1. Your current working directory is the '
+    'private diagnostic workspace passed to this call. Open the relative file evidence.json from '
+    'that directory; do not assume the public container path /workspace/evidence.json. '
+    'The receipt below binds the complete evidence file by SHA256 and UTF-8 byte count. '
+    'Use Python to load the JSON, inspect its keys and collection lengths, and retrieve bounded '
+    'sections or iterate records as needed. Do not cat or print the entire evidence file. '
+    'The complete payload remains available without omitted fields. Summaries are navigation aids, '
+    'not replacements for evidence: review every assigned check and the COMPLETE expected_delta, '
+    'including all downstream outputs and each provisional candidate, using bounded iteration when '
+    'large. Request specific missing evidence if coverage cannot be completed; do not silently '
+    'sample the required scope or mark it clear. Inspect input.xlsx/instruction.md and the allowed '
+    'private reference as necessary. Return JSON only.\nEVIDENCE FILE RECEIPT:\n')
+
+
 def prepare_workspace(ctx, name):
     workspace = ctx.revision_dir / (name + '-' + uuid.uuid4().hex[:8])
     workspace.mkdir(parents=True, exist_ok=True)
@@ -154,17 +169,21 @@ class DiagnoseNode(BaseNode):
                   'infrastructure_health_report': health}
         bundle['reviewer_context_hash'] = hashlib.sha256(json.dumps({
             'prompt': diagnosis_prompt, 'agents': ctx.config['agents'],
+            'private_evidence_transport': PRIVATE_DIAGNOSTIC_EVIDENCE_INSTRUCTIONS,
             'schema_contract': diagnosis_output_schema(['Q01'])},
             sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()
 
         def review(payload):
             is_public = payload['visibility'] == 'public_only'
             work = prepare_workspace(ctx, 'diagnostic_public' if is_public else 'diagnostic_private')
-            (work / 'evidence.json').write_text(json.dumps(payload, ensure_ascii=False, default=str))
+            evidence = json.dumps(payload, ensure_ascii=False, default=str).encode('utf-8')
+            (work / 'evidence.json').write_bytes(evidence)
             instruction = (diagnosis_prompt + '\nRead /workspace/evidence.json for all assigned '
                            'checks and evidence. Inspect input.xlsx/instruction.md as necessary. Return JSON only.')
             if not is_public:
-                instruction = diagnosis_prompt + '\nINPUT JSON:\n' + json.dumps(payload, ensure_ascii=False, default=str)
+                receipt = {'file': 'evidence.json', 'sha256': hashlib.sha256(evidence).hexdigest(),
+                           'bytes': len(evidence), 'assigned_check_ids': payload['assigned_check_ids']}
+                instruction = diagnosis_prompt + PRIVATE_DIAGNOSTIC_EVIDENCE_INSTRUCTIONS + json.dumps(receipt)
             instruction += ('\nReturn assessments as an object keyed by every assigned_check_id exactly once. '
                             'Follow the supplied output schema; missing assigned checks are a backend protocol failure.')
             return ctx.llm.complete(instruction, role='public_diagnostician' if is_public else 'reference_diagnostician',
