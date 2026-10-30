@@ -64,9 +64,9 @@ def _toml(task_id, metadata, profile):
         '[agent]\ntimeout_sec = 14400.0\n\n'
         '[verifier]\ntimeout_sec = 2400.0\nenvironment_mode = "separate"\n\n'
         '[environment]\ncpus = 2\n' + f'memory_mb = {memory_mb}\n'
-        'storage_mb = 2048\nnetwork_mode = "no-network"\n\n'
+        'storage_mb = 2048\nnetwork_mode = "public"\n\n'
         '[verifier.environment]\ncpus = 2\n' + f'memory_mb = {memory_mb}\n'
-        'storage_mb = 2048\nnetwork_mode = "no-network"\n')
+        'storage_mb = 2048\nnetwork_mode = "public"\n')
 
 
 def verify_local_base_image(runtime_profile=DEFAULT_PROFILE):
@@ -110,6 +110,8 @@ def export_resource_harbor(task_dir, export_dir, metadata=None, project_root=Non
                 'execution_budget': dict(resource_streaming_verifier.EXECUTION_BUDGET),
                 'operational_guard_is_model_failure': False,
                 'actual_container_resources_verified': False,
+                'requested_harbor_network_mode': 'public',
+                'source_and_public_reference_replay_network_mode': 'none',
                 'build_base_reference': profile['image']['tag'],
                 'required_local_base_image_id': profile['image']['id'],
                 'actual_local_base_image_verification_required_before_build': True,
@@ -181,6 +183,9 @@ def inspect_resource_export(export_dir):
              and contract.get('operational_guard_is_model_failure') is False
              and contract.get('quality_or_difficulty_certified') is False,
              'An export cannot certify execution, quality or difficulty')
+    _require(contract.get('requested_harbor_network_mode') == 'public'
+             and contract.get('source_and_public_reference_replay_network_mode') == 'none',
+             'Harbor provider networking and the isolated reference runtime must remain explicit')
     _require(contract.get('build_base_reference') == profile['image']['tag']
              and contract.get('required_local_base_image_id') == profile['image']['id']
              and contract.get('actual_local_base_image_verification_required_before_build') is True,
@@ -190,7 +195,7 @@ def inspect_resource_export(export_dir):
         _require(type(role.get('cpus')) is int and role['cpus'] == 2
                  and type(role.get('memory_mb')) is int
                  and role['memory_mb'] == profile['docker_resources'][name]['memory_bytes'] // 1024**2
-                 and role.get('network_mode') == 'no-network', 'Agent/verifier resource configuration differs')
+                 and role.get('network_mode') == 'public', 'Agent/verifier resource configuration differs')
     _require(config['verifier']['timeout_sec'] == 2400
              and config['verifier']['environment_mode'] == 'separate'
              and config['agent']['timeout_sec'] == 14400, 'The phase timeouts differ')

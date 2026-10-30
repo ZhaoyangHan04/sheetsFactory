@@ -103,7 +103,7 @@ def test_real_harbor_schema_exact_resources_and_original_control_binding(exporte
     assert config['verifier']['timeout_sec'] == 2400
     assert config['verifier']['environment_mode'] == 'separate'
     for role in (config['environment'], config['verifier']['environment']):
-        assert role == {'cpus': 2, 'memory_mb': 8192, 'storage_mb': 2048, 'network_mode': 'no-network'}
+        assert role == {'cpus': 2, 'memory_mb': 8192, 'storage_mb': 2048, 'network_mode': 'public'}
     binding = export.inspect_resource_export(exported)
     original = harbor.inspect_export(exported)
     assert {key: binding[key] for key in original} == original
