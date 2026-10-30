@@ -1,0 +1,869 @@
+{
+  "schema_version": 1,
+  "scenario_id": "hypothetical-same-year-contingent-recovery-v2-C02",
+  "currency": "GBP_nominal",
+  "feedback_basis": "same_year_total_recovery_entitlement",
+  "accounting": {
+    "book_expense": "same_reporting_year",
+    "cash_payment": "same_reporting_year",
+    "tax_deduction": "same_reporting_year",
+    "base_lease_pv_rou_liability": "excluded",
+    "variable_allowance_posting": "separate_penny_posting_of_fraction_times_total_variable_rent"
+  },
+  "iteration_policy": {
+    "domain": "finite_contractual_total_rent_grid",
+    "max_steps": 128,
+    "acceptance": "identical_fixed_point_from_zero_and_sum_of_caps"
+  },
+  "public_rules": [
+    "FY2024 means 1 April 2023 through 31 March 2024. Each row explicitly states that reporting year's contingent-rent terms for all four leases. There is no inference from another year and no forecast amount is provided.",
+    "For each payable lease, annual variable rent equals its stated rate times MAX(0, the same-year total recovery entitlement minus that lease's annual threshold), rounded half up to its stated GBP100 or GBP1000 contractual unit, then limited by its annual cap. Caps are whole contractual rounding units. The payable annual fee is not prorated for a partial fixed-rent reporting year. Inactive rows explicitly have zero rate and cap.",
+    "Contingent rent is separately expensed, paid in cash and deducted for tax in the same reporting year. It is excluded from fixed-lease present value, right-of-use assets and lease liabilities. The existing fixed-rent lease terms and balances retain their original treatment.",
+    "The separately stated variable eligibility fraction is applied to the TOTAL posted annual variable rent and rounded half up once to GBP0.01. This allowance is posted separately from the fixed-lease allowance. Do not combine the two amounts before rounding.",
+    "Let v be total posted variable rent, A its separately posted eligible allowance, E0 the non-variable recovery basis including fixed-lease allowance but excluding current gross-up tax, and B0 the pre-variable gross-up taxable base. Current tax uses the existing regulatory loss policy at B0+A-v. Total recovery entitlement equals E0+A+current gross-up tax. Thus current entitlement and current variable rents determine one another.",
+    "For positive taxable base B, continuous loss use is MIN(available old losses, loss-use-cap times B divided by (1-tax-rate times (1-loss-use-cap))). Separately post tax-rate times (B-continuous loss use)/(1-tax-rate) and continuous loss use to GBP0.01, half up. For B<=0 current tax and old-loss use are zero and the new loss is -B posted to pennies.",
+    "Use the finite contractual fee grid. Accept a year only when monotonicity including penny postings is proved and iteration from both zero total rent and the sum of annual caps reaches the SAME fixed point within 128 steps. Different endpoint fixed points, an unproved monotonicity bound or failure to coalesce rejects the year. A continuous contraction heuristic is not a uniqueness certificate."
+  ],
+  "annual_terms": [
+    {
+      "year": 2024,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": false,
+          "rate": "0",
+          "threshold": "275000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": true,
+          "rate": "0.015",
+          "threshold": "525000.00",
+          "annual_cap": "2000000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": false,
+          "rate": "0",
+          "threshold": "775000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2025,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": true,
+          "rate": "0.015",
+          "threshold": "525000.00",
+          "annual_cap": "2000000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": false,
+          "rate": "0",
+          "threshold": "775000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2026,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": true,
+          "rate": "0.015",
+          "threshold": "525000.00",
+          "annual_cap": "2000000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": true,
+          "rate": "0.015",
+          "threshold": "525000.00",
+          "annual_cap": "2000000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": true,
+          "rate": "0.015",
+          "threshold": "525000.00",
+          "annual_cap": "2000000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2029,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": true,
+          "rate": "0.015",
+          "threshold": "525000.00",
+          "annual_cap": "2000000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2030,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": true,
+          "rate": "0.015",
+          "threshold": "525000.00",
+          "annual_cap": "2000000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2031,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": true,
+          "rate": "0.015",
+          "threshold": "525000.00",
+          "annual_cap": "2000000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2032,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": true,
+          "rate": "0.015",
+          "threshold": "525000.00",
+          "annual_cap": "2000000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2033,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": false,
+          "rate": "0",
+          "threshold": "525000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2034,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": false,
+          "rate": "0",
+          "threshold": "525000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2035,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": false,
+          "rate": "0",
+          "threshold": "525000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2036,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": true,
+          "rate": "0.009",
+          "threshold": "125000.00",
+          "annual_cap": "180000.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": false,
+          "rate": "0",
+          "threshold": "525000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2037,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": false,
+          "rate": "0",
+          "threshold": "125000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": false,
+          "rate": "0",
+          "threshold": "525000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2038,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": false,
+          "rate": "0",
+          "threshold": "125000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": false,
+          "rate": "0",
+          "threshold": "525000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2039,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": false,
+          "rate": "0",
+          "threshold": "125000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": false,
+          "rate": "0",
+          "threshold": "525000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2040,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": false,
+          "rate": "0",
+          "threshold": "125000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": false,
+          "rate": "0",
+          "threshold": "525000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2041,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": false,
+          "rate": "0",
+          "threshold": "125000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": false,
+          "rate": "0",
+          "threshold": "525000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2042,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": false,
+          "rate": "0",
+          "threshold": "125000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": true,
+          "rate": "0.012",
+          "threshold": "275000.00",
+          "annual_cap": "2400000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": false,
+          "rate": "0",
+          "threshold": "525000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    },
+    {
+      "year": 2043,
+      "eligible_fraction": "0.85",
+      "contracts": [
+        {
+          "lease_id": "P01",
+          "active": false,
+          "rate": "0",
+          "threshold": "125000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P02",
+          "active": false,
+          "rate": "0",
+          "threshold": "275000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P03",
+          "active": false,
+          "rate": "0",
+          "threshold": "525000.00",
+          "annual_cap": "0.00",
+          "rounding_quantum": "100",
+          "rounding_mode": "ROUND_HALF_UP"
+        },
+        {
+          "lease_id": "P04",
+          "active": true,
+          "rate": "0.018",
+          "threshold": "775000.00",
+          "annual_cap": "3000000.00",
+          "rounding_quantum": "1000",
+          "rounding_mode": "ROUND_HALF_UP"
+        }
+      ]
+    }
+  ]
+}

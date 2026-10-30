@@ -36,13 +36,27 @@ def test_compiler_has_deterministic_independent_ledger_allowlist_no_emitter_or_a
               and node.args and isinstance(node.args[0],ast.Constant)]
     assert len(payloads)==1
     with zipfile.ZipFile(io.BytesIO(base64.b64decode(payloads[0]))) as archive:
-        names=archive.namelist();assert len([n for n in names if n.endswith('ledger.py')])==4
+        names=archive.namelist();assert len([n for n in names if n.endswith('ledger.py')])==5
+        assert 'sheets_factory/workbook/contingent_recovery/solver.py' in names
         assert not any(n.endswith(('excel.py','build.py','source.py','bindings.json')) or n.endswith('.xlsx') for n in names)
         source=ast.parse(archive.read('sheets_factory/workbook/derived_gold/ledger.py').decode())
         defaults=next(n for n in source.body if isinstance(n,ast.AnnAssign) and isinstance(n.target,ast.Name) and n.target.id=='_DEFAULTS')
         assert all(isinstance(v,ast.Constant) and v.value is None for v in defaults.value.values)
     assert '/workspace/input.xlsx' in first and '/workspace/output.xlsx' in first
     assert 'private/entities' not in first
+
+
+def test_optional_business_contracts_are_explicit_and_cannot_replace_required_inputs():
+    book=public_book();sheet=book['Model Input Contracts']
+    sheet['A8']='contingent';sheet['B8']=json.dumps({'annual_terms':[{'year':2024,'eligible_fraction':'.85'}]})
+    sheet['A9']='waterfall';sheet['B9']=json.dumps({'opening_capital':'250000'})
+    specs,hashes=read_public_contracts(book)
+    assert set(specs)==set(CONTRACT_ORDER)|{'contingent','waterfall'}
+    assert len(hashes)==6
+    sheet['A9']='contingent'
+    with pytest.raises(ValueError,match='duplicate'):read_public_contracts(book)
+    sheet['A9']='hidden_answer'
+    with pytest.raises(ValueError,match='Unknown'):read_public_contracts(book)
 
 
 def test_composite_backend_routes_to_independent_public_compiler_and_standard_isolated_receipt(witness,monkeypatch):

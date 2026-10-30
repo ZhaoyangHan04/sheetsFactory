@@ -1,4 +1,4 @@
-"""Compile a public-input-only independent four-ledger recovery witness.
+"""Compile a public-input-only independent financial-journal recovery witness.
 
 The standalone program contains calculation ledgers and public layout metadata,
 never Excel emitters, reference answers, task edits or private source evidence.
@@ -19,6 +19,17 @@ import zipfile
 
 PUBLIC_SHEET='Model Input Contracts'
 CONTRACT_ORDER=('lease','programme','operating','holding')
+OPTIONAL_CONTRACTS={'contingent','waterfall'}
+CONTINGENT_LABELS={
+ 'total_recovery_entitlement':'Same-year total regulatory recovery entitlement',
+ 'variable_rents.P01':'P01 current variable cash rent',
+ 'variable_rents.P02':'P02 current variable cash rent',
+ 'variable_rents.P03':'P03 current variable cash rent',
+ 'variable_rents.P04':'P04 current variable cash rent',
+ 'variable_lease_cash':'Total current variable rent: cash paid',
+ 'variable_lease_allowance':'Separately posted current variable regulatory allowance',
+ 'variable_book_expense':'Current variable rent book expense',
+ 'variable_tax_deduction':'Current variable rent tax deduction'}
 
 # Public fixed project row layout. This metadata contains no financial formula.
 OPERATING_MAPPING={
@@ -74,10 +85,17 @@ def read_public_contracts(book):
             for item in value:reject_outputs(item)
         elif isinstance(value,str) and (value.startswith(('/data/','/workspace/','file://'))):
             raise ValueError('Public input contract contains a local artifact location')
-    for offset,name in enumerate(CONTRACT_ORDER,4):
+    rows=list(enumerate(CONTRACT_ORDER,4))
+    for offset in range(8,sheet.max_row+1):
+        name=sheet.cell(offset,1).value
+        if name is None and sheet.cell(offset,2).value is None:continue
+        if name not in OPTIONAL_CONTRACTS or name in [n for _,n in rows]:
+            raise ValueError('Unknown or duplicate optional public input contract')
+        rows.append((offset,name))
+    for offset,name in rows:
         label=sheet.cell(offset,1);cell=sheet.cell(offset,2)
         if label.value!=name or cell.data_type=='f' or not isinstance(cell.value,str):
-            raise ValueError('Public contract rows must be four explicit labelled JSON literals')
+            raise ValueError('Public contract rows must be explicit labelled JSON literals')
         spec=json.loads(cell.value,object_pairs_hook=_json_unique)
         if not isinstance(spec,dict):raise ValueError('Public contract must be a JSON object')
         reject_outputs(spec);specs[name]=spec;hashes[name]=hashlib.sha256(cell.value.encode()).hexdigest()
@@ -150,9 +168,11 @@ def recover_public(source,destination,report_path=None):
         if (set(_DEFAULTS)|set(_REQUIRED_RESOLVED))-set(parameters):
             raise ValueError('Missing explicit public operating assumptions')
         lease=simulate_lease(specs['lease'])
-        programme=programme_simulate(specs['programme'],external_lease_annual=lease['annual'])
+        programme=programme_simulate(specs['programme'],external_lease_annual=lease['annual'],
+                                     contingent_spec=specs.get('contingent'))
         operating=operating_simulate(operating_spec)
-        holding=simulate_parent(specs['holding'],annual_bridge(specs['programme'],programme),operating,operating_spec)
+        holding=simulate_parent(specs['holding'],annual_bridge(specs['programme'],programme),operating,operating_spec,
+                                 waterfall_spec=specs.get('waterfall'))
         if (not all(lease['checks'].values()) or not all(programme['checks'].values())
                 or not ledger_invariants_pass(operating['checks']) or not all(holding['checks'].values())):
             raise ValueError('Independent public journals do not reconcile')
@@ -181,6 +201,16 @@ def recover_public(source,destination,report_path=None):
         counts['lease']=len(expected)
         for (sheet,r,c),value in programme_expected(specs['programme'],programme).items():add(sheet,L(c)+str(r),value)
         counts['programme']=len(expected)-sum(counts.values())
+        if 'contingent' in specs:
+            rows=_rows(book['Contingent Annual'])
+            for yi,year in enumerate(specs['programme']['years']):
+                solved=programme['contingent_recovery']['annual'][year]
+                for field,label in CONTINGENT_LABELS.items():
+                    if _label(label) not in rows:raise ValueError('Missing public contingent financial row: '+label)
+                    value=(solved['variable_rents'][field.split('.')[1]] if field.startswith('variable_rents.')
+                           else solved[field])
+                    add('Contingent Annual',L(yi+3)+str(rows[_label(label)]),value)
+            counts['contingent']=len(expected)-sum(counts.values())
         mapping={name.removeprefix('Operating '):name for name in book.sheetnames if name.startswith('Operating ')}
         bindings=_operating_bindings(book,operating_spec,operating,mapping)
         audit=operating_audit(source,operating_spec,operating,bindings,sheet_mapping=mapping)
@@ -195,16 +225,29 @@ def recover_public(source,destination,report_path=None):
         for section,key,fields in [('annual','parent',PARENT_FIELDS),('consolidated','group',GROUP_FIELDS)]:
             for yi,record in enumerate(holding[section]):
                 for field in fields:add(SHEETS[key],L(yi+3)+str(row(field,fields)),record[field])
+        if 'waterfall' in specs:
+            from sheets_factory.workbook.partner_waterfall.schema import FIELDS,INTEGER_FIELDS,RATE_FIELDS
+            rows=_rows(book['Partner Waterfall'])
+            for field in ('lp_net_cashflow','gp_net_cashflow'):
+                add('Partner Waterfall','B'+str(rows[_label(field)]),holding['partner_opening'][0][field])
+            for yi,record in enumerate(holding['partner_waterfall']):
+                for field in FIELDS:
+                    if _label(field) not in rows:raise ValueError('Missing public partner financial row: '+field)
+                    value=record[field]
+                    if field in INTEGER_FIELDS:value=0 if value is None else int(value)
+                    add('Partner Waterfall',L(yi+3)+str(rows[_label(field)]),value,
+                        'nullable_rate' if field=='lp_xirr' else 'integer' if field in INTEGER_FIELDS else 'money')
         counts['holding']=len(expected)-sum(counts.values())
         # Coverage is checked against every currently visible derived formula;
         # blank masked cells are recovered through the same public row layout.
-        owned={name for name in book.sheetnames if name.startswith(('Lease ','Operating ','Reopener ','Holding '))}
+        owned={name for name in book.sheetnames if name.startswith(('Lease ','Operating ','Reopener ','Holding ','Contingent ','Partner '))}
         missing=[sheet.title+'!'+c.coordinate for sheet in book if sheet.title in owned
                  for c in sheet._cells.values() if c.data_type=='f' and (sheet.title,c.coordinate) not in expected]
         if missing:raise ValueError('Unbound public financial formulas: '+repr(missing[:10]))
         for (sheet,address),value in expected.items():
             kind=kinds[(sheet,address)]
             if kind=='date':value=value if isinstance(value,(date,datetime)) else date.fromisoformat(str(value)[:10])
+            elif kind=='nullable_rate' and value is None:value=''
             elif kind in {'integer','control'}:value=int(Decimal(str(value)))
             else:
                 number=Decimal(str(value))
@@ -229,11 +272,14 @@ def compile_public_composite_recovery():
     root=Path(__file__).resolve().parents[1]
     modules=('lease_finance/contract.py','lease_finance/ledger.py',
       'derived_regulatory/schema.py','derived_regulatory/ledger.py','derived_regulatory/validate.py',
-      'derived_gold/ledger.py','derived_gold/validate.py','holding_treasury/schema.py','holding_treasury/ledger.py')
+      'derived_gold/ledger.py','derived_gold/validate.py','holding_treasury/schema.py','holding_treasury/ledger.py',
+      'contingent_recovery/contract.py','contingent_recovery/solver.py',
+      'partner_waterfall/contract.py','partner_waterfall/schema.py','partner_waterfall/ledger.py')
     archive=io.BytesIO();hashes={}
     with zipfile.ZipFile(archive,'w') as zip_:
         for package in ('sheets_factory','sheets_factory/workbook',
-                        *('sheets_factory/workbook/'+name for name in ('lease_finance','derived_regulatory','derived_gold','holding_treasury'))):
+                        *('sheets_factory/workbook/'+name for name in ('lease_finance','derived_regulatory','derived_gold',
+                                                                     'holding_treasury','contingent_recovery','partner_waterfall'))):
             info=zipfile.ZipInfo(package+'/__init__.py',date_time=(2000,1,1,0,0,0));zip_.writestr(info,'')
         for name in modules:
             source=(root/name).read_text();hashes[name]=hashlib.sha256(source.encode()).hexdigest()

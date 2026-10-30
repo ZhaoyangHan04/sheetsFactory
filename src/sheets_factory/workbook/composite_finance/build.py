@@ -98,6 +98,15 @@ def recipe_references(config_path, config):
         'holding_treasury/ledger.py', 'holding_treasury/schema.py',
         'holding_treasury/excel.py', 'holding_treasury/validate.py')
     paths = [Path(__file__).parent.parent / name for name in modules]
+    optional_modules = {
+        'contingent_config': ('contingent_recovery/contract.py', 'contingent_recovery/solver.py',
+                              'contingent_recovery/excel.py', 'contingent_recovery/validate.py'),
+        'waterfall_config': ('partner_waterfall/contract.py', 'partner_waterfall/ledger.py',
+                            'partner_waterfall/excel.py', 'partner_waterfall/schema.py')}
+    for key, names in optional_modules.items():
+        if config.get(key):
+            paths.extend(Path(__file__).parent.parent / name for name in names)
+            paths.append(Path(config[key]))
     paths.extend(Path(config[key]) for key in ('regulatory_config', 'lease_config', 'holding_config', 'operating_manifest'))
     paths.append(Path(config_path))
     return {str(path.resolve()): ref(path) for path in paths}
@@ -116,26 +125,50 @@ def build(config_path, output, project_root):
     reg_spec['parameters']['lease_allowable_fraction'] = config['lease_allowable_fraction']
     lease_spec = load_lease_spec(config['lease_config'])
     parent_spec = json.loads(Path(config['holding_config']).read_text())
+    contingent_spec = None
+    if config.get('contingent_config'):
+        from ..contingent_recovery import load_spec
+        contingent_spec = load_spec(config['contingent_config'])
+    waterfall_spec = (json.loads(Path(config['waterfall_config']).read_text())
+                      if config.get('waterfall_config') else None)
     lease = simulate_lease(lease_spec)
-    programme = regulatory_simulate(reg_spec, external_lease_annual=lease['annual'])
+    programme = regulatory_simulate(reg_spec, external_lease_annual=lease['annual'],
+                                    contingent_spec=contingent_spec)
+    if contingent_spec is not None:
+        minimum_years = config.get('minimum_uncapped_feedback_years', 12)
+        if type(minimum_years) is not int or not 1 <= minimum_years <= len(reg_spec['years']):
+            raise ValueError('Invalid minimum actual contingent-feedback year requirement')
+        if len(programme['observed_regimes'].get('uncapped_contingent_feedback', [])) < minimum_years:
+            raise ValueError('Contingent case lacks enough actual uncapped feedback years')
     book = openpyxl.load_workbook(reg_config['source_path'], keep_links=False)
     lease_binding = emit_lease_workbook(lease_spec, workbook=book)
     book.save(private / 'provided_and_leases.xlsx')
     book.close()
     reg_binding = create_workbook(private / 'provided_and_leases.xlsx', reg_spec,
-        private / 'with_programme.xlsx', public_policy(include_leases=True),
-        external_annual_refs=lease_binding['annual_refs'])
+        private / 'with_programme.xlsx', public_policy(include_leases=True, include_contingent=contingent_spec is not None),
+        external_annual_refs=lease_binding['annual_refs'], contingent_spec=contingent_spec)
     book = openpyxl.load_workbook(private / 'with_programme.xlsx', keep_links=False)
     operating = append_operating_entity(book, config['operating_manifest'],
         entity_id=config.get('operating_entity', 'T01'),
         contract_revision=config.get('operating_contract_revision', 1))
     parent = simulate_parent(parent_spec, annual_bridge(reg_spec, programme),
-                             operating['ledger'], operating['public_scenario'])
+                             operating['ledger'], operating['public_scenario'], waterfall_spec=waterfall_spec)
     if not all(parent['observed_regimes'].get(key) for key in parent_spec['required_observed_regimes']):
         raise ValueError('Holding case does not activate every requested actual financial regime')
-    holding_binding = emit_parent(book, parent_spec, reg_binding['annual_refs'], operating['operating_refs'])
+    if waterfall_spec is not None:
+        required=config.get('required_waterfall_regimes',[])
+        allowed={'preference_paid','preference_carry','return_of_capital','gp_catchup','residual',
+                 'carry_flip_earned','flipped_carry_used','capital_after_flip'}
+        if not isinstance(required,list) or set(required)-allowed:
+            raise ValueError('Unknown required actual partnership distribution regime')
+        if not all(parent['observed_waterfall_regimes'].get(key) for key in required):
+            raise ValueError('Partnership case does not activate every requested actual financial regime')
+    holding_binding = emit_parent(book, parent_spec, reg_binding['annual_refs'], operating['operating_refs'],
+                                   waterfall_spec=waterfall_spec)
     specs = {'lease': lease_spec, 'programme': reg_spec,
              'operating': operating['public_scenario'], 'holding': parent_spec}
+    if contingent_spec is not None:specs['contingent'] = contingent_spec
+    if waterfall_spec is not None:specs['waterfall'] = waterfall_spec
     emit_public_specs(book, specs)
     raw = private / 'unrecalculated.xlsx'
     book.save(raw)
@@ -160,7 +193,12 @@ def build(config_path, output, project_root):
         'programme': regulatory_audit(goal, reg_spec, programme),
         'operating': operating_audit(goal, operating['public_scenario'], operating['ledger'],
                                      operating['bindings'], sheet_mapping=operating['sheet_mapping']),
-        'holding': holding_audit(goal, parent, holding_binding['bindings'], spec=parent_spec)}
+        'holding': holding_audit(goal, parent, holding_binding['bindings'], spec=parent_spec,
+                                  waterfall_spec=waterfall_spec)}
+    if contingent_spec is not None:
+        from ..contingent_recovery.validate import audit_contingent_workbook
+        audits['contingent'] = audit_contingent_workbook(goal, contingent_spec, programme,
+                                                        reg_binding['contingent_binding'])
     for name, audit in audits.items():
         write(private / (name + '_financial_audit.json'), {'workbook': ref(goal), **audit})
     summary = {name: {'passed': audit['passed'], 'checked_cells': audit['checked_cells'],
@@ -194,6 +232,11 @@ def build(config_path, output, project_root):
         'observed_holding_regimes': parent['observed_regimes'],
         'formula_count': sum(a.get('formula_count', a.get('new_formula_count', 0)) for a in audits.values()),
         'independently_checked_cells': sum(a['checked_cells'] for a in audits.values())}
+    if contingent_spec is not None:
+        manifest['observed_contingent_regimes'] = programme['observed_regimes']
+        manifest['contingent_all_years_unique'] = programme['contingent_recovery']['all_years_unique']
+    if waterfall_spec is not None:
+        manifest['observed_waterfall_regimes'] = parent['observed_waterfall_regimes']
     manifest['selected'] = [{'sha256': manifest['derived_workbook_sha256'],
         'source_sha256': manifest['derived_workbook_sha256'], 'local_path': manifest['local_path'],
         'source_kind': 'derived_composed_financial_model', 'modes': ['financial_modeling', 'debugging'],
