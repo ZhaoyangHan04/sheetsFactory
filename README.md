@@ -4,6 +4,8 @@
 
 上一轮已完成 20 道 Financial Modeling、20 道 Debugging 的质量验收并保留冻结发布包；该批次没有通过难度验收。当前正在迭代两类各至少 10 题，构造与诊断使用 Codex CLI `gpt-6-sol` / `high`，难度门禁固定使用 Codex CLI `gpt-6.1-sol` / `xhigh`、每题 1800 秒总时限，另要求累计工具执行时间严格小于 1800 秒，冻结确认集 Overall Pass@1 ≤ 0.2。未完成最终确认前，不作难度达标声明。
 
+截至 2026-10-30 12:54 UTC，最终难度交付计数仍为 0；一份循环融资 Financial Modeling 修订已通过质量检查，并有单次有效开发零分，尚未进入完整 10+10 冻结确认集。源表验证、候选控制和单题开发结果分别记录，不累加为最终产量。根目录 `SpreadsheetEval/` 将在完整确认和发布核验后创建；历史质量发布包的位置见下文。
+
 配置位于 `config/`，角色提示词位于 `prompts/`，节点与模板位于 `src/sheets_factory/`，输入位于 `data/`，运行数据和面板审计位于 `outputs/`。密钥仅保存在环境变量或被忽略的 `.secrets/`。
 
 Git 仓库包含代码、配置、提示词、测试、文档和来源清单。下载的种子、`outputs/` 实验产物与运行凭据不纳入版本控制；下文历史题目发布包的 `outputs/` 链接指向原运行机器上的本地产物。固定运行镜像另已上传为私有 GitHub Release 附件。新检出仓库可按启动命令重新构造任务。
@@ -109,6 +111,19 @@ EUSES 下载与候选筛选可单独执行：
 
 累计工具耗时从原生 Codex 执行记录复算，排除模型思考及生成回答的时间；并行执行分别累加，异步轮询不重复计算同一进程。达到或超过 1800 秒时，有效奖励为 0，同时保留原始工作簿评分。计时证据缺失时记录为未知，不能记作模型失败或据此重新采样；发布前重新核对计时记录及其哈希。
 
+结构扩展实验使用相同最强配置和单次开发尝试，结果如下。各行不是一个预先冻结的整体测试集，不能将这些分数汇总为最终 Overall Pass@1。
+
+| 开发方向 | 实际结果 | 解释 |
+| --- | --- | --- |
+| 12 项目、171 sheets、遮蔽 59,165 个公式 | 正常 reward=1；工具累计 60.514 秒 | 扩大同类结构后仍可程序化完成。 |
+| 唯一固定点循环融资 | 正常预算耗尽 reward=0；工具累计 19.966 秒 | 存在真实本金现金流漏项；该修订通过质量复核，仍需整组确认。 |
+| 循环融资 × 高级税务 | 正常 reward=1；工具累计 6.952 秒 | 有真实跨期结转和反馈，仍不足以达到难度目标。 |
+| 20 年监管资本、税基与收入回收款 | 正常 reward=1；工具累计 47.469 秒 | 独立监管模型仍未达到难度目标，保留唯一有效开发结果。 |
+| 12 项目 × 564 个已验证活跃调试根节点 | 正常 reward=1；工具累计 46.820 秒 | 大量同类公式可被统一修复，未计入难度达标。 |
+| 跨实体现金池与抵押融资 | 原始 reward=0，但辅助行有约定歧义 | 保留原结果；排除该零分的难度证明，另建明确约定的新修订。 |
+
+旧循环任务的工具耗时来自保留原文件的只读补充复算；新评测直接冻结计时规则。上述有效零分没有在相同版本重新采样。
+
 ## 派生财务模型的来源与验算
 
 `scripts/build_derived_scenarios.py` 从一个公开来源的数值锚点构造 10 个明确的假设场景。原始锚点来自 [NYU Damodaran 的 FCFF 模型](https://pages.stern.nyu.edu/~adamodar/pc/fcffginzu.xlsx)，下载文件的 SHA 和取值位置写入每个种子的来源清单；项目期限、建设期、贷款、周转与分红规则均为公开的假设条件，不冒充来源公司的真实预测。
@@ -129,6 +144,23 @@ EUSES 下载与候选筛选可单独执行：
 `portfolio_scale.yaml` 使用完整公式系列和独立财务参考复核。该证据模式要求全部 12 项检查，Q01–Q04 必须有明确支持，且参考、变化集合、诊断与运行控制均绑定当前文件哈希；它不声称执行了独立公开恢复。默认流水线继续使用独立公开恢复。调试可选择依赖分离证明：在原始与注入后的完整依赖图中排除所有根节点间依赖，再用真实联合重算的逐根值差异证明单独及边际影响，避免重复启动数百次相同计算。证明不成立时拒绝候选。
 
 循环融资模型具有真实的债务规模—利息—税款—现金流反馈，独立有限档位检查验证唯一固定点。迭代运行镜像位于 [runtime-lo-24.2-iterative-v1 Release](https://github.com/ZhaoyangHan04/sheetsFactory/releases/tag/runtime-lo-24.2-iterative-v1)，保留 LibreOffice 24.2.7.2，镜像 ID 为 `sha256:5c74b8a362305b20d736bdbad041a12a6159e31f3bde4a0a068a7ee71d6937d6`。镜像仅对启用迭代的工作簿执行有界的完整使用区域收敛检查；普通工作簿保持一次计算。附件 SHA256 与实际重新加载后的镜像身份均已验证。
+
+新的异构组合来源把四类租约的重估和终止、监管资本与税基、延迟且受限的回收款，以及母公司的有限出资和抵押融资连接起来。项目投资保留原 USD 币种及 2027–2029 日历，母公司按明确的假设汇率和 4 月至次年 3 月年度归集。原 [Ofgem ED2 模型](https://www.ofgem.gov.uk/guidance/ed2-price-control-financial-model) 是已提供的公开背景，新增政策明确为假设场景；原模型可公开下载的公式不作为新增难度。单纯恢复这些公开公式的调试方案已因可下载捷径淘汰。
+
+首份组合来源实际有 69 张表，四个独立记账实现分别核对 49,100、6,440、5,334、2,020 项，合计 62,894 项全部匹配真实 LibreOffice，后续两次重算稳定。它证明源表可用于造题，还没有证明题目难度。构建入口如下；配置引用已经审计的公开来源缓存和项目来源 manifest，缺失时拒绝运行，不自动以其他表替换。
+
+首道组合候选遮蔽 59,279 个公式。该冻结题已通过五项本地控制、仅公开输入的隔离独立恢复，以及真实 Harbor oracle=1、nop=0 且无执行异常；最强模型开发测试与完整任务质量诊断仍在运行，不计入最终交付量。
+
+```bash
+.venv312/bin/python -m sheets_factory.workbook.composite_finance.build \
+  --config config/derived_composite_finance_v1.json \
+  --output outputs/research/composite_source_new
+.venv312/bin/python scripts/prepare_composite_probe.py \
+  --source-manifest outputs/research/composite_source_new/seed_manifest.json \
+  --output outputs/runs/composite_probe_new
+```
+
+组合计算使用独立镜像 `sheetsfactory-lo:24.2-iterative-openpyxl315-v1`，其构建器与依赖 SHA 位于 `runtime/lo24.2-iterative-openpyxl315-v1/`。精确镜像已上传至 [私有 runtime Release](https://github.com/ZhaoyangHan04/sheetsFactory/releases/tag/runtime-lo-24.2-iterative-openpyxl315-v1)，新下载后的归档 SHA 和实际 Docker 加载身份均已验证，具体命令见该 runtime 目录说明。它保留已审计的 LibreOffice 与迭代实现，只更新工作簿解析库以读取公开模型的合法命名样式；旧题目和旧镜像不变。
 
 ## 打包交付
 
