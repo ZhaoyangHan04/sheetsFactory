@@ -52,9 +52,42 @@ def ledger_invariants_pass(checks: dict) -> bool:
         return False
 
 
-def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict:
+class _SheetProjection:
+    def __init__(self, sheet, title):
+        self._sheet, self.title = sheet, title
+
+    def __getattr__(self, name):
+        return getattr(self._sheet, name)
+
+    def __getitem__(self, key):
+        return self._sheet[key]
+
+
+class _WorkbookProjection:
+    """Audit an explicitly mapped project inside a larger workbook."""
+    def __init__(self, book, mapping):
+        if (not mapping or len(set(mapping.values())) != len(mapping)
+                or any(target not in book.sheetnames for target in mapping.values())):
+            book.close()
+            raise ValueError("Project audit requires an injective existing sheet mapping")
+        self._book, self._mapping = book, mapping
+
+    def __getitem__(self, name):
+        return _SheetProjection(self._book[self._mapping[name]], name)
+
+    def __iter__(self):
+        return (self[name] for name in self._mapping)
+
+    def close(self):
+        self._book.close()
+
+
+def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict, *, sheet_mapping=None) -> dict:
     book = openpyxl.load_workbook(path, data_only=True, keep_links=False)
     formulas = openpyxl.load_workbook(path, data_only=False, keep_links=False)
+    if sheet_mapping is not None:
+        book = _WorkbookProjection(book, sheet_mapping)
+        formulas = _WorkbookProjection(formulas, sheet_mapping)
     expected = {}
     kinds = {}
     p = dict(spec["parameters"])
