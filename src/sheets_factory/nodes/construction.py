@@ -46,6 +46,9 @@ def construction_contract(mode=None, config=None):
     max_root_impact_batches = settings.get('max_root_impact_batches', 256)
     if type(max_root_impact_batches) is not int or not 1 <= max_root_impact_batches <= 2048:
         raise ValueError('Invalid construction.max_root_impact_batches')
+    root_impact_concurrency = settings.get('root_impact_concurrency', 1)
+    if type(root_impact_concurrency) is not int or not 1 <= root_impact_concurrency <= 4:
+        raise ValueError('Invalid construction.root_impact_concurrency')
     for name, maximum in settings.get('max_edit_count', {}).items():
         if name not in modes or type(maximum) is not int or not modes[name]['edit_count']['min'] <= maximum <= 200000:
             raise ValueError('Invalid configured construction edit limit')
@@ -66,6 +69,7 @@ def construction_contract(mode=None, config=None):
     return {'version': 2, 'active_mode': mode, 'modes': modes,
         'root_impact_validation': root_impact_method,
         'max_root_impact_batches': max_root_impact_batches,
+        'root_impact_concurrency': root_impact_concurrency,
         'planning_preferences_only': preferences,
         'range_authoring': {'financial_modeling_only': True, 'field': 'mask_ranges',
             'item_fields': ['sheet', 'range', 'reason', 'business_rule'],
@@ -545,12 +549,18 @@ class ConstructNode(BaseNode):
             from ..checkers.batched_roots import prove_batched_root_impacts
             from uuid import uuid4
             limits = construction_contract(ctx.mode, ctx.config)
+            batch_options = {}
+            if limits['root_impact_concurrency'] > 1:
+                from ..checkers.parallel_batched_roots import prove_parallel_batched_root_impacts
+                prove_batched_root_impacts = prove_parallel_batched_root_impacts
+                batch_options['concurrency'] = limits['root_impact_concurrency']
             certificate = prove_batched_root_impacts(goal=goal, combined_input=input_file,
                 edits=edits, batches=ctx.data['plan'].get('root_impact_batches'), engine=ctx.engine,
                 directory=private / 'batched_root_impact_probes' / uuid4().hex,
                 max_batches=limits['max_root_impact_batches'],
                 max_dependency_cells=limits['dependency_requirements']['max_dependency_closure_cells'],
-                per_formula_reference_cells=limits['dependency_requirements']['per_formula_reference_cells'])
+                per_formula_reference_cells=limits['dependency_requirements']['per_formula_reference_cells'],
+                **batch_options)
             ctx.save('batched_roots_certificate.json', certificate)
             ctx.audit.emit('root_impact_validation.result', task_id=ctx.task_id, revision=ctx.revision,
                 method=root_method, state=certificate.get('state'), passed=certificate.get('passed'),
