@@ -87,7 +87,7 @@ def test_export_preserves_private_boundary_and_loads_real_harbor_schema(tmp_path
     assert config["artifacts"] == ["/app/output.xlsx"]
     assert config['metadata']['difficulty_status'] == (difficulty_status or 'deferred')
     assert (target / 'environment/recalculate').stat().st_mode & 0o111 == 0o111
-    assert 'RUN chmod 0755 /usr/local/bin/recalculate' in (target / 'environment/Dockerfile').read_text()
+    assert 'RUN --network=none chmod 0755 /usr/local/bin/recalculate' in (target / 'environment/Dockerfile').read_text()
     assert not (target / "environment/reference.xlsx").exists()
     assert (target / "solution/reference.xlsx").exists()
     assert (target / "tests/reference.xlsx").exists()

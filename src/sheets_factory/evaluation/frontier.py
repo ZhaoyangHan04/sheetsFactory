@@ -406,7 +406,14 @@ def assess_infrastructure_retry(attempt):
     failure = attempt.get('failure_kind')
     receipt = {'eligible': False, 'reason': 'unresolved_failure',
                'result_file': str(path), 'result_sha256': attempt['result_sha256']}
-    if failure in {'NonZeroAgentExitCodeError', 'AgentTimeoutError'}:
+    result = json.loads(path.read_text())
+    bootstrap_message = str((result.get('exception_info') or {}).get('exception_message', ''))
+    if (failure == 'RuntimeError' and not result.get('agent_execution')
+            and 'Docker compose command failed for environment ' in bootstrap_message
+            and 'failed to create endpoint' in bootstrap_message
+            and 'docker0 failed: Device does not exist' in bootstrap_message):
+        receipt.update(eligible=True, reason='docker_default_bridge_missing_before_agent')
+    elif failure in {'NonZeroAgentExitCodeError', 'AgentTimeoutError'}:
         log = path.parent / 'agent/codex.txt'
         if log.is_file():
             messages = []

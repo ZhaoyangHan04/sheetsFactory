@@ -374,6 +374,26 @@ def test_resume_has_a_bounded_infrastructure_retry_budget(tmp_path):
     assert len(list((directory / 'harbor_jobs').glob('*/*/result.json'))) == 4
 
 
+@pytest.mark.parametrize('started,bridge_missing,eligible', [
+    (False, True, True), (True, True, False), (False, False, False),
+])
+def test_only_proven_docker_bridge_failure_before_agent_can_resume(tmp_path, frozen, started, bridge_missing, eligible):
+    path = persist_result(tmp_path, frozen['tasks'][0])
+    result = json.loads(path.read_text())
+    result['agent_execution'] = {'started_at': '2026-10-30T00:00:00Z'} if started else None
+    result['exception_info'] = {'exception_type': 'RuntimeError', 'exception_message': (
+        'Docker compose command failed for environment task. failed to create endpoint abc: '
+        'adding interface veth123 to bridge docker0 failed: Device does not exist'
+        if bridge_missing else 'A solver encountered an ordinary RuntimeError')}
+    path.write_text(json.dumps(result))
+    attempt = {'status': 'infrastructure_error', 'failure_kind': 'RuntimeError',
+        'result_file': str(path), 'result_sha256': sha256(path.read_bytes()).hexdigest()}
+    proof = assess_infrastructure_retry(attempt)
+    assert proof['eligible'] is eligible
+    if eligible:
+        assert proof['reason'] == 'docker_default_bridge_missing_before_agent'
+
+
 @pytest.mark.parametrize('artifact', ['selection', 'task', 'result'])
 def test_resume_refuses_changed_evidence_before_calling_model(tmp_path, artifact):
     directory, before = make_infra_evaluation(tmp_path)
