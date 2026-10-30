@@ -323,6 +323,108 @@ class PlanNode(BaseNode):
         plan = plans.get(ctx.mode)
         if not plan:
             raise TaskRejected('Planner rejected source for this mode: ' + str(plans.get('source_assessment'))[:600])
+        if backend == 'composite_template' and ctx.mode == 'debugging':
+            from uuid import uuid4
+            from ..workbook.composite_finance import activity as activity_module
+            from ..workbook.composite_finance.debugging import suggest_root_impact_batches
+
+            settings = ctx.config.get('construction', {}).get('composite_activity', {})
+            if not isinstance(settings, dict) or set(settings) - {
+                    'enabled', 'max_authoring_attempts', 'execute_fallback'}:
+                raise ValueError('Invalid construction.composite_activity settings')
+            enabled = settings.get('enabled', True)
+            if type(enabled) is not bool:
+                raise ValueError('construction.composite_activity.enabled must be boolean')
+            limits = construction_contract(ctx.mode, ctx.config)['dependency_requirements']
+            bounds = {'max_dependency_cells': limits['max_dependency_closure_cells'],
+                      'per_formula_reference_cells': limits['per_formula_reference_cells']}
+            plan = deepcopy(plan)
+            if enabled:
+                maximum = settings.get('max_authoring_attempts', 3)
+                fallback = settings.get('execute_fallback', False)
+                if type(maximum) is not int or not 1 <= maximum <= 3 or type(fallback) is not bool:
+                    raise ValueError('Invalid cumulative composite activity attempt/fallback setting')
+                canonical = lambda value: hashlib.sha256(json.dumps(value, sort_keys=True,
+                    separators=(',', ':'), ensure_ascii=False, allow_nan=False).encode()).hexdigest()
+                image = ctx.engine.metadata()
+                binding = {'baseline_sha256': digest(ctx.data['baseline']),
+                    'proposal_sha256': canonical(plan),
+                    'implementation_sha256': digest(activity_module.__file__),
+                    'settings_sha256': canonical({'max_authoring_attempts': maximum,
+                        'execute_fallback': fallback, **bounds}), 'image_id': image.get('image_id')}
+                cache_name = 'composite_activity_' + canonical(binding)[:32] + '.json'
+                activity_cache = ctx.data['source_cache'] / cache_name
+                cache_hit = activity_cache.is_file()
+                if cache_hit:
+                    cached_activity = json.loads(activity_cache.read_text())
+                    if cached_activity.get('binding') != binding:
+                        raise TaskRejected('Q06: composite activity cache binding differs')
+                    for artifact in cached_activity.get('files', {}).values():
+                        if (not Path(artifact['path']).is_file()
+                                or digest(artifact['path']) != artifact['sha256']):
+                            raise TaskRejected('Q06: composite activity cache artifact changed')
+                    files = cached_activity.get('files', {})
+                    if not {'receipt', 'activity_plan', 'grouped_plan', 'batch_planning'}.issubset(files):
+                        raise TaskRejected('Q06: composite activity cache is incomplete')
+                    receipt = json.loads(Path(files['receipt']['path']).read_text())
+                    activity_plan = json.loads(Path(files['activity_plan']['path']).read_text())
+                    if (receipt.get('before_plan_sha256') != binding['proposal_sha256']
+                            or receipt.get('baseline_sha256') != binding['baseline_sha256']
+                            or receipt.get('implementation_sha256') != binding['implementation_sha256']
+                            or receipt.get('after_plan_sha256') != canonical(activity_plan)
+                            or receipt.get('engine', {}).get('image_id') != binding['image_id']):
+                        raise TaskRejected('Q06: composite activity receipt does not bind this proposal')
+                    for call in receipt.get('engine_calls', []):
+                        for name in ('raw', 'output'):
+                            if (not call.get(name + '_path') or
+                                    not Path(call[name + '_path']).is_file() or
+                                    digest(call[name + '_path']) != call[name + '_sha256']):
+                                raise TaskRejected('Q06: composite activity executed workbook changed')
+                    plan = json.loads(Path(files['grouped_plan']['path']).read_text())
+                    if plan.get('edits') != activity_plan.get('edits'):
+                        raise TaskRejected('Q06: grouped activity edits differ from screened edits')
+                else:
+                    directory = ctx.revision_dir / 'private' / 'composite_activity' / uuid4().hex
+                    result = activity_module.screen_composite_activity(Path(ctx.data['baseline']), plan,
+                        engine=ctx.engine, directory=directory,
+                        max_authoring_attempts=maximum, execute_fallback=fallback, **bounds)
+                    receipt, activity_plan = result['receipt'], result['plan']
+                    ctx.save('composite_activity_result.json', receipt)
+                    if receipt.get('passed') is not True or receipt.get('blocking') is not False:
+                        raise TaskRejected('Q06: composite joint activity rejected: ' +
+                                           str(receipt.get('reason', receipt.get('state'))))
+                    plan = deepcopy(activity_plan)
+                    groups = suggest_root_impact_batches(Path(ctx.data['baseline']), plan['edits'], **bounds)
+                    plan['root_impact_batches'] = groups['root_impact_batches']
+                    plan['root_impact_batch_planning'] = groups
+                    grouped = directory / 'grouped_plan.json'
+                    batch_file = directory / 'root_batch_planning.json'
+                    grouped.write_text(json.dumps(plan, ensure_ascii=False, indent=2))
+                    batch_file.write_text(json.dumps(groups, ensure_ascii=False, indent=2))
+                    paths = {'receipt': Path(result['receipt_path']),
+                             'activity_plan': directory / 'screened_plan.json',
+                             'grouped_plan': grouped, 'batch_planning': batch_file}
+                    cached_activity = {'binding': binding, 'files': {
+                        key: {'path': str(value.resolve()), 'sha256': digest(value)}
+                        for key, value in paths.items()}}
+                    activity_cache.write_text(json.dumps(cached_activity, ensure_ascii=False, indent=2))
+                if receipt.get('passed') is not True or receipt.get('blocking') is not False:
+                    raise TaskRejected('Q06: cached composite activity evidence is not passing')
+                ctx.audit.emit('planning.composite_activity', task_id=ctx.task_id,
+                    mode=ctx.mode, cache_hit=cache_hit,
+                    baseline_sha256=binding['baseline_sha256'],
+                    proposal_sha256=binding['proposal_sha256'],
+                    retained_roots=len(plan['edits']),
+                    authoring_attempts_used=receipt.get('authoring_attempts_used'),
+                    actual_LO_calls_this_invocation=0 if cache_hit else receipt.get('actual_LO_execution_count'),
+                    actual_LO_calls_in_evidence=receipt.get('actual_LO_execution_count'), llm_calls=0)
+            else:
+                groups = suggest_root_impact_batches(Path(ctx.data['baseline']), plan['edits'], **bounds)
+                plan['root_impact_batches'] = groups['root_impact_batches']
+                plan['root_impact_batch_planning'] = groups
+                ctx.audit.emit('planning.composite_activity', task_id=ctx.task_id,
+                    mode=ctx.mode, enabled=False, screening_certified=False, llm_calls=0,
+                    required_next_step='Actual Construct individual/full-context marginal proof remains mandatory')
         # The revision controller expands range proposals before claiming their
         # exact cells; duplicate checks there use the complete compiled set.
         if plan.get('mask_ranges'):
