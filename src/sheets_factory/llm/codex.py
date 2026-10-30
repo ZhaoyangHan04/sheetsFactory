@@ -69,6 +69,11 @@ class CodexCLI:
         if slots < 1:
             raise ValueError("max_parallel_calls must be positive")
         self._slots = threading.BoundedSemaphore(slots)
+        self.prompt_stdin_max_chars = self.config.get("prompt_stdin_max_chars", 262144)
+        if (isinstance(self.prompt_stdin_max_chars, bool)
+                or not isinstance(self.prompt_stdin_max_chars, int)
+                or not 1 <= self.prompt_stdin_max_chars <= 524288):
+            raise ValueError("prompt_stdin_max_chars must be an integer between 1 and 524288")
 
     def _role_settings(self, role: str, timeout: int | None = None) -> dict:
         """Resolve call-local settings without changing defaults shared by threads."""
@@ -199,6 +204,7 @@ class CodexCLI:
         threads: list[threading.Thread] = []
         schema_validator = None
         staged_schema = None
+        staged_request = None
 
         def clean(value):
             if isinstance(value, str):
@@ -222,6 +228,45 @@ class CodexCLI:
                 raise ValueError("Isolated agents require a dedicated public workspace")
             work.mkdir(parents=True, exist_ok=True)
             request.update({"endpoint": endpoint, "workspace": str(work)})
+            sanitized_prompt = clean(prompt)
+            prompt_bytes = sanitized_prompt.encode("utf-8")
+            inline_bytes = prompt.encode("utf-8")
+            transport = {"kind": "stdin", "sha256": sha256(inline_bytes).hexdigest(),
+                         "chars": len(prompt), "bytes": len(inline_bytes),
+                         "audit_sha256": sha256(prompt_bytes).hexdigest(),
+                         "threshold_chars": self.prompt_stdin_max_chars}
+            stdin_prompt = prompt
+            # Keep the complete, already redacted request in the private audit.
+            # A public caller stages exactly this request and no extra material.
+            (directory / "prompt.txt").write_text(sanitized_prompt, encoding="utf-8")
+            request["prompt_transport"] = transport
+            # Also stage an oversized original whose credential redaction made
+            # the audited text shorter; never send that oversized raw stdin.
+            if max(len(sanitized_prompt), len(prompt)) > self.prompt_stdin_max_chars:
+                candidate = work / (".factory_request_" + call_id + ".txt")
+                # An exclusive create prevents overwriting any other caller's
+                # request. Only files successfully created here are cleaned up.
+                descriptor = os.open(candidate, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                staged_request = candidate
+                with os.fdopen(descriptor, "wb") as stream:
+                    stream.write(prompt_bytes)
+                visible_path = str(Path("/workspace") / candidate.name) if isolated else candidate.name
+                transport.update(kind="workspace_file", path=visible_path,
+                                 sha256=sha256(prompt_bytes).hexdigest(),
+                                 chars=len(sanitized_prompt), bytes=len(prompt_bytes))
+                stdin_prompt = (
+                    "The complete request is in this UTF-8 file: " + visible_path + "\n"
+                    "Read the file before you perform the task.\n"
+                    "Follow the instructions in the file. The file also specifies the required output.\n"
+                    "This message identifies the file.\n"
+                    "SHA-256: " + transport["sha256"] + "\n"
+                    "Unicode characters: " + str(transport["chars"]) + "\n"
+                    "UTF-8 bytes: " + str(transport["bytes"]) + "\n"
+                    "Use Python to inspect large structured content. Read relevant sections in small chunks.\n"
+                    "Do not assume a truncated preview contains the complete request.\n"
+                    "Python example:\nfrom pathlib import Path\n"
+                    "request = Path(" + repr(visible_path) + ").read_text(encoding='utf-8')\n"
+                )
             cli_schema = None
             if output_schema is not None:
                 from jsonschema import Draft202012Validator
@@ -266,7 +311,6 @@ class CodexCLI:
                                output_schema_sha256=sha256(serialized.encode()).hexdigest())
                 failure_kind = None
             (directory / "request.json").write_text(json.dumps(request, indent=2))
-            (directory / "prompt.txt").write_text(clean(prompt))
             command = self._build_command(work, endpoint, isolated, container_name,
                                           model=settings["model"], reasoning=settings["reasoning_effort"],
                                           **({"output_schema": cli_schema} if cli_schema is not None else {}))
@@ -305,7 +349,7 @@ class CodexCLI:
             for thread in threads:
                 thread.start()
             try:
-                process.stdin.write(prompt)
+                process.stdin.write(stdin_prompt)
                 process.stdin.close()
                 returncode = process.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
@@ -357,6 +401,12 @@ class CodexCLI:
             error = clean(str(exc))
             failure_kind = failure_kind or "execution_error"
         finally:
+            if staged_request is not None:
+                try:
+                    staged_request.unlink(missing_ok=True)
+                except OSError as exc:
+                    error = error or clean("Unable to clean staged request: " + str(exc))
+                    failure_kind = failure_kind or "prompt_transport_cleanup"
             if staged_schema is not None:
                 staged_schema.unlink(missing_ok=True)
             if isolated and process is not None:
@@ -388,6 +438,7 @@ class CodexCLI:
                       "output_tokens": usage.get("output_tokens") if usage else None,
                       "cached_input_tokens": usage.get("cached_input_tokens") if usage else None,
                       "record_path": str(directory), "failure_kind": failure_kind, "error": error}
+            (directory / "request.json").write_text(json.dumps(clean(request), ensure_ascii=False, indent=2))
             (directory / "final_reply.txt").write_text(clean(reply))
             (directory / "result.json").write_text(json.dumps(clean(record), ensure_ascii=False, indent=2))
             self.audit.record("calls", clean(record))
@@ -405,4 +456,5 @@ class CodexCLI:
         if error:
             raise CodexError(error, call_id, str(directory))
         return {"reply": reply, "events": events, "usage": usage, "parsed": parsed,
-                "call_id": call_id, "duration_ms": elapsed, "record_path": str(directory)}
+                "call_id": call_id, "duration_ms": elapsed, "record_path": str(directory),
+                "prompt_transport": request.get("prompt_transport")}
