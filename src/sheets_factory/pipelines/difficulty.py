@@ -25,12 +25,13 @@ import yaml
 from openpyxl import load_workbook
 
 from ..core.audit import AuditStore, utcnow
+from ..core.node import CooperativeCancelled
 from ..dashboard import DashboardServer
 from ..dashboard.read_only import ReadOnlyAuditView, HistoricalDashboardServer
 from ..llm import CodexCLI
 from ..resume import ProducerLease
 from ..workbook import LibreOfficeEngine
-from .factory import FactoryPipeline
+from .factory import FactoryPipeline, cooperative_sigint
 
 
 MODES = ('financial_modeling', 'debugging')
@@ -170,8 +171,9 @@ def feedback_from_evaluation(quality_dir, release_manifest, evaluation, *, secre
 class DifficultyPipeline:
     """One-click orchestration. Override stage methods only in offline tests."""
 
-    def __init__(self, config, seed_manifest, output_dir, *, project_root=None, headless=False):
+    def __init__(self, config, seed_manifest, output_dir, *, project_root=None, headless=False, stop_event=None):
         self.root = Path(project_root or Path(__file__).resolve().parents[3]).resolve()
+        self.stop_event = stop_event if stop_event is not None else threading.Event()
         self.config = deepcopy(config)
         self.settings = self.config.get('difficulty', {})
         self.per_mode = int(self.settings.get('per_mode', 10))
@@ -220,6 +222,13 @@ class DifficultyPipeline:
         self.started = time.monotonic()
         self.secrets = []
         self.seen_modules = {}
+
+    def request_stop(self, reason='requested'):
+        self.stop_event.set()
+
+    def _checkpoint(self):
+        if self.stop_event.is_set():
+            raise CooperativeCancelled('Explicit cooperative stop requested')
 
     def _save(self):
         with self.lock:
@@ -325,6 +334,7 @@ class DifficultyPipeline:
                 self.audit.emit('difficulty.browser_unavailable', dashboard_url=url)
 
     def _budget(self):
+        self._checkpoint()
         self._sync_children()
         metrics = self.audit.snapshot()['metrics']
         limit = self.settings.get('max_total_tokens')
@@ -347,10 +357,15 @@ class DifficultyPipeline:
         status = 'completed'
         try:
             yield
+        except (CooperativeCancelled, KeyboardInterrupt):
+            status = 'cancelled'
+            raise
         except BaseException:
             status = 'failed'
             raise
         finally:
+            if status == 'completed' and self.stop_event.is_set():
+                status = 'cancelled'
             self._sync_children()
             self.audit.update_record('nodes', node, {'status': status,
                 'duration_ms': round((time.monotonic() - started) * 1000),
@@ -420,6 +435,7 @@ class DifficultyPipeline:
         return path
 
     def _run_quality(self, config, directory, number):
+        self._checkpoint()
         directory.mkdir(parents=True)
         audit = AuditStore(directory, {'id': directory.name + '-' + str(number), 'status': 'initializing',
             'target_count': 2 * self.per_mode, 'financial_target': self.per_mode, 'debugging_target': self.per_mode,
@@ -437,11 +453,16 @@ class DifficultyPipeline:
             llm._credentials()
             engine = LibreOfficeEngine(self.root, config['engine']['image'], config['engine']['timeout_seconds'])
             audit.emit('run.preflight', engine=engine.metadata(), model=llm.model, reasoning_effort=llm.reasoning)
-            completed = FactoryPipeline(config, audit, llm, engine).run()
-            return {'status': 'completed' if completed else 'shortfall', 'directory': str(directory),
+            completed = FactoryPipeline(config, audit, llm, engine, stop_event=self.stop_event).run()
+            cancelled = self.stop_event.is_set() or audit.run.get('status') == 'cancelled'
+            return {'status': 'cancelled' if cancelled else ('completed' if completed else 'shortfall'), 'directory': str(directory),
                     'snapshot': audit.snapshot()}
-        except BaseException as exc:
-            audit.update_run(status='cancelled' if isinstance(exc, KeyboardInterrupt) else 'infrastructure_failed',
+        except (CooperativeCancelled, KeyboardInterrupt) as exc:
+            self.stop_event.set()
+            audit.update_run(status='cancelled', error_type=type(exc).__name__)
+            raise
+        except Exception as exc:
+            audit.update_run(status='infrastructure_failed',
                              error_type=type(exc).__name__)
             raise
         finally:
@@ -474,9 +495,13 @@ class DifficultyPipeline:
             backend_config=self._gate_backend(), port=0)
 
     def _evaluate_with_recovery(self, manifest, directory, phase, number, priors):
-        result = self._evaluate(manifest, directory, phase, number, priors)
+        self._checkpoint()
+        with cooperative_sigint(self.stop_event, delegate=True):
+            result = self._evaluate(manifest, directory, phase, number, priors)
         if result.get('failure_kind') == 'evaluation_interrupted':
             raise KeyboardInterrupt
+        if self.stop_event.is_set():
+            return result  # Caller persists completed scores before the stop boundary.
         maximum = int(self.settings.get('max_infrastructure_retries', 2))
         for recovery in range(maximum):
             if result['status'] != 'infrastructure_failed':
@@ -486,7 +511,9 @@ class DifficultyPipeline:
                 recovery=recovery + 1,
                 message='仅恢复已证基础设施故障；保留原选择及所有有效首次结果，最多两轮。')
             try:
-                result = self._resume_infrastructure(directory)
+                self._checkpoint()
+                with cooperative_sigint(self.stop_event, delegate=True):
+                    result = self._resume_infrastructure(directory)
             except ValueError as exc:
                 # The frontier recovery validator rejects ambiguous timeouts,
                 # altered receipts and exhausted/non-eligible retries. It must
@@ -497,6 +524,8 @@ class DifficultyPipeline:
                 break
             if result.get('failure_kind') == 'evaluation_interrupted':
                 raise KeyboardInterrupt
+            if self.stop_event.is_set():
+                break
         return result
 
     def _publish(self, release_dir, confirmation_dir):
@@ -525,6 +554,10 @@ class DifficultyPipeline:
                 'trace_policy': 'Read the hash-bound feedback file for task-specific trajectory excerpts; do not infer unsaved causes.'}
 
     def run(self):
+        with cooperative_sigint(self.stop_event):
+            return self._run()
+
+    def _run(self):
         lease = ProducerLease(self.directory).acquire()
         feedback, priors, seen_sources, confirmed_checksums = deepcopy(self.config.get('generation_feedback', {})), [], {}, set()
         confirmed_semantics = set()
@@ -552,6 +585,8 @@ class DifficultyPipeline:
                 self._save()
                 with self._stage('quality_generation', number):
                     outcome = self._run_quality(config, quality, number)
+                entry['quality_outcome_status'] = outcome['status']
+                self._checkpoint()
                 for item in outcome.get('snapshot', {}).get('tasks', []):
                     if item.get('source_id'):
                         seen_sources[item['source_id']] = seen_sources.get(item['source_id'], 0) + 1
@@ -590,6 +625,7 @@ class DifficultyPipeline:
                 with self._stage('development_evaluation', number):
                     result = self._evaluate_with_recovery(packaged['manifest'], development, 'development', number, priors)
                 entry['development'] = {'directory': str(development), 'status': result['status'], 'score': result['score']}
+                self._checkpoint()
                 priors.append(development / 'selection_manifest.json')
                 if result['status'] != 'completed' or result['score'].get('overall_pass_at_1') is None:
                     entry['status'] = 'infrastructure_failed'
@@ -605,6 +641,7 @@ class DifficultyPipeline:
                 with self._stage('fresh_confirmation', number):
                     result = self._evaluate_with_recovery(packaged['manifest'], confirmation, 'confirmation', number, priors)
                 entry['confirmation'] = {'directory': str(confirmation), 'status': result['status'], 'score': result['score']}
+                self._checkpoint()
                 priors.append(confirmation / 'selection_manifest.json')
                 confirmed_checksums.update(checksums)
                 confirmed_semantics.update(versions['semantic'])
@@ -625,11 +662,15 @@ class DifficultyPipeline:
                 for item in publication['manifest']['tasks']:
                     self.audit.task(item['task_id'], mode=item['mode'], source_id=item['source_id'],
                                     revision=item['revision'], status='qualified')
+                self._checkpoint()
                 status, reason = 'completed', 'Fresh confirmation passed Overall Pass@1 <= 0.2; real dataset published'
                 break
         except _BudgetExhausted as exc:
             status, reason = 'budget_exhausted', str(exc)
+        except CooperativeCancelled:
+            status, reason = 'cancelled', 'Explicit cooperative stop; active calls drained, existing usage and results retained'
         except KeyboardInterrupt:
+            self.stop_event.set()
             status, reason = 'cancelled', 'Interrupted; all existing child evidence retained and no attempt replayed'
         except Exception as exc:
             phase = self.audit.run.get('current_phase')

@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
+from contextlib import contextmanager
 import fcntl
 import hashlib
 import json
 from pathlib import Path
 import re
 import shutil
+import signal
 import threading
 import time
 
-from ..core.node import TaskContext, TaskRejected
+from ..core.node import TaskContext, TaskRejected, CooperativeCancelled
 from ..core.pipeline import BasePipeline
 from ..checkers import DiagnosisRunner
 from ..checkers.router import route_issues
@@ -18,6 +20,76 @@ from ..checkers.unsafe_regions import evaluate_native_risk_guard
 from ..evaluation.harbor import run_controls
 from ..resume import candidate_task_id, restore_target_claims, validate_scheduler
 from ..reporting import read_run
+
+
+@contextmanager
+def cooperative_sigint(stop_event, *, delegate=False):
+    """Set a per-run event immediately; restore nested/main-thread handlers safely.
+
+Existing frontier execution keeps its original SIGINT handler via delegate=True.
+Signal handlers never touch audit storage or interrupt an in-flight producer call.
+"""
+    if threading.current_thread() is not threading.main_thread():
+        yield
+        return
+    previous = signal.getsignal(signal.SIGINT)
+    if not delegate and getattr(previous, '_factory_stop_event', None) is stop_event:
+        yield
+        return
+    original = getattr(previous, '_factory_original_handler', previous)
+    if delegate:
+        # asyncio.run installs its own cooperative SIGINT handler only when
+        # the exact default_int_handler object is present. A wrapper that merely
+        # calls that handler would change existing frontier interruption behavior.
+        signal.signal(signal.SIGINT, original)
+        try:
+            yield
+        except KeyboardInterrupt:
+            stop_event.set()
+            raise
+        finally:
+            if signal.getsignal(signal.SIGINT) is original:
+                signal.signal(signal.SIGINT, previous)
+        return
+    def handler(signum, frame):
+        stop_event.set()
+        parent_event = getattr(previous, '_factory_stop_event', None)
+        if parent_event is not None:
+            parent_event.set()
+    handler._factory_stop_event = stop_event
+    handler._factory_original_handler = original
+    signal.signal(signal.SIGINT, handler)
+    try:
+        yield
+    finally:
+        if signal.getsignal(signal.SIGINT) is handler:
+            signal.signal(signal.SIGINT, previous)
+
+
+class _CooperativeLLM:
+    """Cancel queued calls before backend admission, while draining active calls."""
+    def __init__(self, backend, checkpoint, slots):
+        self._backend, self._checkpoint = backend, checkpoint
+        self._slots = threading.BoundedSemaphore(slots)
+
+    def __getattr__(self, name):
+        return getattr(self._backend, name)
+
+    def _call(self, method, *args, **kwargs):
+        self._checkpoint()
+        while not self._slots.acquire(timeout=.1):
+            self._checkpoint()
+        try:
+            self._checkpoint()
+            return getattr(self._backend, method)(*args, **kwargs)
+        finally:
+            self._slots.release()
+
+    def complete(self, *args, **kwargs):
+        return self._call('complete', *args, **kwargs)
+
+    def attempt(self, *args, **kwargs):
+        return self._call('attempt', *args, **kwargs)
 
 
 def diagnostic_action(report):
@@ -49,9 +121,14 @@ class _ExternalRepairContext(TaskContext):
 class FactoryPipeline(BasePipeline):
     """Template-driven quota controller with distinct bounded repair budgets."""
 
-    def __init__(self, config, audit, llm, engine):
+    def __init__(self, config, audit, llm, engine, *, stop_event=None):
         super().__init__(config)
-        self.audit, self.llm, self.engine = audit, llm, engine
+        self.audit, self.engine = audit, engine
+        self.stop_event = stop_event if stop_event is not None else threading.Event()
+        self._cancel_announced = False
+        backend_settings = getattr(llm, 'config', {}) or {}
+        slots = int(backend_settings.get('max_parallel_calls', config.get('agents', {}).get('max_parallel_calls', 4)))
+        self.llm = _CooperativeLLM(llm, self._checkpoint, slots) if llm is not None else None
         self.targets = config['run']['targets']
         self.scheduler = validate_scheduler(config['run'].get('scheduler', 'source_batches'))
         self.lock = threading.RLock()
@@ -61,6 +138,48 @@ class FactoryPipeline(BasePipeline):
         self.target_claims = (restore_target_claims(config['run_dir'], read_run(config['run_dir']))
                               if config['run'].get('continuation_id') else {})
         self.route_catalog = DiagnosisRunner(config['project_root']).catalog
+
+    def request_stop(self, reason='requested'):
+        self.stop_event.set()
+
+    def _checkpoint(self):
+        if self.stop_event.is_set():
+            with self.lock:
+                if not self._cancel_announced:
+                    self._cancel_announced = True
+                    self.audit.update_run(status='cancelling', cancellation_requested=True)
+                    self.audit.emit('run.cancellation_requested', reason='explicit_stop',
+                                    policy='Drain active calls; start no new source, mode, node or model call')
+            raise CooperativeCancelled('Explicit cooperative stop requested')
+
+    def run_phase(self, context, phase):
+        self._checkpoint()
+        node_ids = self.templates[context.mode]['phases'][phase]
+        context.audit.emit('pipeline.phase.started', task_id=context.task_id, revision=context.revision,
+                           phase=phase, template=self.templates[context.mode]['id'], node_ids=node_ids)
+        for node_id in node_ids:
+            self._checkpoint()
+            self.load_node(node_id).run(context)
+            self._checkpoint()
+
+    def _cancel_context(self, context):
+        if context is None:
+            return
+        if 'diagnostic_batch_cache' in context.data:
+            context.save('diagnostic_batch_cache.json', context.data['diagnostic_batch_cache'])
+        state = next((t for t in self.audit.snapshot()['tasks'] if t['id'] == context.task_id), {})
+        if state.get('status') not in {'ready', 'qualified', 'rejected'}:
+            self.audit.task(context.task_id, status='cancelled', node='cancelled',
+                            revision=context.revision, cancellation_reason='explicit_stop')
+        self.audit.emit('task.cancelled', task_id=context.task_id, mode=context.mode,
+                        revision=context.revision, retained_status=state.get('status'))
+
+    def _wait_workers(self, futures):
+        try:
+            return wait(futures, timeout=.25, return_when=FIRST_COMPLETED)
+        except KeyboardInterrupt:
+            self.request_stop('keyboard_interrupt')
+            raise CooperativeCancelled('Explicit interruption while waiting for workers')
 
     def counts(self):
         tasks = self.audit.snapshot()['tasks']
@@ -148,6 +267,8 @@ class FactoryPipeline(BasePipeline):
 
     def process_task(self, seed, mode):
         task_id = candidate_task_id(seed, mode)
+        if self.stop_event.is_set():
+            return {'task_id': task_id, 'status': 'cancelled'}
         with self.lock:
             existing = task_id in self.inflight_tasks or any(
                 task['id'] == task_id for task in self.audit.snapshot()['tasks'])
@@ -160,11 +281,21 @@ class FactoryPipeline(BasePipeline):
             self.audit.emit('scheduler.quota_deferred', task_id=task_id, mode=mode,
                             source_id=seed['sha256'], variant=seed.get('variant', 0))
             return {'task_id': task_id, 'status': 'quota_deferred'}
+        context = None
         try:
+            self._checkpoint()
             context = self._context(seed, mode)
             self.run_phase(context, 'preparation')
+            self._checkpoint()
             self._execute_context(context)
+            self._checkpoint()
+        except CooperativeCancelled:
+            self._cancel_context(context)
+            return {'task_id': task_id, 'status': 'cancelled'}
         except Exception as exc:
+            if self.stop_event.is_set():
+                self._cancel_context(context)
+                return {'task_id': task_id, 'status': 'cancelled'}
             self.audit.task(task_id, mode=mode, source_id=seed['sha256'], source=Path(seed['local_path']).name,
                             variant=seed.get('variant', 0), status='rejected', error=str(exc)[:2400], node='rejected')
             self.audit.emit('task.rejected', task_id=task_id, mode=mode, reason=str(exc)[:2400])
@@ -174,6 +305,7 @@ class FactoryPipeline(BasePipeline):
         return {'task_id': task_id, 'status': 'processed'}
 
     def _apply_repair(self, context, routes):
+        self._checkpoint()
         if context.revision >= int(self.config['run']['max_steps']):
             raise TaskRejected('EXHAUSTED: content repair budget exhausted')
         context.data['repair_routes'] = routes
@@ -195,6 +327,7 @@ class FactoryPipeline(BasePipeline):
     def _execute_context(self, context, phase='revision', evidence_rounds=0, infrastructure_retries=0):
         max_steps = int(self.config['run']['max_steps'])
         while True:
+            self._checkpoint()
             context.data.pop('construction_error', None)
             try:
                 if phase == 'revision':
@@ -202,9 +335,11 @@ class FactoryPipeline(BasePipeline):
                     context.data.pop('diagnosis', None)
                 self.run_phase(context, phase)
             except TaskRejected as exc:
+                self._checkpoint()
                 context.data['construction_error'] = str(exc)
                 context.data['diagnosis'] = self._construction_report(context, exc)
             report = context.data.get('diagnosis')
+            self._checkpoint()
             if report is None:
                 raise TaskRejected('UNRESOLVED: pipeline phase did not produce a diagnosis')
             action, routes = diagnostic_action(report)
@@ -246,6 +381,8 @@ class FactoryPipeline(BasePipeline):
     def process_external_repair(self, specification):
         """Reopen only an explicitly authorized task; consume its next revision."""
         task_id, mode = specification['task_id'], specification['mode']
+        if self.stop_event.is_set():
+            return
         previous = specification['previous_task']
         revision = specification['revision']
         state = next(task for task in self.audit.snapshot()['tasks'] if task['id'] == task_id)
@@ -263,6 +400,7 @@ class FactoryPipeline(BasePipeline):
             finance_evidence=finance_evidence,
             source_business_issues=finance_evidence.get('source_business_issues', []))
         try:
+            self._checkpoint()
             if hashlib.sha256(context.source.read_bytes()).hexdigest() != previous['source_id']:
                 raise TaskRejected('Immutable repair source changed after authorization')
             for artifact in specification['artifacts'].values():
@@ -282,7 +420,9 @@ class FactoryPipeline(BasePipeline):
             # Rebuild only source facts. Planning again would silently replace
             # the closed task and discard the externally numbered issue.
             for node in ('normalize', 'profile'):
+                self._checkpoint()
                 self.load_node(node).run(context)
+                self._checkpoint()
             if context.data['source_id'] != previous['source_id']:
                 raise TaskRejected('Restored source identity does not match the original task')
             cached_plan = Path(context.data.get('source_cache', context.data['baseline'].parent)) / f'task_plans_v{context.data["variant"]}.json'
@@ -304,7 +444,12 @@ class FactoryPipeline(BasePipeline):
                 context.directory, context.config, context.audit, context.llm, context.engine,
                 revision=context.revision, data=context.data)
             self._execute_context(ordinary)
+        except CooperativeCancelled:
+            self._cancel_context(context)
         except Exception as exc:
+            if self.stop_event.is_set():
+                self._cancel_context(context)
+                return
             self.audit.task(task_id, status='rejected', node='external_repair_failed', error=str(exc)[:2400])
             self.audit.emit('task.rejected', task_id=task_id, mode=mode, reason=str(exc)[:2400],
                             external_repair=True)
@@ -315,12 +460,16 @@ class FactoryPipeline(BasePipeline):
     def process_source(self, seed):
         result = {'attempted_task_ids': [], 'quota_deferred_modes': [], 'skipped_existing': []}
         for mode in self.targets:
+            if self.stop_event.is_set():
+                break
             if mode in seed.get('modes', list(self.targets)):
                 outcome = self.process_task(seed, mode)
                 if outcome['status'] == 'processed':
                     result['attempted_task_ids'].append(outcome['task_id'])
                 elif outcome['status'] == 'quota_deferred':
                     result['quota_deferred_modes'].append(mode)
+                elif outcome['status'] == 'cancelled':
+                    break
                 else:
                     result['skipped_existing'].append(outcome['task_id'])
         return result
@@ -448,22 +597,28 @@ class FactoryPipeline(BasePipeline):
         return candidates
 
     def _construct_batch(self, seeds):
+        self._checkpoint()
         workers = int(self.config['run']['max_parallel_sources'])
         cursor = 0
         with ThreadPoolExecutor(max_workers=workers) as pool:
             pending = set()
             while cursor < len(seeds) and len(pending) < workers and not self.goal_ready():
+                self._checkpoint()
                 pending.add(pool.submit(self.process_source, seeds[cursor])); cursor += 1
             while pending:
-                done, pending = wait(pending, return_when=FIRST_COMPLETED)
+                self._checkpoint()
+                done, pending = self._wait_workers(pending)
                 for future in done:
                     future.result()
                 while cursor < len(seeds) and len(pending) < workers and not self.goal_ready():
+                    self._checkpoint()
                     pending.add(pool.submit(self.process_source, seeds[cursor])); cursor += 1
         return cursor
 
     def _eligible_source_jobs(self, seeds, states=None, busy_sources=None):
         """Derive intentions from existing IDs; a quota skip consumes no variant."""
+        if self.stop_event.is_set():
+            return []
         with self.lock:
             states = self.audit.snapshot()['tasks'] if states is None else states
             used = self._quota_used_locked(states)
@@ -493,7 +648,9 @@ class FactoryPipeline(BasePipeline):
         try:
             with ThreadPoolExecutor(max_workers=workers) as pool:
                 while True:
+                    self._checkpoint()
                     while len(pending) < workers and not self.goal_ready():
+                        self._checkpoint()
                         candidates = self._eligible_source_jobs(seeds)
                         if not candidates:
                             break
@@ -516,12 +673,14 @@ class FactoryPipeline(BasePipeline):
                     if not pending:
                         self.audit.emit('scheduler.drain_started', reason='no_pending_source_jobs', pending=0)
                         break
-                    done, _ = wait(tuple(pending), return_when=FIRST_COMPLETED)
+                    done, _ = self._wait_workers(tuple(pending))
                     for future in done:
                         seed, started = pending.pop(future)
                         try:
                             result = future.result()
-                        except BaseException as exc:
+                        except CooperativeCancelled:
+                            raise
+                        except Exception as exc:
                             self.audit.emit('scheduler.source_failed', source_id=seed['sha256'],
                                             variant=seed.get('variant', 0), error=str(exc)[:2400])
                             raise
@@ -539,13 +698,22 @@ class FactoryPipeline(BasePipeline):
 
     def _validate_exports(self):
         """All main/sidecar validators share one retained file-lock inode."""
+        self._checkpoint()
         path = Path(self.config['run_dir']) / 'harbor_validation.lock'
         with path.open('a+') as stream:
-            fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
+            while True:
+                self._checkpoint()
+                try:
+                    fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    self.stop_event.wait(.1)
             try:
-                return self._validate_exports_locked()
+                result = self._validate_exports_locked()
             finally:
                 fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+            self._checkpoint()
+            return result
 
     def _preharbor_native_risks(self, task, binding):
         """Re-read current facts against this revision's full D, never ancestry.
@@ -641,6 +809,7 @@ class FactoryPipeline(BasePipeline):
             receipt_path=result['receipt_path'], quarantine_path=str(quarantine))
 
     def _validate_exports_locked(self):
+        self._checkpoint()
         from uuid import uuid4
         import time
         from ..core.audit import utcnow
@@ -658,6 +827,7 @@ class FactoryPipeline(BasePipeline):
         cumulative.setdefault('summary_paths', [])
         selected, invalid = [], []
         for task in self.audit.snapshot()['tasks']:
+            self._checkpoint()
             if task.get('status') not in {'ready', 'qualified'}:
                 continue
             try:
@@ -724,8 +894,10 @@ class FactoryPipeline(BasePipeline):
 
         try:
             for task, error in invalid:
+                self._checkpoint()
                 reject(task, 'Current Harbor output is missing or invalid: ' + error)
             for task, binding in selected:
+                self._checkpoint()
                 name = binding['task_name']
                 cumulative['per_task'].pop(name, None)
                 cumulative['export_bindings'].pop(name, None)
@@ -744,6 +916,7 @@ class FactoryPipeline(BasePipeline):
             (batch_dir / 'batch_manifest.json').write_text(json.dumps(batch, indent=2, default=str))
             controls = {'per_task': {}, 'complete': False}
             if staged:
+                self._checkpoint()
                 controls = run_controls(staging, jobs, concurrency=self.config['harbor']['concurrency'],
                     event_callback=lambda event: self.audit.emit(event.get('type', 'harbor.event'),
                         **{key: value for key, value in event.items() if key != 'type'}))
@@ -776,6 +949,9 @@ class FactoryPipeline(BasePipeline):
                 else:
                     reject(task, 'Actual Harbor oracle/nop validation failed or lacks current-version evidence', proof)
             batch['complete'] = bool(staged) and not batch['errors'] and controls.get('complete') is True
+        except CooperativeCancelled:
+            batch['cancelled'] = True
+            raise
         except Exception as exc:
             batch['errors'].append({'reason': str(exc)})
             for task, _ in staged:
@@ -784,7 +960,7 @@ class FactoryPipeline(BasePipeline):
                     reject(task, 'Harbor control batch failed: ' + str(exc))
         finally:
             duration_ms = round((time.monotonic() - started) * 1000)
-            status = 'completed' if batch['complete'] else 'failed'
+            status = 'cancelled' if batch.get('cancelled') else ('completed' if batch['complete'] else 'failed')
             batch.update(status=status, duration_ms=duration_ms, finished_at=utcnow())
             cumulative['batches'].append(batch)
             if batch['summary_path']:
@@ -798,9 +974,23 @@ class FactoryPipeline(BasePipeline):
                 duration_ms=duration_ms, summary_path=batch['summary_path'])
 
     def run(self):
+        with cooperative_sigint(self.stop_event):
+            try:
+                self._checkpoint()
+                return self._run()
+            except CooperativeCancelled:
+                self.audit.update_run(status='cancelled', cancellation_requested=True,
+                                      source_jobs_inflight=0)
+                self.audit.emit('run.cancelled', reason='explicit_stop',
+                                policy='Existing usage, evidence, budgets and completed rewards retained')
+                self.audit.export()
+                return False
+
+    def _run(self):
         # Existing ready exports must be checked before provisional credit can
         # suppress construction in a continuation.
         if self.config['run'].get('continuation_id'):
+            self._checkpoint()
             self._validate_exports()
         seeds = self.load_seeds()
         self.audit.update_run(status='constructing', scheduler=self.scheduler)
@@ -812,16 +1002,26 @@ class FactoryPipeline(BasePipeline):
             if specifications:
                 workers = min(len(specifications), int(self.config['run']['max_parallel_sources']))
                 with ThreadPoolExecutor(max_workers=workers) as pool:
-                    futures = [pool.submit(self.process_external_repair, item) for item in specifications]
-                    for future in futures:
-                        future.result()
+                    futures = []
+                    for item in specifications:
+                        self._checkpoint()
+                        futures.append(pool.submit(self.process_external_repair, item))
+                    pending = set(futures)
+                    while pending:
+                        self._checkpoint()
+                        done, pending = self._wait_workers(pending)
+                        for future in done:
+                            future.result()
+            self._checkpoint()
             self._validate_exports()
         self.audit.update_run(status='constructing')
         attempted_jobs = 0
         if self.scheduler == 'rolling':
             while True:
+                self._checkpoint()
                 self.audit.update_run(status='constructing')
                 attempted_jobs += self._construct_rolling(seeds)
+                self._checkpoint()
                 self._validate_exports()
                 tasks = self.audit.snapshot()['tasks']
                 qualified = {mode: sum(task.get('mode') == mode and task['status'] == 'qualified'
@@ -835,9 +1035,11 @@ class FactoryPipeline(BasePipeline):
                 self.audit.emit('scheduler.refill_after_harbor', deficits=deficits)
         else:
             attempted_jobs = self._construct_batch(seeds)
+            self._checkpoint()
             self._validate_exports()
             # Legacy source batches retain the full first-pass/variant barriers.
             for variant in range(1, self.config['run'].get('max_candidates_per_seed', 3)):
+                self._checkpoint()
                 if self.goal_ready():
                     break
                 candidates = self.variant_candidates(seeds, variant)

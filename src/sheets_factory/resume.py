@@ -23,7 +23,7 @@ from .reporting import read_run
 
 
 TERMINAL_RUN_STATES = {'completed', 'shortfall', 'failed', 'cancelled'}
-PRESERVED_TASK_STATES = {'qualified', 'ready', 'rejected'}
+PRESERVED_TASK_STATES = {'qualified', 'ready', 'rejected', 'cancelled'}
 PROTECTED_BUDGETS = ('max_steps', 'max_evidence_rounds_per_revision',
                     'infrastructure_retries_per_stage', 'max_additional_trials_per_revision')
 SCHEDULERS = frozenset({'source_batches', 'rolling'})

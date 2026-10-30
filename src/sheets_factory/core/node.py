@@ -11,6 +11,10 @@ class TaskRejected(Exception):
     pass
 
 
+class CooperativeCancelled(BaseException):
+    """Explicit stop control flow; business/infra Exception handlers must not swallow it."""
+
+
 @dataclass
 class TaskContext:
     run_id: str
@@ -54,6 +58,9 @@ class BaseNode(ABC):
             if result:
                 context.data.update(result)
             return result
+        except CooperativeCancelled:
+            status, error = 'cancelled', 'Cooperative stop requested before further work'
+            raise
         except Exception as exc:
             status, error = 'failed', str(exc)
             raise
