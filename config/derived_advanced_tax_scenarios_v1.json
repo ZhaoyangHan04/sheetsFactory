@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "catalog_version": 1,
+  "base_config": "config/derived_advanced_tax_brief_v1.json",
+  "verification_status": "independent_ledger_prechecked_not_real_LO_verified",
+  "description": "Explicit hypothetical advanced-tax and covenant source proposals. Actual FIFO competition is required only where competing eligible old vintages and partial capacity were observed. No benchmark task or difficulty qualification is implied.",
+  "cases": [
+    {
+      "id": "T01",
+      "name": "Cash tax, deferred tax and covenant liquidity",
+      "mechanism": "The stated accelerated tax vintages, annual interest limitation and one-year loss expiry create cash-versus-book differences while the covenant reserve enters, cures and transfers real cash.",
+      "hypothetical_patch": {},
+      "covenant_patch": {},
+      "advanced_tax_patch": {},
+      "required_regimes": [
+        "tax_nol_creation",
+        "tax_nol_use",
+        "tax_nol_expiry",
+        "tax_interest_carry_creation",
+        "tax_interest_carry_use",
+        "tax_basis_difference",
+        "tax_deferred_benefit",
+        "tax_deferred_expense",
+        "tax_cash_book_difference",
+        "lock_enter",
+        "one_pass_still_locked",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release",
+        "dsra_support"
+      ]
+    },
+    {
+      "id": "T02",
+      "name": "Competing old interest vintages under a tighter cap",
+      "mechanism": "A ten-percent EBITDA deduction capacity retains multiple old interest carry vintages. Require positive competing old buckets and actual partial FIFO consumption, not merely an aggregate carry balance.",
+      "hypothetical_patch": {},
+      "covenant_patch": {},
+      "advanced_tax_patch": {
+        "interest_deduction_ebitda_fraction": ".10"
+      },
+      "required_regimes": [
+        "tax_interest_fifo_competition",
+        "tax_interest_carry_creation",
+        "tax_interest_carry_use",
+        "tax_nol_creation",
+        "tax_basis_difference",
+        "tax_cash_book_difference",
+        "lock_enter",
+        "one_pass_still_locked",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release"
+      ]
+    },
+    {
+      "id": "T03",
+      "name": "Two-year loss carry creates eligible-vintage competition",
+      "mechanism": "The stated two-year NOL carry keeps both earlier annual loss vintages eligible at the third settlement. Require actual capacity-limited FIFO competition; do not claim NOL expiry in this three-year case.",
+      "hypothetical_patch": {},
+      "covenant_patch": {},
+      "advanced_tax_patch": {
+        "nol_carryforward_years": 2
+      },
+      "required_regimes": [
+        "tax_nol_fifo_competition",
+        "tax_nol_creation",
+        "tax_nol_use",
+        "tax_basis_difference",
+        "tax_deferred_benefit",
+        "tax_deferred_expense",
+        "tax_cash_book_difference",
+        "lock_enter",
+        "one_pass_still_locked",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release"
+      ]
+    },
+    {
+      "id": "T04",
+      "name": "Zero-rate Loan A under a tighter interest allowance",
+      "mechanism": "Loan A is explicitly zero-rate and the EBITDA interest allowance is ten percent. Require real interest carry creation and old-carry consumption from the other facilities together with loss expiry, gross deferred tax and a measured lock/cure.",
+      "hypothetical_patch": {
+        "loan_a_spread": "-0.0509"
+      },
+      "covenant_patch": {},
+      "advanced_tax_patch": {
+        "interest_deduction_ebitda_fraction": ".10"
+      },
+      "required_regimes": [
+        "tax_nol_creation",
+        "tax_nol_use",
+        "tax_nol_expiry",
+        "tax_interest_carry_creation",
+        "tax_interest_carry_use",
+        "tax_basis_difference",
+        "tax_deferred_benefit",
+        "tax_deferred_expense",
+        "tax_cash_book_difference",
+        "lock_enter",
+        "one_pass_still_locked",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release",
+        "loan_a_zero_rate"
+      ]
+    },
+    {
+      "id": "T05",
+      "name": "Higher coverage covenant with year-end tax effects",
+      "mechanism": "A 1.50 quarterly coverage threshold changes lock duration while current cash tax and noncash deferred expense follow their separate accounting paths.",
+      "hypothetical_patch": {},
+      "covenant_patch": {
+        "covenant_dscr_threshold": "1.50"
+      },
+      "advanced_tax_patch": {},
+      "required_regimes": [
+        "tax_nol_creation",
+        "tax_nol_use",
+        "tax_nol_expiry",
+        "tax_interest_carry_creation",
+        "tax_interest_carry_use",
+        "tax_basis_difference",
+        "tax_deferred_benefit",
+        "tax_deferred_expense",
+        "tax_cash_book_difference",
+        "lock_enter",
+        "one_pass_still_locked",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release"
+      ]
+    },
+    {
+      "id": "T06",
+      "name": "Reserve funded only while distributions are locked",
+      "mechanism": "The explicit zero normal and five-payment trapped reserve changes liquidity allocation. Tax attributes and full deferred recognition remain active; unlocked normal reserve is actually zero.",
+      "hypothetical_patch": {
+        "revolver_limit": 8000000
+      },
+      "covenant_patch": {
+        "dsra_normal_payment_months": 0,
+        "dsra_trap_payment_months": 5
+      },
+      "advanced_tax_patch": {},
+      "required_regimes": [
+        "tax_nol_creation",
+        "tax_nol_use",
+        "tax_nol_expiry",
+        "tax_interest_carry_creation",
+        "tax_interest_carry_use",
+        "tax_basis_difference",
+        "tax_deferred_benefit",
+        "tax_deferred_expense",
+        "tax_cash_book_difference",
+        "lock_enter",
+        "one_pass_still_locked",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release",
+        "zero_normal_reserve"
+      ]
+    },
+    {
+      "id": "T07",
+      "name": "Cross-year commissioning and an interrupted cure",
+      "mechanism": "Twelve construction months shift equipment service, tax depreciation and operating cash generation into the second year. Require one-year NOL expiry and an actual failed test after one successful test, followed by a cure.",
+      "hypothetical_patch": {
+        "construction_months": 12,
+        "initial_asset_service_month": 13,
+        "loan_a_amort_start": 13,
+        "revolver_limit": 8000000
+      },
+      "covenant_patch": {
+        "covenant_first_test_month": 15,
+        "covenant_dscr_threshold": "1.20"
+      },
+      "advanced_tax_patch": {},
+      "required_regimes": [
+        "tax_nol_creation",
+        "tax_nol_expiry",
+        "tax_interest_carry_creation",
+        "tax_interest_carry_use",
+        "tax_basis_difference",
+        "tax_deferred_benefit",
+        "tax_deferred_expense",
+        "tax_cash_book_difference",
+        "commissioning_crosses_tax_year",
+        "interrupted_cure",
+        "lock_enter",
+        "one_pass_still_locked",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release"
+      ]
+    },
+    {
+      "id": "T08",
+      "name": "Larger funded startup loss with competing NOL vintages",
+      "mechanism": "Additional paid-in equity explicitly funds the larger startup expense. Two-year loss carry preserves multiple eligible old NOL buckets and requires measured FIFO competition at a later positive settlement.",
+      "hypothetical_patch": {
+        "startup_expense": 4000000,
+        "equity_paid_in": 10000000,
+        "opening_cash": 5000000,
+        "revolver_limit": 8000000
+      },
+      "covenant_patch": {},
+      "advanced_tax_patch": {
+        "nol_carryforward_years": 2
+      },
+      "required_regimes": [
+        "tax_nol_fifo_competition",
+        "tax_nol_creation",
+        "tax_nol_use",
+        "tax_interest_carry_creation",
+        "tax_interest_carry_use",
+        "tax_basis_difference",
+        "tax_cash_book_difference",
+        "lock_enter",
+        "one_pass_still_locked",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release"
+      ]
+    },
+    {
+      "id": "T09",
+      "name": "Acquisition and tax service in different calendar years",
+      "mechanism": "Refresh equipment is paid in year two but first enters service in year three. Tax basis carries pre-service cost while cash funding, deferred balances and the stated larger reserve/covenant interact.",
+      "hypothetical_patch": {
+        "refresh_paid_month": 15,
+        "refresh_service_month": 25,
+        "revolver_limit": 8000000
+      },
+      "covenant_patch": {
+        "covenant_dscr_threshold": "1.60",
+        "dsra_normal_payment_months": 2,
+        "dsra_trap_payment_months": 4
+      },
+      "advanced_tax_patch": {},
+      "required_regimes": [
+        "tax_nol_creation",
+        "tax_nol_use",
+        "tax_nol_expiry",
+        "tax_interest_carry_creation",
+        "tax_interest_carry_use",
+        "tax_basis_difference",
+        "tax_deferred_benefit",
+        "tax_deferred_expense",
+        "tax_cash_book_difference",
+        "lock_enter",
+        "one_pass_still_locked",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release",
+        "refresh_payment_service_cross_tax_year",
+        "dsra_support"
+      ]
+    },
+    {
+      "id": "T10",
+      "name": "Both equipment tax vintages complete within the horizon",
+      "mechanism": "Refresh payment in month nine and service in month ten activate all three service-calendar-year tax depreciation steps and later exhaust its shorter book basis; original equipment remains a separate vintage.",
+      "hypothetical_patch": {
+        "refresh_paid_month": 9,
+        "refresh_service_month": 10,
+        "revolver_limit": 8000000
+      },
+      "covenant_patch": {},
+      "advanced_tax_patch": {},
+      "required_regimes": [
+        "tax_nol_creation",
+        "tax_nol_use",
+        "tax_nol_expiry",
+        "tax_interest_carry_creation",
+        "tax_interest_carry_use",
+        "tax_basis_difference",
+        "tax_deferred_benefit",
+        "tax_deferred_expense",
+        "tax_cash_book_difference",
+        "lock_enter",
+        "one_pass_still_locked",
+        "two_pass_cure",
+        "dsra_funding",
+        "dsra_release",
+        "refresh_basis_exhausted"
+      ]
+    }
+  ]
+}

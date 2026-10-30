@@ -39,15 +39,28 @@ COVENANT_REGIMES = {
     "nonterminal_dividend", "payoff_followed_by_reserve_release", "zero_normal_reserve",
     "terminal_positive_reserve", "terminal_lock", "post_cure_dividend",
 }
-REGIMES = _common.REGIME_KEYS | COVENANT_REGIMES
+TAX_REGIMES = {
+    "tax_nol_creation", "tax_nol_use", "tax_nol_expiry", "tax_interest_carry_creation",
+    "tax_interest_carry_use", "tax_basis_difference", "tax_deferred_benefit",
+    "tax_deferred_expense", "tax_cash_book_difference", "tax_nol_fifo_competition",
+    "tax_interest_fifo_competition",
+}
+ADVANCED_TAX_FIELDS = {"advanced_tax_enabled", "initial_tax_rate_y1", "initial_tax_rate_y2",
+    "initial_tax_rate_y3", "refresh_tax_rate_y1", "refresh_tax_rate_y2", "refresh_tax_rate_y3",
+    "interest_deduction_ebitda_fraction", "nol_carryforward_years"}
+TAX_CHECKS = ("tax_vintage_rollforwards_ok", "tax_interest_capacity_ok", "tax_nol_fifo_ok",
+              "tax_interest_fifo_ok", "tax_bridge_ok", "tax_depreciation_basis_ok")
+REGIMES = _common.REGIME_KEYS | COVENANT_REGIMES | TAX_REGIMES
 EVIDENCE_FILES = (*_common.AUDIT_FILES, "private/model_unrecalculated.xlsx", "private/first_recalculation.xlsx")
 RECIPE_FILES = (
     "scripts/build_covenant_sources.py", "scripts/build_derived_scenarios.py", "scripts/build_derived_gold.py",
     "src/sheets_factory/workbook/derived_gold/spec.py", "src/sheets_factory/workbook/derived_gold/excel.py",
     "src/sheets_factory/workbook/derived_gold/ledger.py", "src/sheets_factory/workbook/derived_gold/validate.py",
+    "src/sheets_factory/workbook/derived_gold/presentation.py",
     "src/sheets_factory/workbook/engine.py", "src/sheets_factory/workbook/uno_recalculate.py",
     "src/sheets_factory/workbook/compare.py", "src/sheets_factory/workbook/profile.py",
     "tests/test_covenant_sources.py",
+    "tests/test_advanced_tax_sources.py",
 )
 
 
@@ -70,6 +83,9 @@ def load_catalog(project_root, catalog_path, case_ids=None):
             "covenant_enabled", "covenant_first_test_month", "covenant_dscr_threshold",
             "dsra_normal_payment_months", "dsra_trap_payment_months"}:
         raise ValueError("Base config must expose all five covenant parameters")
+    advanced = base.get("advanced_tax_parameters")
+    if advanced is not None and (not isinstance(advanced, dict) or set(advanced) != ADVANCED_TAX_FIELDS):
+        raise ValueError("Advanced base must expose all nine advanced tax parameters")
     seen = set()
     for case in catalog["cases"]:
         identifier = case.get("id")
@@ -78,8 +94,13 @@ def load_catalog(project_root, catalog_path, case_ids=None):
         if identifier in seen:
             raise ValueError("Duplicate covenant case ID")
         seen.add(identifier)
-        for field, base_field in (("hypothetical_patch", "hypothetical_parameters"),
-                                  ("covenant_patch", "covenant_parameters")):
+        patch_fields = [("hypothetical_patch", "hypothetical_parameters"),
+                        ("covenant_patch", "covenant_parameters")]
+        if "advanced_tax_patch" in case:
+            if advanced is None:
+                raise ValueError("advanced_tax_patch requires an advanced-tax base config")
+            patch_fields.append(("advanced_tax_patch", "advanced_tax_parameters"))
+        for field, base_field in patch_fields:
             patch = case.get(field)
             if not isinstance(patch, dict) or set(patch) - set(base[base_field]):
                 raise ValueError("Unknown or missing " + field + " in " + identifier)
@@ -103,6 +124,55 @@ def load_catalog(project_root, catalog_path, case_ids=None):
         raise ValueError("Unknown, empty or duplicate requested covenant case IDs")
     selected = [case for case in catalog["cases"] if case_ids is None or case["id"] in case_ids]
     return catalog, base, selected, base_path
+
+
+def _tax_regimes(public, ledger):
+    tax = public.get("advanced_tax_parameters")
+    enabled = tax is not None and _number(tax["advanced_tax_enabled"]) == 1
+    records = ledger.get("tax_annual", []) if enabled else []
+    if enabled and ([row.get("year") for row in records] != [1, 2, 3]
+                    or any(type(row.get("year")) is not int for row in records)):
+        raise ValueError("Enabled advanced tax requires three ordered annual records")
+    out = {}
+    def record(key, years, explanation, details=None):
+        out[key] = {"observed":bool(years), "periods":[year*12 for year in years],
+                    "years":years, "evidence":explanation}
+        if details is not None:
+            out[key]["vintage_evidence"] = details
+    fields = {"tax_nol_creation":"nol_new", "tax_nol_use":"nol_used", "tax_nol_expiry":"nol_expired",
+              "tax_interest_carry_creation":"current_interest_carried", "tax_interest_carry_use":"interest_cf_used"}
+    for key, field in fields.items():
+        record(key,[r["year"] for r in records if _number(r[field])>0],"Actual positive annual posted "+field)
+    for key, predicate, explanation in (
+        ("tax_basis_difference",lambda r:_number(r["tax_basis_close"])!=_number(r["book_net_ppe"]),"Closing acquired-cost tax basis differs from book net PPE"),
+        ("tax_deferred_benefit",lambda r:_number(r["deferred_tax_expense"])<0,"Actual negative signed deferred expense"),
+        ("tax_deferred_expense",lambda r:_number(r["deferred_tax_expense"])>0,"Actual positive signed deferred expense"),
+        ("tax_cash_book_difference",lambda r:_number(r["current_tax"])!=_number(r["book_tax"]),"Current cash tax differs from total book tax"),
+    ):
+        record(key,[r["year"] for r in records if predicate(r)],explanation)
+    for prefix, regime in (("nol","tax_nol_fifo_competition"),("interest","tax_interest_fifo_competition")):
+        years, details = [], []
+        for row in records:
+            year = row["year"]
+            available = {v:_number(row[f"{prefix}_v{v}_open"]) - (_number(row[f"nol_v{v}_expired"]) if prefix=="nol" else 0)
+                         for v in range(1,year)}
+            if prefix=="nol":
+                available = {v:amount if year-v<=int(tax["nol_carryforward_years"]) else Decimal(0)
+                             for v,amount in available.items()}
+            used = {v:_number(row[f"{prefix}_v{v}_used"]) for v in range(1,year)}
+            total = sum(available.values(),Decimal(0))
+            capacity = _number(row["nol_use_cap" if prefix=="nol" else "interest_capacity"])
+            allocation = sum(used.values(),Decimal(0))
+            fifo = all(not used[v] or all(available[older]-used[older]==0 for older in range(1,v)) for v in used)
+            eligible = [v for v,value in available.items() if value>0]
+            aggregate_use = _number(row["nol_used" if prefix=="nol" else "interest_cf_used"])
+            if len(eligible)>=2 and 0<capacity<total and allocation==capacity==aggregate_use and fifo and all(0<=used[v]<=available[v] for v in used):
+                years.append(year)
+                details.append({"year":year,"eligible_old_vintages":eligible,
+                    "available":{str(k):str(v) for k,v in available.items()},
+                    "used":{str(k):str(v) for k,v in used.items()},"capacity":str(capacity)})
+        record(regime,years,"At least two positive eligible OLD vintages compete for insufficient positive capacity, actually consumed FIFO",details)
+    return out
 
 
 def observed_regimes(public, ledger):
@@ -132,6 +202,11 @@ def observed_regimes(public, ledger):
     record("terminal_lock", [36] if rows[-1]["lock_close"]==1 else [], "The final month remains distribution-locked after its actual test")
     cures = [r["period"] for r in rows if r["lock_open"]==1 and r["lock_close"]==0]
     record("post_cure_dividend", periods(lambda r:any(t<=r["period"] for t in cures) and r["period"]<36 and value(r,"dividend")>0 and r["lock_close"]==0), "An actual nonterminal dividend after a measured cure")
+    out.update(_tax_regimes(public,ledger))
+    if public.get("advanced_tax_parameters") is not None and _number(public["advanced_tax_parameters"]["advanced_tax_enabled"])==1:
+        binding = [row["year"]*12 for row in ledger["tax_annual"] if 0<_number(row["nol_used"])==_number(row["nol_use_cap"])
+                   and _number(row["nol_open"])-_number(row["nol_expired"])>_number(row["nol_used"])]
+        record("nol_utilization_cap_binding",binding,"Actual advanced-tax NOL use equals the taxable-income-based cap while eligible old NOL remains")
     return out
 
 
@@ -148,6 +223,24 @@ def _inspect(directory, config, returned, *, offline):
         raise ValueError("Independent ledger did not execute the enabled covenant")
     if [r.get("period") for r in ledger.get("monthly", [])] != list(range(1, 37)):
         raise ValueError("Complete ordered 36-month covenant ledger is required")
+    requested_tax = config.get("advanced_tax_parameters")
+    public_tax = public.get("advanced_tax_parameters")
+    if ((requested_tax is None)!=(public_tax is None)
+            or requested_tax is not None and (not isinstance(public_tax,dict) or set(public_tax)!=set(requested_tax)
+                or any(not _same(public_tax[key],value) for key,value in requested_tax.items()))):
+        raise ValueError("Public advanced tax inputs differ from requested contract")
+    if requested_tax is not None and _number(requested_tax["advanced_tax_enabled"])==1:
+        if public["public_contract_version"]<7:
+            raise ValueError("Enabled advanced tax needs public contract version seven or later")
+        for checks in (ledger.get("checks",{}),_json(directory/"private/financial_audit.json").get("independent_ledger_checks",{})):
+            if checks.get("advanced_tax_enabled") is not True or any(checks.get(key) is not True for key in TAX_CHECKS):
+                raise ValueError("Missing or failing independent advanced-tax checks")
+        annual = ledger.get("tax_annual",[])
+        if ([row.get("year") for row in annual] != [1,2,3] or any(type(row.get("year")) is not int for row in annual)
+                or not _json(directory/"private/bindings.json").get("tax_annual")):
+            raise ValueError("Complete advanced tax annual ledger and formula bindings are required")
+    if config.get("public_presentation")=="business_brief" and public.get("presentation_style")!="business_brief":
+        raise ValueError("Public presentation differs from requested business brief")
     for name in EVIDENCE_FILES:
         if not (directory / name).is_file():
             raise ValueError("Missing covenant proof: " + name)
@@ -175,8 +268,16 @@ def _entry(case, config, base, directory, seed, public, regimes, proofs, *, prod
                 "safe_modules":[{"case_id":"covenant-and-liquidity-state", "business_goal":"Build or repair the covenant state, DSRA and integrated cash waterfall",
                     "candidate_regions":["Covenants!C2:AL21","Debt!C2:AL15","Cash Flow!C8:AL18","Balance Sheet!C9:AL20"],
                     "required_public_rules":public["public_rules"]}]}
+    advanced = public.get("advanced_tax_parameters") is not None and _number(public["advanced_tax_parameters"]["advanced_tax_enabled"])==1
+    if advanced:
+        evidence["classification"] = "derived_advanced_tax_covenant_financing"
+        evidence["advanced_tax_enabled"] = True
+        evidence["presentation_style"] = public.get("presentation_style","full")
+        evidence["safe_modules"].append({"case_id":"annual-tax-vintage-integration", "business_goal":"Build or repair vintage tax, deferred tax and their cash/financing integration",
+            "candidate_regions":["Tax Vintages!C3:E54","Tax!C2:AL12","Operations!C13:AL14","Cash Flow!C19:AL19","Balance Sheet!C21:AL22"],
+            "required_public_rules":public["public_rules"]})
     return {"sha256":digest,"source_sha256":digest,"local_path":str((directory/"project_model.xlsx").resolve()),
-            "source_kind":"derived_hypothetical_covenant_model","source_url":base["source"]["source_url"],
+            "source_kind":"derived_hypothetical_advanced_tax_model" if advanced else "derived_hypothetical_covenant_model","source_url":base["source"]["source_url"],
             "source_url_scope":"Ancestor attribution; this derived file is not downloaded from that URL",
             "ancestor_download_url":base["source"].get("download_url"),"source_ancestor_sha256":base["source"]["sha256"],
             "source_lineage":public["source_lineage"],"scenario_id":config["scenario_id"],"case_id":case["id"],
@@ -192,6 +293,7 @@ def build_sources(project_root, catalog_path, output, case_ids=None, *, builder=
     catalog_path = Path(catalog_path)
     catalog_path = catalog_path if catalog_path.is_absolute() else root / catalog_path
     catalog, base, cases, base_path = load_catalog(root, catalog_path, case_ids)
+    advanced_base = base.get("advanced_tax_parameters") is not None and _number(base["advanced_tax_parameters"]["advanced_tax_enabled"])==1
     if output.exists():
         raise ValueError("Output already exists; choose a new immutable source batch")
     offline = builder is not None
@@ -202,9 +304,9 @@ def build_sources(project_root, catalog_path, output, case_ids=None, *, builder=
         raise ValueError("Production source adapter recipe is incomplete")
     output.mkdir(parents=True)
     backend = "offline_test_fixture_not_real_LO" if offline else "independent_Decimal_and_real_LibreOffice"
-    manifest = {"schema_version":1,"dataset":"derived_covenant_planning_seeds","status":"building",
+    manifest = {"schema_version":1,"dataset":"derived_advanced_tax_planning_seeds" if advanced_base else "derived_covenant_planning_seeds","status":"building",
         "created_at":datetime.now(timezone.utc).isoformat(),"qualified":False,"task_count":0,
-        "selected":[],"unique_workbooks_inspected":0,"download_url":"derived-seed-pool:covenant-explicit-hypothetical-cases",
+        "selected":[],"unique_workbooks_inspected":0,"download_url":"derived-seed-pool:advanced-tax-explicit-hypothetical-cases" if advanced_base else "derived-seed-pool:covenant-explicit-hypothetical-cases",
         "archive_sha256":None,"verification_backend":backend,"recipe":recipe,"catalog":_ref(catalog_path),
         "base_config":_ref(base_path),"source_ancestor":base["source"],"source_ancestor_sha256":base["source"]["sha256"],
         "ancestor_unique_count":1,"verified_ancestor_unique_count":0,"selected_ancestor_unique_count":0,
@@ -222,6 +324,8 @@ def build_sources(project_root, catalog_path, output, case_ids=None, *, builder=
         config["scenario_id"] = base["scenario_id"] + "-" + case["id"].lower()
         for field, key in (("hypothetical_patch","hypothetical_parameters"),("covenant_patch","covenant_parameters")):
             config[key].update(deepcopy(case[field]))
+        if "advanced_tax_patch" in case:
+            config["advanced_tax_parameters"].update(deepcopy(case["advanced_tax_patch"]))
         config["case_description"] = {key:case[key] for key in ("id","name","mechanism")}
         requested = directory/"requested_config.json"
         _write(requested, config)
@@ -229,6 +333,8 @@ def build_sources(project_root, catalog_path, output, case_ids=None, *, builder=
             "qualified":False,"task_count":0,"required_regimes":case["required_regimes"],"financial_checks_passed":False,
             "requested_config":_ref(requested),"hypothetical_patch":case["hypothetical_patch"],"covenant_patch":case["covenant_patch"],
             "verification_backend":backend,"recipe":recipe}
+        if "advanced_tax_patch" in case:
+            result["advanced_tax_patch"] = case["advanced_tax_patch"]
         build_dir = directory/"build"
         try:
             source = Path(config["source"]["local_path"])
