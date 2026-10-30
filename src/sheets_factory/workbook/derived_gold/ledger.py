@@ -247,6 +247,171 @@ def _covenant_config(spec: dict) -> dict | None:
     return c if c["covenant_enabled"] else None
 
 
+def _advanced_tax_config(spec: dict, parameters: dict) -> dict | None:
+    """Validate the optional tax contract without using emitter calculations."""
+    raw = spec.get("advanced_tax_parameters")
+    if raw is None:
+        return None
+    names = {"advanced_tax_enabled", "initial_tax_rate_y1", "initial_tax_rate_y2",
+             "initial_tax_rate_y3", "refresh_tax_rate_y1", "refresh_tax_rate_y2",
+             "refresh_tax_rate_y3", "interest_deduction_ebitda_fraction",
+             "nol_carryforward_years"}
+    if not isinstance(raw, dict) or set(raw) != names:
+        raise ValueError("Nine explicit advanced tax parameters are required")
+    integer_names = {"advanced_tax_enabled", "nol_carryforward_years"}
+    tax = {name: (_integer(value, name) if name in integer_names else _decimal(value, name))
+           for name, value in raw.items()}
+    if tax["advanced_tax_enabled"] not in (0, 1):
+        raise ValueError("Advanced tax enabled flag must be zero or one")
+    if tax["nol_carryforward_years"] not in (1, 2):
+        raise ValueError("NOL carryforward years must be one or two")
+    for name in names - integer_names:
+        if not _ZERO <= tax[name] <= _ONE:
+            raise ValueError(f"{name} must be between zero and one")
+    for asset in ("initial", "refresh"):
+        if sum((tax[f"{asset}_tax_rate_y{year}"] for year in (1, 2, 3)), _ZERO) != _ONE:
+            raise ValueError(f"{asset} tax depreciation fractions must sum exactly to one")
+    if not tax["advanced_tax_enabled"]:
+        return None
+    if parameters["opening_nol"] != 0 or parameters["opening_retained"] != 0:
+        raise ValueError("Advanced tax requires zero opening NOL and retained earnings")
+    return tax
+
+
+class _AnnualTaxState:
+    """Independent year-end vintage subledger; no workbook or forecast imports.
+
+    Vintage balances are held between December postings.  This object performs
+    no journal postings: the entity ledger posts its calculated current and
+    deferred tax movements as separately balanced entries.
+    """
+
+    def __init__(self, parameters: dict, tax: dict) -> None:
+        self.p, self.tax = parameters, tax
+        self.nol = {year: _ZERO for year in (1, 2, 3)}
+        self.interest = {year: _ZERO for year in (1, 2, 3)}
+        self.depreciated = {"initial": _ZERO, "refresh": _ZERO}
+        self.dta = self.dtl = _ZERO
+        self.records: list[dict] = []
+        self.checks = {"tax_vintage_rollforwards_ok": True, "tax_interest_capacity_ok": True,
+                       "tax_nol_fifo_ok": True, "tax_interest_fifo_ok": True,
+                       "tax_bridge_ok": True, "tax_depreciation_basis_ok": True}
+
+    def _depreciation(self, asset: str, year: int) -> Decimal:
+        p = self.p
+        cost = _q(p["initial_asset_cost" if asset == "initial" else "refresh_capex"])
+        service_month = p["initial_asset_service_month" if asset == "initial" else "refresh_service_month"]
+        if asset == "refresh" and p["refresh_paid_month"] > year * 12:
+            return _ZERO
+        service_year = (service_month - 1) // 12 + 1
+        age = year - service_year + 1
+        remaining = cost - self.depreciated[asset]
+        if age < 1 or age > 3:
+            charge = _ZERO
+        elif age == 3:
+            charge = remaining
+        else:
+            charge = min(remaining, _q(cost * self.tax[f"{asset}_tax_rate_y{age}"]))
+        self.depreciated[asset] += charge
+        return charge
+
+    @staticmethod
+    def _fifo(balances: dict[int, Decimal], remaining: Decimal, year: int) -> dict[int, Decimal]:
+        used = {vintage: _ZERO for vintage in (1, 2, 3)}
+        for vintage in range(1, year):
+            used[vintage] = min(balances[vintage], remaining)
+            balances[vintage] -= used[vintage]
+            remaining -= used[vintage]
+        return used
+
+    @staticmethod
+    def _fifo_valid(opening: dict, excluded: dict, used: dict, year: int) -> bool:
+        # If any newer old vintage is used, every eligible older vintage is
+        # exhausted.  This invariant is separate from the consumption loop.
+        return all(not used[newer] or all(opening[older] - excluded[older] - used[older] == 0
+                                         for older in range(1, newer))
+                   for newer in range(1, year))
+
+    def close_year(self, year: int, *, ebitda: Decimal, book_depreciation: Decimal,
+                   cash_interest: Decimal, book_net_ppe: Decimal,
+                   acquired_cost: Decimal) -> dict:
+        nol_open = dict(self.nol)
+        interest_open = dict(self.interest)
+        initial_dep = self._depreciation("initial", year)
+        refresh_dep = self._depreciation("refresh", year)
+        tax_dep = initial_dep + refresh_dep
+        basis = acquired_cost - sum(self.depreciated.values(), _ZERO)
+        capacity = _q(max(ebitda, _ZERO) * self.tax["interest_deduction_ebitda_fraction"])
+        interest_used = self._fifo(self.interest, capacity, year)
+        old_interest_used = sum(interest_used.values(), _ZERO)
+        current_interest_deducted = min(cash_interest, capacity - old_interest_used)
+        current_interest_carried = cash_interest - current_interest_deducted
+        self.interest[year] += current_interest_carried
+        deduction = old_interest_used + current_interest_deducted
+        taxable_before = ebitda - tax_dep - deduction
+        nol_expired = {vintage: _ZERO for vintage in (1, 2, 3)}
+        for vintage in range(1, year):
+            if year - vintage > self.tax["nol_carryforward_years"]:
+                nol_expired[vintage] = self.nol[vintage]
+                self.nol[vintage] = _ZERO
+        positive_income = max(taxable_before, _ZERO)
+        use_cap = _q(positive_income * self.p["nol_utilization_cap"])
+        nol_used = self._fifo(self.nol, use_cap, year)
+        use = sum(nol_used.values(), _ZERO)
+        new_loss = max(-taxable_before, _ZERO)
+        self.nol[year] += new_loss
+        closing_nol = sum(self.nol.values(), _ZERO)
+        closing_interest = sum(self.interest.values(), _ZERO)
+        current_tax = _q((positive_income - use) * self.p["tax_rate"])
+        dta_nol = _q(closing_nol * self.p["tax_rate"])
+        dta_interest = _q(closing_interest * self.p["tax_rate"])
+        dta_basis = _q(max(basis - book_net_ppe, _ZERO) * self.p["tax_rate"])
+        dta = dta_nol + dta_interest + dta_basis
+        dtl = _q(max(book_net_ppe - basis, _ZERO) * self.p["tax_rate"])
+        deferred = (dtl - self.dtl) - (dta - self.dta)
+        record = {
+            "year": year, "ebitda": ebitda, "book_depreciation": book_depreciation,
+            "cash_interest": cash_interest, "book_ebt": ebitda - book_depreciation - cash_interest,
+            "initial_tax_depreciation": initial_dep, "refresh_tax_depreciation": refresh_dep,
+            "tax_depreciation": tax_dep, "tax_basis_close": basis,
+            "interest_capacity": capacity, "interest_cf_open": sum(interest_open.values(), _ZERO),
+            "interest_cf_used": old_interest_used,
+            "current_interest_deducted": current_interest_deducted,
+            "current_interest_carried": current_interest_carried, "interest_deduction": deduction,
+            "interest_cf_close": closing_interest, "taxable_before_nol": taxable_before,
+            "nol_open": sum(nol_open.values(), _ZERO), "nol_expired": sum(nol_expired.values(), _ZERO),
+            "nol_use_cap": use_cap, "nol_used": use, "nol_new": new_loss, "nol_close": closing_nol,
+            "current_tax": current_tax, "book_net_ppe": book_net_ppe, "dta_nol": dta_nol,
+            "dta_interest": dta_interest, "dta_basis": dta_basis, "dta_close": dta,
+            "dtl_close": dtl, "deferred_tax_expense": deferred, "book_tax": current_tax + deferred,
+        }
+        for vintage in (1, 2, 3):
+            record.update({f"nol_v{vintage}_open": nol_open[vintage],
+                           f"nol_v{vintage}_expired": nol_expired[vintage],
+                           f"nol_v{vintage}_used": nol_used[vintage],
+                           f"nol_v{vintage}_close": self.nol[vintage],
+                           f"interest_v{vintage}_open": interest_open[vintage],
+                           f"interest_v{vintage}_used": interest_used[vintage],
+                           f"interest_v{vintage}_close": self.interest[vintage]})
+        self.checks["tax_vintage_rollforwards_ok"] &= all(
+            self.nol[v] == nol_open[v] - nol_expired[v] - nol_used[v] + (new_loss if v == year else 0)
+            and self.interest[v] == interest_open[v] - interest_used[v] + (current_interest_carried if v == year else 0)
+            for v in (1, 2, 3))
+        self.checks["tax_interest_capacity_ok"] &= (
+            0 <= deduction <= capacity and 0 <= current_interest_deducted <= cash_interest
+            and closing_interest == record["interest_cf_open"] + cash_interest - deduction)
+        self.checks["tax_nol_fifo_ok"] &= self._fifo_valid(nol_open, nol_expired, nol_used, year)
+        self.checks["tax_interest_fifo_ok"] &= self._fifo_valid(
+            interest_open, {v: _ZERO for v in (1, 2, 3)}, interest_used, year)
+        self.checks["tax_bridge_ok"] &= record["book_tax"] == current_tax + (dtl - self.dtl) - (dta - self.dta)
+        self.checks["tax_depreciation_basis_ok"] &= basis >= 0 and all(
+            _ZERO <= self.depreciated[asset] <= _q(self.p["initial_asset_cost" if asset == "initial" else "refresh_capex"])
+            for asset in ("initial", "refresh"))
+        self.dta, self.dtl = dta, dtl
+        self.records.append(record)
+        return record
+
+
 def _covenant_state(lock: int, passes: int, due: bool, passed: bool) -> tuple[int, int]:
     if not due:
         return lock, passes
@@ -351,6 +516,7 @@ def _parameters(spec: dict[str, Any]) -> dict[str, Any]:
     if result["refresh_service_month"] < result["refresh_paid_month"]:
         raise ValueError("Refresh cannot enter service before it is acquired")
     result["covenant"] = _covenant_config(spec)
+    result["advanced_tax"] = _advanced_tax_config(spec, result)
     return result
 
 
@@ -381,6 +547,10 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
     covenant = p["covenant"]
     if covenant:
         opening["dsra_cash"] = _ZERO
+    advanced_tax = p["advanced_tax"]
+    tax_state = _AnnualTaxState(p, advanced_tax) if advanced_tax else None
+    if tax_state:
+        opening.update({"deferred_tax_asset": _ZERO, "deferred_tax_liability": _ZERO})
     book = _Book(opening)
     rate_a, rate_b, rate_r = (p[name] / _TWELVE for name in
                             ("loan_a_annual_rate", "loan_b_annual_rate", "revolver_annual_rate"))
@@ -393,6 +563,7 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
     startup_posted = initial_dep_posted = refresh_dep_posted = _ZERO
     nol = money("opening_nol")
     year_ebt = _ZERO
+    year_ebitda = year_depreciation = year_interest = _ZERO
     rows: list[dict[str, Any]] = []
     minimum_cash = money("minimum_cash")
     limit = money("revolver_limit")
@@ -417,6 +588,7 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
         nol_open = nol
         if month == 1:
             year_ebt = _ZERO
+            year_ebitda = year_depreciation = year_interest = _ZERO
 
         operating_month = period - p["construction_months"]
         if operating_month <= 0:
@@ -467,8 +639,30 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
         ebit = ebitda - depreciation
         ebt = ebit - interest
         year_ebt += ebt
+        year_ebitda += ebitda
+        year_depreciation += depreciation
+        year_interest += interest
         tax = nol_use = nol_add = _ZERO
-        if month == 12:
+        current_tax = deferred_tax = nol_expired = _ZERO
+        if month == 12 and tax_state:
+            old_dta, old_dtl = tax_state.dta, tax_state.dtl
+            tax_record = tax_state.close_year(
+                year, ebitda=year_ebitda, book_depreciation=year_depreciation,
+                cash_interest=year_interest,
+                book_net_ppe=(book.get("initial_ppe") + book.get("refresh_ppe")
+                              + book.get("accumulated_depreciation")),
+                acquired_cost=book.get("initial_ppe") + book.get("refresh_ppe"))
+            current_tax, deferred_tax, tax = (tax_record[key] for key in
+                                             ("current_tax", "deferred_tax_expense", "book_tax"))
+            nol_use, nol_add, nol_expired, nol = (tax_record[key] for key in
+                                                 ("nol_used", "nol_new", "nol_expired", "nol_close"))
+            book.move(period, "Accrue annual current tax", "noncash", "tax", "tax_payable", current_tax)
+            book.move(period, "Pay annual current tax", "operating", "tax_payable", "cash", current_tax)
+            book.move(period, "Remeasure deferred tax asset", "noncash", "deferred_tax_asset", "tax",
+                      tax_state.dta - old_dta)
+            book.move(period, "Remeasure deferred tax liability", "noncash", "tax", "deferred_tax_liability",
+                      tax_state.dtl - old_dtl)
+        elif month == 12:
             positive_ebt = max(year_ebt, _ZERO)
             nol_use = min(nol, _q(positive_ebt * p["nol_utilization_cap"]))
             nol_add = max(-year_ebt, _ZERO)
@@ -540,14 +734,16 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
         cfo = book.cash_flow(period, "operating")
         cfi = book.cash_flow(period, "investing")
         cff = book.cash_flow(period, "financing")
-        cfo_indirect = net_income + depreciation - delta_ar - delta_inv + delta_ap
+        cfo_indirect = net_income + depreciation - delta_ar - delta_inv + delta_ap + deferred_tax
         cash_close = book.get("cash")
         reserve_close = book.get("dsra_cash") if covenant else _ZERO
         reserve_net = cv.get("dsra_net_transfer", _ZERO)
         accumulated_dep = -book.get("accumulated_depreciation")
         net_ppe = book.get("initial_ppe") + book.get("refresh_ppe") - accumulated_dep
-        assets = cash_close + reserve_close + book.get("ar") + book.get("inventory") + net_ppe
-        liabilities = -sum((book.get(a) for a in ("ap", "loan_a", "loan_b", "revolver", "tax_payable")), _ZERO)
+        assets = (cash_close + reserve_close + book.get("ar") + book.get("inventory") + net_ppe
+                  + book.get("deferred_tax_asset"))
+        liabilities = -sum((book.get(a) for a in
+                            ("ap", "loan_a", "loan_b", "revolver", "tax_payable", "deferred_tax_liability")), _ZERO)
         equity = -book.get("paid_in") - book.get("retained")
         cfo_errors.append(abs(cfo - cfo_indirect))
         cash_errors.append(abs(cash_close - cash_open - cfo - cfi - cff - reserve_net))
@@ -556,6 +752,10 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
             cv["total_cash_close"] = cash_close + reserve_close
         if (book.get("ar"), book.get("inventory"), -book.get("ap")) != (ar_target, inv_target, ap_target):
             raise ArithmeticError(f"Working-capital postings do not reconcile in period {period}")
+        tax_fields = ({"current_tax": current_tax, "deferred_tax_expense": deferred_tax,
+                       "dta_close": tax_state.dta, "dtl_close": tax_state.dtl,
+                       "nol_expired": nol_expired,
+                       "interest_cf_close": sum(tax_state.interest.values(), _ZERO)} if tax_state else {})
         rows.append({
             "period": period, "year": year, "date": current_date.isoformat(), "month_days": days,
             "sales": sales, "cogs": cogs, "other_opex": other, "startup_expense": startup,
@@ -579,7 +779,7 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
             "accumulated_depreciation": accumulated_dep, "net_ppe": net_ppe,
             "retained_open": retained_open, "retained_close": -book.get("retained"),
             "assets": assets, "liabilities": liabilities, "equity": equity,
-            "balance_check": assets - liabilities - equity, "owner_cashflow": dividend, **cv,
+            "balance_check": assets - liabilities - equity, "owner_cashflow": dividend, **cv, **tax_fields,
         })
 
     next_sales = _q(p["steady_annual_sales"] * (_ONE + p["annual_sales_growth"]) ** 3)
@@ -621,6 +821,10 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
                            "total_cash_close": last["total_cash_close"]})
             record.update({key: sum((row[key] for row in periods), _ZERO)
                            for key in ("dsra_funding", "dsra_support", "dsra_release")})
+        if tax_state:
+            record.update({key: sum((row[key] for row in periods), _ZERO)
+                           for key in ("current_tax", "deferred_tax_expense", "nol_expired")})
+            record.update({key: last[key] for key in ("dta_close", "dtl_close", "interest_cf_close")})
         annual.append(record)
     max_balance = max(abs(row["balance_check"]) for row in rows)
     checks = {
@@ -637,7 +841,9 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
                        "max_total_cash_reconciliation_error": max(total_cash_errors),
                        "max_reserve_reconciliation_error": max(reserve_errors),
                        "max_transfer_reconciliation_error": max(transfer_errors)})
-    return {
+    if tax_state:
+        checks.update({"advanced_tax_enabled": True, **tax_state.checks})
+    result = {
         "monthly": rows,
         "annual": annual,
         "valuation": valuation,
@@ -645,3 +851,6 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
         "opening_trial_balance": book.opening_trial_balance,
         "journal": book.journal,
     }
+    if tax_state:
+        result["tax_annual"] = tax_state.records
+    return result
