@@ -3,9 +3,11 @@ from copy import deepcopy
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -127,6 +129,12 @@ def test_dry_run_is_read_only_and_real_publication_has_no_output_links(fixture_p
     assert '/private/' not in metadata and 'result_file' not in metadata
     assert str(f['root']) not in metadata and 'api_key' not in metadata
     assert result['manifest']['runtime']['harbor_version'] == '0.25.0'
+    assert result['manifest']['runtime']['expected_image_id'] == 'sha256:' + '0' * 64
+    assert result['manifest']['runtime']['pinned_preload_supported'] is True
+    assert result['manifest']['runtime']['bit_identical_rebuild_guaranteed'] is False
+    assert result['manifest']['runtime']['setup_commands'] == [
+        'UV_PROJECT_ENVIRONMENT=.venv312 uv sync --frozen --extra test --python 3.12',
+        'source .venv312/bin/activate', './prepare_runtime.sh']
     assert (f['root'] / 'prepare_runtime.sh').stat().st_mode & 0o111
     assert {path.name for path in (f['root'] / publish.RUNTIME_DIRECTORY).iterdir()} == publish.release.RUNTIME_FILES
     assert not list(f['root'].glob('.dataset-publish-*'))
@@ -144,13 +152,114 @@ def test_runtime_preparation_uses_minimal_context_from_any_cwd(fixture_publicati
     docker = mock_bin / 'docker'
     docker.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
     docker.chmod(0o755)
-    import os
     result = subprocess.run([str(f['root'] / 'prepare_runtime.sh')], cwd=tmp_path,
         env={**os.environ, 'PATH': str(mock_bin) + os.pathsep + os.defpath}, capture_output=True, text=True)
     assert result.returncode == 0
     arguments = result.stdout.splitlines()
     assert arguments == ['build', '--network', 'host', '-t', 'sheetsfactory-lo:24.2',
                          str(f['root'] / publish.RUNTIME_DIRECTORY)]
+
+
+def _run_preparation_with_fake_docker(script, tmp_path, image_id):
+    """Execute only the generated shell and a local Docker substitute."""
+    mock_bin = tmp_path / 'fake-docker-bin'
+    mock_bin.mkdir()
+    calls = tmp_path / 'fake-docker-calls.jsonl'
+    docker = mock_bin / 'docker'
+    docker.write_text(f'#!{sys.executable}\n' + '''import json, os, sys
+with open(os.environ['FAKE_DOCKER_CALLS'], 'a') as stream:
+    stream.write(json.dumps(sys.argv[1:]) + '\\n')
+if sys.argv[1:3] == ['image', 'inspect']:
+    image_id = os.environ['FAKE_DOCKER_IMAGE_ID']
+    if not image_id:
+        sys.exit(1)
+    print(image_id)
+    sys.exit(0)
+if sys.argv[1:2] != ['build']:
+    sys.exit(9)
+''')
+    docker.chmod(0o755)
+    result = subprocess.run([str(script)], cwd=tmp_path, capture_output=True, text=True,
+        env={**os.environ, 'PATH': str(mock_bin) + os.pathsep + os.defpath,
+             'FAKE_DOCKER_CALLS': str(calls), 'FAKE_DOCKER_IMAGE_ID': image_id or ''})
+    recorded = [json.loads(line) for line in calls.read_text().splitlines()]
+    return result, recorded
+
+
+def test_preloaded_exact_recorded_image_skips_build(fixture_publication, tmp_path):
+    f = fixture_publication
+    confirmation(f)
+    result = invoke(f)
+    expected_id = result['manifest']['runtime']['expected_image_id']
+    prepared, calls = _run_preparation_with_fake_docker(
+        f['root'] / 'prepare_runtime.sh', tmp_path, expected_id)
+    assert prepared.returncode == 0
+    assert calls == [['image', 'inspect', '--format', '{{.Id}}', 'sheetsfactory-lo:24.2']]
+    assert 'skipping rebuild' in prepared.stdout
+    assert not prepared.stderr
+
+
+@pytest.mark.parametrize('local_image_id', ['sha256:' + '1' * 64, None])
+def test_different_or_absent_local_image_uses_existing_build_path(
+        fixture_publication, tmp_path, local_image_id):
+    f = fixture_publication
+    confirmation(f)
+    invoke(f)
+    prepared, calls = _run_preparation_with_fake_docker(
+        f['root'] / 'prepare_runtime.sh', tmp_path, local_image_id)
+    assert prepared.returncode == 0
+    assert calls == [
+        ['image', 'inspect', '--format', '{{.Id}}', 'sheetsfactory-lo:24.2'],
+        ['build', '--network', 'host', '-t', 'sheetsfactory-lo:24.2',
+         str(f['root'] / publish.RUNTIME_DIRECTORY)]]
+    assert 'recorded image identity is not guaranteed' in prepared.stderr
+    assert 'skipping rebuild' not in prepared.stdout
+
+
+def test_runtime_tag_is_a_literal_shell_argument(fixture_publication, tmp_path, monkeypatch):
+    f = fixture_publication
+    confirmation(f)
+    sentinel = tmp_path / 'must-not-be-created'
+    unusual_tag = f'fixture:24.2; $(touch {sentinel})'
+    original = publish.release._prepare_runtime
+
+    def metadata_with_unusual_tag(*args, **kwargs):
+        # Upstream validation already excludes shell metacharacters. Exercise
+        # the generated shell defensively even if that validation later changes.
+        payload, metadata = original(*args, **kwargs)
+        return payload, {**metadata, 'image_tag': unusual_tag}
+
+    monkeypatch.setattr(publish.release, '_prepare_runtime', metadata_with_unusual_tag)
+    invoke(f)
+    prepared, calls = _run_preparation_with_fake_docker(
+        f['root'] / 'prepare_runtime.sh', tmp_path, None)
+    assert prepared.returncode == 0
+    assert calls[0] == ['image', 'inspect', '--format', '{{.Id}}', unusual_tag]
+    assert calls[1] == ['build', '--network', 'host', '-t', unusual_tag,
+                        str(f['root'] / publish.RUNTIME_DIRECTORY)]
+    assert not sentinel.exists()
+
+
+def test_multiple_recorded_images_keep_rebuild_without_new_publication_gate(
+        fixture_publication, tmp_path):
+    f = fixture_publication
+    confirmation(f)
+    task_id = f['entries'][0]['task_id']
+    diagnosis = f['run'] / 'tasks' / task_id / 'revisions/000/private/diagnosis.json'
+    content = json.loads(diagnosis.read_text())
+    content['assessments']['Q10']['evidence'][0]['engine']['image_id'] = 'sha256:' + '1' * 64
+    write_json(diagnosis, content)
+    result = invoke(f)
+    runtime = result['manifest']['runtime']
+    assert len(runtime['recorded_run_images']) == 2
+    assert runtime['expected_image_id'] is None
+    assert runtime['pinned_preload_supported'] is False
+    assert runtime['bit_identical_rebuild_guaranteed'] is False
+    prepared, calls = _run_preparation_with_fake_docker(
+        f['root'] / 'prepare_runtime.sh', tmp_path, 'sha256:' + '0' * 64)
+    assert prepared.returncode == 0
+    assert calls == [['build', '--network', 'host', '-t', 'sheetsfactory-lo:24.2',
+                      str(f['root'] / publish.RUNTIME_DIRECTORY)]]
 
 
 def test_existing_final_or_symlink_is_never_overwritten(fixture_publication, tmp_path):

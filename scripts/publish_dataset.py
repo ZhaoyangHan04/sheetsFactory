@@ -107,10 +107,30 @@ def _prepare_runtime(root, run_dir, validated, tracked, secrets):
     files = {f'{RUNTIME_DIRECTORY}/{name}': payload[f'runtime/{name}']
              for name in release.RUNTIME_FILES}
     tag = metadata['image_tag']
+    recorded_ids = {entry['image_id'] for entry in metadata['recorded_run_images']}
+    # A recorded identity comes from task evidence, never the packaging host.
+    # Multiple recorded identities retain the existing rebuild path rather than
+    # selecting one arbitrarily or introducing a new publication requirement.
+    expected_image_id = next(iter(recorded_ids)) if len(recorded_ids) == 1 else None
+    preload = ''
+    if expected_image_id is not None:
+        preload = (
+            f'runtime_expected_image_id={shlex.quote(expected_image_id)}\n'
+            'if runtime_local_image_id=$(docker image inspect --format \'{{.Id}}\' '
+            '"$runtime_image_tag" 2>/dev/null); then\n'
+            '    if [ "$runtime_local_image_id" = "$runtime_expected_image_id" ]; then\n'
+            '        printf \'%s\\n\' \'Recorded runtime image is already loaded; skipping rebuild.\'\n'
+            '        exit 0\n'
+            '    fi\n'
+            'fi\n'
+        )
     files['prepare_runtime.sh'] = (
         '#!/bin/sh\nset -eu\n'
         'dataset_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\n'
-        f'docker build --network host -t {shlex.quote(tag)} "$dataset_root/{RUNTIME_DIRECTORY}"\n'
+        f'runtime_image_tag={shlex.quote(tag)}\n'
+        + preload
+        + 'printf \'%s\\n\' \'Building runtime recipe; the recorded image identity is not guaranteed.\' >&2\n'
+        + f'docker build --network host -t "$runtime_image_tag" "$dataset_root/{RUNTIME_DIRECTORY}"\n'
     ).encode()
     lock = release._file(root / 'uv.lock', root, tracked)
     locked = [package for package in tomllib.loads(lock.decode()).get('package', [])
@@ -121,12 +141,14 @@ def _prepare_runtime(root, run_dir, validated, tracked, secrets):
         'context_directory': RUNTIME_DIRECTORY,
         'recipe_files': {name: _sha(raw) for name, raw in sorted(files.items())},
         'recorded_run_images': metadata['recorded_run_images'],
+        'expected_image_id': expected_image_id,
+        'pinned_preload_supported': expected_image_id is not None,
         'bit_identical_rebuild_guaranteed': False,
         'prepare_command': './prepare_runtime.sh',
         'oracle_command': 'harbor run -p SpreadsheetEval -a oracle',
         'nop_command': 'harbor run -p SpreadsheetEval -a nop',
-        'setup_commands': ['uv sync --frozen --extra test --python 3.12',
-                           'source .venv/bin/activate', './prepare_runtime.sh'],
+        'setup_commands': ['UV_PROJECT_ENVIRONMENT=.venv312 uv sync --frozen --extra test --python 3.12',
+                           'source .venv312/bin/activate', './prepare_runtime.sh'],
         'command_working_directory': 'repository root'}
 
 
