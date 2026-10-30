@@ -11,6 +11,7 @@ import yaml
 from sheets_factory.core.audit import AuditStore
 from sheets_factory.reporting import read_run
 from sheets_factory.resume import ProducerLease
+from sheets_factory.pipelines.factory import FactoryPipeline
 from sheets_factory.task_adapters.public_input_priority import canonical,ref,sha
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -73,6 +74,18 @@ def test_prepare_only_has_dev_targets_full_quality_data_temp_and_no_lease(tmp_pa
     assert frozen['host_runtime']['temporary_directory']==str(output/'temporary')
     assert os.environ.get('TMPDIR')==before and frozen['actual_model_calls']==frozen['actual_LO_calls']==0
     assert not frozen['qualified'] and entry.validate_prepared(output)==frozen
+
+
+def test_prepared_manifest_supports_real_factory_load_seeds(tmp_path,environment):
+    output,_=prepare_one(tmp_path,environment)
+    config=yaml.safe_load((output/'resolved_config.yaml').read_text())
+    updates=[]
+    factory=object.__new__(FactoryPipeline);factory.config=config;factory.targets=config['run']['targets']
+    factory.audit=type('ReadOnlyAudit',(),{'update_run':lambda self,**kwargs:updates.append(kwargs)})()
+    seeds=FactoryPipeline.load_seeds(factory)
+    assert len(seeds)==1 and updates[-1]['discovered_sources']==1
+    assert updates[-1]['source_archive'].startswith('private-full-financial-graph:')
+    assert updates[-1]['source_archive_sha256'] is None
 
 
 def test_cli_never_executes_without_explicit_run(tmp_path,monkeypatch,environment):

@@ -139,6 +139,8 @@ def prepare(output,*,count=1,source_handoff=None,compiler_handoff=None,joint_pro
         config['agents']['max_parallel_calls']=parallelism
         write(output/'seed_manifest.json',{'schema_version':1,'kind':'full_graph_joint_factory_sources',
             'selected':entries,'source_selection':selection_ref,'model_scores_consulted':False,
+            'unique_workbooks_inspected':len(entries),'download_url':'private-full-financial-graph:'+canonical([e['sha256'] for e in entries]),
+            'archive_sha256':None,
             'development_only':count==1,'qualified':False,'derived_scenarios_are_independent_observed_companies':False})
         (output/'resolved_config.yaml').write_text(yaml.safe_dump(config,sort_keys=False))
         for entry in entries:
