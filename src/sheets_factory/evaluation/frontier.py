@@ -258,10 +258,14 @@ def review_agent_timeout(result, task, *, result_file, diagnostics=None):
         return None
     reward = ((result.get('verifier_result') or {}).get('rewards') or {}).get('reward')
     usage = result.get('agent_result') or {}
+    multiplier = (result.get('config') or {}).get('agent_timeout_multiplier')
+    # Harbor serializes an unset override as null; the task's original budget
+    # applies in that case, just as when the field is absent.
+    multiplier = 1 if multiplier is None else multiplier
     if (type(reward) not in (int, float) or reward not in (0, 1)
             or type(usage.get('n_input_tokens')) is not int or usage['n_input_tokens'] <= 0
             or type(usage.get('n_output_tokens')) is not int or usage['n_output_tokens'] <= 0
-            or (result.get('config') or {}).get('agent_timeout_multiplier', 1) != 1):
+            or multiplier != 1):
         return None
     timing, verification = result.get('agent_execution') or {}, result.get('verifier') or {}
     try:

@@ -442,8 +442,12 @@ def timeout_result(tmp_path, frozen, reward=0, *, command_output='ordinary comma
 
 
 @pytest.mark.parametrize('reward', [0, 1])
-def test_normal_exhausted_budget_uses_actual_verifier_reward_and_bound_review(tmp_path, frozen, reward):
+@pytest.mark.parametrize('multiplier', ['absent', None, 1])
+def test_normal_exhausted_budget_uses_actual_verifier_reward_and_bound_review(tmp_path, frozen, reward, multiplier):
     path, result = timeout_result(tmp_path, frozen, reward)
+    if multiplier != 'absent':
+        result['config']['agent_timeout_multiplier'] = multiplier
+        path.write_text(json.dumps(result))
     task = frozen['tasks'][0]
     review = review_agent_timeout(result, task, result_file=path)
     assert review['classification'] == 'normal_agent_budget_exhaustion'
