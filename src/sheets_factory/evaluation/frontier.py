@@ -32,6 +32,8 @@ from ..dashboard.server import DashboardServer
 from ..llm.codex import CodexCLI, NATIVE_CODEX
 from .harbor import inspect_export
 from .tool_time import account_trial_tool_time
+from .tool_time_bounds import (POLICY_V2, account_trial_tool_time_bounds,
+                              capture_trial_container_identity, capture_trial_stop_receipt)
 
 
 MODEL = 'gpt-6.1-sol'
@@ -88,6 +90,8 @@ def _runtime_provenance(project_root, binary):
     provenance = {'runner': {'path': str(Path(__file__).resolve()), 'sha256': _sha(__file__)},
                   'tool_time_parser': {'path': str(Path(__file__).with_name('tool_time.py').resolve()),
                                        'sha256': _sha(Path(__file__).with_name('tool_time.py'))},
+                  'tool_time_bounds': {'path': str(Path(__file__).with_name('tool_time_bounds.py').resolve()),
+                                       'sha256': _sha(Path(__file__).with_name('tool_time_bounds.py'))},
                   'native_cli': {'path': str(binary), 'sha256': _sha(binary) if binary.is_file() else None}}
     for name, arguments in [('revision', ['rev-parse', 'HEAD']), ('dirty_status', ['status', '--porcelain'])]:
         try:
@@ -179,6 +183,9 @@ def freeze_selection(source_manifest, run_dir, *, phase, task_ids=None, task_roo
     source_manifest, run_dir = Path(source_manifest).resolve(), Path(run_dir).resolve()
     source_raw = source_manifest.read_bytes()
     source = json.loads(source_raw)
+    timing_version = source.get('tool_time_policy_version', 2)
+    _require(type(timing_version) is int and timing_version in {1, 2}, 'Explicit tool_time_policy_version must be 1 or 2')
+    timing_policy = dict(POLICY_V2 if timing_version == 2 else TOOL_TIME_POLICY)
     requested = set(task_ids or source['selected_task_ids'])
     _require(bool(requested) and len(requested) == len(task_ids or source['selected_task_ids']),
              'Selection must contain distinct task IDs')
@@ -211,7 +218,7 @@ def freeze_selection(source_manifest, run_dir, *, phase, task_ids=None, task_roo
         tasks.append({key: task.get(key) for key in ('task_id', 'mode', 'revision', 'revision_hash', 'source_id')} | {
             'harbor_export_binding': binding, 'task_directory': str(target),
             'task_checksum': dirhash(target, 'sha256'), 'timeout_seconds': timeout_seconds,
-            'tool_time_policy': dict(TOOL_TIME_POLICY)})
+            'tool_time_policy': dict(timing_policy)})
     prior = []
     for location in prior_selections:
         path = Path(location).resolve()
@@ -226,7 +233,7 @@ def freeze_selection(source_manifest, run_dir, *, phase, task_ids=None, task_roo
         'source_manifest': {'path': str(source_manifest), 'sha256': sha256(source_raw).hexdigest()},
         'selected_task_ids': [task['task_id'] for task in tasks], 'tasks': tasks,
         'model': model, 'reasoning_effort': reasoning_effort, 'timeout_seconds': timeout_seconds,
-        'tool_time_policy': dict(TOOL_TIME_POLICY),
+        'tool_time_policy': dict(timing_policy), 'tool_time_policy_version': timing_version,
         'n_attempts': 1, 'prompt': PROMPT, 'prompt_sha256': sha256(PROMPT.encode()).hexdigest(),
         'infrastructure_retry_policy': {'max_retries': 2, 'scored_attempts_per_task': 1,
                                         'never_retry_scored': True},
@@ -362,11 +369,16 @@ def apply_tool_time_policy(entry, selection):
     policy = selection.get('tool_time_policy')
     if not policy or entry['status'] != 'scored':
         return entry
-    _require(policy == TOOL_TIME_POLICY, 'Unsupported cumulative tool-time policy')
+    _require(policy in (TOOL_TIME_POLICY, POLICY_V2), 'Unsupported cumulative tool-time policy')
     entry['raw_verifier_reward'] = entry['reward']
-    receipt = account_trial_tool_time(entry['result_file'], budget_seconds=policy['budget_seconds'])
+    if policy == POLICY_V2:
+        stop = Path(entry['result_file']).parent / 'private/tool_time/stop_receipt.json'
+        receipt = account_trial_tool_time_bounds(entry['result_file'],
+            stop_receipt_file=stop if stop.is_file() else None, budget_seconds=policy['budget_seconds'])
+    else:
+        receipt = account_trial_tool_time(entry['result_file'], budget_seconds=policy['budget_seconds'])
     entry['tool_time'] = receipt
-    if receipt['state'] != 'verified':
+    if receipt['state'] not in {'verified', 'bounded'} or receipt['passed'] is None:
         entry.update(status='evidence_incomplete', reward=None, failure_kind='native_tool_timing_incomplete')
     elif receipt['passed'] is False:
         entry.update(reward=0, failure_kind='cumulative_tool_budget_exhausted')
@@ -509,12 +521,35 @@ async def execute_evaluation(run_dir, selection, audit, *, concurrency=4, backen
         _write(config_file, json.loads(config.model_dump_json()))
         job = await Job.create(config)
 
+        async def capture_stop(persisted):
+            if selection.get('tool_time_policy') != POLICY_V2:
+                return
+            identity = persisted.parent / 'private/tool_time/container_identity.json'
+            output = persisted.parent / 'private/tool_time/stop_receipt.json'
+            if not identity.is_file() or output.exists():
+                return
+            try:
+                await asyncio.to_thread(capture_trial_stop_receipt, persisted, identity, output)
+            except Exception as error:
+                audit.emit('frontier.tool_stop_unavailable', trial=persisted.parent.name, reason=type(error).__name__)
+
         async def progress(event):
             task_id = event.config.task.path.name
             audit.task(task_id, status='running', node='frontier_' + event.event.value,
                        last_progress_at=event.timestamp.isoformat())
             audit.emit('frontier.progress', task_id=task_id, event=event.event.value)
             if event.event.value == 'agent-start':
+                if selection.get('tool_time_policy') == POLICY_V2:
+                    trial_name = str(event.result.trial_name)
+                    trial = run_dir / 'harbor_jobs' / job_name / trial_name
+                    identity = trial / 'private/tool_time/container_identity.json'
+                    if not identity.exists():
+                        try:
+                            await asyncio.to_thread(capture_trial_container_identity, trial,
+                                trial_name.lower() + '__env-main-1', identity)
+                            audit.emit('frontier.tool_container_bound', trial=trial_name)
+                        except Exception as error:
+                            audit.emit('frontier.tool_container_unavailable', trial=trial_name, reason=type(error).__name__)
                 audit.emit('llm.started', call_id='frontier-' + str(event.result.id),
                     role='trace_agent', task_id=task_id, stage='frontier', model=MODEL,
                     reasoning_effort=EFFORT, started_at=event.timestamp.isoformat())
@@ -527,6 +562,7 @@ async def execute_evaluation(run_dir, selection, audit, *, concurrency=4, backen
             persisted = run_dir / 'harbor_jobs' / job_name / str(record.get('trial_name', '')) / 'result.json'
             timing_fields = {}
             if persisted.is_file():
+                await capture_stop(persisted)
                 actual = json.loads(persisted.read_text())
                 diagnostic_path = persisted.parent / 'verifier/diagnostics.json'
                 diagnostic = json.loads(diagnostic_path.read_text()) if diagnostic_path.is_file() else None
@@ -556,6 +592,11 @@ async def execute_evaluation(run_dir, selection, audit, *, concurrency=4, backen
 
         job.on_agent_started(progress).on_verification_started(progress).on_trial_ended(completed)
         await job.run()
+        # The trial callback may precede final environment deletion. Recheck
+        # immediately after Harbor returns, without altering any frozen result.
+        if selection.get('tool_time_policy') == POLICY_V2:
+            for persisted in sorted((run_dir / 'harbor_jobs' / job_name).glob('*/result.json')):
+                await capture_stop(persisted)
     except Exception as exc:
         _persist_failure(run_dir, exc, secrets=(key,))
         exc._frontier_error_recorded = True
