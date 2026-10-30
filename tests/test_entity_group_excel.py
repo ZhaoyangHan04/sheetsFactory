@@ -70,6 +70,8 @@ def calibrate(spec, binding):
         actual = actual_formula_value(item['formula'], values)
         expected = checked['values'][excel._ref(item['sheet'], item['cell'])]
         assert actual == expected, (item['label'], actual, expected)
+        if type(expected) is int:
+            assert type(actual) in (int, float), ('A numeric formula returned a Boolean cache type', item['label'])
         values[excel._ref(item['sheet'], item['cell'])] = actual
     return checked
 
@@ -147,6 +149,29 @@ def test_general_FX_long_division_and_three_factor_collateral_are_exact_at_bound
     book.close(); helper_book.close()
 
 
+def test_twenty_four_entity_independent_FX_rounds_use_short_references_not_one_oversized_formula():
+    public = hand.specification(); book = openpyxl.Workbook(); book.remove(book.active)
+    emitter = excel._Emitter(book, public, 10000); emitter.sheet = book.create_sheet('Independent FX')
+    rows = {str(index): {'equity_close': "'Provided'!$A$" + str(index + 1), 'fx_close_p12': "'Provided'!$B$" + str(index + 1)} for index in range(24)}
+    values = {}; expected = 0
+    for index, row in enumerate(rows.values()):
+        amount = (index + 1) * (-1 if index % 2 else 1); factor = SCALE // 2 + index
+        values[row['equity_close']], values[row['fx_close_p12']] = amount, factor
+        product = amount * factor; expected += (1 if product >= 0 else -1) * ((2 * abs(product) + SCALE) // (2 * SCALE))
+    def pair(a, b):
+        return emitter.put(('product_whole', a, b), 'whole'), emitter.put(('product_remainder', a, b), 'remainder')
+    summed = emitter.put(excel._rounded_equity_sum(emitter, rows, pair, 'group'), 'sum_of_separately_rounded')
+    for item in emitter.formulas:
+        result = actual_formula_value(item['formula'], values)
+        assert result == evaluate_expression(item['expression'], values)
+        values[excel._ref(item['sheet'], item['cell'])] = result
+        assert len(item['formula']) <= 8192
+    assert values[summed] == expected
+    assert len(emitter.formulas[-1]['formula']) < 2000
+    assert len(emitter.formulas) == 24 * 3 + 1
+    book.close()
+
+
 def test_emitter_uses_only_public_primitives_and_formula_budget_fails_without_truncation():
     tree = ast.parse(Path(excel.__file__).read_text())
     modules = [node.module or '' for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)]
@@ -213,6 +238,18 @@ def test_unrecalculated_caches_fail_and_cached_fixture_tampering_is_detected(tmp
         for item, raw in records.values(): archive.writestr(item, raw)
     report = audit_entity_group_workbook(cached_path, spec, ledger, binding)
     assert report['passed'] is True and report['quality_or_difficulty_certified'] is False
+    flag = next(x for x in binding['output_bindings'] if x['encoding'] == 'scalar' and x['path'][-1] == 'covenant_passed')
+    sheet, column, row_number = re.fullmatch(r"'([^']+)'!\$([A-Z]+)\$([0-9]+)", flag['reference']).groups()
+    index = binding['worksheet_order'].index(sheet) + 1; name = 'xl/worksheets/sheet' + str(index) + '.xml'
+    root = ET.fromstring(records[name][1])
+    coordinate = column + row_number
+    cell = next(cell for cell in root.findall('.//m:sheetData/m:row/m:c', namespace) if cell.get('r') == coordinate)
+    cell.set('t', 'b'); cell.find('m:v', namespace).text = '1'
+    bool_records = dict(records); bool_records[name] = records[name][0], ET.tostring(root, encoding='utf-8', xml_declaration=True)
+    boolean_path = tmp_path / 'boolean_substitute_cache.xlsx'
+    with ZipFile(boolean_path, 'w', ZIP_DEFLATED) as archive:
+        for item, raw in bool_records.values(): archive.writestr(item, raw)
+    assert audit_entity_group_workbook(boolean_path, spec, ledger, binding)['passed'] is False
     altered = openpyxl.load_workbook(cached_path)
     literal = next(x for x in binding['input_bindings'] if x['path'] == ['fixed_plan', 'P02'])
     altered[literal['sheet']][literal['cell']] = 0; changed = tmp_path / 'changed.xlsx'; altered.save(changed); altered.close()

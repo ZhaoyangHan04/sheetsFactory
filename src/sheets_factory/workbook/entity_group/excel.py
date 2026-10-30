@@ -240,6 +240,13 @@ def _pair_round(pair):
     return _sum(whole, increment)
 
 
+def _rounded_equity_sum(out, rows, exact_product, label):
+    """Materialize each independently rounded legal-entity amount once."""
+    references = [out.put(_pair_round(exact_product(row['equity_close'], row['fx_close_p12'])),
+        label + '/' + identity + '/rounded_equity_GBP', monetary=False) for identity, row in rows.items()]
+    return _sum(*references)
+
+
 def emit_entity_group_workbook(book, specification, *, max_formulas=1_000_000, allow_production=False, _count_only=False):
     """Emit formulas from primitive contracts only; never inspect a journal.
 
@@ -471,10 +478,10 @@ def emit_entity_group_workbook(book, specification, *, max_formulas=1_000_000, a
                 service = bind(identity, 'debt_service', _sum(r['bank_interest'], r['ic_interest_expense'], r['bank_local_margin'], r['bank_shared_margin'], r['ic_principal_paid']))
                 threshold = out.inp('entities', ei, 'covenant_threshold_p12')
                 required_ebitda = _sum(('product_whole', service, threshold), _if(('ge', ('product_remainder', service, threshold), 1), 1, 0))
-                passed = bind(identity, 'covenant_passed', ('or', ('eq', service, 0), ('ge', r['ebitda'], required_ebitda)), monetary=False)
+                passed = bind(identity, 'covenant_passed', _if(('or', ('eq', service, 0), ('ge', r['ebitda'], required_ebitda)), 1, 0), monetary=False)
                 run = bind(identity, 'cure_run_after_test', _if(passed, _if(r['trap_open'], _sum(r['cure_count_open'], 1), 0), 0), monetary=False)
                 released = ('and', r['trap_open'], ('ge', run, 2))
-                trap = bind(identity, 'trap_next', _if(passed, _if(released, 0, r['trap_open']), 1), monetary=False)
+                trap = bind(identity, 'trap_next', _if(passed, _if(released, 0, _if(r['trap_open'], 1, 0)), 1), monetary=False)
                 bind(identity, 'cure_count_next', _if(released, 0, run), monetary=False)
                 for field, side in (('ic_receivable_close', 'lender_id'), ('ic_payable_close', 'borrower_id')):
                     bind(identity, field, _sum(*(loan_balances[lid] for lid, (_, loan) in loans.items() if loan[side] == identity)))
@@ -542,7 +549,7 @@ def emit_entity_group_workbook(book, specification, *, max_formulas=1_000_000, a
                 'historical_retained_gbp_pence': _sum(*(r['retained_historical_gbp'] for r in rows.values()))}
             for field, expression in scalars.items(): gp[field] = out.put(expression, sid + '/' + month + '/' + field, (*group_path, field))
             for field, expression in {
-                'group_equity_translation_rounding_gbp_pence': _sub(gp['consolidated_net_assets_gbp_pence'], _sum(*(_round(r['equity_close'], r['fx_close_p12']) for r in rows.values()))),
+                'group_equity_translation_rounding_gbp_pence': _sub(gp['consolidated_net_assets_gbp_pence'], _rounded_equity_sum(out, rows, exact_product, sid + '/' + month)),
                 'aggregate_line_rounding_gbp_pence': _sub(_sum(gp['consolidated_net_assets_gbp_pence'], gp['consolidated_external_bank_gbp_pence']), _sum(gp['consolidated_cash_gbp_pence'], gp['consolidated_book_gbp_pence']))}.items():
                 gp[field] = out.put(expression, sid + '/' + month + '/' + field, (*group_path, field))
             prior_groups.append(gp)
@@ -581,6 +588,7 @@ def emit_entity_group_workbook(book, specification, *, max_formulas=1_000_000, a
         'formula_count': len(out.formulas), 'physical_formula_limit': max_formulas,
         'monetary_formula_references': sorted(monetary_refs & actual_formula_refs),
         'monetary_field_aliases_cannot_protect_a_formula_value': True,
+        'formula_flags_encoding': 'integer_0_or_1',
         'shared_definitions_are_aliases_not_duplicate_cells': True,
         'large_FX_numerators_use_exact_quotient_remainder_pairs': True,
         'fixed_plan_provided_and_protected': True, 'optimisation_performed': False,
