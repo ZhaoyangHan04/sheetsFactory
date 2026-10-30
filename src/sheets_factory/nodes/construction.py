@@ -241,6 +241,7 @@ class PlanNode(BaseNode):
                                 for mode, task in prior.items() if mode in ['financial_modeling', 'debugging'] and task)
             payload = {**authoring_source_context(ctx), 'construction_contract': construction_contract(config=ctx.config),
                        'variant': variant, 'previous_target_groups': previous,
+                       'generation_feedback': ctx.config.get('generation_feedback', {}),
                        'known_source_business_issues': ctx.data.get('source_business_issues', []),
                        'finance_module_evidence': ctx.data.get('finance_evidence', {}),
                        'profile': compact_profile(ctx.data['profile'])}

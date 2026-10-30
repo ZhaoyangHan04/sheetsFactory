@@ -77,6 +77,23 @@ def test_author_context_respects_configured_risk_registry_without_inventing_file
     assert payload['native_risk_registry_available'] is False
 
 
+def test_hard_planner_receives_configured_scope_and_actual_development_feedback(tmp_path):
+    captured = []
+    class Backend:
+        def complete(self, text, **kwargs):
+            captured.append((text, json.loads(text.rsplit('\nINPUT JSON:\n', 1)[1])))
+            return {'financial_modeling': {'title': 'Integrated fixture module', 'edits': []}, 'source_assessment': {}}
+    ctx = context(tmp_path, Backend())
+    ctx.config.update(construction={'max_edit_count': {'financial_modeling': 800}},
+        prompt_overrides={'planning.md': 'planning_hard.md'},
+        generation_feedback={'observed_shortcut': 'Adjacent formulas translated exactly', 'phase': 'development'})
+    PlanNode().execute(ctx)
+    text, payload = captured[0]
+    assert 'frontier' in text and 'mask_ranges' in text
+    assert payload['construction_contract']['modes']['financial_modeling']['edit_count']['max'] == 800
+    assert payload['generation_feedback'] == ctx.config['generation_feedback']
+
+
 @pytest.mark.parametrize('mode,actual,minimum', [('financial_modeling', 5, 6), ('financial_modeling', 81, 6),
                                                ('debugging', 1, 2), ('debugging', 81, 2)])
 def test_count_rejection_reports_actionable_actual_minimum_and_maximum(mode, actual, minimum):

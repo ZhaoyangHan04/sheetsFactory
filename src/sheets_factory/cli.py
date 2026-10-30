@@ -106,7 +106,8 @@ def main(argv=None):
         lease = ProducerLease(run_dir).acquire()
         audit = AuditStore(run_dir, {'id': run_id, 'target_count': sum(config['run']['targets'].values()),
             'financial_target': config['run']['targets']['financial_modeling'],
-            'debugging_target': config['run']['targets']['debugging'], 'difficulty_status': 'deferred',
+            'debugging_target': config['run']['targets']['debugging'], 'difficulty_status': (
+                'deferred' if config.get('diagnosis', {}).get('difficulty_deferred', True) else 'pending'),
             'model': config['agents']['model'], 'reasoning_effort': config['agents']['reasoning_effort']})
         audit.update_run(code_revision=revision, producer_pid=os.getpid(), producer_active=True,
                          code_history=[{'code_revision': revision, 'started_at': audit.run['started_at'], 'phase': 'initial'}])

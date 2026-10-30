@@ -298,7 +298,8 @@ class ExportNode(BaseNode):
     def execute(self, ctx):
         destination = Path(ctx.config['run_dir']) / 'SpreadsheetEval' / ctx.task_id
         metadata = {'task_id': ctx.task_id, 'mode': ctx.mode, 'source_id': ctx.data['source_id'],
-                    'source_file': ctx.source.name, 'difficulty_status': 'deferred',
+                    'source_file': ctx.source.name, 'difficulty_status': (
+                        'deferred' if ctx.config.get('diagnosis', {}).get('difficulty_deferred', True) else 'pending'),
                     'revision': ctx.revision, 'revision_hash': ctx.data['revision_hash'],
                     'base_image': ctx.config['engine']['image']}
         export_harbor(ctx.revision_dir, destination, metadata, ctx.config['project_root'])

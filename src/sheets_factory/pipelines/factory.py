@@ -106,7 +106,8 @@ class FactoryPipeline(BasePipeline):
                             finance_evidence=seed.get('finance_evidence', {}),
                             source_business_issues=seed.get('finance_evidence', {}).get('source_business_issues', []))
         self.audit.task(task_id, mode=mode, source_id=seed['sha256'], source=source.name,
-                        variant=variant, status='scheduled', difficulty_status='deferred')
+                        variant=variant, status='scheduled', difficulty_status=(
+                            'deferred' if self.config.get('diagnosis', {}).get('difficulty_deferred', True) else 'pending'))
         return context
 
     def _claim_targets(self, context):
@@ -392,10 +393,16 @@ class FactoryPipeline(BasePipeline):
             eligibility = evidence.get('financial_modeling_eligible', evidence.get('eligible')) if isinstance(evidence, dict) else None
             if eligibility is False:
                 seed['modes'] = [mode for mode in self.targets if mode != 'financial_modeling']
-        seeds.sort(key=lambda seed: (
-            0 if seed['finance_evidence'].get('financial_modeling_eligible') is True else 1,
-            0 if seed['survey'].get('status') == 'ok' and seed['survey'].get('error_count') == 0 else 1,
-            -seed.get('rank_score', 0)))
+        ordering = self.config['run'].get('source_ordering', 'finance_then_stability')
+        if ordering == 'rank_score':
+            seeds.sort(key=lambda seed: (-seed.get('rank_score', 0), seed['sha256']))
+        elif ordering == 'finance_then_stability':
+            seeds.sort(key=lambda seed: (
+                0 if seed['finance_evidence'].get('financial_modeling_eligible') is True else 1,
+                0 if seed['survey'].get('status') == 'ok' and seed['survey'].get('error_count') == 0 else 1,
+                -seed.get('rank_score', 0)))
+        elif ordering != 'manifest':
+            raise ValueError('Unknown source ordering: ' + str(ordering))
         if self.config['run'].get('source_filter'):
             seeds = [seed for seed in seeds if self.config['run']['source_filter'].lower() in seed['local_path'].lower()]
         self.audit.update_run(discovered_sources=manifest['unique_workbooks_inspected'], selected_sources=len(seeds),

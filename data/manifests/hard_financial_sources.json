@@ -1,0 +1,1881 @@
+{
+  "schema_version": 1,
+  "dataset": "Hardfinancialsourcefirstwave:verifiedmoduleevidence, nottaskapproval",
+  "created_at": "2026-10-30T04:34:01.554960+00:00",
+  "unique_workbooks_inspected": 8,
+  "selected_count": 8,
+  "selected": [
+    {
+      "sha256": "793d67468c68f625f6d51d84cb559ee2011b040eebf75355b0e8bb66a4167554",
+      "source_sha256": "793d67468c68f625f6d51d84cb559ee2011b040eebf75355b0e8bb66a4167554",
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/hard_financial/793d67468c68_FinStmtEx.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/research/fallback_sources/normalized/793d67468c68.xlsx",
+      "archive_member": "financial/processed/FinStmtEx.xls",
+      "source_url": "https://zenodo.org/records/581673",
+      "download_url": "https://zenodo.org/records/581673/files/financial.zip?download=1",
+      "source_archive_sha256": "fad3c1cbb6268be6296657a22732d7dda98014282606df1c31a9d275fe0f6001",
+      "nonempty_sheet_count": 5,
+      "sheet_count": 5,
+      "formula_count": 409,
+      "rank_score": 90,
+      "modes": [
+        "financial_modeling",
+        "debugging"
+      ],
+      "debugging_eligible": true,
+      "finance_evidence": {
+        "priority": 100,
+        "classification": "populated_forecast",
+        "evidence_cells": [
+          [
+            "IS",
+            "E5"
+          ],
+          [
+            "IS",
+            "E7"
+          ],
+          [
+            "IS",
+            "E17"
+          ],
+          [
+            "BS",
+            "E10"
+          ],
+          [
+            "BS",
+            "E20"
+          ],
+          [
+            "BS",
+            "E36"
+          ],
+          [
+            "CF",
+            "D29"
+          ],
+          [
+            "Ratios",
+            "E31"
+          ]
+        ],
+        "safe_modules": [
+          {
+            "case_id": "statement-forecast-income",
+            "business_goal": "Forecast sales, costs and earnings using growth and operating assumptions",
+            "candidate_regions": [
+              "IS!E7:E17"
+            ],
+            "required_public_rules": [
+              "Sales grow from actual Year3 using I7; COGS and operating costs use the specified forecast common-size ratios.",
+              "Depreciation comes from the linked PP&E/cash-flow calculation; interest and tax use the supplied financing and tax assumptions."
+            ]
+          },
+          {
+            "case_id": "statement-forecast-working-capital",
+            "business_goal": "Build forecast working capital, PP&E, equity and cash balance",
+            "candidate_regions": [
+              "BS!E10:E36",
+              "CF!D7:D29"
+            ],
+            "required_public_rules": [
+              "Inventory and PP&E use the forecast turnover ratios; receivables grow with sales.",
+              "Cash flow uses signed balance changes, financing and dividends; equity rolls forward retained earnings."
+            ]
+          },
+          {
+            "case_id": "statement-forecast-returns",
+            "business_goal": "Calculate forecast DuPont return on equity and financial performance ratios",
+            "candidate_regions": [
+              "Ratios!E26:E31",
+              "IS!E20:E30"
+            ],
+            "required_public_rules": [
+              "Disclose the exact five-factor DuPont chain and use supplied forecast financial statements.",
+              "Any valuation outputs must preserve the supplied share-count and dividend-growth assumptions."
+            ]
+          }
+        ],
+        "source_business_issues": [
+          "No native arithmetic inconsistency found in sampled forecast income, cash roll-forward, balance-sheet equality and DuPont identity. This is a scoped audit, not certification of every original cell.",
+          "Some forecast drivers are hard-coded ratio assumptions. Keep them public instead of masking them as derivable outputs.",
+          "Physical Sheet5 is a short explanatory note rather than a financial module; four sheets contain substantive linked calculations."
+        ],
+        "source_path": "/data/hzy/sheetsFactory/outputs/research/fallback_sources/raw/793d67468c_FinStmtEx.xls",
+        "source_sha256": "793d67468c68f625f6d51d84cb559ee2011b040eebf75355b0e8bb66a4167554",
+        "sha256": "793d67468c68f625f6d51d84cb559ee2011b040eebf75355b0e8bb66a4167554",
+        "archive_member": "financial/processed/FinStmtEx.xls",
+        "normalized_path": "/data/hzy/sheetsFactory/outputs/research/fallback_sources/normalized/793d67468c68.xlsx",
+        "financial_modeling_eligible": true,
+        "debugging_eligible": true,
+        "scenario_required": false,
+        "formula_count": 409,
+        "sheet_count": 5,
+        "error_count": 0,
+        "evidence": [
+          {
+            "sheet": "IS",
+            "cell": "E5",
+            "value_or_formula": "Forecast",
+            "cached_value": "Forecast"
+          },
+          {
+            "sheet": "IS",
+            "cell": "E7",
+            "value_or_formula": "=D7*(1+I7)",
+            "cached_value": 123.05
+          },
+          {
+            "sheet": "IS",
+            "cell": "E17",
+            "value_or_formula": "=E15-E16",
+            "cached_value": 33.9544384615385
+          },
+          {
+            "sheet": "BS",
+            "cell": "E10",
+            "value_or_formula": "=CF!D29",
+            "cached_value": 66.6775153846154
+          },
+          {
+            "sheet": "BS",
+            "cell": "E20",
+            "value_or_formula": "=E18+E13",
+            "cached_value": 239.554438461538
+          },
+          {
+            "sheet": "BS",
+            "cell": "E36",
+            "value_or_formula": "=E34+E30",
+            "cached_value": 239.554438461538
+          },
+          {
+            "sheet": "CF",
+            "cell": "D29",
+            "value_or_formula": "=D27+D28",
+            "cached_value": 66.6775153846154
+          },
+          {
+            "sheet": "Ratios",
+            "cell": "E31",
+            "value_or_formula": "=E26*E27*E28*E29*E30",
+            "cached_value": 0.204477753055682
+          }
+        ],
+        "risk": "Candidate source only; normal automatic planning, diagnosis, independent recovery and Harbor gates remain mandatory.",
+        "business_correctness_certified": false,
+        "downstream_reviews": [
+          {
+            "case_id": "statement-forecast-income",
+            "candidate_formula_count": 11,
+            "affected_formula_count": 99,
+            "affected_sheets": [
+              "BS",
+              "CF",
+              "IS",
+              "Ratios"
+            ],
+            "affected_formula_cells": [
+              "BS!E10",
+              "BS!E11",
+              "BS!E13",
+              "BS!E16",
+              "BS!E17",
+              "BS!E18",
+              "BS!E20",
+              "BS!E25",
+              "BS!E26",
+              "BS!E27",
+              "BS!E30",
+              "BS!E32",
+              "BS!E34",
+              "BS!E36",
+              "BS!I10",
+              "BS!I11",
+              "BS!I13",
+              "BS!I16",
+              "BS!I17",
+              "BS!I18",
+              "BS!I20",
+              "BS!I25",
+              "BS!I26",
+              "BS!I27",
+              "BS!I30",
+              "BS!I32",
+              "BS!I34",
+              "BS!I36",
+              "BS!N10",
+              "BS!N11",
+              "BS!N12",
+              "BS!N13",
+              "BS!N16",
+              "BS!N17",
+              "BS!N18",
+              "BS!N20",
+              "BS!N27",
+              "BS!N29",
+              "BS!N30",
+              "BS!N32",
+              "BS!N33",
+              "BS!N34",
+              "BS!N36",
+              "CF!D10",
+              "CF!D12",
+              "CF!D13",
+              "CF!D14",
+              "CF!D18",
+              "CF!D28",
+              "CF!D29",
+              "CF!D7",
+              "CF!D8",
+              "IS!E10",
+              "IS!E11",
+              "IS!E12",
+              "IS!E13",
+              "IS!E14",
+              "IS!E15",
+              "IS!E16",
+              "IS!E17",
+              "IS!E20",
+              "IS!E28",
+              "IS!E7",
+              "IS!E8",
+              "IS!E9",
+              "IS!I10",
+              "IS!I11",
+              "IS!I12",
+              "IS!I13",
+              "IS!I14",
+              "IS!I15",
+              "IS!I16",
+              "IS!I17",
+              "IS!I20",
+              "IS!I8",
+              "IS!I9",
+              "IS!N12",
+              "IS!N13",
+              "IS!N14",
+              "IS!N15",
+              "IS!N16",
+              "IS!N17",
+              "IS!N7",
+              "IS!N9",
+              "Ratios!E11",
+              "Ratios!E13",
+              "Ratios!E14",
+              "Ratios!E15",
+              "Ratios!E18",
+              "Ratios!E20",
+              "Ratios!E21",
+              "Ratios!E26",
+              "Ratios!E27",
+              "Ratios!E28",
+              "Ratios!E29",
+              "Ratios!E30",
+              "Ratios!E31",
+              "Ratios!E6",
+              "Ratios!E7"
+            ],
+            "known_business_defect_intersections": [],
+            "current_cached_errors_in_affected_set": [],
+            "unresolved_formula_count_in_workbook": 0,
+            "require_actual_selected_target_reanalysis": true,
+            "eligibility_note": "Static source audit does not certify the future scenario or final task. No upstream-only correctness claim is sufficient."
+          },
+          {
+            "case_id": "statement-forecast-working-capital",
+            "candidate_formula_count": 30,
+            "affected_formula_count": 92,
+            "affected_sheets": [
+              "BS",
+              "CF",
+              "IS",
+              "Ratios"
+            ],
+            "affected_formula_cells": [
+              "BS!E10",
+              "BS!E11",
+              "BS!E12",
+              "BS!E13",
+              "BS!E16",
+              "BS!E17",
+              "BS!E18",
+              "BS!E20",
+              "BS!E25",
+              "BS!E26",
+              "BS!E27",
+              "BS!E30",
+              "BS!E32",
+              "BS!E34",
+              "BS!E36",
+              "BS!I10",
+              "BS!I11",
+              "BS!I12",
+              "BS!I13",
+              "BS!I16",
+              "BS!I17",
+              "BS!I18",
+              "BS!I20",
+              "BS!I25",
+              "BS!I26",
+              "BS!I27",
+              "BS!I30",
+              "BS!I32",
+              "BS!I34",
+              "BS!I36",
+              "BS!N10",
+              "BS!N11",
+              "BS!N12",
+              "BS!N13",
+              "BS!N16",
+              "BS!N17",
+              "BS!N18",
+              "BS!N20",
+              "BS!N27",
+              "BS!N29",
+              "BS!N30",
+              "BS!N32",
+              "BS!N33",
+              "BS!N34",
+              "BS!N36",
+              "CF!D10",
+              "CF!D11",
+              "CF!D12",
+              "CF!D13",
+              "CF!D14",
+              "CF!D18",
+              "CF!D22",
+              "CF!D23",
+              "CF!D24",
+              "CF!D25",
+              "CF!D27",
+              "CF!D28",
+              "CF!D29",
+              "CF!D7",
+              "CF!D8",
+              "IS!E12",
+              "IS!E13",
+              "IS!E15",
+              "IS!E16",
+              "IS!E17",
+              "IS!E20",
+              "IS!E28",
+              "IS!I12",
+              "IS!I13",
+              "IS!I15",
+              "IS!I16",
+              "IS!I17",
+              "IS!I20",
+              "IS!N12",
+              "IS!N13",
+              "IS!N15",
+              "IS!N16",
+              "IS!N17",
+              "Ratios!E11",
+              "Ratios!E13",
+              "Ratios!E14",
+              "Ratios!E15",
+              "Ratios!E18",
+              "Ratios!E20",
+              "Ratios!E21",
+              "Ratios!E26",
+              "Ratios!E27",
+              "Ratios!E28",
+              "Ratios!E29",
+              "Ratios!E30",
+              "Ratios!E31",
+              "Ratios!E7"
+            ],
+            "known_business_defect_intersections": [],
+            "current_cached_errors_in_affected_set": [],
+            "unresolved_formula_count_in_workbook": 0,
+            "require_actual_selected_target_reanalysis": true,
+            "eligibility_note": "Static source audit does not certify the future scenario or final task. No upstream-only correctness claim is sufficient."
+          },
+          {
+            "case_id": "statement-forecast-returns",
+            "candidate_formula_count": 10,
+            "affected_formula_count": 12,
+            "affected_sheets": [
+              "IS",
+              "Ratios"
+            ],
+            "affected_formula_cells": [
+              "IS!E20",
+              "IS!E22",
+              "IS!E28",
+              "IS!E30",
+              "IS!I20",
+              "IS!I22",
+              "Ratios!E26",
+              "Ratios!E27",
+              "Ratios!E28",
+              "Ratios!E29",
+              "Ratios!E30",
+              "Ratios!E31"
+            ],
+            "known_business_defect_intersections": [],
+            "current_cached_errors_in_affected_set": [],
+            "unresolved_formula_count_in_workbook": 0,
+            "require_actual_selected_target_reanalysis": true,
+            "eligibility_note": "Static source audit does not certify the future scenario or final task. No upstream-only correctness claim is sufficient."
+          }
+        ],
+        "admission_basis": "Previouslyprofessionallyauditedmodule/task-Didentities;sourceadmissionisnotnewtaskapproval",
+        "current_task_audit_index": {
+          "path": "/data/hzy/sheetsFactory/outputs/validation/final_financial_business_audit_index_20261029T174729Z.json",
+          "sha256": "f0e4160533cb55cbbac5f12ad8a0c7d172d830407f5b15e634e10446ee3472c5"
+        },
+        "previous_good_task_modules": [
+          {
+            "task_id": "fm-793d67468c68",
+            "revision": 0,
+            "D_count": 67,
+            "five_artifact_binding": {
+              "input": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68/revisions/000/public/input.xlsx",
+                "sha256": "5135b8245f1acdbf6a9a959dfa6b1c096b6a7b5fc36d0d6247dfe08c7b7a422f"
+              },
+              "goal": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68/revisions/000/private/goal.xlsx",
+                "sha256": "498f8d6975fd2b91afed80cba8e7d60f008a4f23b45e21271e13f16cc46dfd71"
+              },
+              "instruction": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68/revisions/000/public/instruction.md",
+                "sha256": "ffa8706116caa271e5e65840d004e3bf84fea143e15dece588c47ae328612d4a"
+              },
+              "plan": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68/revisions/000/private/plan.json",
+                "sha256": "b792314ce5c3970842dbf11a9b36cf8015945c80a4afc3bb36503064680f337d"
+              },
+              "delta": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68/revisions/000/private/expected_delta.json",
+                "sha256": "a00ee52908f204b89eeb55ecb2a10ccdb89cf2bc65201dfe88364ea5528c2128"
+              }
+            },
+            "math_reports": [
+              "/data/hzy/sheetsFactory/outputs/validation/new_batch_business_review_20261029T150458Z.json"
+            ]
+          },
+          {
+            "task_id": "fm-793d67468c68-v1",
+            "revision": 0,
+            "D_count": 96,
+            "five_artifact_binding": {
+              "input": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68-v1/revisions/000/public/input.xlsx",
+                "sha256": "411bf5e13916a900c02d921141c27d6efe55bd36c8d36589a14f51818e438d32"
+              },
+              "goal": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68-v1/revisions/000/private/goal.xlsx",
+                "sha256": "498f8d6975fd2b91afed80cba8e7d60f008a4f23b45e21271e13f16cc46dfd71"
+              },
+              "instruction": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68-v1/revisions/000/public/instruction.md",
+                "sha256": "a279446a9bfe5085e28165c9de44932e5aa5f4c7e6fd0ac198d7c185bc41a47b"
+              },
+              "plan": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68-v1/revisions/000/private/plan.json",
+                "sha256": "47c8b0bb0a97265290d3963132629e43920d4f691637ad82c5ac18e5a22cce31"
+              },
+              "delta": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68-v1/revisions/000/private/expected_delta.json",
+                "sha256": "ceca1c54b983195dda5f76825198f3d70fed84887676cbf9eba964b744f2678b"
+              }
+            },
+            "math_reports": [
+              "/data/hzy/sheetsFactory/outputs/validation/financial_modeling_new_variants_review_20261029T165934Z.json"
+            ]
+          }
+        ],
+        "difficulty_status": "potential_only_must_measure_with_gpt-6.1-sol_xhigh",
+        "hard_generation_constraints": [
+          "Preserveallpublicbusinessassumptionsandunit/periodconventions.",
+          "Combinegenuinelydifferentbusinessmechanismsandcutwholecriticalformulafamiliesacrossperiods; notcopiedcellcountgrowth.",
+          "Do notcrossknownnativeunsafe regions in anyfullactualD; independentbusinesscritiqueofnewfullDremainsmandatory.",
+          "Originalblanktemplatesrequirecompletepublicscenarioandnewrecalculatedcleanfinitegoldbeforemasking."
+        ]
+      }
+    },
+    {
+      "sha256": "ed2f5f2d4879a68bb40065e5c8596aa177e1762194ec08c76986a429a8ae190f",
+      "source_sha256": "ed2f5f2d4879a68bb40065e5c8596aa177e1762194ec08c76986a429a8ae190f",
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/hard_financial/ed2f5f2d4879_clienttemplate.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/ed2f5f2d4879.xlsx",
+      "archive_member": "financial/processed/clienttemplate.xls",
+      "source_url": "https://zenodo.org/records/581673",
+      "download_url": "https://zenodo.org/records/581673/files/financial.zip?download=1",
+      "source_archive_sha256": "fad3c1cbb6268be6296657a22732d7dda98014282606df1c31a9d275fe0f6001",
+      "nonempty_sheet_count": 13,
+      "sheet_count": 13,
+      "formula_count": 920,
+      "rank_score": 89,
+      "modes": [
+        "financial_modeling",
+        "debugging"
+      ],
+      "debugging_eligible": true,
+      "finance_evidence": {
+        "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/ed2f5f2d48_clienttemplate.xls",
+        "source_sha256": "ed2f5f2d4879a68bb40065e5c8596aa177e1762194ec08c76986a429a8ae190f",
+        "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/ed2f5f2d4879.xlsx",
+        "classification": "unpopulated_template",
+        "priority": 10,
+        "sheet_count": 13,
+        "formula_count": 920,
+        "cached_error_count": 4,
+        "evidence": [
+          {
+            "sheet": "Sales Forecast",
+            "cell": "A5",
+            "value_or_formula": "Thinking about seasonality and business growth what are the forecasted unit sales for each category?",
+            "cached_value": "Thinking about seasonality and business growth what are the forecasted unit sales for each category?"
+          },
+          {
+            "sheet": "Sales Forecast",
+            "cell": "B10",
+            "value_or_formula": 0,
+            "cached_value": 0
+          },
+          {
+            "sheet": "Monthly Budget",
+            "cell": "D8",
+            "value_or_formula": 0,
+            "cached_value": 0
+          },
+          {
+            "sheet": "Sources of Capital",
+            "cell": "B22",
+            "value_or_formula": 0.1,
+            "cached_value": 0.1
+          }
+        ],
+        "candidate_cases": [],
+        "constraints_and_original_defects": [
+          "Forecast sales and operating inputs are zero. Four existing Financial Diagnostics division errors. Use only after recording a coherent public scenario and validating the new baseline; do not fill arbitrary values solely to make mutation observable."
+        ],
+        "business_correctness_certified": false,
+        "sha256": "ed2f5f2d4879a68bb40065e5c8596aa177e1762194ec08c76986a429a8ae190f",
+        "financial_modeling_eligible": true,
+        "debugging_eligible": true,
+        "scenario_required": true,
+        "safe_modules": [
+          {
+            "business_goal": "Populate a coherent startup forecast and rebuild revenue, operating budget or financing calculations.",
+            "candidate_regions": [
+              "Sales Forecast",
+              "Monthly Budget",
+              "Income Statement",
+              "Cash Flow Statement"
+            ],
+            "required_public_rules": [
+              "Disclose every scenario input and its cells.",
+              "Use preserved input drivers; independently check chosen module and baseline errors."
+            ]
+          }
+        ],
+        "source_business_issues": [
+          "Forecast sales and operating inputs are zero. Four existing Financial Diagnostics division errors. Use only after recording a coherent public scenario and validating the new baseline; do not fill arbitrary values solely to make mutation observable."
+        ],
+        "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification.",
+        "admission_basis": "Previouslyprofessionallyauditedmodule/task-Didentities;sourceadmissionisnotnewtaskapproval",
+        "current_task_audit_index": {
+          "path": "/data/hzy/sheetsFactory/outputs/validation/final_financial_business_audit_index_20261029T174729Z.json",
+          "sha256": "f0e4160533cb55cbbac5f12ad8a0c7d172d830407f5b15e634e10446ee3472c5"
+        },
+        "previous_good_task_modules": [
+          {
+            "task_id": "fm-ed2f5f2d4879",
+            "revision": 0,
+            "D_count": 45,
+            "five_artifact_binding": {
+              "input": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ed2f5f2d4879/revisions/000/public/input.xlsx",
+                "sha256": "b612ec207506f32f08959cfaad642bf06cba963ba384619baee95b48e1817659"
+              },
+              "goal": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ed2f5f2d4879/revisions/000/private/goal.xlsx",
+                "sha256": "550fbd61d07deba3dc314c8f62e7fd0a2da2741f4978f6bdc819db3eab8e9e21"
+              },
+              "instruction": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ed2f5f2d4879/revisions/000/public/instruction.md",
+                "sha256": "d030f72cf1206fd1cf0d4bf71cfdf8f7fd4e2c594098bbd004f2d006a9823021"
+              },
+              "plan": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ed2f5f2d4879/revisions/000/private/plan.json",
+                "sha256": "d32fb20612c9684420c0644629e6c5464d87455a0b7c70c8ff74da3616fec23c"
+              },
+              "delta": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ed2f5f2d4879/revisions/000/private/expected_delta.json",
+                "sha256": "c12fd6feade0c41bf3a14ce7e129cc6aa507986d4c4101a1afbb5ef3274fa704"
+              }
+            },
+            "math_reports": [
+              "/data/hzy/sheetsFactory/outputs/validation/new_batch_business_review_20261029T150458Z.json"
+            ]
+          }
+        ],
+        "difficulty_status": "potential_only_must_measure_with_gpt-6.1-sol_xhigh",
+        "hard_generation_constraints": [
+          "Preserveallpublicbusinessassumptionsandunit/periodconventions.",
+          "Combinegenuinelydifferentbusinessmechanismsandcutwholecriticalformulafamiliesacrossperiods; notcopiedcellcountgrowth.",
+          "Do notcrossknownnativeunsafe regions in anyfullactualD; independentbusinesscritiqueofnewfullDremainsmandatory.",
+          "Originalblanktemplatesrequirecompletepublicscenarioandnewrecalculatedcleanfinitegoldbeforemasking."
+        ]
+      }
+    },
+    {
+      "sha256": "b9b31bc1839bd30ba44fff346a252a12297b7b5d0e884d20d5bb44e6c8c2a44b",
+      "source_sha256": "b9b31bc1839bd30ba44fff346a252a12297b7b5d0e884d20d5bb44e6c8c2a44b",
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/hard_financial/b9b31bc1839b_Appendix2_model.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/b9b31bc1839b.xlsx",
+      "archive_member": "financial/processed/Appendix2_model.xls",
+      "source_url": "https://zenodo.org/records/581673",
+      "download_url": "https://zenodo.org/records/581673/files/financial.zip?download=1",
+      "source_archive_sha256": "fad3c1cbb6268be6296657a22732d7dda98014282606df1c31a9d275fe0f6001",
+      "nonempty_sheet_count": 4,
+      "sheet_count": 4,
+      "formula_count": 1485,
+      "rank_score": 88,
+      "modes": [
+        "financial_modeling",
+        "debugging"
+      ],
+      "debugging_eligible": true,
+      "finance_evidence": {
+        "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/b9b31bc183_Appendix2_model.xls",
+        "source_sha256": "b9b31bc1839bd30ba44fff346a252a12297b7b5d0e884d20d5bb44e6c8c2a44b",
+        "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/b9b31bc1839b.xlsx",
+        "classification": "populated_valuation",
+        "priority": 100,
+        "sheet_count": 4,
+        "formula_count": 1485,
+        "cached_error_count": 0,
+        "evidence": [
+          {
+            "sheet": "Presentation",
+            "cell": "E1",
+            "value_or_formula": "Financial capability of wind turbines",
+            "cached_value": "Financial capability of wind turbines"
+          },
+          {
+            "sheet": "Presentation",
+            "cell": "E4",
+            "value_or_formula": "This model is a tool for evaluating wind turbine projects under different assumptions",
+            "cached_value": "This model is a tool for evaluating wind turbine projects under different assumptions"
+          },
+          {
+            "sheet": "Presentation",
+            "cell": "K16",
+            "value_or_formula": 5,
+            "cached_value": 5
+          },
+          {
+            "sheet": "Presentation",
+            "cell": "K17",
+            "value_or_formula": 20,
+            "cached_value": 20
+          },
+          {
+            "sheet": "Presentation",
+            "cell": "G17",
+            "value_or_formula": "=-PMT(K16/100,K17,G16)",
+            "cached_value": 85.5920930034041
+          },
+          {
+            "sheet": "Presentation",
+            "cell": "J24",
+            "value_or_formula": "=-PV($K$16/100,$K$17,J23)",
+            "cached_value": 1191.87107827068
+          }
+        ],
+        "candidate_cases": [
+          {
+            "case_id": "wind-capital-requirement",
+            "business_goal": "Calculate annualized capital and operating revenue requirements for a wind project",
+            "candidate_regions": [
+              "Presentation!G17:G19"
+            ],
+            "required_public_rules": [
+              "Use the disclosed annual discount rate, economic life and per-kW investment.",
+              "Specify end-of-year annuity convention and O&M addition."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "wind-project-capability",
+            "business_goal": "Value annual wind-generation contribution margins under baseline scenarios",
+            "candidate_regions": [
+              "Presentation!J21:K25"
+            ],
+            "required_public_rules": [
+              "Use selected annual revenue and O&M cost per kW.",
+              "Discount the constant end-of-year contribution over the stated life."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "wind-carbon-benefit",
+            "business_goal": "Calculate additional carbon-benefit requirements from project financing gaps and emission reductions",
+            "candidate_regions": [
+              "Presentation!J29:K30"
+            ],
+            "required_public_rules": [
+              "Units must distinguish currency per kW, kg CO2 per kW and currency per tonne.",
+              "State sign conventions and subtract existing CO2 benefit rates correctly."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          }
+        ],
+        "constraints_and_original_defects": [
+          "Scenario selection uses spreadsheet controls and INDEX inputs. Keep their effective selector cells visible and explain them in the public contract.",
+          "Zafarana 1999 and 2010 contain physical-energy calculations; not every formula there is a financial-modeling task."
+        ],
+        "business_correctness_certified": false,
+        "sha256": "b9b31bc1839bd30ba44fff346a252a12297b7b5d0e884d20d5bb44e6c8c2a44b",
+        "financial_modeling_eligible": true,
+        "debugging_eligible": true,
+        "scenario_required": false,
+        "safe_modules": [
+          {
+            "case_id": "wind-capital-requirement",
+            "business_goal": "Calculate annualized capital and operating revenue requirements for a wind project",
+            "candidate_regions": [
+              "Presentation!G17:G19"
+            ],
+            "required_public_rules": [
+              "Use the disclosed annual discount rate, economic life and per-kW investment.",
+              "Specify end-of-year annuity convention and O&M addition."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "wind-project-capability",
+            "business_goal": "Value annual wind-generation contribution margins under baseline scenarios",
+            "candidate_regions": [
+              "Presentation!J21:K25"
+            ],
+            "required_public_rules": [
+              "Use selected annual revenue and O&M cost per kW.",
+              "Discount the constant end-of-year contribution over the stated life."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "wind-carbon-benefit",
+            "business_goal": "Calculate additional carbon-benefit requirements from project financing gaps and emission reductions",
+            "candidate_regions": [
+              "Presentation!J29:K30"
+            ],
+            "required_public_rules": [
+              "Units must distinguish currency per kW, kg CO2 per kW and currency per tonne.",
+              "State sign conventions and subtract existing CO2 benefit rates correctly."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          }
+        ],
+        "source_business_issues": [
+          "Scenario selection uses spreadsheet controls and INDEX inputs. Keep their effective selector cells visible and explain them in the public contract.",
+          "Zafarana 1999 and 2010 contain physical-energy calculations; not every formula there is a financial-modeling task."
+        ],
+        "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification.",
+        "admission_basis": "Previouslyprofessionallyauditedmodule/task-Didentities;sourceadmissionisnotnewtaskapproval",
+        "current_task_audit_index": {
+          "path": "/data/hzy/sheetsFactory/outputs/validation/final_financial_business_audit_index_20261029T174729Z.json",
+          "sha256": "f0e4160533cb55cbbac5f12ad8a0c7d172d830407f5b15e634e10446ee3472c5"
+        },
+        "previous_good_task_modules": [
+          {
+            "task_id": "fm-b9b31bc1839b-v1",
+            "revision": 0,
+            "D_count": 12,
+            "five_artifact_binding": {
+              "input": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-b9b31bc1839b-v1/revisions/000/public/input.xlsx",
+                "sha256": "a2467e581e8de1ef7f59cc912cb409831c626ee3e1f836859735af9b1e92b6d6"
+              },
+              "goal": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-b9b31bc1839b-v1/revisions/000/private/goal.xlsx",
+                "sha256": "755a98d1a4bf16037a244149e6a49be35d2016b7b542398897ee273d81d54721"
+              },
+              "instruction": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-b9b31bc1839b-v1/revisions/000/public/instruction.md",
+                "sha256": "14e280653f68d6ec396152cb8641aa23871d94b7ad06d14e06f585a371e04f0d"
+              },
+              "plan": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-b9b31bc1839b-v1/revisions/000/private/plan.json",
+                "sha256": "fd7290aa044b39db472a36e62e74ab1a4274cac3b62f259816173ed93094358c"
+              },
+              "delta": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-b9b31bc1839b-v1/revisions/000/private/expected_delta.json",
+                "sha256": "0131540389864ff028a7b7962e7b6c990f7bf57217cab8c3b200ab1861ce1648"
+              }
+            },
+            "math_reports": [
+              "/data/hzy/sheetsFactory/outputs/validation/financial_modeling_new_variants_review_20261029T164509Z.json"
+            ]
+          }
+        ],
+        "difficulty_status": "potential_only_must_measure_with_gpt-6.1-sol_xhigh",
+        "hard_generation_constraints": [
+          "Preserveallpublicbusinessassumptionsandunit/periodconventions.",
+          "Combinegenuinelydifferentbusinessmechanismsandcutwholecriticalformulafamiliesacrossperiods; notcopiedcellcountgrowth.",
+          "Do notcrossknownnativeunsafe regions in anyfullactualD; independentbusinesscritiqueofnewfullDremainsmandatory.",
+          "Originalblanktemplatesrequirecompletepublicscenarioandnewrecalculatedcleanfinitegoldbeforemasking."
+        ]
+      }
+    },
+    {
+      "sha256": "952d9d045a1efad6722e0003fc3cd6c708bbce3444e33747bf9caad6a1a7980f",
+      "source_sha256": "952d9d045a1efad6722e0003fc3cd6c708bbce3444e33747bf9caad6a1a7980f",
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/hard_financial/952d9d045a1e_breakevenanalysis.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/research/fallback_sources/normalized/952d9d045a1e.xlsx",
+      "archive_member": "financial/processed/breakevenanalysis.xls",
+      "source_url": "https://zenodo.org/records/581673",
+      "download_url": "https://zenodo.org/records/581673/files/financial.zip?download=1",
+      "source_archive_sha256": "fad3c1cbb6268be6296657a22732d7dda98014282606df1c31a9d275fe0f6001",
+      "nonempty_sheet_count": 5,
+      "sheet_count": 5,
+      "formula_count": 206,
+      "rank_score": 87,
+      "modes": [
+        "financial_modeling",
+        "debugging"
+      ],
+      "debugging_eligible": true,
+      "finance_evidence": {
+        "priority": 85,
+        "classification": "populated_social_venture_financial_forecast",
+        "evidence_cells": [
+          [
+            "Overview",
+            "A1"
+          ],
+          [
+            "MVT- comps",
+            "A5"
+          ],
+          [
+            "SROI 3-29-99",
+            "A3"
+          ],
+          [
+            "SROI 3-29-99",
+            "B8"
+          ],
+          [
+            "SROI 3-29-99",
+            "B24"
+          ]
+        ],
+        "safe_modules": [
+          {
+            "case_id": "social-venture-cashflows",
+            "business_goal": "Build projected net program cash flows from earned revenue and costs",
+            "candidate_regions": [
+              "MVT!D15:G27",
+              "SROI 3-29-99!B10:B22"
+            ],
+            "required_public_rules": [
+              "Use supplied program and business expense definitions; distinguish earned revenue from grants and training-value estimates.",
+              "Explicitly state any fixed workdays/workweeks factors used in selected MVT formulas."
+            ]
+          },
+          {
+            "case_id": "social-venture-return",
+            "business_goal": "Calculate the source financial-return measure from the 15-period operating cash-flow forecast",
+            "candidate_regions": [
+              "SROI 3-29-99!B8:B24"
+            ],
+            "required_public_rules": [
+              "The source return measure is periodic IRR of the stated net cash-flow sequence, not a generic social-impact score.",
+              "Use the first sequence element as the first IRR cash flow and preserve the 15-period horizon."
+            ]
+          },
+          {
+            "case_id": "social-venture-scenarios",
+            "business_goal": "Compare returns for the alternative subsidized-enterprise cash-flow scenarios",
+            "candidate_regions": [
+              "SROI 3-29-99!F24",
+              "SROI 3-29-99!J24",
+              "SROI 3-29-99!L24"
+            ],
+            "required_public_rules": [
+              "Preserve each scenario cash-flow input and its stated/observable horizon.",
+              "Blanks are not equivalent to zero-period extensions for defining the effective IRR horizon; make the chosen sequence explicit."
+            ]
+          }
+        ],
+        "source_business_issues": [
+          "This source labels IRR as social return on investment, but the actual function is conventional cash-flow IRR; disclose that operational definition.",
+          "Scenario4 H24 is a literal text result (negative), not a derivable original formula target.",
+          "Scenario2/4 cash-flow sequences terminate earlier; scenario6 uses IRR(L8:L20), while populated rows stop earlier. Do not silently impose a 15-year cash-flow horizon on every scenario."
+        ],
+        "source_path": "/data/hzy/sheetsFactory/outputs/research/fallback_sources/raw/952d9d045a_breakevenanalysis.xls",
+        "source_sha256": "952d9d045a1efad6722e0003fc3cd6c708bbce3444e33747bf9caad6a1a7980f",
+        "sha256": "952d9d045a1efad6722e0003fc3cd6c708bbce3444e33747bf9caad6a1a7980f",
+        "archive_member": "financial/processed/breakevenanalysis.xls",
+        "normalized_path": "/data/hzy/sheetsFactory/outputs/research/fallback_sources/normalized/952d9d045a1e.xlsx",
+        "financial_modeling_eligible": true,
+        "debugging_eligible": true,
+        "scenario_required": false,
+        "formula_count": 206,
+        "sheet_count": 5,
+        "error_count": 0,
+        "evidence": [
+          {
+            "sheet": "Overview",
+            "cell": "A1",
+            "value_or_formula": "SROI Example:",
+            "cached_value": "SROI Example:"
+          },
+          {
+            "sheet": "MVT- comps",
+            "cell": "A5",
+            "value_or_formula": "Projected Breakeven Based upon Revenues and Training Value Plus Revenues",
+            "cached_value": "Projected Breakeven Based upon Revenues and Training Value Plus Revenues"
+          },
+          {
+            "sheet": "SROI 3-29-99",
+            "cell": "A3",
+            "value_or_formula": "Possible scenarios for the number of years that grants will be needed to subsidize Studio Air before the enterprise reaches profitability through sales revenues.  Figures shown are projected revenues net of all program and business-related expenses.",
+            "cached_value": "Possible scenarios for the number of years that grants will be needed to subsidize Studio Air before the enterprise reaches profitability through sales revenues.  Figures shown are projected revenues net of all program and business-related expenses."
+          },
+          {
+            "sheet": "SROI 3-29-99",
+            "cell": "B8",
+            "value_or_formula": "=MVT!F13-MVT!G13",
+            "cached_value": -84470.3703703704
+          },
+          {
+            "sheet": "SROI 3-29-99",
+            "cell": "B24",
+            "value_or_formula": "=IRR(B8:B22)",
+            "cached_value": 0.281240629686209
+          }
+        ],
+        "risk": "Candidate source only; normal automatic planning, diagnosis, independent recovery and Harbor gates remain mandatory.",
+        "business_correctness_certified": false,
+        "downstream_reviews": [
+          {
+            "case_id": "social-venture-cashflows",
+            "candidate_formula_count": 41,
+            "affected_formula_count": 106,
+            "affected_sheets": [
+              "MVT",
+              "SROI 3-29-99"
+            ],
+            "affected_formula_cells": [
+              "MVT!D15",
+              "MVT!D16",
+              "MVT!D17",
+              "MVT!D18",
+              "MVT!D19",
+              "MVT!D20",
+              "MVT!D21",
+              "MVT!D22",
+              "MVT!D23",
+              "MVT!D24",
+              "MVT!D25",
+              "MVT!D26",
+              "MVT!D27",
+              "MVT!E15",
+              "MVT!E16",
+              "MVT!G15",
+              "MVT!G16",
+              "MVT!G17",
+              "MVT!G18",
+              "MVT!G19",
+              "MVT!G20",
+              "MVT!G21",
+              "MVT!G22",
+              "MVT!G23",
+              "MVT!G24",
+              "MVT!G25",
+              "MVT!G26",
+              "MVT!G27",
+              "MVT!H15",
+              "MVT!H16",
+              "MVT!H17",
+              "MVT!H18",
+              "MVT!H19",
+              "MVT!H20",
+              "MVT!H21",
+              "MVT!H22",
+              "MVT!H23",
+              "MVT!H24",
+              "MVT!H25",
+              "MVT!H26",
+              "MVT!H27",
+              "MVT!K15",
+              "MVT!K16",
+              "MVT!K17",
+              "MVT!K18",
+              "MVT!K19",
+              "MVT!K20",
+              "MVT!K21",
+              "MVT!K22",
+              "MVT!K23",
+              "MVT!K24",
+              "MVT!K25",
+              "MVT!K26",
+              "MVT!K27",
+              "MVT!L15",
+              "MVT!L16",
+              "MVT!L17",
+              "MVT!L18",
+              "MVT!L19",
+              "MVT!L20",
+              "MVT!L21",
+              "MVT!L22",
+              "MVT!L23",
+              "MVT!L24",
+              "MVT!L25",
+              "MVT!L26",
+              "MVT!L27",
+              "MVT!L28",
+              "SROI 3-29-99!B10",
+              "SROI 3-29-99!B11",
+              "SROI 3-29-99!B12",
+              "SROI 3-29-99!B13",
+              "SROI 3-29-99!B14",
+              "SROI 3-29-99!B15",
+              "SROI 3-29-99!B16",
+              "SROI 3-29-99!B17",
+              "SROI 3-29-99!B18",
+              "SROI 3-29-99!B19",
+              "SROI 3-29-99!B20",
+              "SROI 3-29-99!B21",
+              "SROI 3-29-99!B22",
+              "SROI 3-29-99!B24",
+              "SROI 3-29-99!D10",
+              "SROI 3-29-99!D11",
+              "SROI 3-29-99!D12",
+              "SROI 3-29-99!D13",
+              "SROI 3-29-99!D14",
+              "SROI 3-29-99!D15",
+              "SROI 3-29-99!D16",
+              "SROI 3-29-99!D17",
+              "SROI 3-29-99!D24",
+              "SROI 3-29-99!F10",
+              "SROI 3-29-99!F24",
+              "SROI 3-29-99!H10",
+              "SROI 3-29-99!J10",
+              "SROI 3-29-99!J11",
+              "SROI 3-29-99!J12",
+              "SROI 3-29-99!J13",
+              "SROI 3-29-99!J14",
+              "SROI 3-29-99!J24",
+              "SROI 3-29-99!L10",
+              "SROI 3-29-99!L11",
+              "SROI 3-29-99!L12",
+              "SROI 3-29-99!L13",
+              "SROI 3-29-99!L14",
+              "SROI 3-29-99!L24"
+            ],
+            "known_business_defect_intersections": [],
+            "current_cached_errors_in_affected_set": [],
+            "unresolved_formula_count_in_workbook": 0,
+            "require_actual_selected_target_reanalysis": true,
+            "eligibility_note": "Static source audit does not certify the future scenario or final task. No upstream-only correctness claim is sufficient."
+          },
+          {
+            "case_id": "social-venture-return",
+            "candidate_formula_count": 16,
+            "affected_formula_count": 50,
+            "affected_sheets": [
+              "SROI 3-29-99"
+            ],
+            "affected_formula_cells": [
+              "SROI 3-29-99!B10",
+              "SROI 3-29-99!B11",
+              "SROI 3-29-99!B12",
+              "SROI 3-29-99!B13",
+              "SROI 3-29-99!B14",
+              "SROI 3-29-99!B15",
+              "SROI 3-29-99!B16",
+              "SROI 3-29-99!B17",
+              "SROI 3-29-99!B18",
+              "SROI 3-29-99!B19",
+              "SROI 3-29-99!B20",
+              "SROI 3-29-99!B21",
+              "SROI 3-29-99!B22",
+              "SROI 3-29-99!B24",
+              "SROI 3-29-99!B8",
+              "SROI 3-29-99!B9",
+              "SROI 3-29-99!D10",
+              "SROI 3-29-99!D11",
+              "SROI 3-29-99!D12",
+              "SROI 3-29-99!D13",
+              "SROI 3-29-99!D14",
+              "SROI 3-29-99!D15",
+              "SROI 3-29-99!D16",
+              "SROI 3-29-99!D17",
+              "SROI 3-29-99!D24",
+              "SROI 3-29-99!D8",
+              "SROI 3-29-99!D9",
+              "SROI 3-29-99!F10",
+              "SROI 3-29-99!F24",
+              "SROI 3-29-99!F8",
+              "SROI 3-29-99!F9",
+              "SROI 3-29-99!H10",
+              "SROI 3-29-99!H8",
+              "SROI 3-29-99!H9",
+              "SROI 3-29-99!J10",
+              "SROI 3-29-99!J11",
+              "SROI 3-29-99!J12",
+              "SROI 3-29-99!J13",
+              "SROI 3-29-99!J14",
+              "SROI 3-29-99!J24",
+              "SROI 3-29-99!J8",
+              "SROI 3-29-99!J9",
+              "SROI 3-29-99!L10",
+              "SROI 3-29-99!L11",
+              "SROI 3-29-99!L12",
+              "SROI 3-29-99!L13",
+              "SROI 3-29-99!L14",
+              "SROI 3-29-99!L24",
+              "SROI 3-29-99!L8",
+              "SROI 3-29-99!L9"
+            ],
+            "known_business_defect_intersections": [],
+            "current_cached_errors_in_affected_set": [],
+            "unresolved_formula_count_in_workbook": 0,
+            "require_actual_selected_target_reanalysis": true,
+            "eligibility_note": "Static source audit does not certify the future scenario or final task. No upstream-only correctness claim is sufficient."
+          },
+          {
+            "case_id": "social-venture-scenarios",
+            "candidate_formula_count": 3,
+            "affected_formula_count": 3,
+            "affected_sheets": [
+              "SROI 3-29-99"
+            ],
+            "affected_formula_cells": [
+              "SROI 3-29-99!F24",
+              "SROI 3-29-99!J24",
+              "SROI 3-29-99!L24"
+            ],
+            "known_business_defect_intersections": [],
+            "current_cached_errors_in_affected_set": [],
+            "unresolved_formula_count_in_workbook": 0,
+            "require_actual_selected_target_reanalysis": true,
+            "eligibility_note": "Static source audit does not certify the future scenario or final task. No upstream-only correctness claim is sufficient."
+          }
+        ],
+        "admission_basis": "Previouslyprofessionallyauditedmodule/task-Didentities;sourceadmissionisnotnewtaskapproval",
+        "current_task_audit_index": {
+          "path": "/data/hzy/sheetsFactory/outputs/validation/final_financial_business_audit_index_20261029T174729Z.json",
+          "sha256": "f0e4160533cb55cbbac5f12ad8a0c7d172d830407f5b15e634e10446ee3472c5"
+        },
+        "previous_good_task_modules": [
+          {
+            "task_id": "fm-952d9d045a1e",
+            "revision": 1,
+            "D_count": 39,
+            "five_artifact_binding": {
+              "input": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e/revisions/001/public/input.xlsx",
+                "sha256": "52407f4f46e1e47257f6f299179a3c720d246a04555d1b317882fb8e62b08ac7"
+              },
+              "goal": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e/revisions/001/private/goal.xlsx",
+                "sha256": "4ba2a6019ceec551106f924580cedce47dddd305c9f498cea002fe0e8a6ba14f"
+              },
+              "instruction": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e/revisions/001/public/instruction.md",
+                "sha256": "8d5c02943cb4b24d0e2db3522b8ce3675fceac28bd4e00d83661efb42377952f"
+              },
+              "plan": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e/revisions/001/private/plan.json",
+                "sha256": "778a3ed95f5763fd7f8ed1527d9408870f9c3063575a72d0a632f46f220bcc8e"
+              },
+              "delta": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e/revisions/001/private/expected_delta.json",
+                "sha256": "f4826989ac05f9958cec6e7dfd1859817a699d38891b0556b16531d9f5e58fc9"
+              }
+            },
+            "math_reports": [
+              "/data/hzy/sheetsFactory/outputs/validation/new_batch_business_review_20261029T150458Z.json"
+            ]
+          },
+          {
+            "task_id": "fm-952d9d045a1e-v1",
+            "revision": 0,
+            "D_count": 38,
+            "five_artifact_binding": {
+              "input": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e-v1/revisions/000/public/input.xlsx",
+                "sha256": "4262771528f071a28f9b765c58ab6c4817e6ee929842a2b3e2764f8e92659fe0"
+              },
+              "goal": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e-v1/revisions/000/private/goal.xlsx",
+                "sha256": "4ba2a6019ceec551106f924580cedce47dddd305c9f498cea002fe0e8a6ba14f"
+              },
+              "instruction": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e-v1/revisions/000/public/instruction.md",
+                "sha256": "753dfa323f396d85109ee05bf5f852356c4235ac126dd1a3f464eaadd615f5c6"
+              },
+              "plan": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e-v1/revisions/000/private/plan.json",
+                "sha256": "5e488cc3b29c28220efbb27af10028e9024fe9335f4296577faa0effa54ec4e5"
+              },
+              "delta": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e-v1/revisions/000/private/expected_delta.json",
+                "sha256": "06f95998ea2718216a0a481345c6180a1442523f27bec866bd840463e4bd9452"
+              }
+            },
+            "math_reports": [
+              "/data/hzy/sheetsFactory/outputs/validation/financial_modeling_new_variants_review_20261029T170651Z.json"
+            ]
+          }
+        ],
+        "difficulty_status": "potential_only_must_measure_with_gpt-6.1-sol_xhigh",
+        "hard_generation_constraints": [
+          "Preserveallpublicbusinessassumptionsandunit/periodconventions.",
+          "Combinegenuinelydifferentbusinessmechanismsandcutwholecriticalformulafamiliesacrossperiods; notcopiedcellcountgrowth.",
+          "Do notcrossknownnativeunsafe regions in anyfullactualD; independentbusinesscritiqueofnewfullDremainsmandatory.",
+          "Originalblanktemplatesrequirecompletepublicscenarioandnewrecalculatedcleanfinitegoldbeforemasking."
+        ]
+      }
+    },
+    {
+      "sha256": "88748614820e176bcdbccd7d424d6df1c5e6efb186e70291c5269a179ef12279",
+      "source_sha256": "88748614820e176bcdbccd7d424d6df1c5e6efb186e70291c5269a179ef12279",
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/hard_financial/88748614820e_Attachment_7_Financia_A7EB8.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/88748614820e.xlsx",
+      "archive_member": "financial/processed/Attachment_7_Financia#A7EB8.xls",
+      "source_url": "https://zenodo.org/records/581673",
+      "download_url": "https://zenodo.org/records/581673/files/financial.zip?download=1",
+      "source_archive_sha256": "fad3c1cbb6268be6296657a22732d7dda98014282606df1c31a9d275fe0f6001",
+      "nonempty_sheet_count": 4,
+      "sheet_count": 4,
+      "formula_count": 329,
+      "rank_score": 86,
+      "modes": [
+        "financial_modeling",
+        "debugging"
+      ],
+      "debugging_eligible": true,
+      "finance_evidence": {
+        "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/8874861482_Attachment_7_Financia_A7EB8.xls",
+        "source_sha256": "88748614820e176bcdbccd7d424d6df1c5e6efb186e70291c5269a179ef12279",
+        "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/88748614820e.xlsx",
+        "classification": "populated_forecast",
+        "priority": 90,
+        "sheet_count": 4,
+        "formula_count": 329,
+        "cached_error_count": 0,
+        "evidence": [
+          {
+            "sheet": "Assumptions for IS",
+            "cell": "A4",
+            "value_or_formula": "NUMBER.TEL REVENUE ASSUMPTIONS",
+            "cached_value": "NUMBER.TEL REVENUE ASSUMPTIONS"
+          },
+          {
+            "sheet": "Assumptions for IS",
+            "cell": "B5",
+            "value_or_formula": 2001,
+            "cached_value": 2001
+          },
+          {
+            "sheet": "Assumptions for IS",
+            "cell": "E5",
+            "value_or_formula": 2004,
+            "cached_value": 2004
+          },
+          {
+            "sheet": "Assumptions for IS",
+            "cell": "B11",
+            "value_or_formula": "=B9*B10",
+            "cached_value": 2701800
+          },
+          {
+            "sheet": "Income Statement 50% ",
+            "cell": "B27",
+            "value_or_formula": "=B15-B21-B25",
+            "cached_value": -1650000
+          }
+        ],
+        "candidate_cases": [
+          {
+            "case_id": "tel-registration-fees",
+            "business_goal": "Forecast .tel registration revenue for the published confidence scenarios",
+            "candidate_regions": [
+              "Assumptions for IS!B11:E11",
+              "Assumptions for IS!B18:E18",
+              "Assumptions for IS!B25:E25"
+            ],
+            "required_public_rules": [
+              "Retain registration-volume scenarios and per-registration prices.",
+              "The confidence percentages label existing scenarios; do not reinterpret them as probability weights."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "tel-registration-margin",
+            "business_goal": "Forecast registration costs and gross margin across the three scenarios",
+            "candidate_regions": [
+              "Assumptions for IS!B13:E13",
+              "Assumptions for IS!B20:E20",
+              "Assumptions for IS!B27:E27"
+            ],
+            "required_public_rules": [
+              "Revenue less per-registration cost times registrations defines margin.",
+              "Identify the correct volume and cost rows for each scenario."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "tel-operating-outcome",
+            "business_goal": "Build scenario operating outcome with a minimum fee rule",
+            "candidate_regions": [
+              "Income Statement 90%!B24:H27",
+              "Income Statement 50% !B24:H27",
+              "Income Statement 10%!B24:H27"
+            ],
+            "required_public_rules": [
+              "TOB fee is the maximum of 250000 and 20% of pre-fee operating surplus.",
+              "Use the workbook-specific EBITDA definition explicitly; do not invent a standard convention."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          }
+        ],
+        "constraints_and_original_defects": [
+          "Original header inconsistency: Income Statement 90%!H5 says 2003 while the corresponding assumptions and other scenarios indicate 2004. Clarify the task period from explicit sources.",
+          "Shared expense rows across scenarios are legitimate dependencies; do not delete them as answer leakage."
+        ],
+        "business_correctness_certified": false,
+        "sha256": "88748614820e176bcdbccd7d424d6df1c5e6efb186e70291c5269a179ef12279",
+        "financial_modeling_eligible": true,
+        "debugging_eligible": true,
+        "scenario_required": false,
+        "safe_modules": [
+          {
+            "case_id": "tel-registration-fees",
+            "business_goal": "Forecast .tel registration revenue for the published confidence scenarios",
+            "candidate_regions": [
+              "Assumptions for IS!B11:E11",
+              "Assumptions for IS!B18:E18",
+              "Assumptions for IS!B25:E25"
+            ],
+            "required_public_rules": [
+              "Retain registration-volume scenarios and per-registration prices.",
+              "The confidence percentages label existing scenarios; do not reinterpret them as probability weights."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "tel-registration-margin",
+            "business_goal": "Forecast registration costs and gross margin across the three scenarios",
+            "candidate_regions": [
+              "Assumptions for IS!B13:E13",
+              "Assumptions for IS!B20:E20",
+              "Assumptions for IS!B27:E27"
+            ],
+            "required_public_rules": [
+              "Revenue less per-registration cost times registrations defines margin.",
+              "Identify the correct volume and cost rows for each scenario."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "tel-operating-outcome",
+            "business_goal": "Build scenario operating outcome with a minimum fee rule",
+            "candidate_regions": [
+              "Income Statement 90%!B24:H27",
+              "Income Statement 50% !B24:H27",
+              "Income Statement 10%!B24:H27"
+            ],
+            "required_public_rules": [
+              "TOB fee is the maximum of 250000 and 20% of pre-fee operating surplus.",
+              "Use the workbook-specific EBITDA definition explicitly; do not invent a standard convention."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          }
+        ],
+        "source_business_issues": [
+          "Original header inconsistency: Income Statement 90%!H5 says 2003 while the corresponding assumptions and other scenarios indicate 2004. Clarify the task period from explicit sources.",
+          "Shared expense rows across scenarios are legitimate dependencies; do not delete them as answer leakage."
+        ],
+        "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification.",
+        "admission_basis": "Previouslyprofessionallyauditedmodule/task-Didentities;sourceadmissionisnotnewtaskapproval",
+        "current_task_audit_index": {
+          "path": "/data/hzy/sheetsFactory/outputs/validation/final_financial_business_audit_index_20261029T174729Z.json",
+          "sha256": "f0e4160533cb55cbbac5f12ad8a0c7d172d830407f5b15e634e10446ee3472c5"
+        },
+        "previous_good_task_modules": [
+          {
+            "task_id": "fm-88748614820e-v1",
+            "revision": 0,
+            "D_count": 36,
+            "five_artifact_binding": {
+              "input": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-88748614820e-v1/revisions/000/public/input.xlsx",
+                "sha256": "7c8ee972caa1f86139a6d26f0b894c7cdc54e0a775cf0f65eac78e70d5424e67"
+              },
+              "goal": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-88748614820e-v1/revisions/000/private/goal.xlsx",
+                "sha256": "a109e01f9b7932bcf520fc4702365a74e5851be022a8d83d16adc612b38ca2d6"
+              },
+              "instruction": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-88748614820e-v1/revisions/000/public/instruction.md",
+                "sha256": "bc726e5004c821ba29e2b862476e6ac1e656f6f34288641b3970a7f8419ea53a"
+              },
+              "plan": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-88748614820e-v1/revisions/000/private/plan.json",
+                "sha256": "b3c394f6fc0ea4e90ab9e5645779694d74bd29a047d6babaf5cd36f57fe3550c"
+              },
+              "delta": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-88748614820e-v1/revisions/000/private/expected_delta.json",
+                "sha256": "3ff2f85c6b8923f0e6d91ea2a70db0f668fc8231302292f8ae8a5f229f2ef51e"
+              }
+            },
+            "math_reports": [
+              "/data/hzy/sheetsFactory/outputs/validation/financial_modeling_new_variants_review_20261029T162700Z.json"
+            ]
+          }
+        ],
+        "difficulty_status": "potential_only_must_measure_with_gpt-6.1-sol_xhigh",
+        "hard_generation_constraints": [
+          "Preserveallpublicbusinessassumptionsandunit/periodconventions.",
+          "Combinegenuinelydifferentbusinessmechanismsandcutwholecriticalformulafamiliesacrossperiods; notcopiedcellcountgrowth.",
+          "Do notcrossknownnativeunsafe regions in anyfullactualD; independentbusinesscritiqueofnewfullDremainsmandatory.",
+          "Originalblanktemplatesrequirecompletepublicscenarioandnewrecalculatedcleanfinitegoldbeforemasking."
+        ]
+      }
+    },
+    {
+      "sha256": "ae10ba6ef9c28822113fab418cbdec575a72723d42dc4b0e891bf4069f1d72e8",
+      "source_sha256": "ae10ba6ef9c28822113fab418cbdec575a72723d42dc4b0e891bf4069f1d72e8",
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/hard_financial/ae10ba6ef9c2_financial-model-spreadsheet.xls",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/ae10ba6ef9c2.xlsx",
+      "archive_member": "financial/processed/financial-model-spreadsheet.xls",
+      "source_url": "https://zenodo.org/records/581673",
+      "download_url": "https://zenodo.org/records/581673/files/financial.zip?download=1",
+      "source_archive_sha256": "fad3c1cbb6268be6296657a22732d7dda98014282606df1c31a9d275fe0f6001",
+      "nonempty_sheet_count": 17,
+      "sheet_count": 17,
+      "formula_count": 2871,
+      "rank_score": 85,
+      "modes": [
+        "financial_modeling",
+        "debugging"
+      ],
+      "debugging_eligible": true,
+      "finance_evidence": {
+        "source_path": "/data/hzy/sheetsFactory/data/seeds/euses_financial/ae10ba6ef9_financial-model-spreadsheet.xls",
+        "source_sha256": "ae10ba6ef9c28822113fab418cbdec575a72723d42dc4b0e891bf4069f1d72e8",
+        "normalized_path": "/data/hzy/sheetsFactory/outputs/source_survey/ae10ba6ef9c2.xlsx",
+        "classification": "populated_forecast",
+        "priority": 100,
+        "sheet_count": 17,
+        "formula_count": 2871,
+        "cached_error_count": 0,
+        "evidence": [
+          {
+            "sheet": "Revenue",
+            "cell": "F2",
+            "value_or_formula": "Revenue for 2002 represents closed sales, revenue for 2003 represents projected sales.  ",
+            "cached_value": "Revenue for 2002 represents closed sales, revenue for 2003 represents projected sales.  "
+          },
+          {
+            "sheet": "Revenue",
+            "cell": "D6",
+            "value_or_formula": 0.15,
+            "cached_value": 0.15
+          },
+          {
+            "sheet": "Annual P&L ",
+            "cell": "H4",
+            "value_or_formula": "FY 2004",
+            "cached_value": "FY 2004"
+          },
+          {
+            "sheet": "Annual P&L ",
+            "cell": "O5",
+            "value_or_formula": 0.85,
+            "cached_value": 0.85
+          },
+          {
+            "sheet": "Stmt of CF",
+            "cell": "A3",
+            "value_or_formula": " Forecast Statements of Cashflows",
+            "cached_value": " Forecast Statements of Cashflows"
+          }
+        ],
+        "candidate_cases": [
+          {
+            "case_id": "mobile-forecast-revenue",
+            "business_goal": "Forecast quarterly license and professional-service revenue from pipeline assumptions and stated growth rates",
+            "candidate_regions": [
+              "Pipeline!H7:I33",
+              "Revenue!K14:O16"
+            ],
+            "required_public_rules": [
+              "Map deal status to the published closing probabilities.",
+              "Use exact stated quarterly growth and services-to-license ratios."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "mobile-forecast-income",
+            "business_goal": "Build 2004–2006 annual operating forecast from sales growth and expense ratios",
+            "candidate_regions": [
+              "Annual P&L !H6:L27"
+            ],
+            "required_public_rules": [
+              "Read separate license and service growth assumptions for the relevant years.",
+              "State explicitly which revenue base each cost percentage applies to."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "mobile-capital-lease",
+            "business_goal": "Build lease payment, interest, principal and depreciation schedules feeding projected cash flows",
+            "candidate_regions": [
+              "Cap Lease!E3:U62"
+            ],
+            "required_public_rules": [
+              "Payment timing, monthly interest and term must be public.",
+              "Treat the two equipment tranches separately."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          }
+        ],
+        "constraints_and_original_defects": [
+          "Balance Sheet and Bal Sheet for Offer Memo duplicate much of the model; inspect answer-copy leakage before masking either.",
+          "Many periods are repeated on monthly, quarterly and annual sheets; preserve necessary inputs while checking direct answer copies."
+        ],
+        "business_correctness_certified": false,
+        "sha256": "ae10ba6ef9c28822113fab418cbdec575a72723d42dc4b0e891bf4069f1d72e8",
+        "financial_modeling_eligible": true,
+        "debugging_eligible": true,
+        "scenario_required": false,
+        "safe_modules": [
+          {
+            "case_id": "mobile-forecast-revenue",
+            "business_goal": "Forecast quarterly license and professional-service revenue from pipeline assumptions and stated growth rates",
+            "candidate_regions": [
+              "Pipeline!H7:I33",
+              "Revenue!K14:O16"
+            ],
+            "required_public_rules": [
+              "Map deal status to the published closing probabilities.",
+              "Use exact stated quarterly growth and services-to-license ratios."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "mobile-forecast-income",
+            "business_goal": "Build 2004–2006 annual operating forecast from sales growth and expense ratios",
+            "candidate_regions": [
+              "Annual P&L !H6:L27"
+            ],
+            "required_public_rules": [
+              "Read separate license and service growth assumptions for the relevant years.",
+              "State explicitly which revenue base each cost percentage applies to."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          },
+          {
+            "case_id": "mobile-capital-lease",
+            "business_goal": "Build lease payment, interest, principal and depreciation schedules feeding projected cash flows",
+            "candidate_regions": [
+              "Cap Lease!E3:U62"
+            ],
+            "required_public_rules": [
+              "Payment timing, monthly interest and term must be public.",
+              "Treat the two equipment tranches separately."
+            ],
+            "avoid_regions": [],
+            "status": "candidate_requires_planner_and_independent_verification"
+          }
+        ],
+        "source_business_issues": [
+          "Balance Sheet and Bal Sheet for Offer Memo duplicate much of the model; inspect answer-copy leakage before masking either.",
+          "Many periods are repeated on monthly, quarterly and annual sheets; preserve necessary inputs while checking direct answer copies."
+        ],
+        "risk": "Global baseline business correctness is not certified; apply module restrictions and independent verification.",
+        "admission_basis": "Previouslyprofessionallyauditedmodule/task-Didentities;sourceadmissionisnotnewtaskapproval",
+        "current_task_audit_index": {
+          "path": "/data/hzy/sheetsFactory/outputs/validation/final_financial_business_audit_index_20261029T174729Z.json",
+          "sha256": "f0e4160533cb55cbbac5f12ad8a0c7d172d830407f5b15e634e10446ee3472c5"
+        },
+        "previous_good_task_modules": [
+          {
+            "task_id": "fm-ae10ba6ef9c2-v1",
+            "revision": 0,
+            "D_count": 23,
+            "five_artifact_binding": {
+              "input": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ae10ba6ef9c2-v1/revisions/000/public/input.xlsx",
+                "sha256": "a4b5bfcdd1ef82acba689c64f4d6d02a423ee12be24697ead186a40ffabb0fc1"
+              },
+              "goal": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ae10ba6ef9c2-v1/revisions/000/private/goal.xlsx",
+                "sha256": "e6049cf52e4e4346f1ce62caa9109c14fa5350f75e43154f01444b14589491cb"
+              },
+              "instruction": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ae10ba6ef9c2-v1/revisions/000/public/instruction.md",
+                "sha256": "d9c2b3bb28fcf9c37ca8b24a034ebcf214ad8b513e7957cbab883985629da705"
+              },
+              "plan": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ae10ba6ef9c2-v1/revisions/000/private/plan.json",
+                "sha256": "1b1f86a1ea32e8316ae835aab21682a3bbd292892b241f3f6ba84a56d215da61"
+              },
+              "delta": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ae10ba6ef9c2-v1/revisions/000/private/expected_delta.json",
+                "sha256": "630f446ff5fbe69a4531abf2f0dad84bc10291613ce0ec0593e2bbb6279d5d8e"
+              }
+            },
+            "math_reports": [
+              "/data/hzy/sheetsFactory/outputs/validation/financial_modeling_new_variants_review_20261029T162919Z.json"
+            ]
+          },
+          {
+            "task_id": "fm-ae10ba6ef9c2-v2",
+            "revision": 1,
+            "D_count": 7,
+            "five_artifact_binding": {
+              "input": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ae10ba6ef9c2-v2/revisions/001/public/input.xlsx",
+                "sha256": "5886df5fa94bd1a75582e55b04d4c58ca0a6e7159a32d155d0c57f272abd62eb"
+              },
+              "goal": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ae10ba6ef9c2-v2/revisions/001/private/goal.xlsx",
+                "sha256": "e6049cf52e4e4346f1ce62caa9109c14fa5350f75e43154f01444b14589491cb"
+              },
+              "instruction": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ae10ba6ef9c2-v2/revisions/001/public/instruction.md",
+                "sha256": "68682de9848eabf4f734e348210ac3a70bc88d9aa5b1a9cbb85c05fbee686654"
+              },
+              "plan": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ae10ba6ef9c2-v2/revisions/001/private/plan.json",
+                "sha256": "10cc27baa8fe27f3e40fb66c45a8db2e99efd766477a76cc5db4adf6faf4309d"
+              },
+              "delta": {
+                "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-ae10ba6ef9c2-v2/revisions/001/private/expected_delta.json",
+                "sha256": "a6c3377922d8324279dbc8e8ca8e2dcad307582e672e0267be088a7889080311"
+              }
+            },
+            "math_reports": [
+              "/data/hzy/sheetsFactory/outputs/validation/financial_modeling_pipeline_revision1_review_20261029T172655Z.json"
+            ]
+          }
+        ],
+        "difficulty_status": "potential_only_must_measure_with_gpt-6.1-sol_xhigh",
+        "hard_generation_constraints": [
+          "Preserveallpublicbusinessassumptionsandunit/periodconventions.",
+          "Combinegenuinelydifferentbusinessmechanismsandcutwholecriticalformulafamiliesacrossperiods; notcopiedcellcountgrowth.",
+          "Do notcrossknownnativeunsafe regions in anyfullactualD; independentbusinesscritiqueofnewfullDremainsmandatory.",
+          "Originalblanktemplatesrequirecompletepublicscenarioandnewrecalculatedcleanfinitegoldbeforemasking."
+        ]
+      }
+    },
+    {
+      "sha256": "d6ffb67d965dc22463e4d013636befab3da431e7fc608936a82612fa73198e72",
+      "source_sha256": "d6ffb67d965dc22463e4d013636befab3da431e7fc608936a82612fa73198e72",
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/hard_financial/d6ffb67d965d_nyu_fcffsimpleginzu.xlsx",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/research/hardness_iteration/external_sources/normalized/nyu_fcffsimpleginzu.xlsx",
+      "source_url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/spreadsh.htm",
+      "download_url": "https://pages.stern.nyu.edu/~adamodar/pc/fcffsimpleginzu.xlsx",
+      "source_download_sha256": "d6ffb67d965dc22463e4d013636befab3da431e7fc608936a82612fa73198e72",
+      "license_note": "OfficialNYUauthorpageallowsdownloadandmodification; noredistributionlicenseinvented.",
+      "nonempty_sheet_count": 17,
+      "sheet_count": 17,
+      "formula_count": 1231,
+      "rank_score": 110,
+      "modes": [
+        "financial_modeling",
+        "debugging"
+      ],
+      "debugging_eligible": true,
+      "finance_evidence": {
+        "source_sha256": "d6ffb67d965dc22463e4d013636befab3da431e7fc608936a82612fa73198e72",
+        "sha256": "d6ffb67d965dc22463e4d013636befab3da431e7fc608936a82612fa73198e72",
+        "financial_modeling_eligible": true,
+        "debugging_eligible": true,
+        "scenario_required": false,
+        "classification": "populated_multi_period_DCF_valuation_model",
+        "business_correctness_certified": false,
+        "priority": 100,
+        "safe_modules": [
+          {
+            "case_id": "nyu-revenue-nopat-reinvestment-fcff",
+            "candidate_regions": [
+              "Valuation output!C2:M10",
+              "Valuation output!C12:M14"
+            ],
+            "protected_inputs": [
+              "Input sheet!B11:B72",
+              "Valuation output!B3:B10",
+              "Valuation output!B39",
+              "Valuation output!C38:M40"
+            ],
+            "required_public_rules": [
+              "Allsourceunitsscalesremainconsistent; staticnamedcompanysnapshotnotliveinvestmentadvice.",
+              "Stateeffective/marginaltaxtransition, growthconvergence, anddefaultone-yearreinvestmentlag.",
+              "Retainallmodeflags;defaultNOLzero, optionsNo,R&DNo,leaseNo.",
+              "Specify end-of-year varyingWACCdiscounting; terminalgrowthstrictlybelowterminalWACC."
+            ]
+          },
+          {
+            "case_id": "nyu-terminal-equity-bridge",
+            "candidate_regions": [
+              "Valuation output!B16:B35"
+            ],
+            "required_public_rules": [
+              "TerminalFCFFisalreadyyear11;dividebyWACC-g exactlyonce anddiscountback10years.",
+              "Keepfailure,option,lease/trapped-cashflagsunchangedandvisiblereferenceinputs."
+            ]
+          }
+        ],
+        "source_business_issues": [
+          "Mainforecast/terminal/equityidentitiescheckedhere,notfullsourcecertification.",
+          "Industry Averages(US)!F18/F29/F78,S18/S29/S78,Y18/Y29/Y78,Z18/Z29/Z78 remain12DIV0 inputdata; nevermask/rebuild orselectthoseindustrybranches.",
+          "WorkbookAnswerkeyscontainsdropdownenumerations(e.gYes/No,lag0-3),notbenchmarksolutions; retainaslookupmetadata."
+        ],
+        "module_verification": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/hardness_iteration/external_sources/nyu_dcf_module_business_review.json",
+          "sha256": "1337199356c6e8863877cfdd8a86c3f9fa9eae9fe1b736c07d4202a765e9e324",
+          "independent_identity_count": 112,
+          "all_match": true,
+          "scope": "OnlyreviewedmainDCFwithpreservedinputs; notfullsourcecertification"
+        },
+        "runtime_validation": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/hardness_iteration/external_sources/libreoffice_validation.json",
+          "twice_typed_values_stable": true,
+          "fixed_cached_error_count": 12
+        },
+        "hard_generation_constraints": [
+          "OnlychooseproposedmainDCFmodules; preserveallindustryaverages andoptionalR&D/options/leasesbranching.",
+          "Book-specificgivencalculatedinputsarefixed; makeeffective/marginaltax,wacc/growth/reinvestmentlag/terminalconventionspublic.",
+          "No newscenarioflagchangesuntilindependentnewfull-Dreview; donotintroduceinteractiveExcelWhatIf/GoalSeek.",
+          "Maskcompletefinancialfunctionfamiliesorinject3-6distinctcausalfaults; preserveenoughsemanticinputstoensureuniqueanswer.",
+          "Everynewtaskrequiresalloriginalqualitygates,fullDindependentrecoveryandstrongagentdifficultymeasurement."
+        ]
+      }
+    },
+    {
+      "sha256": "df8f9e91cc53afe2bdb33cf39b8f2719206ac03b6a5031f1858f82235ea944c9",
+      "source_sha256": "df8f9e91cc53afe2bdb33cf39b8f2719206ac03b6a5031f1858f82235ea944c9",
+      "local_path": "/data/hzy/sheetsFactory/data/seeds/hard_financial/df8f9e91cc53_nyu_fcffginzu.xlsx",
+      "normalized_path": "/data/hzy/sheetsFactory/outputs/research/hardness_iteration/external_sources/normalized/nyu_fcffginzu.xlsx",
+      "source_url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/spreadsh.htm",
+      "download_url": "https://pages.stern.nyu.edu/~adamodar/pc/fcffginzu.xlsx",
+      "source_download_sha256": "df8f9e91cc53afe2bdb33cf39b8f2719206ac03b6a5031f1858f82235ea944c9",
+      "license_note": "OfficialNYUauthorpageallowsdownloadandmodification; noredistributionlicenseinvented.",
+      "nonempty_sheet_count": 16,
+      "sheet_count": 16,
+      "formula_count": 894,
+      "rank_score": 109,
+      "modes": [
+        "financial_modeling",
+        "debugging"
+      ],
+      "debugging_eligible": true,
+      "finance_evidence": {
+        "source_sha256": "df8f9e91cc53afe2bdb33cf39b8f2719206ac03b6a5031f1858f82235ea944c9",
+        "sha256": "df8f9e91cc53afe2bdb33cf39b8f2719206ac03b6a5031f1858f82235ea944c9",
+        "financial_modeling_eligible": true,
+        "debugging_eligible": true,
+        "scenario_required": false,
+        "classification": "populated_multi_period_DCF_valuation_model",
+        "business_correctness_certified": false,
+        "priority": 99,
+        "safe_modules": [
+          {
+            "case_id": "nyu-ginzu-transition-fcff-valuation",
+            "candidate_regions": [
+              "Valuation Model!D38:M49",
+              "Valuation Model!D51:D59",
+              "Valuation Model!F61:F73"
+            ],
+            "protected_inputs": [
+              "Valuation Model!C41",
+              "Valuation Model!D14:D35",
+              "Master Inputs Start here!B6:B87",
+              "R&D converter",
+              "Operating lease converter",
+              "US Industry averages"
+            ],
+            "required_public_rules": [
+              "UsepreservedadjustedbaseoperatingearningsC41 asgiven;do notredesignR&Dtaxnormalization.",
+              "Exposecurrenteffectiveandterminalmarginaltax, highgrowthlength10, fiveyeargrowth/reinvestment/WACCtransition.",
+              "Declareforecastnetreinvestment splitbetweenCapExminusDAanddeltaWC so notdoubled.",
+              "Stablegrowth4%,terminalROIC15%,terminaldebtweight20%,terminalWACCderivedbyCAPM/aftertaxdebt; preserveallmodeflags."
+            ]
+          }
+        ],
+        "source_business_issues": [
+          "OnlymainDCFwithpreservedadjustedbaseearningsC41 audited; R&Dtaxbenefit adjustment feedingC41 isworkbook-specificandnotstandard-EBITcertificate.",
+          "Do notmask/rebuildR&Dconverterormodeflagswithoutafreshprofessionalderivation.",
+          "US Industry averages same12DIV0 sourcecells arefixedoff-moduledata; do notselectthem.",
+          "Answerssheetisdropdownenumerations,notbenchmarktaskanswers."
+        ],
+        "module_verification": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/hardness_iteration/external_sources/nyu_dcf_module_business_review.json",
+          "sha256": "1337199356c6e8863877cfdd8a86c3f9fa9eae9fe1b736c07d4202a765e9e324",
+          "independent_identity_count": 100,
+          "all_match": true,
+          "scope": "OnlyreviewedmainDCFwithpreservedinputs; notfullsourcecertification"
+        },
+        "runtime_validation": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/hardness_iteration/external_sources/libreoffice_validation.json",
+          "twice_typed_values_stable": true,
+          "fixed_cached_error_count": 12
+        },
+        "hard_generation_constraints": [
+          "OnlychooseproposedmainDCFmodules; preserveallindustryaverages andoptionalR&D/options/leasesbranching.",
+          "Book-specificgivencalculatedinputsarefixed; makeeffective/marginaltax,wacc/growth/reinvestmentlag/terminalconventionspublic.",
+          "No newscenarioflagchangesuntilindependentnewfull-Dreview; donotintroduceinteractiveExcelWhatIf/GoalSeek.",
+          "Maskcompletefinancialfunctionfamiliesorinject3-6distinctcausalfaults; preserveenoughsemanticinputstoensureuniqueanswer.",
+          "Everynewtaskrequiresalloriginalqualitygates,fullDindependentrecoveryandstrongagentdifficultymeasurement."
+        ]
+      }
+    }
+  ],
+  "download_url": "multiple_official_sources_see_per_seed_URL",
+  "archive_sha256": null,
+  "selection_policy": "Eightpositivemodule-evidencesources:6EUSESpreviousvalidfinancialmodules+2NYUofficialpopulatedDCFmodels. Eachhas>=4nonemptysheetsandrealcrosssheetformulaedges; no benchmarkoriginaltasksimported.",
+  "quality_policy": "Financialeligibilitypermitsplanningonly. Difficulty scoreisnotapproval. Preserveallotherqualitygates; everynewtaskneedsprofessionalfullDcheckandactualgpt-6.1-sol/xhighgate.",
+  "excluded_or_research_only": [
+    {
+      "source": "CRESTSolar",
+      "reason": "CurrentLOdefault928VALUEerrorsandconfirmedbonusdepreciationbasisdefect; notincludeduntilspecificdisjointmoduleorgoldrepairvalidated."
+    },
+    {
+      "source": "SAMleveragedpartnership2022sample",
+      "reason": "Only3nonemptysheetsand420cached errors; do notsplitartificially."
+    },
+    {
+      "source": "MSC20ed/8dfagri/377Duval/433ratios/678AAA",
+      "reason": "Potentialresearchonly; businessscope/scenario/nativeissuesneedfocusednewmodulevalidationbeforepositiveproductionadmission."
+    }
+  ],
+  "research_evidence": {
+    "current40": "/data/hzy/sheetsFactory/outputs/research/hardness_iteration/current40_difficulty_potential.json",
+    "candidate_potential": "/data/hzy/sheetsFactory/outputs/research/hardness_candidate_deep_review_20261030T042238Z.json",
+    "nyu_mainmodule_checks": "/data/hzy/sheetsFactory/outputs/research/hardness_iteration/external_sources/nyu_dcf_module_business_review.json"
+  }
+}

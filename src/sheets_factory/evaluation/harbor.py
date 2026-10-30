@@ -139,7 +139,7 @@ def export_harbor(task_dir: str | Path, export_dir: str | Path, metadata: dict |
         '[task]\n' + f'name = {json.dumps("sheetsfactory/" + task_id)}\n'
         'authors = [{ name = "ZhaoyangHan04", email = "3319926404@qq.com" }]\n\n'
         '[metadata]\ncategory = "spreadsheet"\n' + f'mode = {json.dumps(mode)}\n'
-        'difficulty_status = "deferred"\n\n'
+        f'difficulty_status = {json.dumps(metadata.get("difficulty_status", "deferred"))}\n\n'
         '[agent]\ntimeout_sec = 1800.0\n\n'
         '[verifier]\ntimeout_sec = 600.0\nenvironment_mode = "separate"\n\n'
         '[environment]\ncpus = 1\nmemory_mb = 2048\nstorage_mb = 2048\n\n'
