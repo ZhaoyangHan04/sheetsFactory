@@ -237,6 +237,7 @@ class PlanNode(BaseNode):
                     continue
                 prior = json.loads(item.read_text())
                 previous.extend({'mode': mode, 'title': task.get('title'),
+                                 'mask_ranges': task.get('mask_ranges', []),
                                  'cells': [(e['sheet'], e['cell']) for e in task.get('edits', [])]}
                                 for mode, task in prior.items() if mode in ['financial_modeling', 'debugging'] and task)
             payload = {**authoring_source_context(ctx), 'construction_contract': construction_contract(config=ctx.config),
@@ -469,7 +470,9 @@ class ControlsNode(BaseNode):
             book = openpyxl.load_workbook(goal, keep_links=False)
             if name == 'equivalent':
                 original = first['before']
-                book[first['sheet']][first['cell']] = '=SUM(' + original[1:] + ')'
+                # SUM coerces text and booleans and is not generally an
+                # equivalent expression. IF preserves the selected value/type.
+                book[first['sheet']][first['cell']] = '=IF(TRUE(),' + original[1:] + ',"")'
             elif name == 'missed_root':
                 book[first['sheet']][first['cell']] = first['after']
             else:
