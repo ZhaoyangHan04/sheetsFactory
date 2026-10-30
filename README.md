@@ -16,9 +16,9 @@ Git 仓库包含代码、配置、提示词、测试、文档和来源清单。�
 → 有限预算修复 → 真实 Harbor oracle/nop → 文件哈希与版本绑定 → 冻结发布
 ```
 
-来源采用 EUSES financial 工作簿，不复用官方 benchmark 题目。原始文件与规范化 baseline 保持不可变；画像记录多表结构、真实跨表依赖和重算结果。LLM 选择业务模块、补全规则与调试缺陷，程序据计划构造 input 和 reference；Financial Modeling 遮蔽待补公式，Debugging 注入有明确业务修复目标的错误。检查覆盖完整的下游值变化，避免把来源自带的业务错误当作正确答案。
+历史质量批次采用 EUSES financial 工作簿；难度迭代另外评估 NYU Damodaran 公开模型及明确声明为假设场景的派生财务模型，不复用官方 benchmark 题目。原始文件与规范化 baseline 保持不可变；画像记录多表结构、真实跨表依赖和重算结果。LLM 选择业务模块、补全规则与调试缺陷，程序据计划构造 input 和 reference；Financial Modeling 遮蔽待补公式，Debugging 注入有明确业务修复目标的错误。检查覆盖完整的下游值变化，避免把来源自带的业务错误当作正确答案。
 
-独立恢复者只能读取公开题面和 input，产出程序后在无网络的新容器重放，再由 LibreOffice 重算并与 reference 比较。自然尝试另行记录完整或部分轨迹，不按求解成功与否决定题目质量。公开信息、参考正确性、执行健康等启用检查均须给出结果；Q08 难度门禁本轮明确延后。确证内容问题进入新版本修复，证据不足进入补证，基础设施故障单列重试，三类预算分开且有限；修订后重新经过全部准出步骤。
+独立恢复者只能读取公开题面和 input，产出程序后在无网络的新容器重放，再由 LibreOffice 重算并与 reference 比较。自然尝试另行记录完整或部分轨迹，不按求解成功与否决定题目质量。公开信息、参考正确性、执行健康等启用检查均须给出结果。当前难度管线在候选阶段检查适用的复杂度约束与实际捷径，在完整候选集通过质量验收后另做冻结开发测试和独立确认；候选阶段没有未来的整体分数，不代表难度验收通过。确证内容问题进入新版本修复，证据不足进入补证，基础设施故障单列重试，三类预算分开且有限；修订后重新经过全部准出步骤。
 
 主评分比较重算后的类型化单元格值：数字保留两位小数、日期归一化，公式文本不要求相同。全工作簿的提交修改集合必须与 GT 相同，期望位置的值也须匹配；多改、少改或值错均 reward=0。真实 Harbor 控制结果绑定任务版本和导出文件哈希，不能沿用已修改任务的旧成绩。
 
@@ -38,6 +38,12 @@ Git 仓库包含代码、配置、提示词、测试、文档和来源清单。�
 # 难度迭代：来源筛选、完整质量门禁、开发测试、独立确认、根目录发布
 ./scripts/run_difficulty.sh --config config/pipelines/hard20.yaml \
   --seed-manifest data/manifests/hard_financial_sources.json
+
+# 派生模型路线：先构建并独立验算种子，使用实际输出的 manifest.json
+.venv312/bin/python scripts/build_derived_scenarios.py \
+  --output outputs/research/my_derived_seeds
+./scripts/run_difficulty.sh --config config/pipelines/derived_hard20.yaml \
+  --seed-manifest outputs/research/my_derived_seeds/manifest.json
 ```
 
 每次运行会输出实际面板地址和审计目录。端口占用时自动分配空闲端口。默认结束后保留面板，Ctrl+C 关闭。
@@ -61,7 +67,7 @@ EUSES 下载与候选筛选可单独执行：
 
 `outputs/runs/<run_id>/` 包含 SQLite、事件、配置快照、公开题面与 input、私有参考与恢复证据、逐项诊断、修复历史和真实 Harbor 控制结果。最终 Harbor 目录是该运行下的 `SpreadsheetEval/`。
 
-候选只有在独立公开信息恢复、质量诊断、本地正反例和真实 Harbor oracle/nop 全部通过后才计为 qualified。Q08 本轮明确延后；其他检查默认全启用。单纯模型做对/做错不决定诊断或放行。
+候选只有在独立公开信息恢复、质量诊断、本地正反例和真实 Harbor oracle/nop 全部通过后才计为质量合格。检查默认全启用；只有历史 `quality40.yaml` 批次明确延后了正式难度要求。当前难度管线还必须通过整个冻结集的最强模型确认，才能发布到仓库根目录。单纯模型做对/做错不决定诊断或放行。
 
 统计分开记录源使用数、有产出源数、候选数和最终题量。源转化率、候选转化率及每源产量各自说明分母。Token 来自实际 CLI 事件；费用没有可靠证据时显示未知。
 
@@ -93,8 +99,17 @@ EUSES 下载与候选筛选可单独执行：
 | 真实 Harbor oracle / nop | 完整冻结 40 题逐题得到 1 / 0，原始结果与发布清单绑定。 | 参考产物可被接受、原样不作答会被拒绝；这是正反控制，不是模型能力分数。 |
 | `gpt-6-sol` / `high` 自然 trajectory | 已用于构建过程中的诊断，包含不同版本和部分尝试。 | 不汇总为正式冻结任务集的 Overall Pass@1；成功与失败都不是题目质量的单独判据。 |
 | `gpt-6.1-sol` / `xhigh` 旧 40 题开发筛查 | 主动早停前已有 13 次正常成功；40 题整体通过率下界为 32.5%，未完成的测试没有记零。 | 旧批次不满足 ≤20%；这不是完整批次的正式 Overall Pass@1。新来源和新模块正在迭代。 |
+| `gpt-6.1-sol` / `xhigh` 首轮新模块试验 | 3 道预质量验收 Financial Modeling 开发样例全部得到正常 reward=1。 | 这次模块扩展仍太简单，不能作为交付集；因此转向完整的融资、税务、资产和现金分配联动模型。 |
 
 正式模型分数在事先冻结的任务集上逐题做一次独立求解，按二值 reward 的算术平均计算 Overall Pass@1；开发测试与重新独立调用的确认测试分开。基础设施异常单列，仅确证的基础故障可以受限恢复，有效的零分不会重测；正常时间预算耗尽须复核原始执行、模型用量和独立评分证据。当前难度迭代还在运行，最终真实 `SpreadsheetEval/` 目录和完整 oracle 执行结果将在确认通过后交付。
+
+## 派生财务模型的来源与验算
+
+`scripts/build_derived_scenarios.py` 从一个公开来源的数值锚点构造 10 个明确的假设场景。原始锚点来自 [NYU Damodaran 的 FCFF 模型](https://pages.stern.nyu.edu/~adamodar/pc/fcffginzu.xlsx)，下载文件的 SHA 和取值位置写入每个种子的来源清单；项目期限、建设期、贷款、周转与分红规则均为公开的假设条件，不冒充来源公司的真实预测。
+
+每个场景有 12 张表、3,882 个公式。独立的 Decimal 双重记账程序与 Excel 公式生成器分别实现计算，检查 3,937 个绑定单元格、试算平衡、资产负债、现金、债务和税务关系，再以真实 LibreOffice 验证所有公式及两次重算稳定性。场景还必须实际触发各自的机制，例如贷款清偿、年内到期、跨年投产、亏损抵扣上限或折旧耗尽；只改参数却没有触发预定机制的文件不能进入种子清单。
+
+这只证明种子财务模型可用于造题。完整题目仍需独立公开恢复、逐项诊断、真实 oracle/nop 和最强模型确认。统计时分别报告“1 个原始来源”“10 个派生场景文件”和实际候选题数，不把派生文件计作 10 个独立原始来源，也不把大量重复公式当作难度证据。
 
 ## 打包交付
 
@@ -117,6 +132,14 @@ harbor run --path SpreadsheetEval --agent nop
 ```
 
 发布包附带白名单内的最小 `runtime/` 构建上下文、准备脚本和操作说明；清单记录本次运行实际使用的镜像 ID、LibreOffice 版本和 recipe 文件哈希。默认不附大型镜像；apt 间接依赖与仓库可能变化，重新构建不保证得到原镜像 ID。私有诊断和请求日志不进入发布包。
+
+最终根目录发布后，必须在仓库根目录执行任务书的原命令 `harbor run -p SpreadsheetEval -a oracle`，并对 nop 执行完整控制。不能用某一题、历史运行或成功退出码代替全量结果。可用只读审计工具核验实际 job 中的每个任务、文件哈希、执行身份、完整覆盖、异常和二值奖励；它不会重新运行评测，也不会生成奖励：
+
+```bash
+.venv312/bin/python scripts/audit_harbor_job.py \
+  --dataset SpreadsheetEval --job jobs/<actual_oracle_job> --agent oracle \
+  --command-cwd "$PWD" --output outputs/validation/final_oracle.json
+```
 
 本次另存了[实际运行镜像](outputs/releases/runtime/sheetsfactory-lo-24.2-d2e00cbc.tar.gz)和[镜像校验清单](outputs/releases/runtime/runtime_manifest.json)，已验证重新载入得到原镜像 ID。可先执行 `docker load -i <镜像文件>`，再按发布包说明运行。代码按功能分阶段提交，远程仓库为 [ZhaoyangHan04/sheetsFactory](https://github.com/ZhaoyangHan04/sheetsFactory)，当前为私有仓库。
 
