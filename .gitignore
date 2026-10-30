@@ -7,6 +7,7 @@ __pycache__/
 .env
 outputs/**
 !outputs/.gitkeep
+jobs/
 data/seeds/**
 !data/seeds/.gitkeep
 *.log
