@@ -1,19 +1,28 @@
 """Real Factory target-claim tests; no backend, model, or LO calls."""
 import ast
+import builtins
 from copy import deepcopy
+import dis
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
+import socket
+import tempfile
 import threading
+from types import CodeType
+from urllib.parse import urlparse
 
 import pytest
+import yaml
 
 from sheets_factory.core.node import TaskContext, TaskRejected
 from sheets_factory.pipelines.factory import FactoryPipeline
 from sheets_factory.pipelines.full_graph_factory_compat import (
     FullGraphFactoryCompat, SETTING, setting, validate_setting)
 from sheets_factory.pipelines.scc_activity_admission import ADAPTER, canonical
+from sheets_factory.reporting import read_run
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('full_graph_compat_entry', ROOT / 'scripts/run_full_graph_factory_compat.py')
@@ -126,3 +135,58 @@ def test_cli_executes_only_explicitly_and_validates_once(tmp_path, monkeypatch):
     calls.clear()
     assert entry.main(['--prepared', str(tmp_path)]) == 0
     assert calls == ['validate']
+
+
+def test_all_execute_global_names_are_bound_and_missing_import_is_detected(monkeypatch):
+    def missing(function):
+        def names(code):
+            result = {i.argval for i in dis.get_instructions(code) if i.opname == 'LOAD_GLOBAL'}
+            for constant in code.co_consts:
+                if isinstance(constant, CodeType): result.update(names(constant))
+            return result
+        return names(function.__code__) - set(function.__globals__) - set(vars(builtins))
+    assert missing(entry.execute_prepared) == set()
+    monkeypatch.delattr(entry, 'os')
+    assert missing(entry.execute_prepared) == {'os'}
+
+
+def test_real_execute_setup_reaches_factory_run_and_cleans_server_lease_and_temp(tmp_path, monkeypatch):
+    output = tmp_path / 'prepared'; output.mkdir()
+    config = yaml.safe_load((ROOT / 'config/pipelines/composite_quality20.yaml').read_text())
+    config.update(project_root=str(ROOT), run_dir=str(output), host_runtime=entry.cohort.host_runtime_settings(output))
+    config['run']['targets'] = {'financial_modeling': 0, 'debugging': 1}
+    config['agents']['max_parallel_calls'] = 1
+    config[SETTING] = setting()
+    (output / 'resolved_config.yaml').write_text(yaml.safe_dump(config))
+    frozen = {'count': 1, 'development_only': True, 'recipe_sha256': {}, 'host_runtime': config['host_runtime']}
+    (output / 'preflight_manifest.json').write_text(json.dumps(frozen))
+    monkeypatch.setattr(entry, 'validate_prepared', lambda path: deepcopy(frozen))
+    calls = []; addresses = []
+    class LocalModel:
+        def __init__(self, root, run, audit, settings): self.config = settings
+        def _credentials(self): calls.append('stub_credentials_only')
+    class LocalEngine:
+        def __init__(self, *args): pass
+        def metadata(self): calls.append('stub_engine_metadata_only'); return {'image_id': entry.cohort.IMAGE_ID}
+    monkeypatch.setattr(entry.cohort, 'CohortCodex', LocalModel)
+    monkeypatch.setattr(entry.cohort, 'LibreOfficeEngine', LocalEngine)
+    def local_run(self):
+        calls.append('actual_Factory_instance_run')
+        assert isinstance(self, FullGraphFactoryCompat)
+        assert (output / 'run.sqlite').is_file()
+        assert json.loads((output / 'producer.lock').read_text())['status'] == 'active'
+        assert self.audit.run['producer_pid'] == os.getpid()
+        assert os.environ['TMPDIR'] == str(output / 'temporary')
+        address = urlparse(self.audit.run['dashboard_url']); addresses.append((address.hostname, address.port))
+        with socket.create_connection(addresses[-1], timeout=1): pass
+        return False
+    monkeypatch.setattr(FullGraphFactoryCompat, 'run', local_run)
+    before_env, before_cache = os.environ.get('TMPDIR'), tempfile.tempdir
+    assert entry.execute_prepared(output, port=0) == 2
+    assert calls == ['stub_credentials_only', 'stub_engine_metadata_only', 'actual_Factory_instance_run']
+    assert json.loads((output / 'producer.lock').read_text())['status'] == 'released'
+    state = read_run(output)['run']
+    assert state['producer_active'] is False and state['exit_code'] == 2
+    assert state['producer_pid'] == os.getpid()
+    assert os.environ.get('TMPDIR') == before_env and tempfile.tempdir == before_cache
+    with pytest.raises(OSError): socket.create_connection(addresses[-1], timeout=.1)
