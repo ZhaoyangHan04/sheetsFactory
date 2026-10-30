@@ -1,0 +1,50 @@
+run:
+  name: audited-composite-quality20
+  scheduler: rolling
+  targets: {financial_modeling: 10, debugging: 10}
+  max_sources: 20
+  max_parallel_sources: 2
+  max_candidates_per_seed: 1
+  max_steps: 3
+  max_evidence_rounds_per_revision: 2
+  infrastructure_retries_per_stage: 2
+  max_additional_trials_per_revision: 0
+  source_ordering: manifest
+construction:
+  authoring_backend: composite_template
+  instruction_style: business_brief
+  planning_scope: per_mode
+  root_impact_validation: shadow_roots
+  root_impact_concurrency: 2
+  max_edit_count: {financial_modeling: 100000, debugging: 5000}
+  analysis_limits:
+    max_dependency_closure_cells: 500000
+    max_profile_cells: 500000
+    per_formula_reference_cells: 50000
+    max_mask_ranges: 1024
+  composite_activity: {enabled: true, max_authoring_attempts: 3, execute_fallback: false}
+recovery: {compiler_backend: composite_journal}
+engine:
+  image: sheetsfactory-lo:24.2-iterative-openpyxl315-v1
+  timeout_seconds: 300
+agents:
+  model: gpt-6-sol
+  reasoning_effort: high
+  timeout_seconds: 1200
+  trajectory_timeout_seconds: 600
+  max_parallel_calls: 2
+  container_image: sheetsfactory-lo:24.2-iterative-openpyxl315-v1
+  roles:
+    reference_diagnostician: {model: gpt-6-sol, reasoning_effort: high, timeout_seconds: 2400}
+diagnosis:
+  selection: {include: all, exclude: []}
+  execution: {llm_batching: all_in_one, reference_evidence_transport: audited_summary}
+  difficulty_deferred: false
+  reference_evidence_policy: independent_public_recovery
+prompt_overrides:
+  planning.md: planning_business.md
+  recovery.md: recovery_business.md
+  diagnosis.md: diagnosis_business.md
+  repair.md: repair_business.md
+dashboard: {host: 127.0.0.1, port: 0, open_browser: false}
+harbor: {execute_controls: true, concurrency: 2}
