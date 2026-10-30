@@ -20,7 +20,8 @@ def main(argv=None):
     parser.add_argument('--task-id', action='append')
     parser.add_argument('--task-root', type=Path)
     parser.add_argument('--prior-selection', type=Path, action='append', default=[])
-    parser.add_argument('--timeout-seconds', type=int, default=1800)
+    parser.add_argument('--timeout-seconds', type=int, default=None,
+        help='Legacy elapsed deadline (default 1800); an explicit source execution_budget supplies its own operational guard')
     parser.add_argument('--concurrency', type=int, default=4)
     parser.add_argument('--port', type=int, default=0)
     parser.add_argument('--max-infrastructure-retries', type=int, default=2)
@@ -33,9 +34,10 @@ def main(argv=None):
     root = Path(__file__).resolve().parents[1]
     backend_path = root / 'config/llm.yaml'
     backend = yaml.safe_load(backend_path.read_text()) if backend_path.is_file() else {}
-    backend.update(model='gpt-6.1-sol', reasoning_effort='xhigh', roles={
-        'trace_agent': {'model': 'gpt-6.1-sol', 'reasoning_effort': 'xhigh',
-                        'timeout_seconds': args.timeout_seconds}})
+    role = {'model': 'gpt-6.1-sol', 'reasoning_effort': 'xhigh'}
+    if args.timeout_seconds is not None:
+        role['timeout_seconds'] = args.timeout_seconds
+    backend.update(model='gpt-6.1-sol', reasoning_effort='xhigh', roles={'trace_agent': role})
     if args.resume_infrastructure:
         directory = args.resume_infrastructure
         result = resume_infrastructure(directory, concurrency=args.concurrency,
