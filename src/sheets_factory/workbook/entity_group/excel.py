@@ -250,6 +250,27 @@ def _rounded_equity_sum(out, rows, exact_product, label):
     return _sum(*references)
 
 
+def _currency_grouped_exact(out, rows, currencies, amount, rate, exact_product, label):
+    """Sum exact, unrounded FX numerators after grouping a common currency.
+
+    A shared rate is an explicit public contract. This identity applies before
+    rounding; individually translated postings must still be rounded separately.
+    Materialize each amount sum so exact multiplication has short operands.
+    """
+    buckets = {}
+    for identity, row in rows.items():
+        buckets.setdefault(currencies[identity], []).append(row)
+    products = []
+    for currency, members in buckets.items():
+        shared = rate(members[0])
+        if any(rate(row) != shared for row in members[1:]):
+            raise ValueError('Exact currency aggregation requires an identical public FX expression')
+        subtotal = out.put(_sum(*(amount(row) for row in members)),
+            label + '/' + currency + '/unrounded_functional_sum', monetary=False)
+        products.append(exact_product(subtotal, shared))
+    return _pair_sum(products)
+
+
 def emit_entity_group_workbook(book, specification, *, max_formulas=1_000_000, allow_production=False, _count_only=False):
     """Emit formulas from primitive contracts only; never inspect a journal.
 
@@ -528,15 +549,19 @@ def emit_entity_group_workbook(book, specification, *, max_formulas=1_000_000, a
                 whole, remainder = _pair_product(a, b)
                 return (out.put(whole, sid + '/' + month + '/exact_FX_whole', monetary=False),
                     out.put(remainder, sid + '/' + month + '/exact_FX_remainder', monetary=False))
-            def translated(field): return _pair_sum([exact_product(r[field], r['fx_close_p12']) for r in rows.values()])
+            currency_by_entity = {identity: entity['currency'] for identity, (_, entity) in entities.items()}
+            def grouped(amount, rate):
+                return _currency_grouped_exact(out, rows, currency_by_entity, amount, rate,
+                    exact_product, sid + '/' + month + '/group_FX')
+            def translated(field): return grouped(lambda r: r[field], lambda r: r['fx_close_p12'])
             for stem, opening, closing, flow in (
                 ('cash', lambda r: _sum(r['cash_open'], r['restricted_open']), lambda r: _sum(r['cash_close'], r['restricted_close']), lambda r: r['external_cash_flow']),
                 ('bank', lambda r: r['bank_open'], lambda r: r['bank_close'], lambda r: _sub(r['bank_draw'], _sum(r['bank_local_margin'], r['bank_shared_margin']))),
                 ('net_assets', lambda r: _sum(r['capital_open'], r['retained_open']), lambda r: r['equity_close'], lambda r: _sub(_sum(r['net_income'], r['capital_call']), r['distribution']))):
-                start = gp_pair(stem + '_open_gbp_numerator', _pair_sum([exact_product(opening(r), r['fx_open_p12']) for r in rows.values()]))
-                end = gp_pair(stem + '_close_gbp_numerator', _pair_sum([exact_product(closing(r), r['fx_close_p12']) for r in rows.values()]))
-                movement = gp_pair(stem + '_external_movement_gbp_numerator', _pair_sum([exact_product(flow(r), r['fx_close_p12']) for r in rows.values()]))
-                fx = gp_pair(stem + '_FX_gbp_numerator', _pair_sum([exact_product(opening(r), _sub(r['fx_close_p12'], r['fx_open_p12'])) for r in rows.values()]))
+                start = gp_pair(stem + '_open_gbp_numerator', grouped(opening, lambda r: r['fx_open_p12']))
+                end = gp_pair(stem + '_close_gbp_numerator', grouped(closing, lambda r: r['fx_close_p12']))
+                movement = gp_pair(stem + '_external_movement_gbp_numerator', grouped(flow, lambda r: r['fx_close_p12']))
+                fx = gp_pair(stem + '_FX_gbp_numerator', grouped(opening, lambda r: _sub(r['fx_close_p12'], r['fx_open_p12'])))
                 gp_pair(stem + '_residual_gbp_numerator', _pair_sub(_pair_sub(_pair_sub(end, start), movement), fx))
             asset = gp_pair('intercompany_principal_eliminated_gbp_numerator', translated('ic_receivable_close'))
             income = gp_pair('intercompany_interest_eliminated_gbp_numerator', translated('ic_interest_income'))
@@ -594,6 +619,8 @@ def emit_entity_group_workbook(book, specification, *, max_formulas=1_000_000, a
         'formula_flags_encoding': 'integer_0_or_1',
         'shared_definitions_are_aliases_not_duplicate_cells': True,
         'large_FX_numerators_use_exact_quotient_remainder_pairs': True,
+        'unrounded_group_FX_aggregates_by_public_currency': True,
+        'individual_posting_and_equity_rounding_retained': True,
         'fixed_plan_provided_and_protected': True, 'optimisation_performed': False,
         'independent_financial_audit_required': True, 'actual_LO_calls': 0, 'qualified': False, 'task_count': 0}
 

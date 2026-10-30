@@ -172,6 +172,47 @@ def test_twenty_four_entity_independent_FX_rounds_use_short_references_not_one_o
     book.close()
 
 
+@pytest.mark.parametrize('usd_factor,gbp_factor', [(SCALE // 2, SCALE), (-SCALE // 2, 0),
+    (SCALE // 2 + 1, SCALE - 1)])
+def test_currency_bucket_identity_preserves_exact_numerators_before_rounding(usd_factor, gbp_factor):
+    book = openpyxl.Workbook(); book.remove(book.active)
+    emitter = excel._Emitter(book, hand.specification(), 1000)
+    emitter.sheet = book.create_sheet('Exact currency identity')
+    values = {"'Amounts'!$A$1": 1, "'Amounts'!$A$2": 1, "'Amounts'!$A$3": -3,
+              "'FX'!$A$1": usd_factor, "'FX'!$A$2": gbp_factor}
+    rows = {f'E{i:02d}': {'amount': f"'Amounts'!$A${i}",
+        'rate': "'FX'!$A$1" if i < 3 else "'FX'!$A$2"} for i in (1, 2, 3)}
+    currencies = {'E01': 'USD', 'E02': 'USD', 'E03': 'GBP'}
+    def exact_product(a, b):
+        return tuple(emitter.put(expression, 'exact_FX_part', monetary=False)
+                     for expression in excel._pair_product(a, b))
+    pair = excel._currency_grouped_exact(emitter, rows, currencies,
+        lambda row: row['amount'], lambda row: row['rate'], exact_product, 'group')
+    for item in emitter.formulas:
+        result = actual_formula_value(item['formula'], values)
+        assert result == evaluate_expression(item['expression'], values)
+        values[excel._ref(item['sheet'], item['cell'])] = int(result)
+        assert len(item['formula']) <= 8192
+    whole, remainder = (evaluate_expression(item, values) for item in pair)
+    assert whole * SCALE + remainder == 2 * usd_factor - 3 * gbp_factor
+    if (usd_factor, gbp_factor) == (SCALE // 2, SCALE):
+        assert evaluate_expression(excel._pair_round(pair), values) == -2
+        # The public separately rounded entity postings are deliberately -1.
+        assert 1 + 1 - 3 == -1
+    book.close()
+
+
+def test_currency_bucket_refuses_to_merge_distinct_entity_exchange_rates():
+    book = openpyxl.Workbook(); book.remove(book.active)
+    emitter = excel._Emitter(book, hand.specification(), 1000)
+    emitter.sheet = book.create_sheet('Invalid shared rate')
+    with pytest.raises(ValueError, match='identical public FX expression'):
+        excel._currency_grouped_exact(emitter, {'E01': {'rate': 1}, 'E02': {'rate': 2}},
+            {'E01': 'USD', 'E02': 'USD'}, lambda row: 1, lambda row: row['rate'],
+            lambda a, b: excel._pair_product(a, b), 'cannot_group')
+    book.close()
+
+
 def test_emitter_uses_only_public_primitives_and_formula_budget_fails_without_truncation():
     tree = ast.parse(Path(excel.__file__).read_text())
     modules = [node.module or '' for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)]
