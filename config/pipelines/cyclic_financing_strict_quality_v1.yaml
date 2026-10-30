@@ -1,0 +1,73 @@
+run:
+  name: cyclic-financing-strict-quality
+  scheduler: rolling
+  targets:
+    financial_modeling: 1
+    debugging: 0
+  max_sources: 1
+  max_parallel_sources: 1
+  max_candidates_per_seed: 1
+  variant_modes:
+  - financial_modeling
+  max_steps: 1
+  max_evidence_rounds_per_revision: 2
+  infrastructure_retries_per_stage: 2
+  seed_manifest: outputs/research/cyclic_business_lane_20261030T101355Z/verified_source/seed_manifest.json
+construction:
+  planning_scope: per_mode
+  authoring_backend: project_template
+  instruction_style: business_brief
+  max_edit_count:
+    financial_modeling: 8192
+    debugging: 160
+  root_impact_validation: strict
+engine:
+  image: sheetsfactory-lo:24.2-iterative-v1
+  timeout_seconds: 240
+agents:
+  model: gpt-6-sol
+  reasoning_effort: high
+  max_parallel_calls: 4
+  timeout_seconds: 1200
+  trajectory_timeout_seconds: 600
+  roles:
+    public_diagnostician:
+      model: gpt-6-sol
+      reasoning_effort: high
+      timeout_seconds: 900
+    reference_diagnostician:
+      model: gpt-6-sol
+      reasoning_effort: high
+      timeout_seconds: 1200
+    trace_agent:
+      model: gpt-6-sol
+      reasoning_effort: high
+      timeout_seconds: 600
+prompt_overrides:
+  planning.md: planning_business.md
+  recovery.md: recovery_business.md
+  diagnosis.md: diagnosis_business.md
+  repair.md: repair_business.md
+diagnosis:
+  selection:
+    include: all
+    exclude: []
+  execution:
+    llm_batching: all_in_one
+  difficulty_deferred: false
+  reference_evidence_policy: independent_public_recovery
+dashboard:
+  host: 127.0.0.1
+  port: 0
+  open_browser: true
+harbor:
+  execute_controls: true
+  concurrency: 4
+difficulty:
+  max_rounds: 4
+  per_mode: 10
+  evaluation_concurrency: 4
+  timeout_seconds: 1800
+  dashboard_port: 0
+recovery:
+  compiler_backend: project_journal

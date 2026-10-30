@@ -54,7 +54,17 @@ def _public_reconstruct():
             raise ValueError("The public project business contract is missing")
         rows = {name: _public_rows(book[name]) for name in book.sheetnames if name != "Read Me"}
         parameter_rows = rows["Scenario"]
+        cyclic = "DebtSizing" in book
+        if cyclic and not all(word in policy for word in (
+                "underwriting", "capacity", "tranche", "equity",
+                "twelve times the unrounded monthly unit-annuity", "round capacity to cents",
+                "rounded down to a tranche")):
+            raise ValueError("The explicit public debt-underwriting policy is missing")
         def assumption(name):
+            if cyclic and name in {"loan_a_principal", "equity_paid_in"}:
+                # Financing quantities are independently solved outputs. Never
+                # reuse their possibly masked or mutated cached values.
+                return _ZERO
             label = name.replace("_", " ")
             if label not in parameter_rows:
                 raise ValueError("Missing public project assumption: " + name)
@@ -85,6 +95,14 @@ def _public_reconstruct():
             raise ValueError("Public ramp assumptions must be a complete ordered sequence")
         parameters["ramp_factors"] = [assumption(label.replace(" ", "_")) for label in ramp_labels]
         specification = {"parameters": parameters}
+        if cyclic:
+            parameters["equity_paid_in"] = (parameters["initial_asset_cost"]
+                + parameters["opening_cash"] - parameters["loan_b_principal"])
+            specification["cyclic_financing_parameters"] = {
+                key: assumption("cyclic_" + key) for key in
+                ("enabled", "bankcap", "target_dscr", "tranche")}
+            if specification["cyclic_financing_parameters"]["enabled"] != _ONE:
+                raise ValueError("The public cyclic underwriting contract must be explicitly enabled")
         covenant_names = ("covenant_enabled", "covenant_first_test_month", "covenant_dscr_threshold",
                           "dsra_normal_payment_months", "dsra_trap_payment_months")
         if "covenant enabled" in parameter_rows:
@@ -119,6 +137,14 @@ def _public_reconstruct():
                     raise ValueError("The independent journal produced a nonfinite value")
                 amount = float(amount)
             book[sheet].cell(row, column, amount)
+        if cyclic:
+            sizing = result["debt_sizing"]
+            parameters["loan_a_principal"] = sizing["sized_principal"]
+            parameters["equity_paid_in"] = sizing["equity_paid_in"]
+            for key in ("loan_a_principal", "equity_paid_in"):
+                write("Scenario", key, 2, parameters[key])
+            for key, amount in sizing.items():
+                write("DebtSizing", key, 2, amount)
         p = _parameters(specification)
         cov = p["covenant"] is not None
         advanced = p["advanced_tax"] is not None
@@ -241,7 +267,7 @@ def compile_public_project_recovery() -> str:
     """Return standalone Python for a public-only expert recovery replay.
 
     Numeric scenario defaults are removed from the embedded journal. Every
-    assumption must be present in the replay's public Scenario worksheet.
+    primitive assumption must be present in the replay's public Scenario worksheet.
     """
     source = Path(__file__).with_name("ledger.py").read_text()
     tree = ast.parse(source)
