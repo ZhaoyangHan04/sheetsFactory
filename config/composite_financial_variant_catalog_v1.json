@@ -1,0 +1,580 @@
+{
+  "schema_version": 1,
+  "dataset": "twenty-declared-hypothetical-six-algorithm-financial-variants-v1",
+  "base_config": "config/derived_composite_finance_v4.json",
+  "regulatory_original_ancestor": {
+    "local_path": "outputs/research/regulatory_models_20261030T104604Z/ofgem_ed2_v5.xlsx",
+    "sha256": "2f02bfdf2c4c85449129add05038fb1cbc10ad4ea716e9571a7dba0ea3642ce8",
+    "url": "https://www.ofgem.gov.uk/sites/default/files/2026-06/ED2-PCFM-V5.xlsx"
+  },
+  "selection_policy": "Use declared order. Preserve every materialization or independent-ledger rejection and its evidence. Select the first requested passing preflights without consulting task or model scores. These are hypothetical derived parameter scenarios over the same two original workbook ancestors, not twenty raw sources or twenty observed companies. Default execution plans only; --preflight replays arithmetic only; workbook builds require explicit --build.",
+  "required_preflight_programme_regimes": [
+    "tax_loss_expiry",
+    "tax_loss_fifo_use",
+    "positive_tax_gross_up",
+    "collection_cap_binding",
+    "tax_pool_transfer",
+    "rav_disallowance",
+    "positive_contingent_rent",
+    "uncapped_contingent_feedback"
+  ],
+  "profiles": [
+    {
+      "id": "C01-cpi-cap-preference",
+      "operating_entity": "T01",
+      "mechanism": "Capped premises indexation with current variable rent and LP preference",
+      "policy_changes": [
+        "The premises index event exceeds its contractual cap; its higher nominal rent remains subject to the existing measurement policy.",
+        "LP preference is 1.8% and P01 current variable rent uses an explicit GBP150,000 threshold."
+      ],
+      "lease": {
+        "P01": {
+          "monthly_base_rent": "102000.00",
+          "events": {
+            "37": {
+              "index_ratio": "1.12"
+            }
+          }
+        }
+      },
+      "programme": {},
+      "holding": {},
+      "contingent": {
+        "contract_defaults": {
+          "P01": {
+            "threshold": "150000.00"
+          }
+        }
+      },
+      "waterfall": {
+        "preference_rate": "0.018"
+      }
+    },
+    {
+      "id": "C02-interest-cap-tax-transfer",
+      "operating_entity": "T02",
+      "mechanism": "T02 interest carryforward with earlier programme tax-pool transfer and changed variable fees",
+      "policy_changes": [
+        "The operating project remains the audited T02 contract; programme pool transfer takes effect in FY2029.",
+        "P02 contingent rent rate is 1.15%; the LP XIRR hurdle is 1.2%."
+      ],
+      "lease": {},
+      "programme": {
+        "transfer_year": 2029
+      },
+      "holding": {},
+      "contingent": {
+        "contract_defaults": {
+          "P02": {
+            "rate": "0.0115"
+          }
+        }
+      },
+      "waterfall": {
+        "lp_xirr_hurdle": "0.012"
+      }
+    },
+    {
+      "id": "C03-surrender-loss-preference",
+      "operating_entity": "T03",
+      "mechanism": "Partial fleet surrender changes programme tax recovery and partnership capital return",
+      "policy_changes": [
+        "The fleet retains 55% exposure after its existing partial surrender and incurs a GBP66,000 fee.",
+        "LP supplies 88% of partner capital; annual preferred return is 2.1%."
+      ],
+      "lease": {
+        "P03": {
+          "events": {
+            "55": {
+              "retention_fraction": "0.55",
+              "cash_fee": "66000.00"
+            }
+          }
+        }
+      },
+      "programme": {},
+      "holding": {},
+      "waterfall": {
+        "lp_capital_fraction": "0.88",
+        "preference_rate": "0.021"
+      }
+    },
+    {
+      "id": "C04-zero-interest-cpi-floor",
+      "operating_entity": "T04",
+      "mechanism": "T04 zero-interest project with a premises CPI floor and lower P04 variable rent",
+      "policy_changes": [
+        "Keep audited T04 operating terms, including its zero-rate debt.",
+        "Premises observed CPI falls below its floor; P04 contingent rate is 1.75% and the LP hurdle is 0.9%."
+      ],
+      "lease": {
+        "P01": {
+          "events": {
+            "49": {
+              "index_ratio": "0.90"
+            }
+          }
+        }
+      },
+      "programme": {},
+      "holding": {},
+      "contingent": {
+        "contract_defaults": {
+          "P04": {
+            "rate": "0.0175"
+          }
+        }
+      },
+      "waterfall": {
+        "lp_xirr_hurdle": "0.009"
+      }
+    },
+    {
+      "id": "C05-commissioning-collection-cap",
+      "operating_entity": "T05",
+      "mechanism": "Delayed replacement commissioning interacts with nominal collection caps and higher carry",
+      "policy_changes": [
+        "Replacement assets commission after a three-year lag.",
+        "Nominal collection capacity is GBP53m in FY2033-2035; GP carry moves from 21% to 31% when the existing hurdle qualifies."
+      ],
+      "lease": {},
+      "programme": {
+        "categories": {
+          "REPLACE": {
+            "commission_lag": 3
+          }
+        },
+        "annual_input_overrides": {
+          "2033": {
+            "collection_cap_nominal": "53000000.00"
+          },
+          "2034": {
+            "collection_cap_nominal": "53000000.00"
+          },
+          "2035": {
+            "collection_cap_nominal": "53000000.00"
+          }
+        }
+      },
+      "holding": {},
+      "waterfall": {
+        "initial_carry_rate": "0.21",
+        "flipped_carry_rate": "0.31"
+      }
+    },
+    {
+      "id": "C06-reserve-claim-haircut",
+      "operating_entity": "T06",
+      "mechanism": "T06 reserve policy with higher claim haircut and variable-rent eligibility",
+      "policy_changes": [
+        "Keep the audited T06 reserve policy and the existing financing priority.",
+        "FY2032 claims carry a 65% collateral haircut; variable rent eligibility is separately posted at 88%."
+      ],
+      "lease": {},
+      "programme": {},
+      "holding": {
+        "annual_overrides": [
+          {
+            "years": [
+              2032
+            ],
+            "claim_haircut": "0.65"
+          }
+        ]
+      },
+      "contingent": {
+        "annual_defaults": {
+          "eligible_fraction": "0.88"
+        }
+      }
+    },
+    {
+      "id": "C07-premises-extension-variable-tail",
+      "operating_entity": "T07",
+      "mechanism": "A longer premises term and explicitly dated extra variable-rent year",
+      "policy_changes": [
+        "The premises modification extends the fixed-rent term to month168.",
+        "FY2037 explicitly remains payable for P01 contingent rent at 0.9%, with a GBP180,000 cap and no partial-year proration."
+      ],
+      "lease": {
+        "P01": {
+          "events": {
+            "61": {
+              "new_end_month": 168
+            }
+          }
+        }
+      },
+      "programme": {},
+      "holding": {},
+      "contingent": {
+        "annual_overrides": [
+          {
+            "years": [
+              2037
+            ],
+            "contracts": {
+              "P01": {
+                "active": true,
+                "rate": "0.009",
+                "annual_cap": "180000.00"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "C08-fifo-lag-lp-share",
+      "operating_entity": "T08",
+      "mechanism": "Longer claim collection lag and changed LP capital share",
+      "policy_changes": [
+        "Programme claims become due after two years; their original FIFO collection and carrying policy remains in force.",
+        "LP contributes 92% of opening and additional partnership capital and earns 1.9% preferred return."
+      ],
+      "lease": {},
+      "programme": {
+        "claim_lag_years": 2
+      },
+      "holding": {},
+      "waterfall": {
+        "lp_capital_fraction": "0.92",
+        "preference_rate": "0.019"
+      }
+    },
+    {
+      "id": "C09-early-disallowance-current-tax",
+      "operating_entity": "T09",
+      "mechanism": "Earlier RAV disallowance changes current tax recovery and available distributions",
+      "policy_changes": [
+        "The GBP10m real asset disallowance takes effect in FY2030.",
+        "P03 variable rent uses a GBP600,000 threshold; partnership preference is 1.7%."
+      ],
+      "lease": {},
+      "programme": {
+        "disallowance_year": 2030
+      },
+      "holding": {},
+      "contingent": {
+        "contract_defaults": {
+          "P03": {
+            "threshold": "600000.00"
+          }
+        }
+      },
+      "waterfall": {
+        "preference_rate": "0.017"
+      }
+    },
+    {
+      "id": "C10-dsra-fixed-step-gp-catchup",
+      "operating_entity": "T10",
+      "mechanism": "T10 cash reserve policy with larger fixed lease steps and a different catch-up rate",
+      "policy_changes": [
+        "Quarterly lease rents step by 2.8% at the stated step intervals.",
+        "GP carry begins at18% and flips to28%, applying the existing lifetime-profit catch-up policy."
+      ],
+      "lease": {
+        "P02": {
+          "fixed_step_rate": "0.028"
+        }
+      },
+      "programme": {},
+      "holding": {},
+      "waterfall": {
+        "initial_carry_rate": "0.18",
+        "flipped_carry_rate": "0.28"
+      }
+    },
+    {
+      "id": "C11-capital-split-capped-rent",
+      "operating_entity": "T01",
+      "mechanism": "Partnership capital participation interacts with an explicitly capped current fee",
+      "policy_changes": [
+        "LP contributes85% of partnership capital; its preferred return is2.2%.",
+        "P01 current contingent rent is capped at GBP200,000 in FY2027-2030, in its existing GBP100 quantum."
+      ],
+      "lease": {},
+      "programme": {},
+      "holding": {},
+      "contingent": {
+        "annual_overrides": [
+          {
+            "years": [
+              2027,
+              2028,
+              2029,
+              2030
+            ],
+            "contracts": {
+              "P01": {
+                "annual_cap": "200000.00"
+              }
+            }
+          }
+        ]
+      },
+      "waterfall": {
+        "lp_capital_fraction": "0.85",
+        "preference_rate": "0.022"
+      }
+    },
+    {
+      "id": "C12-equipment-shorter-tail",
+      "operating_entity": "T02",
+      "mechanism": "A shorter equipment term with an explicitly inactive final contingent year",
+      "policy_changes": [
+        "The quarterly equipment modification ends at month216.",
+        "P02 contingent rent is explicitly inactive in FY2042, with zero rate and zero cap; partner carry is22% then32%."
+      ],
+      "lease": {
+        "P02": {
+          "events": {
+            "85": {
+              "new_end_month": 216
+            }
+          }
+        }
+      },
+      "programme": {},
+      "holding": {},
+      "contingent": {
+        "annual_overrides": [
+          {
+            "years": [
+              2042
+            ],
+            "contracts": {
+              "P02": {
+                "active": false,
+                "rate": "0",
+                "annual_cap": "0.00"
+              }
+            }
+          }
+        ]
+      },
+      "waterfall": {
+        "initial_carry_rate": "0.22",
+        "flipped_carry_rate": "0.32"
+      }
+    },
+    {
+      "id": "C13-nominal-inflation-loss-boundary",
+      "operating_entity": "T03",
+      "mechanism": "Different long-run inflation and tax-rate transition drive nominal revenue and losses",
+      "policy_changes": [
+        "Long-run inflation is2.2%; current tax rises from25% to29% in FY2032.",
+        "Variable eligibility is84% and the LP hurdle is1.1%."
+      ],
+      "lease": {},
+      "programme": {
+        "long_run_inflation": "0.022",
+        "tax_rate_after": "0.29"
+      },
+      "holding": {},
+      "contingent": {
+        "annual_defaults": {
+          "eligible_fraction": "0.84"
+        }
+      },
+      "waterfall": {
+        "lp_xirr_hurdle": "0.011"
+      }
+    },
+    {
+      "id": "C14-real-return-pool-transfer",
+      "operating_entity": "T04",
+      "mechanism": "Higher real return with a smaller tax-basis transfer and changed fee threshold",
+      "policy_changes": [
+        "Long-run real WACC is4.1%;25% of the eligible general tax pool transfers under the existing dated policy.",
+        "P02 variable threshold is GBP325,000; LP preferred return is1.9%."
+      ],
+      "lease": {},
+      "programme": {
+        "long_run_real_wacc": "0.041",
+        "general_transfer_fraction": "0.25"
+      },
+      "holding": {},
+      "contingent": {
+        "contract_defaults": {
+          "P02": {
+            "threshold": "325000.00"
+          }
+        }
+      },
+      "waterfall": {
+        "preference_rate": "0.019"
+      }
+    },
+    {
+      "id": "C15-structures-life-carry-step",
+      "operating_entity": "T05",
+      "mechanism": "Longer structures tax life changes tax recovery and the delayed GP carry increase",
+      "policy_changes": [
+        "Structures tax allowances use a13-year life.",
+        "GP carry is19% until the qualifying next-year flip to33%, using the unchanged dated LP hurdle."
+      ],
+      "lease": {},
+      "programme": {
+        "structures_tax_life": 13
+      },
+      "holding": {},
+      "waterfall": {
+        "initial_carry_rate": "0.19",
+        "flipped_carry_rate": "0.33"
+      }
+    },
+    {
+      "id": "C16-rent-quantum-collateral",
+      "operating_entity": "T06",
+      "mechanism": "A different current fee quantum interacts with claim-collateral advance rates",
+      "policy_changes": [
+        "P03 rounds its current variable rent to GBP1,000 units and retains its GBP2m annual cap.",
+        "The claims advance rate is78%; all debt, margin and finite capital priorities remain unchanged."
+      ],
+      "lease": {},
+      "programme": {},
+      "holding": {
+        "parameters": {
+          "claim_advance_rate": "0.78"
+        }
+      },
+      "contingent": {
+        "contract_defaults": {
+          "P03": {
+            "rounding_quantum": "1000"
+          }
+        }
+      }
+    },
+    {
+      "id": "C17-revenue-cap-release-preference",
+      "operating_entity": "T07",
+      "mechanism": "A staged nominal collection-cap release funds the partnership waterfall",
+      "policy_changes": [
+        "FY2033-2035 nominal collection capacity is GBP48m, followed by GBP52m in FY2036-2038.",
+        "LP preference is1.6%; initial and flipped GP carry are20% and29%."
+      ],
+      "lease": {},
+      "programme": {
+        "annual_input_overrides": {
+          "2033": {
+            "collection_cap_nominal": "48000000.00"
+          },
+          "2034": {
+            "collection_cap_nominal": "48000000.00"
+          },
+          "2035": {
+            "collection_cap_nominal": "48000000.00"
+          },
+          "2036": {
+            "collection_cap_nominal": "52000000.00"
+          },
+          "2037": {
+            "collection_cap_nominal": "52000000.00"
+          },
+          "2038": {
+            "collection_cap_nominal": "52000000.00"
+          }
+        }
+      },
+      "holding": {},
+      "waterfall": {
+        "preference_rate": "0.016",
+        "flipped_carry_rate": "0.29"
+      }
+    },
+    {
+      "id": "C18-project-fx-programme-eligibility",
+      "operating_entity": "T08",
+      "mechanism": "Two-stage USD-to-GBP translation combines with lower fixed-lease eligibility",
+      "policy_changes": [
+        "The audited operating source keeps its original dates and USD denomination; each posted share translates at GBP0.82 per USD.",
+        "Fixed-lease regulatory eligibility is83%, while current variable eligibility is86%, posted separately."
+      ],
+      "lease": {},
+      "programme": {
+        "lease_allowable_fraction": "0.83"
+      },
+      "holding": {
+        "parameters": {
+          "gbp_per_usd": "0.82"
+        }
+      },
+      "contingent": {
+        "annual_defaults": {
+          "eligible_fraction": "0.86"
+        }
+      }
+    },
+    {
+      "id": "C19-fleet-later-exit-fee",
+      "operating_entity": "T09",
+      "mechanism": "A later fleet exit creates an explicitly payable extra contingent reporting year",
+      "policy_changes": [
+        "Full fleet termination occurs at month115 with a GBP140,000 cash settlement.",
+        "P03 contingent rent is explicitly payable in FY2033 at1.5%, capped at GBP2m; preference is1.8%."
+      ],
+      "lease": {
+        "P03": {
+          "events": {
+            "103": {
+              "month": 115,
+              "cash_fee": "140000.00"
+            }
+          }
+        }
+      },
+      "programme": {},
+      "holding": {},
+      "contingent": {
+        "annual_overrides": [
+          {
+            "years": [
+              2033
+            ],
+            "contracts": {
+              "P03": {
+                "active": true,
+                "rate": "0.015",
+                "annual_cap": "2000000.00"
+              }
+            }
+          }
+        ]
+      },
+      "waterfall": {
+        "preference_rate": "0.018"
+      }
+    },
+    {
+      "id": "C20-asset-mix-finite-partner-capital",
+      "operating_entity": "T10",
+      "mechanism": "Different commissioning asset mix changes capital calls and partner profit allocation",
+      "policy_changes": [
+        "LOAD and OTHER shares are8.5% and19.5% of their respective published baseline categories; REPLACE is unchanged.",
+        "The explicitly finite additional partnership commitment is GBP260m; LP supplies89% of capital and preferred return is2%."
+      ],
+      "lease": {},
+      "programme": {
+        "categories": {
+          "LOAD": {
+            "share": "0.085"
+          },
+          "OTHER": {
+            "share": "0.195"
+          }
+        }
+      },
+      "holding": {
+        "parameters": {
+          "additional_lp_commitment": "260000000.00"
+        }
+      },
+      "waterfall": {
+        "lp_capital_fraction": "0.89"
+      }
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Plan, ledger-preflight, or explicitly build declared composite sources.
 
-The default makes plans only. Independent ledger preflight never calls
-LibreOffice. Only --build calls the complete four-audit, two-stability builder.
+The default makes plans only. Explicit --preflight runs independent ledgers
+without LibreOffice. Only --build calls the component-audit, two-stability builder.
 Profile selection uses declared order and ledger feasibility, never model scores.
 """
 from __future__ import annotations
@@ -37,6 +37,7 @@ REQUIRED_REGIMES = {'bank_draw', 'mandatory_margin', 'optional_repayment', 'lp_c
                     'operating_acquisition', 'operating_exit', 'borrowing_base_binding'}
 AUDIT_NAMES = {'lease', 'programme', 'operating', 'holding'}
 PROFILE_FIELDS = {'id', 'operating_entity', 'mechanism', 'policy_changes', 'lease', 'programme', 'holding'}
+OPTIONAL_PROFILE_FIELDS = {'contingent', 'waterfall'}
 LEASE_FIELDS = {'monthly_base_rent', 'initial_direct_cost', 'annual_discount_rate',
                 'fixed_step_rate', 'fixed_step_months', 'index_floor_factor', 'index_cap_factor'}
 EVENT_FIELDS = {'month', 'index_ratio', 'annual_discount_rate', 'new_end_month',
@@ -49,6 +50,15 @@ CATEGORY_FIELDS = {'share', 'commission_lag', 'regulatory_life', 'tax_pool'}
 HOLDING_FIELDS = {'opening_cash', 'minimum_cash', 'facility_limit', 'additional_lp_commitment',
                   'rav_advance_rate', 'claim_advance_rate', 'operating_ownership', 'gbp_per_usd'}
 ANNUAL_PRIMITIVES = {'bank_rate', 'management_fee', 'claim_haircut'}
+CONTINGENT_PRIMITIVES = {'active', 'rate', 'threshold', 'annual_cap', 'rounding_quantum', 'rounding_mode'}
+WATERFALL_PRIMITIVES = {'opening_capital', 'lp_capital_fraction', 'preference_rate',
+    'initial_carry_rate', 'flipped_carry_rate', 'lp_xirr_hurdle'}
+WATERFALL_REGIMES = {'preference_paid', 'preference_carry', 'return_of_capital', 'gp_catchup',
+    'residual', 'carry_flip_earned', 'flipped_carry_used', 'capital_after_flip'}
+PROGRAMME_REGIMES = {'tax_loss_expiry', 'tax_loss_fifo_use', 'positive_tax_gross_up',
+    'collection_cap_binding', 'tax_pool_transfer', 'rav_disallowance',
+    'positive_contingent_rent', 'uncapped_contingent_feedback'}
+YEARS = list(range(2024, 2044))
 
 
 def sha(path):
@@ -98,7 +108,8 @@ def load_profiles(path):
         raise ValueError('Declare ten to twenty profiles before running the batch')
     identities = set()
     for profile in profiles:
-        if set(profile) != PROFILE_FIELDS or not re.fullmatch(r'C[0-9]{2}-[a-z0-9-]+', profile['id']):
+        if (not PROFILE_FIELDS <= set(profile) or set(profile) - PROFILE_FIELDS - OPTIONAL_PROFILE_FIELDS
+                or not re.fullmatch(r'C[0-9]{2}-[a-z0-9-]+', profile['id'])):
             raise ValueError('Explicit safe profile identity and complete public mechanism are required')
         if profile['id'] in identities:
             raise ValueError('Profile identities must be unique')
@@ -109,10 +120,63 @@ def load_profiles(path):
             raise ValueError('Each profile must declare its financial mechanism and business policy changes')
     if not data.get('selection_policy'):
         raise ValueError('Predeclared selection policy is required')
+    required = data.get('required_preflight_programme_regimes', [])
+    if not isinstance(required, list) or set(required) - PROGRAMME_REGIMES:
+        raise ValueError('Unknown required independent programme regime')
     ancestor = data.get('regulatory_original_ancestor', {})
     if not ancestor.get('local_path') or not re.fullmatch(r'[a-f0-9]{64}', ancestor.get('sha256', '')) or not ancestor.get('url'):
         raise ValueError('Bind the original regulatory download separately from its normalized input')
     return data
+
+
+def materialize_contingent(spec, patch, identity):
+    """Patch explicit contract inputs, never rent, entitlement or tax answers."""
+    from sheets_factory.workbook.contingent_recovery.contract import validate_spec
+    result = deepcopy(spec)
+    allowed(patch, {'annual_defaults', 'contract_defaults', 'annual_overrides'}, 'contingent terms')
+    defaults = patch.get('annual_defaults', {})
+    allowed(defaults, {'eligible_fraction'}, 'contingent annual defaults')
+    contracts = patch.get('contract_defaults', {})
+    allowed(contracts, {'P01', 'P02', 'P03', 'P04'}, 'contingent contract identities')
+    for changes in contracts.values():
+        allowed(changes, CONTINGENT_PRIMITIVES, 'contingent contract defaults')
+    for row in result['annual_terms']:
+        row.update(deepcopy(defaults))
+        for contract in row['contracts']:
+            changes = contracts.get(contract['lease_id'], {})
+            # Default financial terms apply only to originally payable rows.
+            # Changing payability requires explicitly dated full input patches.
+            if 'active' in changes:
+                raise ValueError('Contingent payability changes require explicitly dated annual overrides')
+            if contract['active']:
+                contract.update(deepcopy(changes))
+    overrides = patch.get('annual_overrides', [])
+    if not isinstance(overrides, list):
+        raise ValueError('Explicit dated contingent overrides must be a list')
+    seen = set()
+    for override in overrides:
+        allowed(override, {'years', 'eligible_fraction', 'contracts'}, 'dated contingent overrides')
+        years = override.get('years')
+        if (not isinstance(years, list) or not years or len(years) != len(set(years))
+                or any(type(y) is not int or y not in YEARS for y in years)):
+            raise ValueError('Explicit existing contingent reporting years are required')
+        changes = override.get('contracts', {})
+        allowed(changes, {'P01', 'P02', 'P03', 'P04'}, 'dated contingent identities')
+        for values in changes.values():
+            allowed(values, CONTINGENT_PRIMITIVES, 'dated contingent contract inputs')
+        for year in years:
+            fields = ({('eligible_fraction',)} if 'eligible_fraction' in override else set())
+            fields |= {(name, field) for name, values in changes.items() for field in values}
+            if any((year, field) in seen for field in fields):
+                raise ValueError('Conflicting dated contingent primitive overrides')
+            seen.update((year, field) for field in fields)
+            row = next(row for row in result['annual_terms'] if row['year'] == year)
+            if 'eligible_fraction' in override:
+                row['eligible_fraction'] = override['eligible_fraction']
+            for contract in row['contracts']:
+                contract.update(deepcopy(changes.get(contract['lease_id'], {})))
+    result['scenario_id'] = identity + '-contingent'
+    return validate_spec(result)
 
 
 def materialize_profile(profile, base_config, destination, root=ROOT):
@@ -141,15 +205,25 @@ def materialize_profile(profile, base_config, destination, root=ROOT):
         # Preserve declared event order; validation rejects illegal moved dates.
     lease = validate_lease_spec(lease)
     reg_patch = profile['programme']
-    allowed(reg_patch, PROGRAMME_FIELDS | {'categories', 'lease_allowable_fraction'}, 'programme')
+    allowed(reg_patch, PROGRAMME_FIELDS | {'categories', 'lease_allowable_fraction', 'annual_input_overrides'}, 'programme')
     categories = {row['id']: row for row in programme['categories']}
     allowed(reg_patch.get('categories', {}), set(categories), 'programme categories')
     for identity, patch in reg_patch.get('categories', {}).items():
         allowed(patch, CATEGORY_FIELDS, 'programme category')
         categories[identity].update(deepcopy(patch))
     for key, value in reg_patch.items():
-        if key not in {'categories', 'lease_allowable_fraction'}:
+        if key not in {'categories', 'lease_allowable_fraction', 'annual_input_overrides'}:
             programme[key] = value
+    if 'annual_input_overrides' in reg_patch:
+        from sheets_factory.workbook.derived_regulatory.schema import ANNUAL_INPUT_FIELDS
+        overrides = reg_patch['annual_input_overrides']
+        if not isinstance(overrides, dict):
+            raise ValueError('Programme annual overrides require explicit reporting-year keys')
+        for year, values in overrides.items():
+            if not isinstance(year, str) or year not in {str(y) for y in YEARS}:
+                raise ValueError('Explicit existing programme reporting years are required')
+            allowed(values, set(ANNUAL_INPUT_FIELDS), 'programme dated annual inputs')
+            programme.setdefault('annual_input_overrides', {}).setdefault(year, {}).update(deepcopy(values))
     fraction = reg_patch.get('lease_allowable_fraction', base['lease_allowable_fraction'])
     if not Decimal('.75') <= finite(fraction, 'lease allowance') <= Decimal('.95'):
         raise ValueError('Public lease allowable fraction must remain between .75 and .95')
@@ -208,7 +282,25 @@ def materialize_profile(profile, base_config, destination, root=ROOT):
     programme['source_path'] = str(absolute(programme['source_path'], root).resolve())
     files = {'lease_config': destination / 'lease.json', 'regulatory_config': destination / 'programme.json',
              'holding_config': destination / 'holding.json'}
-    for key, value in [('lease_config', lease), ('regulatory_config', programme), ('holding_config', holding)]:
+    values = [('lease_config', lease), ('regulatory_config', programme), ('holding_config', holding)]
+    for name in ('contingent', 'waterfall'):
+        key = name + '_config'
+        if not base.get(key):
+            if name in profile:
+                raise ValueError('Optional primitive patches require an enabled ' + name + ' module')
+            continue
+        optional = load(absolute(base[key], root))
+        patch = profile.get(name, {})
+        if name == 'contingent':
+            optional = materialize_contingent(optional, patch, profile['id'])
+        else:
+            from sheets_factory.workbook.partner_waterfall.ledger import initial_state
+            allowed(patch, WATERFALL_PRIMITIVES, 'partner waterfall')
+            optional.update(deepcopy(patch))
+            initial_state(optional)
+        files[key] = destination / (name + '.json')
+        values.append((key, optional))
+    for key, value in values:
         write(files[key], value)
         base[key] = str(files[key].resolve())
     base['lease_allowable_fraction'] = fraction
@@ -254,6 +346,41 @@ def validate_ledgers(lease, programme, operating, holding, required):
         raise ValueError('Required holding regimes not activated: ' + ', '.join(missing))
 
 
+def validate_optional_ledgers(config, programme, parent, *, required_programme=()):
+    """Match builder options, with explicit full-horizon contingent proof checks."""
+    missing = sorted(set(required_programme) - {
+        key for key, years in programme['observed_regimes'].items() if years})
+    if missing:
+        raise ValueError('Required programme regimes not activated: ' + ', '.join(missing))
+    if config.get('contingent_config'):
+        minimum = config.get('minimum_uncapped_feedback_years', 12)
+        if type(minimum) is not int or not 1 <= minimum <= len(YEARS):
+            raise ValueError('Invalid minimum actual contingent-feedback year requirement')
+        proof = programme.get('contingent_recovery', {})
+        annual = proof.get('annual', {})
+        if (proof.get('all_years_unique') is not True or set(annual) != set(YEARS)
+                or any(row.get('unique_fixed_point') is not True
+                    or row.get('proof', {}).get('unique_on_entire_contractual_grid') is not True
+                    or row.get('proof', {}).get('endpoint_coalescence') is not True
+                    or row['proof'].get('lower_fixed_point') != row['proof'].get('upper_fixed_point')
+                    or row['proof'].get('lower_fixed_point') != row.get('variable_rent_total')
+                    for row in annual.values())):
+            raise ValueError('All twenty contingent years require identical endpoint fixed-point proofs')
+        observed = programme['observed_regimes'].get('uncapped_contingent_feedback', [])
+        if len(set(observed)) < minimum or any(year not in YEARS for year in observed):
+            raise ValueError('Contingent case lacks enough actual uncapped feedback years')
+    if config.get('waterfall_config'):
+        required = config.get('required_waterfall_regimes', [])
+        if not isinstance(required, list) or set(required) - WATERFALL_REGIMES:
+            raise ValueError('Unknown required actual partnership distribution regime')
+        annual = parent.get('partner_waterfall', [])
+        if [row.get('year') for row in annual] != YEARS:
+            raise ValueError('All twenty independent partner-allocation years are required')
+        missing = [key for key in required if not parent.get('observed_waterfall_regimes', {}).get(key)]
+        if missing:
+            raise ValueError('Required partnership regimes not activated: ' + ', '.join(missing))
+
+
 def preflight_case(record, destination):
     """Only independent arithmetic and input provenance; no workbook emitter or LO."""
     destination = Path(destination)
@@ -265,16 +392,38 @@ def preflight_case(record, destination):
     programme_spec['parameters']['lease_allowable_fraction'] = config['lease_allowable_fraction']
     parent_spec = load(config['holding_config'])
     manifest, op_spec, op = operating_inputs(config['operating_manifest'], config['operating_entity'])
-    lease = simulate_lease(lease_spec)
-    programme = regulatory_simulate(programme_spec, external_lease_annual=lease['annual'])
-    parent = simulate_parent(parent_spec, annual_bridge(programme_spec, programme), op, op_spec)
+    contingent = waterfall = None
+    if config.get('contingent_config'):
+        from sheets_factory.workbook.contingent_recovery import load_spec
+        contingent = load_spec(config['contingent_config'])
+        write(destination / 'contingent_contract.json', contingent)
+    if config.get('waterfall_config'):
+        from sheets_factory.workbook.partner_waterfall.ledger import initial_state
+        waterfall = load(config['waterfall_config'])
+        initial_state(waterfall)
+        write(destination / 'waterfall_contract.json', waterfall)
+    if (lease_spec['start_date'] != '2023-04-01' or lease_spec['months'] != 240
+            or programme_spec['years'] != YEARS or parent_spec['years'] != YEARS):
+        raise ValueError('Composite modules must retain the common twenty-year reporting horizon')
     journals = {}
-    for name, ledger in [('lease', lease), ('programme', programme), ('operating', op), ('holding', parent)]:
+    def journal(name, ledger):
         path = destination / (name + '_ledger.json')
         write(path, ledger)
         journals[name] = ref(path)
+        return ledger
+    lease = simulate_lease(lease_spec)
+    journal('lease', lease)
+    journal('operating', op)
+    optional = {'contingent_spec': contingent} if contingent is not None else {}
+    programme = journal('programme', regulatory_simulate(programme_spec,
+        external_lease_annual=lease['annual'], **optional))
+    optional = {'waterfall_spec': waterfall} if waterfall is not None else {}
+    parent = journal('holding', simulate_parent(parent_spec,
+        annual_bridge(programme_spec, programme), op, op_spec, **optional))
     # Preserve independent journals even when a declared regime is absent.
     validate_ledgers(lease, programme, op, parent, parent_spec['required_observed_regimes'])
+    validate_optional_ledgers(config, programme, parent,
+        required_programme=record.get('required_preflight_programme_regimes', []))
     original_reg = record['regulatory_original_ancestor']
     if sha(original_reg['local_path']) != original_reg['sha256'] or original_reg['url'] != reg_config['official_url']:
         raise ValueError('Original regulatory ancestor differs from the declared public download')
@@ -299,6 +448,18 @@ def preflight_case(record, destination):
         'upstream_workbook_sha256': [reg_config['source_sha256'], manifest['derived_workbook_sha256']],
         'operating_entity': config['operating_entity'], 'original_operating_dates_preserved': True,
         'original_operating_currency': 'USD'}
+    if contingent is not None:
+        report.update(contingent_all_twenty_years_unique=True,
+            contingent_unique_years=sorted(programme['contingent_recovery']['annual']),
+            minimum_uncapped_feedback_years=config.get('minimum_uncapped_feedback_years', 12),
+            observed_uncapped_feedback_years=programme['observed_regimes'].get('uncapped_contingent_feedback', []))
+    if waterfall is not None:
+        report.update(required_waterfall_regimes=config.get('required_waterfall_regimes', []),
+            observed_waterfall_regimes=parent['observed_waterfall_regimes'])
+    report.update(enabled_optional_modules=[key for key in ('contingent', 'waterfall') if config.get(key + '_config')],
+        expected_component_audit_names=sorted(AUDIT_NAMES | ({'contingent'} if contingent is not None else set())),
+        required_preflight_programme_regimes=record.get('required_preflight_programme_regimes', []),
+        six_algorithms_do_not_mean_six_independent_workbook_ancestors=True)
     write(destination / 'preflight.json', report)
     return report
 
@@ -310,8 +471,23 @@ def recipe_hashes(root=ROOT, scenario_path=None):
              root / 'config/derived_lease_contract_v1.json', root / 'config/derived_regulatory_reopener_v1.json',
              root / 'config/derived_holding_treasury_v2.json']
     paths += list((root / 'runtime/lo24.2-iterative-openpyxl315-v1').glob('*'))
-    for folder in ('composite_finance', 'derived_gold', 'derived_regulatory', 'lease_finance', 'holding_treasury'):
-        paths += list((root / 'src/sheets_factory/workbook' / folder).glob('*.py'))
+    folders = ['composite_finance', 'derived_gold', 'derived_regulatory', 'lease_finance', 'holding_treasury']
+    if scenario_path is not None:
+        declared = load(scenario_path)
+        base_path = absolute(declared['base_config'], root)
+        paths.append(base_path)
+        base = load(base_path)
+        for key in ('lease_config', 'regulatory_config', 'holding_config', 'operating_manifest',
+                    'contingent_config', 'waterfall_config'):
+            if base.get(key):
+                paths.append(absolute(base[key], root))
+        if base.get('contingent_config'):
+            folders.append('contingent_recovery')
+        if base.get('waterfall_config'):
+            folders.append('partner_waterfall')
+    for folder in folders:
+        for suffix in ('*.py', '*.md'):
+            paths += list((root / 'src/sheets_factory/workbook' / folder).glob(suffix))
     paths += [root / 'src/sheets_factory/workbook' / name for name in ('engine.py', 'compare.py', 'uno_recalculate.py')]
     if scenario_path is not None:
         paths.append(Path(scenario_path).resolve())
@@ -319,18 +495,28 @@ def recipe_hashes(root=ROOT, scenario_path=None):
             for p in sorted(set(paths)) if p.is_file()}
 
 
-def verify_built_source(manifest, output):
+def verify_built_source(manifest, output, config=None):
     """A prepared file or a preflight pass cannot enter selected."""
     output = Path(output)
-    if manifest.get('financial_audit_passed') is not True or set(manifest.get('financial_audits', {})) != AUDIT_NAMES:
-        raise ValueError('Four actual financial audit results are required')
+    config_ref = manifest.get('config')
+    if config_ref:
+        if sha(config_ref['path']) != config_ref['sha256']:
+            raise ValueError('Changed actual source configuration')
+        actual_config = load(config_ref['path'])
+        if config is not None and config != actual_config:
+            raise ValueError('Actual builder configuration differs from the declared profile')
+        config = actual_config
+    config = config or {}
+    names = AUDIT_NAMES | ({'contingent'} if config.get('contingent_config') else set())
+    if manifest.get('financial_audit_passed') is not True or set(manifest.get('financial_audits', {})) != names:
+        raise ValueError(('Four' if len(names) == 4 else 'Five') + ' actual financial audit results are required')
     goal = ref(manifest['local_path'])
     if len(manifest.get('selected', [])) != 1 or manifest['selected'][0]['sha256'] != goal['sha256']:
         raise ValueError('Exactly one selected workbook must match the actual verified source')
     if goal['sha256'] != manifest['derived_workbook_sha256'] or manifest['runtime']['image_id'] != RUNTIME_ID:
         raise ValueError('Built workbook or runtime identity differs from the verified manifest')
     proofs = {}
-    for name in sorted(AUDIT_NAMES):
+    for name in sorted(names):
         if manifest['financial_audits'][name].get('passed') is not True:
             raise ValueError('Actual component financial audit failed: ' + name)
         path = output / 'private' / (name + '_financial_audit.json')
@@ -349,8 +535,32 @@ def verify_built_source(manifest, output):
     calculations = [Path(stable[name]).resolve() for name in ('first', 'second')]
     if len(set(calculations + [Path(manifest['local_path']).resolve()])) != 3:
         raise ValueError('Two distinct actual recalculation artifacts are required')
-    return {'workbook': goal, 'four_audits': proofs,
-            'stability': ref(stable_ref['path']), 'actual_stability_workbooks': [ref(p) for p in calculations]}
+    result = {'workbook': goal, 'stability': ref(stable_ref['path']),
+              'actual_stability_workbooks': [ref(p) for p in calculations]}
+    result['four_audits' if len(names) == 4 else 'component_audits'] = proofs
+    if config.get('contingent_config'):
+        if manifest.get('contingent_all_years_unique') is not True:
+            raise ValueError('Actual source lacks the contingent uniqueness confirmation')
+        observed = manifest.get('observed_contingent_regimes', {}).get('uncapped_contingent_feedback', [])
+        if len(set(observed)) < config.get('minimum_uncapped_feedback_years', 12):
+            raise ValueError('Actual source lacks the required uncapped feedback regimes')
+    if config.get('waterfall_config'):
+        required = config.get('required_waterfall_regimes', [])
+        if not isinstance(required, list) or set(required) - WATERFALL_REGIMES:
+            raise ValueError('Unknown required actual partnership distribution regime')
+        if any(not manifest.get('observed_waterfall_regimes', {}).get(name) for name in required):
+            raise ValueError('Actual source lacks the required partnership regimes')
+        result['waterfall_audit_scope'] = 'All partner bindings are independently checked within the holding financial audit.'
+    implementations = manifest.get('calculation_implementations', {})
+    if config.get('contingent_config') or config.get('waterfall_config'):
+        if not implementations:
+            raise ValueError('Optional-module source lacks actual calculation recipe bindings')
+    for binding in implementations.values():
+        if sha(binding['path']) != binding['sha256']:
+            raise ValueError('Changed actual source calculation recipe binding')
+    if implementations:
+        result['calculation_implementations'] = implementations
+    return result
 
 
 def run_batch(scenario_path, output, *, mode='plan_only', limit=10, max_attempts=20, workers=1, root=ROOT):
@@ -376,6 +586,7 @@ def run_batch(scenario_path, output, *, mode='plan_only', limit=10, max_attempts
         'selection_policy': declared['selection_policy'], 'model_scores_consulted': False,
         'declared_profile_count': len(declared['profiles']), 'target_derived_workbook_count': limit,
         'max_attempts': max_attempts, 'workers': workers, 'verified_derived_workbook_count': 0,
+        'preflight_workers': 1,
         'source_ancestor_unique_count': None, 'upstream_workbook_unique_count': None,
         'api_calls': 0, 'llm_tokens': 0, 'recipe_sha256': before_recipe, 'scenario_config': ref(scenario_path),
         'runtime': {'image': RUNTIME, 'required_image_id': RUNTIME_ID}, 'started_at': utcnow()}
@@ -394,6 +605,8 @@ def run_batch(scenario_path, output, *, mode='plan_only', limit=10, max_attempts
             return {'id': record['id'], 'passed': True, 'result': result}
         except Exception as exc:
             status, error = 'failed', {'type': type(exc).__name__, 'reason': str(exc)}
+            if getattr(exc, 'proof', None) is not None:
+                error['proof'] = exc.proof
             return {'id': record['id'], 'passed': False, 'error': error}
         finally:
             values = {**payload, 'status': status, 'duration_ms': round((time.monotonic() - start) * 1000), 'error': error}
@@ -409,6 +622,7 @@ def run_batch(scenario_path, output, *, mode='plan_only', limit=10, max_attempts
                 record = result['result']
                 record['regulatory_original_ancestor'] = deepcopy(declared['regulatory_original_ancestor'])
                 record['regulatory_original_ancestor']['local_path'] = str(absolute(record['regulatory_original_ancestor']['local_path'], root).resolve())
+                record['required_preflight_programme_regimes'] = deepcopy(declared.get('required_preflight_programme_regimes', []))
                 records.append(record)
             else:
                 manifest['attempts'].append({**result, 'stage': 'materialize'})
@@ -426,8 +640,9 @@ def run_batch(scenario_path, output, *, mode='plan_only', limit=10, max_attempts
             audit.update_run(status='preflighting')
             def preflight(record):
                 return node(record, 'preflight', lambda: preflight_case(record, output / 'preflight' / record['id']))
-            with ThreadPoolExecutor(max_workers=workers) as pool:
-                outcomes = list(pool.map(preflight, records))
+            # Preflight replays are deliberately sequential. The explicit worker
+            # setting only controls later, separately requested actual builds.
+            outcomes = [preflight(record) for record in records]
             for record, outcome in zip(records, outcomes):
                 item = {'id': record['id'], 'stage': 'preflight', 'status': 'preflight_passed' if outcome['passed'] else 'rejected', 'config': record['config']}
                 if outcome['passed']:
@@ -456,7 +671,7 @@ def run_batch(scenario_path, output, *, mode='plan_only', limit=10, max_attempts
                     destination = output / 'sources' / record['id']
                     def action():
                         result = composite_build(record['config']['path'], destination, root)
-                        proof = verify_built_source(result, destination)
+                        proof = verify_built_source(result, destination, load(record['config']['path']))
                         return {'manifest': result, 'verification': proof}
                     return node(record, 'four_audits_two_stability', action)
                 with ThreadPoolExecutor(max_workers=workers) as pool:
