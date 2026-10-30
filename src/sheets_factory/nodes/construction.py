@@ -10,7 +10,7 @@ import shutil
 import sys
 
 import openpyxl
-from openpyxl.utils.cell import range_boundaries
+from openpyxl.utils.cell import range_boundaries, coordinate_to_tuple, get_column_letter
 
 from ..core.node import BaseNode, TaskRejected
 from ..workbook import profile_workbook, compare_workbooks, formula_references
@@ -465,6 +465,41 @@ class ConstructNode(BaseNode):
                 'native_risk_guard': native_guard}
 
 
+def compact_target_regions(edits):
+    """Cover the exact selected cells with rectangles; never include a hole."""
+    sheets = {}
+    for edit in edits:
+        row, column = coordinate_to_tuple(edit['cell'])
+        sheets.setdefault(edit['sheet'], {}).setdefault(row, set()).add(column)
+    labels = []
+    for sheet, rows in sheets.items():
+        active, rectangles = {}, []
+        for row in sorted(rows):
+            intervals = []
+            for column in sorted(rows[row]):
+                if intervals and intervals[-1][1] + 1 == column:
+                    intervals[-1] = (intervals[-1][0], column)
+                else:
+                    intervals.append((column, column))
+            following = {}
+            for interval in intervals:
+                previous = active.pop(interval, None)
+                if previous and previous[1] == row - 1:
+                    following[interval] = (previous[0], row)
+                else:
+                    if previous:
+                        rectangles.append((*interval, *previous))
+                    following[interval] = (row, row)
+            rectangles.extend((*interval, *span) for interval, span in active.items())
+            active = following
+        rectangles.extend((*interval, *span) for interval, span in active.items())
+        quoted = "'" + sheet.replace("'", "''") + "'!"
+        for left, right, top, bottom in sorted(rectangles, key=lambda item: (item[2], item[0])):
+            first, last = get_column_letter(left) + str(top), get_column_letter(right) + str(bottom)
+            labels.append(quoted + first + (':' + last if first != last else ''))
+    return '; '.join(labels)
+
+
 class InstructionNode(BaseNode):
     node_id = 'instruction'
 
@@ -479,7 +514,9 @@ class InstructionNode(BaseNode):
             text += '\nHypothetical planning scenario already entered in the input workbook (not historical source facts):\n'
             text += '\n'.join(f"- '{s['sheet']}'!{s['cell']}: {s['after']} {s.get('unit', '')}; {s.get('meaning', '')}" for s in scenario) + '\n'
         if ctx.mode == 'financial_modeling':
-            locations = '; '.join(f"'{e['sheet']}'!{e['cell']}" for e in ctx.data['plan']['edits'])
+            edits = ctx.data['plan']['edits']
+            locations = (compact_target_regions(edits) if len(edits) > 80 else
+                '; '.join(f"'{e['sheet']}'!{e['cell']}" for e in edits))
             text += '\n\nMissing formula cells to complete: ' + locations + '.\n'
         text += ('\n\nWork only within the stated financial-model scope. Preserve unrelated inputs, existing '
                  'worksheets and unaffected values. Read /app/input.xlsx and save /app/output.xlsx. '

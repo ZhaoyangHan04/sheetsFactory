@@ -1,0 +1,60 @@
+run:
+  name: derived-project-difficulty-pilot
+  scheduler: rolling
+  source_ordering: rank_score
+  targets:
+    financial_modeling: 1
+    debugging: 1
+  max_sources: 1
+  max_parallel_sources: 1
+  max_candidates_per_seed: 1
+  variant_modes:
+  - financial_modeling
+  - debugging
+  max_steps: 3
+  max_evidence_rounds_per_revision: 2
+  infrastructure_retries_per_stage: 2
+  seed_manifest: data/manifests/hard_financial_sources.json
+construction:
+  max_edit_count:
+    financial_modeling: 4096
+    debugging: 160
+  planning_preferences_only:
+    financial_modeling_edit_count:
+    - 1200
+    - 3000
+    debugging_edit_count:
+    - 24
+    - 64
+engine:
+  image: sheetsfactory-lo:24.2
+  timeout_seconds: 120
+agents:
+  model: gpt-6-sol
+  reasoning_effort: high
+  max_parallel_calls: 4
+  timeout_seconds: 1200
+  trajectory_timeout_seconds: 600
+prompt_overrides:
+  planning.md: planning_integrated_project.md
+  repair.md: repair_hard.md
+diagnosis:
+  selection:
+    include: all
+    exclude: []
+  execution:
+    llm_batching: grouped
+  difficulty_deferred: false
+dashboard:
+  host: 127.0.0.1
+  port: 0
+  open_browser: true
+harbor:
+  execute_controls: true
+  concurrency: 4
+difficulty:
+  max_rounds: 4
+  per_mode: 10
+  evaluation_concurrency: 4
+  timeout_seconds: 1800
+  dashboard_port: 0
