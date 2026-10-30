@@ -6,7 +6,7 @@
 
 配置位于 `config/`，角色提示词位于 `prompts/`，节点与模板位于 `src/sheets_factory/`，输入位于 `data/`，运行数据和面板审计位于 `outputs/`。密钥仅保存在环境变量或被忽略的 `.secrets/`。
 
-Git 仓库包含代码、配置、提示词、测试、文档和来源清单。下载的种子、`outputs/` 实验产物与运行凭据不纳入版本控制；下文指向 `outputs/` 的链接是原运行机器上的本地产物，当前未上传为 GitHub 附件。新检出仓库可按启动命令重新构造任务。
+Git 仓库包含代码、配置、提示词、测试、文档和来源清单。下载的种子、`outputs/` 实验产物与运行凭据不纳入版本控制；下文历史题目发布包的 `outputs/` 链接指向原运行机器上的本地产物。固定运行镜像另已上传为私有 GitHub Release 附件。新检出仓库可按启动命令重新构造任务。
 
 ## 构建方法
 
@@ -142,7 +142,19 @@ harbor run --path SpreadsheetEval --agent nop
   --command-cwd "$PWD" --output outputs/validation/final_oracle.json
 ```
 
-本次另存了[实际运行镜像](outputs/releases/runtime/sheetsfactory-lo-24.2-d2e00cbc.tar.gz)和[镜像校验清单](outputs/releases/runtime/runtime_manifest.json)，已验证重新载入得到原镜像 ID。可先执行 `docker load -i <镜像文件>`，再按发布包说明运行。代码按功能分阶段提交，远程仓库为 [ZhaoyangHan04/sheetsFactory](https://github.com/ZhaoyangHan04/sheetsFactory)，当前为私有仓库。
+已将[固定运行镜像、SHA 和校验清单](https://github.com/ZhaoyangHan04/sheetsFactory/releases/tag/runtime-lo-24.2-d2e00cbc)上传至私有仓库附件，并验证重新载入可得到原镜像 ID。持有仓库权限的环境可直接获取相同镜像，避免依赖未来的 apt 仓库状态：
+
+```bash
+gh release download runtime-lo-24.2-d2e00cbc --repo ZhaoyangHan04/sheetsFactory \
+  --pattern 'sheetsfactory-lo-24.2-d2e00cbc.tar.gz*' --dir outputs/runtime-downloads
+(
+  cd outputs/runtime-downloads
+  sha256sum -c sheetsfactory-lo-24.2-d2e00cbc.tar.gz.sha256
+  docker load -i sheetsfactory-lo-24.2-d2e00cbc.tar.gz
+)
+```
+
+镜像名为 `sheetsfactory-lo:24.2`，LibreOffice 为 `24.2.7.2`；压缩包 SHA256 为 `0abd761bc55f230332a0ee37e6a2dce3ce75dae0179a94f4a00adb91559a4e77`。本地也保留了[镜像校验清单](outputs/releases/runtime/runtime_manifest.json)。代码按功能分阶段提交，远程仓库为 [ZhaoyangHan04/sheetsFactory](https://github.com/ZhaoyangHan04/sheetsFactory)，当前为私有仓库。
 
 ## 测试
 
