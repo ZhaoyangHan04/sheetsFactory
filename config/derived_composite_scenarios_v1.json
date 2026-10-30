@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "dataset": "ten-hypothetical-composite-financial-scenarios-v1",
+  "base_config": "config/derived_composite_finance_v2.json",
+  "regulatory_original_ancestor": {
+    "local_path": "outputs/research/regulatory_models_20261030T104604Z/ofgem_ed2_v5.xlsx",
+    "sha256": "2f02bfdf2c4c85449129add05038fb1cbc10ad4ea716e9571a7dba0ea3642ce8",
+    "url": "https://www.ofgem.gov.uk/sites/default/files/2026-06/ED2-PCFM-V5.xlsx"
+  },
+  "selection_policy": "Use the declared profile order. Reject only failed contract or independent-ledger preflight cases. Select the first requested passing profiles before any workbook build or model evaluation. Do not consult model scores. Ten derived scenarios share the same two original workbook ancestors; they are not ten observed companies.",
+  "profiles": [
+    {
+      "id": "C01-cpi-cap-extension",
+      "operating_entity": "T01",
+      "mechanism": "Capped CPI remeasurement and premises extension against ordinary interest limits",
+      "policy_changes": ["A higher observed CPI ratio is capped at the contractual maximum", "LOAD share increases while OTHER share decreases", "Claims become wholly ineligible in FY2031"],
+      "lease": {
+        "P01": {"monthly_base_rent": "108000.00", "initial_direct_cost": "102000.00", "events": {"37": {"index_ratio": "1.12"}, "61": {"annual_discount_rate": "0.074", "new_end_month": 168}}},
+        "P03": {"events": {"55": {"retention_fraction": "0.62"}}}
+      },
+      "programme": {"lease_allowable_fraction": "0.85", "categories": {"LOAD": {"share": "0.09"}, "OTHER": {"share": "0.19"}}, "disallowance_real": "11000000"},
+      "holding": {"parameters": {"gbp_per_usd": "0.80", "rav_advance_rate": "0.81", "claim_advance_rate": "0.79", "additional_lp_commitment": "260000000.00"}, "annual_defaults": {"bank_rate": "0.076", "management_fee": "210000.00"}, "annual_overrides": [{"years": [2032], "claim_haircut": "0.65"}]}
+    },
+    {
+      "id": "C02-interest-cap-refinancing",
+      "operating_entity": "T02",
+      "mechanism": "Tighter operating interest deduction capacity with equipment refinancing and a shorter extension",
+      "policy_changes": ["The selected operating contract limits interest deductions to 10% of EBITDA", "The quarterly equipment refinancing ends at month 216", "Programme tax-pool transfer occurs one year earlier"],
+      "lease": {
+        "P02": {"monthly_base_rent": "81000.00", "initial_direct_cost": "52000.00", "events": {"85": {"annual_discount_rate": "0.081", "new_end_month": 216}}},
+        "P03": {"events": {"55": {"retention_fraction": "0.56"}}}
+      },
+      "programme": {"lease_allowable_fraction": "0.80", "categories": {"REPLACE": {"share": "0.135"}, "OTHER": {"share": "0.185"}}, "disallowance_real": "9000000", "transfer_year": 2029},
+      "holding": {"parameters": {"gbp_per_usd": "0.74", "rav_advance_rate": "0.82", "claim_advance_rate": "0.76", "additional_lp_commitment": "250000000.00"}, "annual_defaults": {"bank_rate": "0.079", "management_fee": "230000.00"}, "annual_overrides": [{"years": [2032, 2033], "claim_haircut": "0.70"}]}
+    },
+    {
+      "id": "C03-long-loss-life-surrender",
+      "operating_entity": "T03",
+      "mechanism": "Two-year operating loss carryforward and earlier partial fleet surrender",
+      "policy_changes": ["The selected operating entity retains losses for two years", "Fleet partial surrender moves to month 49 with a lower retained exposure", "Programme structures tax life extends to thirteen years"],
+      "lease": {
+        "P03": {"monthly_base_rent": "53000.00", "initial_direct_cost": "24000.00", "events": {"55": {"month": 49, "retention_fraction": "0.48", "cash_fee": "72000.00"}, "103": {"cash_fee": "139000.00"}}},
+        "P01": {"events": {"25": {"index_ratio": "0.975"}}}
+      },
+      "programme": {"lease_allowable_fraction": "0.90", "categories": {"LOAD": {"share": "0.075"}, "OTHER": {"share": "0.225"}}, "disallowance_real": "12000000", "structures_tax_life": 13},
+      "holding": {"parameters": {"gbp_per_usd": "0.86", "rav_advance_rate": "0.79", "claim_advance_rate": "0.83", "additional_lp_commitment": "275000000.00"}, "annual_defaults": {"bank_rate": "0.071", "management_fee": "190000.00"}, "annual_overrides": [{"years": [2032], "claim_haircut": "0.80"}]}
+    },
+    {
+      "id": "C04-zero-rate-operating-floor",
+      "operating_entity": "T04",
+      "mechanism": "Zero-rate operating amortization with a premises CPI floor and repriced site equipment",
+      "policy_changes": ["The selected operating loan A has zero interest", "Observed premises CPI falls below its contractual floor", "The long-horizon site modification has a higher discount rate"],
+      "lease": {
+        "P01": {"monthly_base_rent": "95000.00", "initial_direct_cost": "110000.00", "events": {"49": {"index_ratio": "0.90"}}},
+        "P04": {"monthly_base_rent": "39000.00", "events": {"145": {"annual_discount_rate": "0.055"}}},
+        "P03": {"events": {"55": {"retention_fraction": "0.65"}}}
+      },
+      "programme": {"lease_allowable_fraction": "0.75", "categories": {"LOAD": {"share": "0.085"}, "REPLACE": {"share": "0.11"}, "OTHER": {"share": "0.205"}}, "disallowance_real": "8000000", "general_transfer_fraction": "0.40"},
+      "holding": {"parameters": {"gbp_per_usd": "0.70", "rav_advance_rate": "0.83", "claim_advance_rate": "0.77", "additional_lp_commitment": "255000000.00"}, "annual_defaults": {"bank_rate": "0.068", "management_fee": "240000.00"}, "annual_overrides": [{"years": [2032], "claim_haircut": "0.55"}]}
+    },
+    {
+      "id": "C05-tight-dscr-commission-delay",
+      "operating_entity": "T05",
+      "mechanism": "Tighter operating DSCR trap and delayed replacement commissioning",
+      "policy_changes": ["The selected operating DSCR trigger is 1.50", "Replacement assets commission after a three-year lag", "Parent bank pricing rises during the collateral dispute"],
+      "lease": {
+        "P02": {"monthly_base_rent": "84000.00", "initial_direct_cost": "60000.00", "fixed_step_rate": "0.03", "events": {"85": {"annual_discount_rate": "0.075"}}},
+        "P03": {"events": {"55": {"retention_fraction": "0.58"}}}
+      },
+      "programme": {"lease_allowable_fraction": "0.88", "categories": {"REPLACE": {"share": "0.14", "commission_lag": 3}, "OTHER": {"share": "0.18"}}, "disallowance_real": "12500000"},
+      "holding": {"parameters": {"gbp_per_usd": "0.82", "rav_advance_rate": "0.82", "claim_advance_rate": "0.81", "additional_lp_commitment": "285000000.00"}, "annual_defaults": {"bank_rate": "0.075", "management_fee": "250000.00"}, "annual_overrides": [{"years": [2031, 2032], "bank_rate": "0.095"}, {"years": [2032], "claim_haircut": "0.75"}]}
+    },
+    {
+      "id": "C06-reserve-policy-late-exit",
+      "operating_entity": "T06",
+      "mechanism": "Zero normal DSRA and five-payment trap reserve with a later fleet exit",
+      "policy_changes": ["The selected operating DSRA switches from zero normal payments to five trapped payments", "Full fleet termination moves to month 115", "A smaller tax-pool transfer preserves more general basis"],
+      "lease": {
+        "P03": {"monthly_base_rent": "50000.00", "initial_direct_cost": "21000.00", "events": {"55": {"retention_fraction": "0.70"}, "103": {"month": 115, "cash_fee": "150000.00"}}},
+        "P01": {"events": {"61": {"annual_discount_rate": "0.069"}}}
+      },
+      "programme": {"lease_allowable_fraction": "0.92", "categories": {"LOAD": {"share": "0.095"}, "REPLACE": {"share": "0.115"}, "OTHER": {"share": "0.19"}}, "disallowance_real": "10500000", "general_transfer_fraction": "0.20"},
+      "holding": {"parameters": {"gbp_per_usd": "0.90", "rav_advance_rate": "0.80", "claim_advance_rate": "0.84", "additional_lp_commitment": "270000000.00"}, "annual_defaults": {"bank_rate": "0.082", "management_fee": "225000.00"}, "annual_overrides": [{"years": [2032], "claim_haircut": "0.85"}]}
+    },
+    {
+      "id": "C07-delayed-operating-start",
+      "operating_entity": "T07",
+      "mechanism": "Twelve-month operating construction and a longer premises modification",
+      "policy_changes": ["The selected operating project has twelve construction months and a later covenant test", "The premises extension lasts to month 180", "LOAD assets commission after a two-year lag"],
+      "lease": {
+        "P01": {"monthly_base_rent": "112000.00", "initial_direct_cost": "96000.00", "events": {"61": {"new_end_month": 180, "annual_discount_rate": "0.078"}, "73": {"index_ratio": "1.045"}}},
+        "P03": {"events": {"55": {"retention_fraction": "0.54"}}}
+      },
+      "programme": {"lease_allowable_fraction": "0.83", "categories": {"LOAD": {"share": "0.10", "commission_lag": 2}, "OTHER": {"share": "0.19"}}, "disallowance_real": "13500000"},
+      "holding": {"parameters": {"gbp_per_usd": "0.78", "rav_advance_rate": "0.84", "claim_advance_rate": "0.78", "additional_lp_commitment": "290000000.00"}, "annual_defaults": {"bank_rate": "0.080", "management_fee": "260000.00"}, "annual_overrides": [{"years": [2032], "claim_haircut": "0.65"}]}
+    },
+    {
+      "id": "C08-tax-vintage-collection-lag",
+      "operating_entity": "T08",
+      "mechanism": "Operating loss vintages and a longer programme claims collection delay",
+      "policy_changes": ["The selected operating entity retains two-year loss vintages", "Programme claims require a three-year collection lag", "Semiannual lease direct costs and index remeasurement are larger"],
+      "lease": {
+        "P04": {"monthly_base_rent": "42000.00", "initial_direct_cost": "165000.00", "events": {"85": {"index_ratio": "1.07"}, "145": {"annual_discount_rate": "0.050"}}},
+        "P03": {"events": {"55": {"retention_fraction": "0.60"}}}
+      },
+      "programme": {"lease_allowable_fraction": "0.95", "categories": {"LOAD": {"share": "0.07"}, "REPLACE": {"share": "0.15"}, "OTHER": {"share": "0.20"}}, "disallowance_real": "11500000", "claim_lag_years": 3},
+      "holding": {"parameters": {"gbp_per_usd": "0.88", "rav_advance_rate": "0.81", "claim_advance_rate": "0.85", "additional_lp_commitment": "300000000.00"}, "annual_defaults": {"bank_rate": "0.073", "management_fee": "235000.00"}, "annual_overrides": [{"years": [2032, 2033], "claim_haircut": "0.80"}]}
+    },
+    {
+      "id": "C09-dual-covenant-disallowance",
+      "operating_entity": "T09",
+      "mechanism": "Higher DSCR and larger DSRA trap with an earlier regulatory disallowance",
+      "policy_changes": ["The selected operating project has a 1.60 DSCR trigger and a four-payment trapped reserve", "Real disallowance occurs in FY2030 before the full claim collateral exclusion", "Parent fees step upward from FY2030"],
+      "lease": {
+        "P02": {"monthly_base_rent": "78000.00", "initial_direct_cost": "70000.00", "events": {"85": {"new_end_month": 240, "annual_discount_rate": "0.070"}}},
+        "P03": {"events": {"55": {"retention_fraction": "0.52", "cash_fee": "80000.00"}}}
+      },
+      "programme": {"lease_allowable_fraction": "0.78", "categories": {"LOAD": {"share": "0.09"}, "REPLACE": {"share": "0.13"}, "OTHER": {"share": "0.18"}}, "disallowance_real": "14000000", "disallowance_year": 2030},
+      "holding": {"parameters": {"gbp_per_usd": "0.72", "rav_advance_rate": "0.83", "claim_advance_rate": "0.80", "additional_lp_commitment": "280000000.00"}, "annual_defaults": {"bank_rate": "0.085", "management_fee": "180000.00"}, "annual_overrides": [{"years": [2030, 2031, 2032, 2033, 2034, 2035, 2036, 2037, 2038, 2039, 2040, 2041, 2042, 2043], "management_fee": "320000.00"}, {"years": [2032], "claim_haircut": "0.90"}]}
+    },
+    {
+      "id": "C10-tax-reform-financing-reset",
+      "operating_entity": "T10",
+      "mechanism": "Operating refresh profile combined with earlier programme tax reform and lower post-dispute parent pricing",
+      "policy_changes": ["The existing T10 public operating contract is retained without changing dates or USD amounts", "The programme tax-rate change occurs in FY2030 at 30%", "Parent bank pricing resets downward after FY2033 while fees remain explicit"],
+      "lease": {
+        "P01": {"monthly_base_rent": "103000.00", "initial_direct_cost": "125000.00", "events": {"61": {"annual_discount_rate": "0.080"}, "97": {"index_ratio": "1.06"}}},
+        "P03": {"monthly_base_rent": "56000.00", "events": {"55": {"retention_fraction": "0.66"}}}
+      },
+      "programme": {"lease_allowable_fraction": "0.87", "categories": {"LOAD": {"share": "0.085"}, "REPLACE": {"share": "0.125"}, "OTHER": {"share": "0.21"}}, "disallowance_real": "13000000", "tax_rate_change_year": 2030, "tax_rate_after": "0.30"},
+      "holding": {"parameters": {"gbp_per_usd": "0.84", "rav_advance_rate": "0.82", "claim_advance_rate": "0.82", "additional_lp_commitment": "295000000.00"}, "annual_defaults": {"bank_rate": "0.090", "management_fee": "245000.00"}, "annual_overrides": [{"years": [2032], "claim_haircut": "0.70"}, {"years": [2034, 2035, 2036, 2037, 2038, 2039, 2040, 2041, 2042, 2043], "bank_rate": "0.060"}]}
+    },
+    {
+      "id": "C11-claims-dispute-before-sale",
+      "operating_entity": "T02",
+      "mechanism": "Interest-limited operating associate with full claim exclusion before the equity exit",
+      "policy_changes": ["Claims are fully ineligible in FY2030 as well as FY2031", "A 76% RAV advance limits reliance on residual regulatory collateral", "The quarterly refinancing retains the month-216 contractual term"],
+      "lease": {"P02": {"monthly_base_rent": "81000.00", "initial_direct_cost": "52000.00", "events": {"85": {"annual_discount_rate": "0.081", "new_end_month": 216}}}, "P03": {"events": {"55": {"retention_fraction": "0.56"}}}},
+      "programme": {"lease_allowable_fraction": "0.80", "categories": {"REPLACE": {"share": "0.135"}, "OTHER": {"share": "0.185"}}, "disallowance_real": "9000000", "transfer_year": 2029},
+      "holding": {"parameters": {"gbp_per_usd": "0.74", "rav_advance_rate": "0.76", "claim_advance_rate": "0.76", "additional_lp_commitment": "280000000.00"}, "annual_defaults": {"bank_rate": "0.079", "management_fee": "230000.00"}, "annual_overrides": [{"years": [2030], "claim_haircut": "1.00"}, {"years": [2032, 2033], "claim_haircut": "0.70"}]}
+    },
+    {
+      "id": "C12-zero-rate-early-collateral-cut",
+      "operating_entity": "T04",
+      "mechanism": "Zero-rate operating debt with reduced RAV eligibility and a pre-exit claims dispute",
+      "policy_changes": ["RAV advances are 70% of nominal closing RAV", "Claims become wholly ineligible in FY2029 and FY2030 before the existing FY2031 dispute", "The zero-rate operating associate keeps its original USD debt policy"],
+      "lease": {"P01": {"monthly_base_rent": "95000.00", "initial_direct_cost": "110000.00", "events": {"49": {"index_ratio": "0.90"}}}, "P04": {"monthly_base_rent": "39000.00", "events": {"145": {"annual_discount_rate": "0.055"}}}, "P03": {"events": {"55": {"retention_fraction": "0.65"}}}},
+      "programme": {"lease_allowable_fraction": "0.75", "categories": {"LOAD": {"share": "0.085"}, "REPLACE": {"share": "0.11"}, "OTHER": {"share": "0.205"}}, "disallowance_real": "8000000", "general_transfer_fraction": "0.40"},
+      "holding": {"parameters": {"gbp_per_usd": "0.70", "rav_advance_rate": "0.70", "claim_advance_rate": "0.82", "additional_lp_commitment": "285000000.00"}, "annual_defaults": {"bank_rate": "0.068", "management_fee": "240000.00"}, "annual_overrides": [{"years": [2029, 2030], "claim_haircut": "1.00"}, {"years": [2032], "claim_haircut": "0.55"}]}
+    },
+    {
+      "id": "C13-dscr-staged-claims-dispute",
+      "operating_entity": "T05",
+      "mechanism": "Tight DSCR trap with staged claim-collateral exclusion and higher dispute-period interest",
+      "policy_changes": ["Claims are wholly excluded in FY2029 and 90% haircut in FY2030", "Parent bank pricing rises to 9.5% during FY2031–2032", "The replacement programme retains its three-year commissioning delay"],
+      "lease": {"P02": {"monthly_base_rent": "84000.00", "initial_direct_cost": "60000.00", "fixed_step_rate": "0.03", "events": {"85": {"annual_discount_rate": "0.075"}}}, "P03": {"events": {"55": {"retention_fraction": "0.58"}}}},
+      "programme": {"lease_allowable_fraction": "0.88", "categories": {"REPLACE": {"share": "0.14", "commission_lag": 3}, "OTHER": {"share": "0.18"}}, "disallowance_real": "12500000"},
+      "holding": {"parameters": {"gbp_per_usd": "0.82", "rav_advance_rate": "0.76", "claim_advance_rate": "0.81", "additional_lp_commitment": "310000000.00"}, "annual_defaults": {"bank_rate": "0.075", "management_fee": "250000.00"}, "annual_overrides": [{"years": [2029], "claim_haircut": "1.00"}, {"years": [2030], "claim_haircut": "0.90"}, {"years": [2031, 2032], "bank_rate": "0.095"}, {"years": [2032], "claim_haircut": "0.75"}]}
+    },
+    {
+      "id": "C14-delayed-start-early-margin",
+      "operating_entity": "T07",
+      "mechanism": "Delayed operating commissioning and an early collateral exclusion during the funding period",
+      "policy_changes": ["Claims are wholly excluded in FY2028 and 85% haircut in FY2029", "The RAV advance is 74% while the parent funds the extended premises contract", "The original twelve-month operating construction calendar is retained"],
+      "lease": {"P01": {"monthly_base_rent": "112000.00", "initial_direct_cost": "96000.00", "events": {"61": {"new_end_month": 180, "annual_discount_rate": "0.078"}, "73": {"index_ratio": "1.045"}}}, "P03": {"events": {"55": {"retention_fraction": "0.54"}}}},
+      "programme": {"lease_allowable_fraction": "0.83", "categories": {"LOAD": {"share": "0.10", "commission_lag": 2}, "OTHER": {"share": "0.19"}}, "disallowance_real": "13500000"},
+      "holding": {"parameters": {"gbp_per_usd": "0.78", "rav_advance_rate": "0.74", "claim_advance_rate": "0.78", "additional_lp_commitment": "320000000.00"}, "annual_defaults": {"bank_rate": "0.080", "management_fee": "260000.00"}, "annual_overrides": [{"years": [2028], "claim_haircut": "1.00"}, {"years": [2029], "claim_haircut": "0.85"}, {"years": [2032], "claim_haircut": "0.65"}]}
+    },
+    {
+      "id": "C15-zero-rate-facility-ceiling",
+      "operating_entity": "T04",
+      "mechanism": "Zero-rate operating associate with an explicit thirty-million parent facility ceiling",
+      "policy_changes": ["The parent bank facility is capped at GBP30 million", "RAV advance remains 70% and FY2029–2031 claims are wholly ineligible", "Finite LP commitments fund any borrowing-base or facility-cap shortfall"],
+      "lease": {"P01": {"monthly_base_rent": "95000.00", "initial_direct_cost": "110000.00", "events": {"49": {"index_ratio": "0.90"}}}, "P04": {"monthly_base_rent": "39000.00", "events": {"145": {"annual_discount_rate": "0.055"}}}, "P03": {"events": {"55": {"retention_fraction": "0.65"}}}},
+      "programme": {"lease_allowable_fraction": "0.75", "categories": {"LOAD": {"share": "0.085"}, "REPLACE": {"share": "0.11"}, "OTHER": {"share": "0.205"}}, "disallowance_real": "8000000", "general_transfer_fraction": "0.40"},
+      "holding": {"parameters": {"gbp_per_usd": "0.70", "rav_advance_rate": "0.70", "claim_advance_rate": "0.82", "facility_limit": "30000000.00", "additional_lp_commitment": "285000000.00"}, "annual_defaults": {"bank_rate": "0.068", "management_fee": "240000.00"}, "annual_overrides": [{"years": [2029, 2030], "claim_haircut": "1.00"}, {"years": [2032], "claim_haircut": "0.55"}]}
+    },
+    {
+      "id": "C16-dscr-lower-rav-advance",
+      "operating_entity": "T05",
+      "mechanism": "Tight operating DSCR and a lower RAV collateral advance under staged claims exclusion",
+      "policy_changes": ["RAV advances are reduced to 72% of nominal closing RAV", "The FY2029–2031 staged claims dispute and finite LP commitment remain explicit", "The replacement programme retains its three-year commissioning delay"],
+      "lease": {"P02": {"monthly_base_rent": "84000.00", "initial_direct_cost": "60000.00", "fixed_step_rate": "0.03", "events": {"85": {"annual_discount_rate": "0.075"}}}, "P03": {"events": {"55": {"retention_fraction": "0.58"}}}},
+      "programme": {"lease_allowable_fraction": "0.88", "categories": {"REPLACE": {"share": "0.14", "commission_lag": 3}, "OTHER": {"share": "0.18"}}, "disallowance_real": "12500000"},
+      "holding": {"parameters": {"gbp_per_usd": "0.82", "rav_advance_rate": "0.72", "claim_advance_rate": "0.81", "additional_lp_commitment": "310000000.00"}, "annual_defaults": {"bank_rate": "0.075", "management_fee": "250000.00"}, "annual_overrides": [{"years": [2029], "claim_haircut": "1.00"}, {"years": [2030], "claim_haircut": "0.90"}, {"years": [2031, 2032], "bank_rate": "0.095"}, {"years": [2032], "claim_haircut": "0.75"}]}
+    }
+  ]
+}
