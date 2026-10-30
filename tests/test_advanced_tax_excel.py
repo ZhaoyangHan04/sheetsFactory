@@ -5,11 +5,14 @@ must separately run real LibreOffice, the independent ledger and a stability run
 """
 from copy import deepcopy
 from decimal import Decimal
+from graphlib import TopologicalSorter
 import hashlib
 import json
 from pathlib import Path
 
 import openpyxl
+from openpyxl.formula import Tokenizer
+from openpyxl.utils.cell import range_boundaries
 import pytest
 
 from sheets_factory.workbook.derived_gold.excel import (
@@ -160,6 +163,36 @@ def test_independent_ledger_covers_every_formula_but_emission_cannot_self_certif
     assert result["formula_count"] > 4800
     assert result["invalid_formula_values"]
     assert not result["passed"]
+
+
+def test_full_tax_interest_cash_and_covenant_formula_graph_has_no_cycles(tax_contract, tmp_path):
+    path = tmp_path / "acyclic.xlsx"
+    emit_workbook(tax_contract[0], path)
+    book = openpyxl.load_workbook(path, data_only=False)
+    graph = {}
+    for ws in book:
+        for cell in tuple(ws._cells.values()):
+            if cell.data_type != "f":
+                continue
+            dependencies = set()
+            for token in Tokenizer(cell.value).items:
+                if token.type != "OPERAND" or token.subtype != "RANGE":
+                    continue
+                value, sheet = token.value, ws.title
+                if "!" in value:
+                    head, value = value.split("!", 1)
+                    sheet = head.strip("'").replace("''", "'")
+                    if ":" in value:
+                        first, last = value.split(":", 1)
+                        value = first + ":" + last.split("!")[-1]
+                left, top, right, bottom = range_boundaries(value)
+                for row in book[sheet].iter_rows(min_row=top, max_row=bottom, min_col=left, max_col=right):
+                    dependencies.update((sheet, target.coordinate) for target in row if target.data_type == "f")
+            graph[(ws.title, cell.coordinate)] = dependencies
+    # Include all syntactic references, even unused IF branches: the graph must
+    # remain a DAG before any evaluator attempts iterative calculation.
+    assert len(tuple(TopologicalSorter(graph).static_order())) == len(graph)
+    book.close()
 
 
 def test_each_new_tax_invariant_is_required_for_admission():

@@ -13,6 +13,7 @@ from sheets_factory.workbook.derived_gold.spec import resolve_spec
 from sheets_factory.workbook.derived_gold.excel import emit_workbook
 from sheets_factory.workbook.derived_gold.ledger import simulate
 from sheets_factory.workbook.derived_gold.validate import audit_workbook
+from sheets_factory.workbook.derived_gold.presentation import apply_public_presentation
 from sheets_factory.workbook.engine import LibreOfficeEngine
 from sheets_factory.workbook.compare import compare_workbooks
 from sheets_factory.workbook.profile import profile_workbook
@@ -21,7 +22,8 @@ from sheets_factory.workbook.profile import profile_workbook
 def build(project_root: Path, config_path: Path, output: Path) -> dict:
     if output.exists():
         raise ValueError("Output already exists; use a new immutable prototype directory")
-    spec = resolve_spec(project_root, config_path)
+    config = json.loads(config_path.read_text())
+    spec = apply_public_presentation(resolve_spec(project_root, config_path), config.get("public_presentation"))
     # The emitter receives no numeric journal or expected financial outputs.
     ledger = simulate(spec)
     output.mkdir(parents=True)
@@ -52,6 +54,8 @@ def build(project_root: Path, config_path: Path, output: Path) -> dict:
         "independent_checked_cells": audit["checked_cells"], "all_formula_cells_covered": audit["all_formula_cells_independently_covered"],
         "requirements_before_task_admission": "All existing Q diagnosis, public-only recovery, actual Harbor oracle/nop and specified strong-agent difficulty evaluation remain required.",
     }
+    if "presentation_style" in spec:
+        manifest["presentation_style"] = spec["presentation_style"]
     (output / "public_scenario.json").write_text(json.dumps(spec, ensure_ascii=False, indent=2) + "\n")
     for name, value in (("ledger.json", ledger), ("bindings.json", bindings), ("financial_audit.json", audit), ("profile.json", profile), ("stability.json", stable)):
         (private / name).write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n")
