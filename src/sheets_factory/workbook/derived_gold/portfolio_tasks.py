@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+from datetime import date, datetime
 
 import openpyxl
 
@@ -55,7 +56,8 @@ def propose_portfolio_task(baseline: Path, mode: str) -> dict:
     if mode not in {"financial_modeling", "debugging"}:
         raise ValueError("Unsupported portfolio task mode")
     book = openpyxl.load_workbook(baseline, keep_links=False)
-    values = openpyxl.load_workbook(baseline, data_only=True, keep_links=False) if mode == "debugging" else None
+    # Formula cells do not reliably report is_date until their caches are read.
+    values = openpyxl.load_workbook(baseline, data_only=True, keep_links=False)
     try:
         entities = _entities(book)
         masks, edits, policies, target_sheets = [], [], [], []
@@ -94,7 +96,9 @@ def propose_portfolio_task(baseline: Path, mode: str) -> dict:
         if mode == "financial_modeling":
             for name in ("Group Statements", "Group Summary"):
                 cells = {(cell.row, cell.column) for cell in book[name]._cells.values()
-                         if cell.data_type == "f" and not cell.is_date and cell.row != 1}
+                         if cell.data_type == "f" and not cell.is_date and cell.row != 1
+                         and not values[name][cell.coordinate].is_date
+                         and not isinstance(values[name][cell.coordinate].value, (date, datetime))}
                 if cells:
                     masks.extend(_formula_rectangles(name, cells))
                     target_sheets.append(name)

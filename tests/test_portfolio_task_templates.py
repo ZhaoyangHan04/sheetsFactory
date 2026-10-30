@@ -4,6 +4,8 @@ import importlib.util
 from pathlib import Path
 
 import openpyxl
+from openpyxl.utils.datetime import to_excel
+from datetime import datetime
 import pytest
 
 from test_project_task_templates import build_project, _write_fixture_caches
@@ -46,6 +48,9 @@ def portfolio(build_project, tmp_path):
         sheet['C1'].number_format = 'yyyy-mm-dd'
         sheet['A2'] = 'Consolidated cash'
         sheet['C2'] = "=SUM('T01 Cash Flow'!C12,'T02 Cash Flow'!C12)"
+        sheet['C19'] = '=DATE(2027,1,1)'
+        sheet['C19'].number_format = 'yyyy-mm-dd'
+        numeric.append({'address': name + '!C19', 'expected_independent': str(to_excel(datetime(2027, 1, 1))), 'kind': 'money'})
     path = tmp_path / 'portfolio_authoring_fixture.xlsx'
     book.save(path)
     for item in [raw, cached, book]:
@@ -69,6 +74,7 @@ def test_portfolio_modeling_selects_complete_entity_and_group_families(portfolio
         assert cell.data_type == 'f' and cell.value == edit['before']
         assert not edit['sheet'].endswith(('Scenario', 'Source Inputs', 'Calendar', 'Read Me'))
     assert not any(edit['cell'] == 'C1' for edit in compiled['edits'] if edit['sheet'].startswith('Group '))
+    assert not any(edit['cell'] == 'C19' for edit in compiled['edits'] if edit['sheet'].startswith('Group '))
     assert hashlib.sha256(portfolio.read_bytes()).hexdigest() == before
     book.close()
 
