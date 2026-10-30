@@ -10,7 +10,7 @@ import pytest
 
 from sheets_factory.workbook.derived_gold.excel import emit_workbook
 from sheets_factory.workbook.derived_gold.ledger import simulate
-from sheets_factory.workbook.derived_gold.spec import ANCHORS, resolve_spec
+from sheets_factory.workbook.derived_gold.spec import ANCHORS, RULES, resolve_spec
 from sheets_factory.workbook.derived_gold.validate import audit_workbook, ledger_invariants_pass, posted_money_matches
 
 
@@ -72,6 +72,18 @@ def test_public_benchmarks_and_hypothetical_contract(contract):
     rules = " ".join(spec["public_rules"]).lower()
     for term in ("hypothetical", "half up", "actual calendar days", "nol", "minimum cash", "share", "no deferred tax", "no additional"):
         assert term in rules
+
+
+def test_public_cash_helpers_define_their_position_in_the_waterfall(contract):
+    # Keep all definitions in one existing rule so worksheet row placement is stable.
+    assert len(RULES) == 15
+    rule = next(rule for rule in contract[0]["public_rules"] if "Cash before allocation" in rule)
+    assert "before any revolver draw, revolver repayment, optional Loan A prepayment or dividend" in rule
+    assert "remaining unmet minimum-cash shortfall after the permitted draw" in rule
+    assert "not the funding requirement before that draw" in rule
+    assert "above minimum cash after revolver repayment, before optional prepayment and dividends" in rule
+    # This specifies business semantics, not target coordinates or a numerical answer.
+    assert "Cash Flow!" not in rule and "500000" not in rule
 
 
 def test_first_month_hand_calculation_and_precommissioning_policy(contract):
