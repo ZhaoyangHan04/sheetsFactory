@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "base_image": "sheetsfactory-lo:24.2",
+  "base_image_id": "sha256:d2e00cbc9a93f0694093d404198d1c420906390887fc8be64593d602433085a6",
+  "output_tag": "sheetsfactory-lo:24.2-openpyxl315-v1",
+  "package": {
+    "name": "openpyxl",
+    "version": "3.1.5",
+    "filename": "openpyxl-3.1.5-py2.py3-none-any.whl",
+    "url": "https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl",
+    "sha256": "5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2",
+    "bytes": 250910,
+    "metadata_url": "https://pypi.org/pypi/openpyxl/3.1.5/json"
+  },
+  "retained_dependency": {"name": "et-xmlfile", "version": "1.0.1"},
+  "retained_runtime": "LibreOffice 24.2.7.2 and the base image's existing UNO entrypoint and script"
+}
