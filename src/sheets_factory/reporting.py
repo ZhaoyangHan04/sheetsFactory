@@ -9,6 +9,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from html import escape
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -442,8 +443,125 @@ def _recovery(run_dir, task):
     valid = (record.get('verified') is True and record.get('public_information_only') is True
              and (record.get('comparison') or {}).get('reward') == 1 and replay.get('returncode') == 0)
     return {'verified': valid, 'artifact_available': True, 'artifact': str(path),
+            'status': record.get('status', 'verified' if valid else 'unverified'),
+            'public_information_only': record.get('public_information_only'),
             'replay_returncode': replay.get('returncode'),
             'comparison_reward': (record.get('comparison') or {}).get('reward')}
+
+
+def _reference_file(path, base):
+    path, base = Path(path).absolute(), Path(base).resolve()
+    if (not path.is_relative_to(base) or not path.resolve().is_relative_to(base)
+            or any(part.is_symlink() for part in (path, *path.parents) if part.is_relative_to(base))):
+        raise ValueError('Reference evidence escapes its revision directory')
+    return path.read_bytes()
+
+
+def _reference_review(run_dir, task):
+    """Check current review receipts without inventing a public recovery proof."""
+    # Local import keeps the reporting module usable during pipeline/node import.
+    from types import SimpleNamespace
+    from .nodes.quality import reference_revision_binding, reference_review_assessments
+    base = _task_directory(run_dir, task) / 'revisions' / f"{int(task.get('revision', 0) or 0):03d}"
+    path = base / 'private/reference_review.json'
+    result = {'method': 'reference_review', 'verified': False, 'status': 'unverified',
+              'independent_public_recovery': False, 'artifact': str(path), 'artifact_available': path.is_file()}
+    try:
+        public = _reference_file(base / 'public/input.xlsx', base)
+        instruction = _reference_file(base / 'public/instruction.md', base)
+        goal = _reference_file(base / 'private/goal.xlsx', base)
+        revision_hash = hashlib.sha256(public + instruction).hexdigest()
+        binding = reference_revision_binding(SimpleNamespace(task_id=task['id'], revision=int(task.get('revision', 0) or 0),
+            data={'input': base / 'public/input.xlsx', 'goal': base / 'private/goal.xlsx',
+                  'instruction': instruction.decode(), 'revision_hash': revision_hash}))
+        diagnosis = json.loads(_reference_file(base / 'private/diagnosis.json', base))
+        recovery = json.loads(_reference_file(base / 'private/independent_recovery.json', base))
+        receipt = json.loads(_reference_file(path, base))
+        support = reference_review_assessments(diagnosis, binding)
+        if not (support['passed'] and diagnosis.get('reference_evidence_policy') == 'reference_review'
+                and diagnosis.get('reference_validation_method') == 'reference_review'
+                and diagnosis.get('reference_binding') == binding
+                and diagnosis.get('task_revision_hash') == revision_hash
+                and (not task.get('revision_hash') or task['revision_hash'] == revision_hash)
+                and len(diagnosis.get('enabled_check_ids', [])) == 12
+                and set(diagnosis['enabled_check_ids']) == {f'Q{n:02d}' for n in range(1, 13)}
+                and not diagnosis.get('disabled_check_ids')
+                and receipt == diagnosis.get('reference_review') and receipt.get('passed') is True
+                and receipt.get('binding') == binding and receipt.get('q04_receipt') == support['q04_receipt']
+                and receipt.get('diagnostic_run_id') == diagnosis.get('diagnostic_run_id')
+                and receipt.get('check_plan_hash') == diagnosis.get('check_plan_hash')
+                and recovery.get('verified') is False and recovery.get('public_information_only') is False
+                and recovery.get('status') == 'not_applicable' and recovery.get('binding') == binding):
+            raise ValueError('Current supported reference-review binding is missing or stale')
+        names = {'edit_validation.json', 'expected_delta.json', 'native_error_probe.json',
+                 'native_risk_guard.json', 'local_controls.json', 'reference_evidence_context.json'}
+        if set(receipt.get('artifacts', {})) != names:
+            raise ValueError('Reference-review evidence artifacts are incomplete')
+        artifacts = {}
+        for name, recorded in receipt['artifacts'].items():
+            artifact = base / 'private' / name
+            raw = _reference_file(artifact, base)
+            if recorded != {'path': str(artifact.resolve()), 'sha256': hashlib.sha256(raw).hexdigest()}:
+                raise ValueError('Reference-review evidence artifact changed: ' + name)
+            artifacts[name] = json.loads(raw)
+        context = artifacts['reference_evidence_context.json']
+        native = artifacts['native_error_probe.json']
+        financial = context.get('financial_validation', {})
+        controls = artifacts['local_controls.json']
+        if not (context.get('binding') == binding
+                and any(context.get('source_business_evidence', {}).get(k) for k in ('source_assessment', 'finance_evidence'))
+                and financial.get('construction') == artifacts['edit_validation.json']
+                and financial.get('local_controls') == controls
+                and all(financial.get('engine_report', {}).get(k) is True for k in ('normalization_ok', 'recalculation_ok', 'stable'))
+                and native.get('blocking') is False and native.get('goal_sha256') == binding['goal_sha256']
+                and native.get('revision') == binding['revision']
+                and set(native.get('required_delta', [])) == set(artifacts['expected_delta.json'].get('expected_changes', []))
+                and artifacts['native_risk_guard.json'].get('blocking') is False
+                and all(controls.get(k, {}).get('reward') == value for k, value in
+                        (('oracle', 1), ('nop', 0), ('equivalent', 1), ('missed_root', 0), ('extra_change', 0)))):
+            raise ValueError('Reference-review business, financial or native-error evidence is incomplete')
+        batches = diagnosis.get('llm_batches', [])
+        public_checks, private_checks = set(), set()
+        for batch in batches:
+            visibility = batch.get('visibility')
+            if batch.get('status') != 'completed' or visibility not in {'public_only', 'review'}:
+                raise ValueError('Reference-review diagnostic batch did not complete')
+            origin = batch.get('origin_diagnostic_run_id') if batch.get('cache_hit') is True else diagnosis.get('diagnostic_run_id')
+            matched = False
+            pattern = 'diagnostic_public-*/evidence.json' if visibility == 'public_only' else 'diagnostic_private-*/evidence.json'
+            for evidence_path in base.glob(pattern):
+                evidence = json.loads(_reference_file(evidence_path, base))
+                if not (evidence.get('visibility') == visibility and evidence.get('diagnostic_run_id') == origin
+                        and evidence.get('task_revision_hash') == revision_hash
+                        and evidence.get('check_plan_hash') == diagnosis.get('check_plan_hash')
+                        and evidence.get('assigned_check_ids') == batch.get('assigned_check_ids')):
+                    continue
+                stable = {key: value for key, value in evidence.items() if key != 'diagnostic_run_id'}
+                digest = hashlib.sha256(json.dumps(stable, ensure_ascii=False, sort_keys=True, default=str).encode()).hexdigest()
+                if (batch.get('payload_digest') != digest
+                        or _reference_file(evidence_path.parent / 'input.xlsx', base) != public
+                        or _reference_file(evidence_path.parent / 'instruction.md', base) != instruction):
+                    raise ValueError('Diagnostic batch public evidence differs from current revision')
+                if visibility == 'review':
+                    private = evidence.get('private', {})
+                    if not (private.get('goal_sha256') == binding['goal_sha256']
+                            and private.get('independent_recovery') == recovery
+                            and private.get('reference_review_context') == context
+                            and _reference_file(evidence_path.parent / 'reference.xlsx', base) == goal):
+                        raise ValueError('Diagnostic reference evidence differs from current goal')
+                (public_checks if visibility == 'public_only' else private_checks).update(batch['assigned_check_ids'])
+                matched = True
+                break
+            if not matched:
+                raise ValueError('Matching actual diagnostic batch evidence is missing')
+        if not public_checks >= {'Q01', 'Q02', 'Q03'} or 'Q04' not in private_checks:
+            raise ValueError('Public sufficiency and private financial review receipts are missing')
+        result.update(verified=True, status='passed', binding=binding,
+            financial_check_count=len(support['q04_receipt']['financial_validation_checks']),
+            verification_scope='current_hash_bound_diagnostic_review')
+    except (OSError, ValueError, TypeError, KeyError, AttributeError) as error:
+        result['reason'] = str(error)
+    return result
 
 
 def _quality_diagnosis(run_dir, task):
@@ -484,6 +602,11 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
     stages = _stage_accounting(nodes, calls, now)
     config_path = run_dir / 'resolved_config.yaml'
     config = yaml.safe_load(config_path.read_text()) if config_path.is_file() else {}
+    from .nodes.quality import validate_reference_policy_selection
+    try:
+        policy = validate_reference_policy_selection(config)
+    except (OSError, ValueError, TypeError):
+        policy = 'invalid'
     manifest_path = Path((config.get('run') or {}).get('seed_manifest', 'data/manifests/euses_financial.json'))
     if not manifest_path.is_absolute():
         manifest_path = project_root / manifest_path
@@ -497,16 +620,20 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
         oracle, nop = _harbor_entry(task, controls, 'oracle'), _harbor_entry(task, controls, 'nop')
         recovery = _recovery(run_dir, task)
         diagnosis = _quality_diagnosis(run_dir, task)
+        reference = (_reference_review(run_dir, task) if policy == 'reference_review' else
+            {'method': policy, 'verified': recovery['verified'] if policy == 'independent_public_recovery' else False,
+             'status': 'passed' if policy == 'independent_public_recovery' and recovery['verified'] else 'unverified'})
         verified = (task.get('status') == 'qualified' and oracle['matched'] and nop['matched']
-                    and recovery['verified'] and diagnosis['verified'])
+                    and reference['verified'] and diagnosis['verified'])
         if task.get('status') == 'qualified' and not verified:
             warnings.append({'task_id': task['id'], 'code': 'QUALIFIED_EVIDENCE_MISMATCH',
-                             'reason': '已标记 qualified，但 Harbor、诊断或独立恢复证据不完整；未计入已核验产量。'})
+                             'reason': '已标记 qualified，但 Harbor、诊断或参考验证证据不完整；未计入已核验产量。'})
         details.append({'task_id': task['id'], 'mode': task.get('mode'), 'source_id': task.get('source_id'),
                         'source': task.get('source'), 'status': task.get('status'), 'verified_qualified': verified,
                         'revision': int(task.get('revision', 0) or 0), 'variant': int(task.get('variant', 0) or 0),
                         **_task_presentation(run_dir, task, oracle, nop), 'error': task.get('error'),
-                        'oracle': oracle, 'nop': nop, 'independent_recovery': recovery, 'diagnosis': diagnosis})
+                        'oracle': oracle, 'nop': nop, 'independent_recovery': recovery, 'diagnosis': diagnosis,
+                        'reference_validation_method': policy, 'reference_validation': reference})
     qualified = [task for task in details if task['verified_qualified']]
     used_sources = {task['source_id'] for task in details if task.get('source_id')}
     productive_sources = {task['source_id'] for task in qualified if task.get('source_id')}
@@ -546,6 +673,7 @@ def generate_report(run_dir, *, project_root=None, engineering_dirs=None, billin
                 'code_revision': run.get('code_revision'), 'model': run.get('model'),
                 'code_history': run.get('code_history', []), 'resume_count': run.get('resume_count', 0),
                 'reasoning_effort': run.get('reasoning_effort'), 'difficulty_status': run.get('difficulty_status', 'unknown'),
+                'reference_evidence_policy': policy,
                 'difficulty_score': None, 'difficulty_note': '本轮只验题目质量，难度评测及低通过率目标延后；未报告正式模型 Pass@1。',
                 'targets': targets, 'actual_verified_counts': actual,
                 'target_met': all(actual[mode] >= count for mode, count in targets.items()),
@@ -645,6 +773,16 @@ def _snapshot_note(report):
             f"核心用量未知 {tokens['unknown_core_usage_calls']} 次。已知 Token 不代表未完成请求的最终消耗。")
 
 
+def _reference_status(task):
+    method = task.get('reference_validation_method', 'independent_public_recovery')
+    if method == 'reference_review':
+        status = '通过' if task.get('reference_validation', {}).get('verified') else '未证实'
+        return '参考复核：' + status + '（独立恢复未执行）'
+    if method == 'independent_public_recovery':
+        return '独立恢复：' + ('通过' if task['independent_recovery']['verified'] else '未证实')
+    return '参考验证策略无效；未核验'
+
+
 def markdown_report(report, report_dir=None):
     run, sources, output = report['run'], report['sources'], report['yield']
     lines = ['# sheetsFactory 运行报告', '', _snapshot_note(report), '',
@@ -722,14 +860,14 @@ def markdown_report(report, report_dir=None):
     lines += ['', f"累计内容修复版本数：{diagnostics['content_repair_revision_total']}。", '',
               '合格任务的诊断范围：`' + json.dumps(diagnostics['qualified_diagnosis_scopes'], ensure_ascii=False) + '`。', '',
               '拒绝原因计数：`' + json.dumps(diagnostics['rejected_candidates_by_reason'], ensure_ascii=False) + '`。', '',
-              '## 逐题证据', '', '| 任务 / 题目 | 类别 | 状态 | Oracle | Nop | 独立恢复 | 核验合格 | 文件 |',
+              '## 逐题证据', '', '| 任务 / 题目 | 类别 | 状态 | Oracle | Nop | 参考验证 | 核验合格 | 文件 |',
               '| --- | --- | --- | ---: | ---: | --- | --- | --- |']
     for task in report['tasks']:
         title = _md(task.get('title', task['task_id'])).replace('[', '\\[').replace(']', '\\]')
         links = ' · '.join(f'[{label}]({href})' for label, href in _links_for_task(report, task, report_dir))
         lines.append(f"| {_md(task['task_id'])} / {title} | {_md(task['mode'])} | {_md(task['status'])} | "
             f"{_md(task['oracle']['reward'])} | {_md(task['nop']['reward'])} | "
-            f"{'通过' if task['independent_recovery']['verified'] else '未证实'} | {'是' if task['verified_qualified'] else '否'} | {links} |")
+            f"{_md(_reference_status(task))} | {'是' if task['verified_qualified'] else '否'} | {links} |")
     failures = [task for task in report['tasks'] if task.get('error')]
     if failures:
         lines += ['', '## 拒绝与失败样例', '']
@@ -769,7 +907,7 @@ def html_report(report, report_dir=None):
         cells.extend('<td>' + escape(str(value)) + '</td>' for value in [
             MODES.get(task['mode'], task['mode']), task['status'],
             _fmt(task['oracle']['reward']), _fmt(task['nop']['reward']),
-            '通过' if task['independent_recovery']['verified'] else '未证实',
+            _reference_status(task),
             '是' if task['verified_qualified'] else '否', task.get('error') or ''])
         cells.append('<td>' + links + '</td>')
         rows.append('<tr>' + ''.join(cells) + '</tr>')
@@ -823,7 +961,7 @@ pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:white;padding:20px;b
 <div class="table"><table><thead><tr><th>日志窗口模型</th><th>请求</th><th>美元</th><th>输入 Token</th><th>其中缓存</th><th>输出 Token</th></tr></thead><tbody>{log_models}</tbody></table></div>
 <p class="notice">{escape(report['billing'].get('methods_note', ''))} 正式管线精确归因费用：未知。</p></section>
 <section><h2>逐题证据</h2><input id="filter" placeholder="筛选任务、类别、状态或错误" aria-label="筛选任务"><div class="table"><table id="tasks"><thead><tr>
-<th>任务 / 题目</th><th>类别</th><th>状态</th><th>Oracle</th><th>Nop</th><th>独立恢复</th><th>核验合格</th><th>失败原因</th><th>公开文件与控制证据</th></tr></thead><tbody>{rows}</tbody></table></div></section>
+<th>任务 / 题目</th><th>类别</th><th>状态</th><th>Oracle</th><th>Nop</th><th>参考验证</th><th>核验合格</th><th>失败原因</th><th>公开文件与控制证据</th></tr></thead><tbody>{rows}</tbody></table></div></section>
 <details><summary>完整统计、指标定义和复现命令</summary><pre>{escape(markdown_report(report, report_dir))}</pre></details>
 <script>document.getElementById('filter').addEventListener('input',function(){{let q=this.value.toLowerCase();document.querySelectorAll('#tasks tbody tr').forEach(function(r){{r.hidden=!r.textContent.toLowerCase().includes(q);}});}});</script>
 </html>'''
