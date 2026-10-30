@@ -1,0 +1,62 @@
+{
+  "scenario_id": "project-financing-covenant-v1-c01",
+  "source": {
+    "local_path": "data/seeds/hard_financial/df8f9e91cc53_nyu_fcffginzu.xlsx",
+    "sha256": "df8f9e91cc53afe2bdb33cf39b8f2719206ac03b6a5031f1858f82235ea944c9",
+    "source_url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/spreadsh.htm",
+    "download_url": "https://pages.stern.nyu.edu/~adamodar/pc/fcffginzu.xlsx"
+  },
+  "hypothetical_parameters": {
+    "months": 36,
+    "start_date": "2027-01-01",
+    "steady_annual_sales": 30000000,
+    "cash_cogs_fraction": "0.55",
+    "construction_months": 6,
+    "ramp_factors": [
+      "0.5",
+      "0.6",
+      "0.75",
+      "1",
+      "1",
+      "1"
+    ],
+    "startup_expense": 2000000,
+    "initial_asset_cost": 20000000,
+    "initial_asset_service_month": 7,
+    "initial_asset_life": 84,
+    "refresh_capex": 1000000,
+    "refresh_paid_month": 19,
+    "refresh_service_month": 20,
+    "refresh_life": 24,
+    "opening_cash": 3000000,
+    "equity_paid_in": 8000000,
+    "opening_retained": 0,
+    "opening_nol": 0,
+    "loan_a_principal": 12000000,
+    "loan_a_spread": "0.01",
+    "loan_a_amort_payments": 60,
+    "loan_a_amort_start": 7,
+    "loan_b_principal": 3000000,
+    "loan_b_spread": "0.03",
+    "loan_b_bullet_month": 36,
+    "revolver_limit": 4000000,
+    "revolver_spread": "0.04",
+    "minimum_cash": 500000,
+    "cash_sweep_fraction": "0.5",
+    "cash_allocation_start": 7,
+    "nol_utilization_cap": "0.8",
+    "dso": 45,
+    "dio": 30,
+    "dpo": 40,
+    "exit_multiple": "4",
+    "exit_fee_fraction": "0.01",
+    "equity_risk_premium": "0.03"
+  },
+  "covenant_parameters": {
+    "covenant_enabled": 1,
+    "covenant_first_test_month": 9,
+    "covenant_dscr_threshold": "1.30",
+    "dsra_normal_payment_months": 1,
+    "dsra_trap_payment_months": 3
+  }
+}

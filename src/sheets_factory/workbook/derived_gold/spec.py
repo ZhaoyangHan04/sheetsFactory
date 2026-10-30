@@ -25,6 +25,9 @@ ANCHORS = {
 }
 
 PUBLIC_CONTRACT_VERSION = 4
+COVENANT_CONTRACT_VERSION = 6
+COVENANT_FIELDS = ("covenant_enabled", "covenant_first_test_month", "covenant_dscr_threshold",
+                   "dsra_normal_payment_months", "dsra_trap_payment_months")
 
 RULES = [
     "This is a hypothetical project calibrated to a public workbook's cash EBITDA margin and rate benchmarks; it is not a forecast of that workbook's named company.",
@@ -43,6 +46,45 @@ RULES = [
     "Owner cash flow starts with negative paid-in equity at month zero, then dividends at each month end and the final share-sale proceeds at month 36 end. The annual discount rate is effective; monthly rate is (1+annual rate)^(1/12)-1, retained at full calculation precision. Discount month t's posted owner cash flow over t months for t=1 through 36. For owner NPV, sum those 36 unrounded discounted amounts and add the month-zero equity outflow exactly once, then round only the final total half up to cents. The monthly PV row displays each discounted amount rounded separately to cents; do not sum that rounded display row to calculate NPV. Use periodic monthly IRR and annualize it as (1+monthly IRR)^12-1.",
     "No additional inflation, foreign exchange, financing fees, interest capitalization, debt penalties, new equity injections or unlisted cash sources are assumed. In Annual Statements, each opening balance is the January opening value and each closing balance is the December closing value. Asset initial gross, asset refresh gross, accumulated depreciation, net PPE, assets, liabilities, equity and balance check are December snapshots. Cash before allocation is also the December pre-allocation snapshot. Every other monetary annual line is the sum of its twelve monthly amounts; in particular cash gap is the sum of monthly unmet shortfalls, not their maximum or the December value. Annual owner cash flow excludes the pre-forecast month-zero equity investment. These annual columns are summaries of posted monthly amounts, not a separate annual model.",
 ]
+
+
+def covenant_parameters(config: dict) -> dict | None:
+    """Validate an explicit opt-in contract, without computing a forecast."""
+    c = config.get("covenant_parameters")
+    if c is None:
+        return None
+    if not isinstance(c, dict) or set(c) != set(COVENANT_FIELDS):
+        raise ValueError("Covenant opt-in requires exactly five explicit covenant parameters")
+    values = {key: _decimal(value) for key, value in c.items()}
+    for key in set(COVENANT_FIELDS) - {"covenant_dscr_threshold"}:
+        if values[key] != values[key].to_integral_value():
+            raise ValueError("Covenant period counts and enabled flag must be integers")
+    if values["covenant_enabled"] not in (0, 1):
+        raise ValueError("covenant_enabled must be numeric zero or one")
+    first = values["covenant_first_test_month"]
+    if not 3 <= first <= 36 or first % 3:
+        raise ValueError("Covenant first test must be a quarter end from month 3 through 36")
+    if not 0 <= values["covenant_dscr_threshold"] <= 100:
+        raise ValueError("Covenant DSCR threshold must be between zero and 100")
+    if not 0 <= values["dsra_normal_payment_months"] <= values["dsra_trap_payment_months"] <= 36:
+        raise ValueError("DSRA coverage must satisfy 0 <= normal <= trapped <= 36")
+    return dict(c)
+
+
+def covenant_rules() -> list[str]:
+    """The enabled contract replaces incompatible base allocation instructions."""
+    rules = list(RULES)
+    rules[1] += " DSRA funding, surplus release and support withdrawals use positive magnitudes; the net transfer to operating cash is release plus support minus funding. Covenant flags and streaks are integers, not money."
+    rules[2] += " Opening DSRA cash, distribution lock and consecutive successful-test count are all zero. The segregated DSRA earns no interest. Operating cash means the original cash account and may be retained above minimum cash while owner distributions are blocked. Minimum cash applies only to operating cash, not DSRA cash."
+    rules[8] += " The opt-in covenant inputs are in Scenario rows 55 through 59. Monthly cash available for debt service (CFADS) equals posted operating cash flow plus total posted cash interest minus refresh capex. Contractual debt service equals total cash interest on all three facilities plus Loan A scheduled principal plus Loan B bullet principal; it excludes revolver principal, optional prepayment, dividends and reserve transfers. Accumulate both from the first month of each calendar quarter. Test only at quarter ends on or after covenant_first_test_month. Required CFADS is quarter service times covenant_dscr_threshold rounded half up to cents; a test passes when quarter CFADS is at least that cent requirement. Zero service always passes, even with negative CFADS. Display DSCR rounded to six decimals, or numeric zero for zero service, but never use that displayed ratio for the decision. Non-test months carry state and streak unchanged. A failed test sets the distribution lock to one and resets consecutive passes to zero. A passed test increments the streak, capped at two; an existing lock clears only on the second consecutive passed test. Current closing state applies to this same month-end allocation. There is no loan acceleration, extra fee or automatic state reset at Loan A payoff. In every month, including non-test months and months before the first covenant test, quarter CFADS and quarter service are quarter-to-date sums from the first month of that calendar quarter through the current month inclusive, resetting in January, April, July and October. Calculate required CFADS and displayed DSCR from those quarter-to-date amounts every month. Test due is numeric one only for an eligible quarter end, otherwise zero. Test passed is numeric one only when test due is one and the stated coverage test passes; it is numeric zero in every other month, even if quarter-to-date coverage exceeds the threshold. Do not carry the prior test-passed flag. Opening lock and opening consecutive passes equal the preceding month's closing values, both zero in month one. On every passed eligible test the closing streak increments and caps at two even when the opening lock is already zero. In a non-test month, closing lock and streak equal their opening values."
+    rules[10] = (
+        "Cash before allocation is operating cash after CFO, refresh capex, Loan A scheduled principal and Loan B bullet principal, before DSRA transfers, revolver principal, optional prepayment and dividends. Before covenant_first_test_month the DSRA target is zero. Thereafter target is the smaller of Loan A opening principal less scheduled principal and the original cent-rounded Loan A payment times dsra_trap_payment_months when the current closing lock is one, otherwise dsra_normal_payment_months. Measure this target before optional principal and hold it for this month; optional payoff affects the next month's target, not the current target. Apply this exact priority: (1) release DSRA cash above target to operating cash; (2) transfer DSRA support to operating cash equal to the smallest of remaining DSRA cash, the operating minimum-cash shortfall and this month's contractual debt service; (3) draw the revolver for any remaining operating minimum-cash shortfall, capped at unused limit; (4) fund any DSRA target deficit from operating cash above minimum; (5) repay the opening revolver from remaining excess; (6) from the allocation-start month, prepay the stated sweep fraction of remaining excess, rounded to cents and capped at remaining Loan A principal; (7) distribute excess after optional prepayment only when allocation is allowed, the closing lock is zero and the DSRA funding shortfall is zero. Otherwise retain that cash in operating cash for later use. Optional prepayment is allowed while distributions are locked. Never draw merely to fund DSRA. DSRA shortfall is target less closing DSRA floored at zero and does not by itself cause default. Cash gap is the unmet operating minimum after reserve support and permitted revolver draw, not the reserve shortfall. Available excess is operating cash above minimum after DSRA transfers and revolver repayment but before optional prepayment and dividends. The Cash Flow sheet's optional-allocation-allowed flag is numeric one exactly from cash_allocation_start onward and zero before; it is independent of distribution lock and reserve shortfall and is not a distribution-permission flag."
+    )
+    rules[11] += " DSRA funding and withdrawals are balanced internal transfers between operating cash and DSRA cash; exclude them from CFO, CFI and CFF. Operating closing cash equals opening operating cash plus CFO plus CFI plus CFF plus net DSRA transfer to operating cash. Total closing cash includes operating and DSRA cash and equals opening total cash plus CFO plus CFI plus CFF. Include DSRA cash as a separate balance-sheet asset."
+    rules[12] = rules[12].replace("Seller proceeds add closing cash to enterprise value", "Seller proceeds add closing operating cash and closing DSRA cash to enterprise value")
+    rules[12] += " The buyer acquires the remaining DSRA cash asset at par with no restriction discount. Do not liquidate it into a separate owner dividend or change closing entity accounts because of the share sale; include it exactly once in the sale bridge after this month's ordinary covenant and allocation steps."
+    rules[14] += " Annual operating-cash opening/closing fields retain their operating-cash meaning. The separate DSRA open and close fields use January opening and December closing values; DSRA funding, support and surplus release are monthly sums, and total cash close including DSRA is a December snapshot. Never sum covenant flags, streaks, ratios or reserve targets as annual money."
+    return rules
 
 
 def _decimal(value) -> Decimal:
@@ -111,8 +153,10 @@ def resolve_spec(project_root: Path, config_path: Path) -> dict:
             p[facility + "_annual_rate"] = str((_decimal(anchors["debt_rate"]["value"]) + _decimal(p[facility + "_spread"])).quantize(precision, rounding=ROUND_HALF_UP))
         p["annual_equity_discount_rate"] = str((_decimal(anchors["equity_rate"]["value"]) + _decimal(p["equity_risk_premium"])).quantize(precision, rounding=ROUND_HALF_UP))
     validate_parameters(p)
+    covenant = covenant_parameters(config)
+    enabled = covenant is not None and _decimal(covenant["covenant_enabled"]) == 1
     return {
-        "schema_version": 1, "public_contract_version": PUBLIC_CONTRACT_VERSION,
+        "schema_version": 1, "public_contract_version": COVENANT_CONTRACT_VERSION if enabled else PUBLIC_CONTRACT_VERSION,
         "scenario_id": config["scenario_id"],
         "title": "Hypothetical project: commissioning, financing and equity returns",
         "status": "experimental_seed_not_a_qualified_task",
@@ -120,6 +164,7 @@ def resolve_spec(project_root: Path, config_path: Path) -> dict:
                            "download_url": config["source"]["download_url"],
                            "sha256": digest, "anchors": anchors,
                            "derivation": "Cash EBITDA margin = (unadjusted operating income + D&A) / revenue; reused as a hypothetical project benchmark, not as company-specific future facts."},
-        "parameters": p, "public_rules": RULES,
+        "parameters": p, "covenant_parameters": covenant,
+        "public_rules": covenant_rules() if enabled else list(RULES),
         "qualification": "No task or difficulty qualification. Every future task must pass all existing quality, recovery, Harbor and specified strong-agent difficulty gates.",
     }

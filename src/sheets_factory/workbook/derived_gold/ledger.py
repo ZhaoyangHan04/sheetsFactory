@@ -226,6 +226,73 @@ class _Book:
                     if event_period == period and kind == activity), _ZERO)
 
 
+def _covenant_config(spec: dict) -> dict | None:
+    raw = spec.get("covenant_parameters")
+    if raw is None:
+        return None
+    names = {"covenant_enabled", "covenant_first_test_month", "covenant_dscr_threshold",
+             "dsra_normal_payment_months", "dsra_trap_payment_months"}
+    if not isinstance(raw, dict) or set(raw) != names:
+        raise ValueError("Five explicit covenant parameters are required")
+    c = {k: _decimal(v, k) if k == "covenant_dscr_threshold" else _integer(v, k)
+         for k, v in raw.items()}
+    if c["covenant_enabled"] not in (0, 1):
+        raise ValueError("Covenant enabled flag must be zero or one")
+    if not 3 <= c["covenant_first_test_month"] <= 36 or c["covenant_first_test_month"] % 3:
+        raise ValueError("Covenant first test must be a quarter end")
+    if not 0 <= c["covenant_dscr_threshold"] <= 100:
+        raise ValueError("Covenant threshold is out of range")
+    if not 0 <= c["dsra_normal_payment_months"] <= c["dsra_trap_payment_months"] <= 36:
+        raise ValueError("Invalid reserve coverage")
+    return c if c["covenant_enabled"] else None
+
+
+def _covenant_state(lock: int, passes: int, due: bool, passed: bool) -> tuple[int, int]:
+    if not due:
+        return lock, passes
+    if not passed:
+        return 1, 0
+    streak = min(2, passes + 1)
+    return (int(lock and streak < 2), streak)
+
+
+def _covenant_test(cfads: Decimal, service: Decimal, threshold: Decimal) -> tuple[Decimal, bool]:
+    requirement = _q(service * threshold)
+    return requirement, service == 0 or cfads >= requirement
+
+
+def _reserve_waterfall(book: _Book, period: int, *, target: Decimal,
+                       minimum: Decimal, service: Decimal, revolver_open: Decimal,
+                       revolver_limit: Decimal, loan_a_remaining: Decimal,
+                       sweep: Decimal, allocation_allowed: bool, locked: int) -> dict:
+    """Post ledger events in contractual priority; no spreadsheet code is used."""
+    reserve_open = book.get("dsra_cash")
+    release = max(_ZERO, reserve_open - target)
+    book.move(period, "Release surplus DSRA", "cash_transfer", "cash", "dsra_cash", release)
+    support = min(book.get("dsra_cash"), max(_ZERO, minimum - book.get("cash")), service)
+    book.move(period, "DSRA debt-service support", "cash_transfer", "cash", "dsra_cash", support)
+    draw = min(max(_ZERO, minimum - book.get("cash")), max(_ZERO, revolver_limit - revolver_open))
+    book.move(period, "Draw revolver for minimum cash", "financing", "cash", "revolver", draw)
+    gap = max(_ZERO, minimum - book.get("cash"))
+    if gap:
+        raise ValueError(f"Infeasible funding in period {period}: revolver shortfall {gap}")
+    funding = min(max(_ZERO, target - book.get("dsra_cash")), max(_ZERO, book.get("cash") - minimum))
+    book.move(period, "Fund DSRA from operating excess", "cash_transfer", "dsra_cash", "cash", funding)
+    repayment = min(revolver_open, max(_ZERO, book.get("cash") - minimum))
+    book.move(period, "Repay revolver after DSRA funding", "financing", "revolver", "cash", repayment)
+    excess = max(_ZERO, book.get("cash") - minimum)
+    extra_a = min(loan_a_remaining, _q(excess * sweep)) if allocation_allowed else _ZERO
+    book.move(period, "Sweep excess to loan A principal", "financing", "loan_a", "cash", extra_a)
+    shortfall = max(_ZERO, target - book.get("dsra_cash"))
+    dividend = excess - extra_a if allocation_allowed and not locked and not shortfall else _ZERO
+    book.move(period, "Distribute permitted cash excess", "financing", "retained", "cash", dividend)
+    return {"dsra_open": reserve_open, "dsra_target": target, "dsra_release": release,
+            "dsra_support": support, "dsra_funding": funding, "dsra_close": book.get("dsra_cash"),
+            "dsra_shortfall": shortfall, "dsra_net_transfer": release + support - funding,
+            "revolver_draw": draw, "revolver_repayment": repayment, "cash_gap": gap,
+            "loan_a_extra_principal": extra_a, "dividend": dividend, "allocation_excess": excess}
+
+
 def _parameters(spec: dict[str, Any]) -> dict[str, Any]:
     supplied = spec.get("parameters")
     if not isinstance(supplied, dict):
@@ -283,6 +350,7 @@ def _parameters(spec: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("A positive startup expense requires construction months")
     if result["refresh_service_month"] < result["refresh_paid_month"]:
         raise ValueError("Refresh cannot enter service before it is acquired")
+    result["covenant"] = _covenant_config(spec)
     return result
 
 
@@ -302,14 +370,18 @@ def simulate(spec: dict[str, Any]) -> dict[str, Any]:
 
 def _simulate(p: dict[str, Any]) -> dict[str, Any]:
     money = lambda name: _q(p[name])
-    book = _Book({
+    opening = {
         "cash": money("opening_cash"), "ar": _ZERO, "inventory": _ZERO,
         "initial_ppe": money("initial_asset_cost"), "refresh_ppe": _ZERO,
         "accumulated_depreciation": _ZERO, "ap": _ZERO, "tax_payable": _ZERO,
         "loan_a": -money("loan_a_principal"), "loan_b": -money("loan_b_principal"),
         "revolver": _ZERO, "paid_in": -money("equity_paid_in"),
         "retained": -money("opening_retained"),
-    })
+    }
+    covenant = p["covenant"]
+    if covenant:
+        opening["dsra_cash"] = _ZERO
+    book = _Book(opening)
     rate_a, rate_b, rate_r = (p[name] / _TWELVE for name in
                             ("loan_a_annual_rate", "loan_b_annual_rate", "revolver_annual_rate"))
     payment, payment_residual = _payment(money("loan_a_principal"), rate_a, p["loan_a_amort_payments"])
@@ -327,6 +399,12 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
     cfo_errors: list[Decimal] = []
     cash_errors: list[Decimal] = []
     income_errors: list[Decimal] = []
+    total_cash_errors: list[Decimal] = []
+    reserve_errors: list[Decimal] = []
+    transfer_errors: list[Decimal] = []
+    covenant_constraints: list[bool] = []
+    lock, passes = 0, 0
+    quarter_cfads = quarter_service = _ZERO
 
     for period in range(1, p["months"] + 1):
         year = (period - 1) // 12 + 1
@@ -407,9 +485,42 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
         book.move(period, "Loan A scheduled principal", "financing", "loan_a", "cash", sched_a)
         book.move(period, "Loan B maturity principal", "financing", "loan_b", "cash", bullet_b)
         cash_before = book.get("cash")
+        cv = {}
         draw = repayment = extra_a = dividend = _ZERO
         gap = _ZERO
-        if cash_before < minimum_cash:
+        if covenant:
+            cfads = book.cash_flow(period, "operating") + interest - capex
+            service = interest + sched_a + bullet_b
+            if (month - 1) % 3 == 0:
+                quarter_cfads = quarter_service = _ZERO
+            quarter_cfads += cfads
+            quarter_service += service
+            required, measurement_passed = _covenant_test(quarter_cfads, quarter_service, covenant["covenant_dscr_threshold"])
+            due = period >= covenant["covenant_first_test_month"] and period % 3 == 0
+            passed = due and measurement_passed
+            old_lock, old_passes = lock, passes
+            lock, passes = _covenant_state(lock, passes, due, passed)
+            coverage = covenant["dsra_trap_payment_months"] if lock else covenant["dsra_normal_payment_months"]
+            target = min(a_open - sched_a, _q(payment * coverage)) if period >= covenant["covenant_first_test_month"] else _ZERO
+            wf = _reserve_waterfall(book, period, target=target, minimum=minimum_cash,
+                                   service=service, revolver_open=r_open, revolver_limit=limit,
+                                   loan_a_remaining=a_open - sched_a, sweep=p["cash_sweep_fraction"],
+                                   allocation_allowed=period >= p["cash_allocation_start"], locked=lock)
+            draw, repayment = wf["revolver_draw"], wf["revolver_repayment"]
+            extra_a, dividend, gap = wf["loan_a_extra_principal"], wf["dividend"], wf["cash_gap"]
+            cv = {"cfads": cfads, "quarter_cfads": quarter_cfads, "contractual_service": service,
+                  "quarter_service": quarter_service, "required_cfads": required,
+                  "dscr_display": ((quarter_cfads / quarter_service).quantize(Decimal(".000001"), rounding=ROUND_HALF_UP) if quarter_service else _ZERO),
+                  "test_due": int(due), "test_passed": int(passed), "lock_open": old_lock,
+                  "passes_open": old_passes, "passes_close": passes, "lock_close": lock, **wf}
+            covenant_constraints.append(
+                (not dividend or (not lock and not wf["dsra_shortfall"] and period >= p["cash_allocation_start"]))
+                and not (draw and repayment) and wf["dsra_support"] <= service
+                and all(wf[k] >= 0 for k in ("dsra_open", "dsra_close", "dsra_release", "dsra_support", "dsra_funding"))
+                and wf["dsra_funding"] <= max(_ZERO, cash_before + wf["dsra_release"] + wf["dsra_support"] + draw - minimum_cash))
+            reserve_errors.append(abs(wf["dsra_close"] - wf["dsra_open"] + wf["dsra_net_transfer"]))
+            transfer_errors.append(abs(book.cash_flow(period, "cash_transfer") - wf["dsra_net_transfer"]))
+        elif cash_before < minimum_cash:
             need = minimum_cash - cash_before
             draw = min(need, max(_ZERO, limit - r_open))
             gap = need - draw
@@ -419,7 +530,7 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
         else:
             repayment = min(r_open, cash_before - minimum_cash)
             book.move(period, "Repay revolver from cash excess", "financing", "revolver", "cash", repayment)
-        if period >= p["cash_allocation_start"]:
+        if not covenant and period >= p["cash_allocation_start"]:
             excess = max(_ZERO, book.get("cash") - minimum_cash)
             extra_a = min(-book.get("loan_a"), _q(excess * p["cash_sweep_fraction"]))
             dividend = excess - extra_a
@@ -431,13 +542,18 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
         cff = book.cash_flow(period, "financing")
         cfo_indirect = net_income + depreciation - delta_ar - delta_inv + delta_ap
         cash_close = book.get("cash")
+        reserve_close = book.get("dsra_cash") if covenant else _ZERO
+        reserve_net = cv.get("dsra_net_transfer", _ZERO)
         accumulated_dep = -book.get("accumulated_depreciation")
         net_ppe = book.get("initial_ppe") + book.get("refresh_ppe") - accumulated_dep
-        assets = cash_close + book.get("ar") + book.get("inventory") + net_ppe
+        assets = cash_close + reserve_close + book.get("ar") + book.get("inventory") + net_ppe
         liabilities = -sum((book.get(a) for a in ("ap", "loan_a", "loan_b", "revolver", "tax_payable")), _ZERO)
         equity = -book.get("paid_in") - book.get("retained")
         cfo_errors.append(abs(cfo - cfo_indirect))
-        cash_errors.append(abs(cash_close - cash_open - cfo - cfi - cff))
+        cash_errors.append(abs(cash_close - cash_open - cfo - cfi - cff - reserve_net))
+        if covenant:
+            total_cash_errors.append(abs(cash_close + reserve_close - cash_open - cv["dsra_open"] - cfo - cfi - cff))
+            cv["total_cash_close"] = cash_close + reserve_close
         if (book.get("ar"), book.get("inventory"), -book.get("ap")) != (ar_target, inv_target, ap_target):
             raise ArithmeticError(f"Working-capital postings do not reconcile in period {period}")
         rows.append({
@@ -463,7 +579,7 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
             "accumulated_depreciation": accumulated_dep, "net_ppe": net_ppe,
             "retained_open": retained_open, "retained_close": -book.get("retained"),
             "assets": assets, "liabilities": liabilities, "equity": equity,
-            "balance_check": assets - liabilities - equity, "owner_cashflow": dividend,
+            "balance_check": assets - liabilities - equity, "owner_cashflow": dividend, **cv,
         })
 
     next_sales = _q(p["steady_annual_sales"] * (_ONE + p["annual_sales_growth"]) ** 3)
@@ -471,7 +587,7 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
     enterprise_value = _q(next_ebitda * p["exit_multiple"])
     exit_fee = _q(enterprise_value * p["exit_fee_fraction"])
     closing = rows[-1]
-    equity_exit = (enterprise_value + closing["cash_close"] - closing["loan_a_close"]
+    equity_exit = (enterprise_value + closing["cash_close"] + closing.get("dsra_close", _ZERO) - closing["loan_a_close"]
                    - closing["loan_b_close"] - closing["revolver_close"] - exit_fee)
     closing["owner_cashflow"] += equity_exit
     flows = [-money("equity_paid_in")] + [row["owner_cashflow"] for row in rows]
@@ -500,6 +616,11 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
         record.update({key: last[key] for key in _CLOSE_FIELDS})
         record["cash_before_allocation"] = last["cash_before_allocation"]
         record["cash_gap"] = sum((row["cash_gap"] for row in periods), _ZERO)
+        if covenant:
+            record.update({"dsra_open": first["dsra_open"], "dsra_close": last["dsra_close"],
+                           "total_cash_close": last["total_cash_close"]})
+            record.update({key: sum((row[key] for row in periods), _ZERO)
+                           for key in ("dsra_funding", "dsra_support", "dsra_release")})
         annual.append(record)
     max_balance = max(abs(row["balance_check"]) for row in rows)
     checks = {
@@ -511,6 +632,11 @@ def _simulate(p: dict[str, Any]) -> dict[str, Any]:
         "journal_entry_count": book.entry_count, "irr_exists": monthly_irr is not None,
         "irr_sign_changes": sign_changes,
     }
+    if covenant:
+        checks.update({"covenant_enabled": True, "covenant_constraints_ok": all(covenant_constraints),
+                       "max_total_cash_reconciliation_error": max(total_cash_errors),
+                       "max_reserve_reconciliation_error": max(reserve_errors),
+                       "max_transfer_reconciliation_error": max(transfer_errors)})
     return {
         "monthly": rows,
         "annual": annual,

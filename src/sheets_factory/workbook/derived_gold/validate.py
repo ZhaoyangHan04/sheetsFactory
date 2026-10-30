@@ -25,10 +25,16 @@ def ledger_invariants_pass(checks: dict) -> bool:
                  "max_cash_reconciliation_error", "max_income_reconciliation_error",
                  "minimum_cash_gap", "max_journal_error")
     try:
-        return (checks["feasible"] is True and checks["all_balanced"] is True
+        base = (checks["feasible"] is True and checks["all_balanced"] is True
                 and all(Decimal(str(checks[key])) == 0 for key in zero_keys)
                 and abs(Decimal(str(checks["loan_a_payment_residual"]))) < Decimal("1e-30")
                 and checks["irr_exists"] is True and checks["irr_sign_changes"] == 1)
+        if checks.get("covenant_enabled"):
+            return (base and checks["covenant_enabled"] is True and checks["covenant_constraints_ok"] is True
+                    and all(Decimal(str(checks[key])) == 0 for key in (
+                        "max_total_cash_reconciliation_error", "max_reserve_reconciliation_error",
+                        "max_transfer_reconciliation_error")))
+        return base
     except (KeyError, ArithmeticError, ValueError, TypeError):
         return False
 
@@ -39,6 +45,7 @@ def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict
     expected = {}
     kinds = {}
     p = spec["parameters"]
+    covenant = bool(bindings.get("covenant"))
     dec = lambda value: Decimal(str(value))
     def add(sheet, cell, value, kind="money"):
         key = sheet + "!" + cell
@@ -67,9 +74,18 @@ def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict
         add("Tax", c + "7", row["tax"])
         add("Cash Flow", c + "6", row["loan_a_scheduled_principal"])
         add("Cash Flow", c + "7", row["loan_b_principal"])
-        add("Cash Flow", c + "13", max(Decimal(0), row["cash_before_allocation"] + row["revolver_draw"] - row["revolver_repayment"] - dec(p["minimum_cash"])))
+        add("Cash Flow", c + "13", row["allocation_excess"] if covenant else max(Decimal(0), row["cash_before_allocation"] + row["revolver_draw"] - row["revolver_repayment"] - dec(p["minimum_cash"])))
         add("Cash Flow", c + "14", int(i + 1 >= int(p["cash_allocation_start"])), "integer")
-        add("Cash Flow", c + "15", row["cash_open"] + row["cfo_direct"] + row["cfi"] + row["cff"] - row["cash_close"])
+        add("Cash Flow", c + "15", row["cash_open"] + row["cfo_direct"] + row["cfi"] + row["cff"] + row.get("dsra_net_transfer", 0) - row["cash_close"])
+        if covenant:
+            add("Covenants", c + "1", row["date"], "date")
+            for key, binding in bindings["covenant"].items():
+                add("Covenants", c + str(binding["row"]), row[key],
+                    "control" if binding["kind"] == "integer" else binding["kind"])
+            add("Cash Flow", c + "16", row["dsra_net_transfer"])
+            add("Cash Flow", c + "17", row["total_cash_close"])
+            add("Cash Flow", c + "18", row["cash_open"] + row["dsra_open"] + row["cfo_direct"] + row["cfi"] + row["cff"] - row["total_cash_close"])
+            add("Balance Sheet", c + "20", row["dsra_close"])
         for rr, key in [(2, "cash_close"), (3, "ar_close"), (4, "inventory_close"), (5, "asset_initial_gross"), (6, "asset_refresh_gross"), (7, "accumulated_depreciation"), (8, "net_ppe"), (10, "ap_close"), (11, "loan_a_close"), (12, "loan_b_close"), (13, "revolver_close")]:
             add("Balance Sheet", c + str(rr), row[key])
         add("Balance Sheet", c + "17", dec(p["equity_paid_in"]))
@@ -88,6 +104,8 @@ def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict
         add("Annual Statements", c + "5", row["end_date"], "date")
         for key, rr in bindings["annual"].items():
             add("Annual Statements", c + str(rr), row[key])
+        for key, rr in bindings.get("covenant_annual", {}).items():
+            add("Annual Statements", c + str(rr), row[key])
     for key, address in bindings["valuation"].items():
         add("Equity Value", address, ledger["valuation"][key], "ratio" if "rate" in key or "irr" in key else "money")
     add("Equity Value", "B16", -dec(p["equity_paid_in"]))
@@ -105,6 +123,9 @@ def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict
         kind = "date" if key == "start_date" else "ratio" if any(token in key for token in ("rate", "fraction", "margin", "spread", "premium", "growth", "cap", "ramp_", "multiple")) else "source_number"
         add("Scenario", "B" + str(rr), value, kind)
     add("Scenario", "B" + str(bindings["payment_row"]), ledger["valuation"]["loan_a_payment"])
+    for key, rr in bindings.get("covenant_parameter_rows", {}).items():
+        add("Scenario", "B" + str(rr), spec["covenant_parameters"][key],
+            "ratio" if key == "covenant_dscr_threshold" else "control")
 
     checks, failed = [], []
     for address, want in sorted(expected.items()):
@@ -122,6 +143,8 @@ def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict
                 error = abs(dec(got) - dec(want))
                 if kind in {"money", "source_number"}:
                     passed = posted_money_matches(dec(got), dec(want))
+                elif kind == "control":
+                    passed = dec(got) == dec(want) and dec(got) == dec(got).to_integral_value()
                 else:
                     tolerance = Decimal("0.0000000001") if kind == "ratio" else Decimal("0.000001")
                     passed = error <= tolerance

@@ -9,7 +9,7 @@ import openpyxl
 import pytest
 
 from sheets_factory.workbook.derived_gold.excel import emit_workbook
-from sheets_factory.workbook.derived_gold.ledger import simulate
+from sheets_factory.workbook.derived_gold.ledger import simulate, _Book, _covenant_state, _covenant_test, _reserve_waterfall
 from sheets_factory.workbook.derived_gold.spec import ANCHORS, RULES, resolve_spec
 from sheets_factory.workbook.derived_gold.validate import audit_workbook, ledger_invariants_pass, posted_money_matches
 
@@ -242,3 +242,143 @@ def test_formula_emitter_and_unrecalculated_book_cannot_self_certify(contract, t
     assert audit["invalid_formula_values"]
     assert audit["all_formula_cells_independently_covered"]
     assert "from .ledger" not in (ROOT / "src/sheets_factory/workbook/derived_gold/excel.py").read_text()
+
+
+def _enable_covenant(spec):
+    result = deepcopy(spec)
+    result["covenant_parameters"] = {
+        "covenant_enabled": 1, "covenant_first_test_month": 9,
+        "covenant_dscr_threshold": "1.30", "dsra_normal_payment_months": 1,
+        "dsra_trap_payment_months": 3,
+    }
+    return result
+
+
+def test_opt_in_disabled_preserves_the_complete_original_ledger(contract):
+    base = simulate(contract[0])
+    disabled = _enable_covenant(contract[0])
+    disabled["covenant_parameters"]["covenant_enabled"] = 0
+    assert simulate(disabled) == base
+
+
+def test_enabled_contract_is_public_and_preserves_old_scenario_addresses(contract, tmp_path):
+    _, path = contract
+    config = json.loads(path.read_text())
+    config["covenant_parameters"] = _enable_covenant(contract[0])["covenant_parameters"]
+    path.write_text(json.dumps(config))
+    spec = resolve_spec(path.parent, path)
+    assert spec["public_contract_version"] == 6
+    assert len(spec["public_rules"]) == 15
+    rules = " ".join(spec["public_rules"])
+    for wording in ("second consecutive passed test", "this same month-end", "after DSRA transfers",
+                    "internal transfers", "quarter service", "before optional principal",
+                    "seller", "at par", "not the reserve shortfall",
+                    "Do not carry the prior test-passed flag", "including non-test months",
+                    "not a distribution-permission flag"):
+        assert wording.lower() in rules.lower()
+    bindings = emit_workbook(spec, tmp_path / "enabled.xlsx")
+    book = openpyxl.load_workbook(tmp_path / "enabled.xlsx")
+    assert bindings["payment_row"] == 52
+    assert bindings["parameter_rows"]["cash_ebitda_margin"] == 44
+    assert bindings["covenant_parameter_rows"]["covenant_enabled"] == 55
+    assert bindings["covenant_parameter_rows"]["dsra_trap_payment_months"] == 59
+    assert len(book.sheetnames) == 13
+    assert "'Covenants'!" in book["Equity Value"]["B9"].value
+    audit = audit_workbook(tmp_path / "enabled.xlsx", spec, simulate(spec), bindings)
+    assert audit["all_formula_cells_independently_covered"]
+    assert not audit["passed"]  # Formula emission alone cannot self-certify values.
+
+
+@pytest.mark.parametrize("patch", [
+    {"covenant_first_test_month": 8}, {"covenant_first_test_month": 39},
+    {"covenant_enabled": True}, {"covenant_enabled": 2},
+    {"dsra_normal_payment_months": 4}, {"dsra_trap_payment_months": "2.5"},
+    {"covenant_dscr_threshold": "NaN"}, {"covenant_dscr_threshold": -1},
+])
+def test_invalid_covenant_inputs_rejected_by_both_paths(contract, patch):
+    spec, path = contract
+    config = json.loads(path.read_text())
+    cov = _enable_covenant(spec)["covenant_parameters"]
+    cov.update(patch)
+    config["covenant_parameters"] = cov
+    path.write_text(json.dumps(config))
+    with pytest.raises(ValueError):
+        resolve_spec(path.parent, path)
+    bad = deepcopy(spec)
+    bad["covenant_parameters"] = cov
+    with pytest.raises(ValueError):
+        simulate(bad)
+
+
+def test_covenant_state_requires_two_passes_and_failure_resets_the_cure():
+    lock = passes = 0
+    states = []
+    for passed in (False, True, False, True, True):
+        lock, passes = _covenant_state(lock, passes, True, passed)
+        states.append((lock, passes))
+        assert _covenant_state(lock, passes, False, False) == (lock, passes)
+    assert states == [(1, 0), (1, 1), (1, 0), (1, 1), (0, 2)]
+
+
+@pytest.mark.parametrize("cfads,service,threshold,want_requirement,passed", [
+    ("130.00", "100", "1.3", "130.00", True),
+    ("129.99", "100", "1.3", "130.00", False),
+    ("-1", "100", "1.3", "130.00", False),
+    ("-1", "0", "1.3", "0.00", True),
+    ("1.01", "1", "1.005", "1.01", True),
+    ("1.00", "1", "1.005", "1.01", False),
+])
+def test_covenant_comparison_uses_posted_requirement_not_display_ratio(cfads, service, threshold, want_requirement, passed):
+    assert _covenant_test(D(cfads), D(service), D(threshold)) == (D(want_requirement), passed)
+
+
+def test_reserve_support_then_funding_are_internal_cash_transfers():
+    book = _Book({"cash": D("40"), "dsra_cash": D("80"), "retained": D("-120")})
+    support = _reserve_waterfall(book, 1, target=D("80"), minimum=D("100"), service=D("100"),
+                                 revolver_open=D(0), revolver_limit=D("200"), loan_a_remaining=D(0),
+                                 sweep=D(".5"), allocation_allowed=True, locked=1)
+    assert support["dsra_support"] == D("60")
+    assert support["dsra_shortfall"] == D("60")
+    assert book.get("cash") == D("100") and book.get("dsra_cash") == D("20")
+    assert book.cash_flow(1, "cash_transfer") == D("60")
+    assert book.cash_flow(1, "financing") == book.cash_flow(1, "operating") == 0
+    # Separate hand-posted month: funding takes priority over revolving repayment.
+    book = _Book({"cash": D("260"), "dsra_cash": D("20"), "revolver": D("-20"),
+                  "loan_a": D("-300"), "retained": D("40")})
+    funding = _reserve_waterfall(book, 2, target=D("80"), minimum=D("100"), service=D("100"),
+                                 revolver_open=D("20"), revolver_limit=D("200"), loan_a_remaining=D("300"),
+                                 sweep=D(".5"), allocation_allowed=True, locked=1)
+    assert funding["dsra_funding"] == D("60") and funding["revolver_repayment"] == D("20")
+    assert funding["loan_a_extra_principal"] == D("40") and funding["dividend"] == 0
+    assert book.get("cash") == D("140") and book.get("dsra_cash") == D("80")
+    assert book.cash_flow(2, "cash_transfer") == book.cash_flow(2, "financing") == D("-60")
+    assert sum(book.accounts.values()) == 0
+
+
+def test_enabled_covenant_real_regimes_and_three_cash_identities(contract):
+    result = simulate(_enable_covenant(contract[0]))
+    rows = result["monthly"]
+    assert (rows[8]["lock_close"], rows[11]["lock_close"], rows[14]["lock_close"]) == (1, 1, 0)
+    assert rows[11]["test_passed"] == 1 and rows[11]["dividend"] == 0
+    # Favorable interim coverage is not an actual passed quarterly test.
+    interim = rows[12]
+    assert interim["quarter_cfads"] == D("525323.58")
+    assert interim["required_cfads"] == D("352360.48")
+    assert interim["dscr_display"] == D("1.938131")
+    assert interim["test_due"] == interim["test_passed"] == 0
+    assert rows[0]["required_cfads"] == D("105462.50")
+    assert rows[0]["dscr_display"] == D("-4.108885")
+    assert any(r["dividend"] > 0 for r in rows[:-1])
+    for key in ("dsra_funding", "dsra_support", "dsra_release"):
+        assert sum(r[key] for r in rows) > 0
+    for r in rows:
+        assert r["cash_close"] == r["cash_open"] + r["cfo_direct"] + r["cfi"] + r["cff"] + r["dsra_net_transfer"]
+        assert r["dsra_close"] == r["dsra_open"] - r["dsra_net_transfer"]
+        assert r["total_cash_close"] == r["cash_open"] + r["dsra_open"] + r["cfo_direct"] + r["cfi"] + r["cff"]
+        assert r["assets"] == r["liabilities"] + r["equity"]
+        assert not r["dividend"] or (not r["lock_close"] and not r["dsra_shortfall"])
+    assert ledger_invariants_pass(result["checks"])
+    for key in ("max_total_cash_reconciliation_error", "max_reserve_reconciliation_error", "max_transfer_reconciliation_error"):
+        bad = deepcopy(result["checks"])
+        bad[key] = D(".01")
+        assert not ledger_invariants_pass(bad)

@@ -50,6 +50,18 @@ VALUATION_BINDINGS = {
     "exit_fee": "B8", "equity_exit": "B9", "equity_npv": "B10",
     "monthly_equity_irr": "B11", "annual_equity_irr": "B12",
 }
+COVENANT_BINDINGS = {
+    key: {"row": row, "kind": "ratio" if row == 7 else "integer" if 8 <= row <= 13 else "money"}
+    for row, key in enumerate(("cfads", "quarter_cfads", "contractual_service", "quarter_service",
+                               "required_cfads", "dscr_display", "test_due", "test_passed",
+                               "lock_open", "passes_open", "passes_close", "lock_close",
+                               "dsra_open", "dsra_target", "dsra_release", "dsra_support",
+                               "dsra_funding", "dsra_close", "dsra_shortfall", "dsra_net_transfer"), 2)
+}
+COVENANT_PARAMETER_NAMES = ("covenant_enabled", "covenant_first_test_month", "covenant_dscr_threshold",
+                            "dsra_normal_payment_months", "dsra_trap_payment_months")
+COVENANT_ANNUAL = {key: row for row, key in enumerate(
+    ("dsra_open", "dsra_close", "dsra_funding", "dsra_support", "dsra_release", "total_cash_close"), 67)}
 
 
 def _sheet_ref(sheet, cell):
@@ -58,11 +70,15 @@ def _sheet_ref(sheet, cell):
 
 def emit_workbook(spec: dict, destination: Path) -> dict:
     p = spec["parameters"]
+    cov = spec.get("covenant_parameters")
+    enabled = cov is not None and int(cov["covenant_enabled"]) == 1
     n = int(p["months"])
     book = openpyxl.Workbook()
     book.active.title = "Read Me"
     for sheet in ("Source Inputs", "Scenario", "Calendar", "Operations", "Assets", "Debt", "Tax", "Cash Flow", "Balance Sheet", "Equity Value", "Annual Statements"):
         book.create_sheet(sheet)
+    if enabled:
+        book.create_sheet("Covenants")
     readme = book["Read Me"]
     readme["A1"], readme["B1"] = "Model", spec["title"]
     readme["A2"], readme["B2"] = "Scenario", spec["scenario_id"]
@@ -120,6 +136,16 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
     scenario.cell(payment_row, 1, "Original Loan A level payment")
     scenario.cell(payment_row, 2, "=IF(" + param("loan_a_annual_rate") + "=0,ROUND(" + param("loan_a_principal") + "/" + param("loan_a_amort_payments") + ",2),ROUND(-PMT(" + param("loan_a_annual_rate") + "/12," + param("loan_a_amort_payments") + "," + param("loan_a_principal") + "),2))")
     payment = _sheet_ref("Scenario", f"$B${payment_row}")
+    covenant_parameter_rows = {}
+    if enabled:
+        scenario["A54"] = "Explicit hypothetical covenant / DSRA contract"
+        for row, key in enumerate(COVENANT_PARAMETER_NAMES, 55):
+            covenant_parameter_rows[key] = row
+            scenario.cell(row, 1, key)
+            scenario.cell(row, 2, float(cov[key]))
+            scenario.cell(row, 3, "explicit hypothetical covenant assumption")
+    def covenant_param(key):
+        return _sheet_ref("Scenario", f"$B${covenant_parameter_rows[key]}")
 
     for sheet, keys in MAPPINGS.items():
         for key, row in keys.items():
@@ -134,6 +160,17 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
     for sheet, labels in extra_labels.items():
         for row, label in labels.items():
             book[sheet].cell(row, 1, label)
+    if enabled:
+        for key, binding in COVENANT_BINDINGS.items():
+            book["Covenants"].cell(binding["row"], 1, key.replace("_", " "))
+            book["Covenants"].cell(binding["row"], 2, binding["kind"] if binding["kind"] != "money" else "USD")
+        for row, label in {16: "DSRA net transfer to operating cash", 17: "Total cash including DSRA",
+                           18: "Total cash reconciliation"}.items():
+            book["Cash Flow"].cell(row, 1, label)
+            book["Cash Flow"].cell(row, 2, "USD")
+        book["Balance Sheet"]["A2"] = "Operating cash"
+        book["Balance Sheet"]["A20"] = "DSRA restricted cash"
+        book["Balance Sheet"]["B20"] = "USD"
 
     for t in range(1, n + 1):
         col, prev = L(t + 2), L(t + 1)
@@ -145,14 +182,15 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
             # Every posted amount is a cent balance, including subtraction and
             # aggregation. Otherwise binary residue at an exact half-cent can
             # change a later sweep allocation by one cent.
-            if sheet != "Calendar" and (sheet, row) != ("Cash Flow", 14):
+            if (sheet != "Calendar" and (sheet, row) != ("Cash Flow", 14)
+                    and not (sheet == "Covenants" and 7 <= row <= 13)):
                 expression = "ROUND(" + expression + ",2)"
             book[sheet][col + str(row)] = "=" + expression
         period = ref("Calendar", 2)
         year = ref("Calendar", 4)
         yearend = ref("Calendar", 7)
         year_start_col = L(3 + 12 * ((t - 1) // 12))
-        for sheet in MAPPINGS:
+        for sheet in (*MAPPINGS, *(("Covenants",) if enabled else ())):
             book[sheet][col + "1"] = "=" + ref("Calendar", 3) if sheet != "Calendar" else f"Month {t}"
         put("Calendar", 2, str(t))
         put("Calendar", 3, "EDATE(" + param("start_date") + "," + period + "-1)")
@@ -209,6 +247,33 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
         put("Debt", 16, col + "3+" + col + "8+" + col + "12")
         put("Debt", 17, payment)
 
+        if enabled:
+            qfirst = L(3 + 3 * ((t - 1) // 3))
+            cv = lambda row: ref("Covenants", row)
+            put("Covenants", 2, ref("Cash Flow", 3) + "+" + ref("Debt", 16) + "-" + ref("Assets", 2))
+            put("Covenants", 3, "SUM(" + qfirst + "2:" + col + "2)")
+            put("Covenants", 4, ref("Debt", 16) + "+" + ref("Debt", 4) + "+" + ref("Debt", 9))
+            put("Covenants", 5, "SUM(" + qfirst + "4:" + col + "4)")
+            put("Covenants", 6, cv(5) + "*" + covenant_param("covenant_dscr_threshold"))
+            put("Covenants", 7, "IF(" + cv(5) + "=0,0,ROUND(" + cv(3) + "/" + cv(5) + ",6))")
+            put("Covenants", 8, "IF(AND(" + period + ">=" + covenant_param("covenant_first_test_month") + ",MOD(" + period + ",3)=0),1,0)")
+            put("Covenants", 9, "IF(AND(" + cv(8) + "=1,OR(" + cv(5) + "=0," + cv(3) + ">=" + cv(6) + ")),1,0)")
+            put("Covenants", 10, "0" if t == 1 else prev + "13")
+            put("Covenants", 11, "0" if t == 1 else prev + "12")
+            put("Covenants", 12, "IF(" + cv(8) + "=0," + cv(11) + ",IF(" + cv(9) + "=1,MIN(2," + cv(11) + "+1),0))")
+            put("Covenants", 13, "IF(" + cv(8) + "=0," + cv(10) + ",IF(" + cv(9) + "=0,1,IF(AND(" + cv(10) + "=1," + cv(12) + "<2),1,0)))")
+            put("Covenants", 14, "0" if t == 1 else prev + "19")
+            coverage = "IF(" + cv(13) + "=1," + covenant_param("dsra_trap_payment_months") + "," + covenant_param("dsra_normal_payment_months") + ")"
+            put("Covenants", 15, "IF(" + period + "<" + covenant_param("covenant_first_test_month") + ",0,MIN(" + ref("Debt", 2) + "-" + ref("Debt", 4) + ",ROUND(" + payment + "*" + coverage + ",2)))")
+            put("Covenants", 16, "MAX(0," + cv(14) + "-" + cv(15) + ")")
+            put("Covenants", 17, "MIN(" + cv(14) + "-" + cv(16) + ",MAX(0," + param("minimum_cash") + "-" + ref("Cash Flow", 8) + "-" + cv(16) + ")," + cv(4) + ")")
+            put("Covenants", 18, "MIN(MAX(0," + cv(15) + "-" + cv(14) + "+" + cv(16) + "+" + cv(17) + "),MAX(0," + ref("Cash Flow", 8) + "+" + cv(16) + "+" + cv(17) + "+" + ref("Debt", 13) + "-" + param("minimum_cash") + "))")
+            put("Covenants", 19, cv(14) + "-" + cv(16) + "-" + cv(17) + "+" + cv(18))
+            put("Covenants", 20, "MAX(0," + cv(15) + "-" + cv(19) + ")")
+            put("Covenants", 21, cv(16) + "+" + cv(17) + "-" + cv(18))
+            put("Debt", 13, "MIN(MAX(0," + param("minimum_cash") + "-" + ref("Cash Flow", 8) + "-" + cv(16) + "-" + cv(17) + "),MAX(0," + param("revolver_limit") + "-" + ref("Debt", 11) + "))")
+            put("Debt", 14, "MIN(" + ref("Debt", 11) + ",MAX(0," + ref("Cash Flow", 8) + "+" + cv(21) + "+" + ref("Debt", 13) + "-" + param("minimum_cash") + "))")
+
         put("Tax", 2, "SUM(" + _sheet_ref("Operations", year_start_col + "12:" + col + "12") + ")")
         put("Tax", 3, param("opening_nol") if t == 1 else prev + "6")
         put("Tax", 4, "IF(" + yearend + "=1,MIN(" + col + "3,ROUND(MAX(0," + col + "2)*" + param("nol_utilization_cap") + ",2)),0)")
@@ -230,6 +295,15 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
         put("Cash Flow", 13, "MAX(0," + col + "8+" + ref("Debt", 13) + "-" + ref("Debt", 14) + "-" + param("minimum_cash") + ")")
         put("Cash Flow", 14, "IF(" + period + ">=" + param("cash_allocation_start") + ",1,0)")
         put("Cash Flow", 15, col + "2+" + col + "3+" + col + "5+" + col + "11-" + col + "12")
+        if enabled:
+            put("Cash Flow", 9, "MAX(0," + param("minimum_cash") + "-" + col + "8-" + cv(16) + "-" + cv(17) + "-" + ref("Debt", 13) + ")")
+            put("Cash Flow", 10, "IF(AND(" + col + "14=1," + cv(13) + "=0," + cv(20) + "=0)," + col + "13-" + ref("Debt", 5) + ",0)")
+            put("Cash Flow", 12, col + "2+" + col + "3+" + col + "5+" + col + "11+" + cv(21))
+            put("Cash Flow", 13, "MAX(0," + col + "8+" + cv(21) + "+" + ref("Debt", 13) + "-" + ref("Debt", 14) + "-" + param("minimum_cash") + ")")
+            put("Cash Flow", 15, col + "2+" + col + "3+" + col + "5+" + col + "11+" + cv(21) + "-" + col + "12")
+            put("Cash Flow", 16, cv(21))
+            put("Cash Flow", 17, col + "12+" + cv(19))
+            put("Cash Flow", 18, col + "2+" + cv(14) + "+" + col + "3+" + col + "5+" + col + "11-" + col + "17")
 
         bs_refs = {2: ("Cash Flow", 12), 3: ("Operations", 16), 4: ("Operations", 19),
                    5: ("Assets", 6), 6: ("Assets", 7), 7: ("Assets", 8), 8: ("Assets", 9),
@@ -243,6 +317,9 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
         put("Balance Sheet", 17, param("equity_paid_in"))
         put("Balance Sheet", 18, col + "17+" + col + "16")
         put("Balance Sheet", 19, col + "9-" + col + "14-" + col + "18")
+        if enabled:
+            put("Balance Sheet", 20, cv(19))
+            put("Balance Sheet", 9, col + "2+" + col + "3+" + col + "4+" + col + "8+" + col + "20")
 
     eq = book["Equity Value"]
     for key, address in VALUATION_BINDINGS.items():
@@ -256,6 +333,8 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
     eq["B7"] = "=ROUND(B6*" + param("exit_multiple") + ",2)"
     eq["B8"] = "=ROUND(B7*" + param("exit_fee_fraction") + ",2)"
     eq["B9"] = "=ROUND(B7+" + _sheet_ref("Cash Flow", last + "12") + "-" + _sheet_ref("Debt", last + "6") + "-" + _sheet_ref("Debt", last + "10") + "-" + _sheet_ref("Debt", last + "15") + "-B8,2)"
+    if enabled:
+        eq["B9"] = eq["B9"].value.replace("-B8,2)", "+" + _sheet_ref("Covenants", last + "19") + "-B8,2)")
     eq["B10"] = "=ROUND(NPV(B4,C16:" + last + "16)+B16,2)"
     eq["B11"] = "=IRR(B16:" + last + "16,0.01)"
     eq["B12"] = "=(1+B11)^12-1"
@@ -294,6 +373,20 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
         annual[c + "5"] = "=EOMONTH(" + _sheet_ref("Calendar", final + "3") + ",0)"
     for row, label in ((2, "Year"), (3, "Periods"), (4, "Start date"), (5, "End date")):
         annual.cell(row, 1, label)
+    if enabled:
+        for key, row in COVENANT_ANNUAL.items():
+            annual.cell(row, 1, key.replace("_", " "))
+            annual.cell(row, 2, "USD")
+            for year in range(1, 4):
+                first, final = L(3 + (year - 1) * 12), L(2 + year * 12)
+                if key == "total_cash_close":
+                    formula = "=" + _sheet_ref("Cash Flow", final + "17")
+                else:
+                    cr = COVENANT_BINDINGS[key]["row"]
+                    formula = ("=" + _sheet_ref("Covenants", (first if key.endswith("_open") else final) + str(cr))
+                               if key.endswith(("_open", "_close"))
+                               else "=ROUND(SUM(" + _sheet_ref("Covenants", first + str(cr) + ":" + final + str(cr)) + "),2)")
+                annual.cell(row, year + 2, formula)
 
     for ws in book:
         ws.freeze_panes = "C2"
@@ -307,7 +400,7 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
                 cell.number_format = "#,##0.00;[Red](#,##0.00)"
     for t in range(1, n + 1):
         c = L(t + 2)
-        for sheet in MAPPINGS:
+        for sheet in (*MAPPINGS, *(("Covenants",) if enabled else ())):
             book[sheet][c + "1"].number_format = "mmm yyyy" if sheet != "Calendar" else "General"
             book[sheet].column_dimensions[c].width = 18
         book["Calendar"][c + "3"].number_format = "yyyy-mm-dd"
@@ -319,6 +412,10 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
     for row in (3, 4, 11, 12):
         eq.cell(row, 2).number_format = "0.000000%"
     readme.column_dimensions["B"].width = 125
+    if enabled:
+        for col in range(3, n + 3):
+            for row in range(7, 14):
+                book["Covenants"].cell(row, col).number_format = "0.000000" if row == 7 else "0"
     for cell in readme._cells.values():
         cell.alignment = Alignment(wrap_text=True, vertical="top")
     book.calculation = openpyxl.workbook.properties.CalcProperties(calcId=0, fullCalcOnLoad=True, forceFullCalc=True)
@@ -326,4 +423,7 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
     book.save(destination)
     return {"monthly": MONTHLY_BINDINGS, "annual": annual_rows,
             "valuation": VALUATION_BINDINGS, "parameter_rows": param_rows,
-            "source_anchor_rows": anchor_rows, "payment_row": payment_row}
+            "source_anchor_rows": anchor_rows, "payment_row": payment_row,
+            "covenant": COVENANT_BINDINGS if enabled else {},
+            "covenant_parameter_rows": covenant_parameter_rows,
+            "covenant_annual": COVENANT_ANNUAL if enabled else {}}
