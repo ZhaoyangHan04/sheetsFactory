@@ -141,6 +141,21 @@ def test_require_reviewed_evidence_does_not_confuse_filename_with_eligibility(tm
     assert result["selected"]["debugging"] == [digest]
 
 
+def test_positive_inline_module_evidence_is_preserved_without_task_approval(tmp_path):
+    path = workbook(tmp_path / "reviewed.xlsx")
+    digest = selector.file_sha256(path)
+    evidence = {"financial_modeling_eligible": True,
+                "safe_modules": [{"candidate_regions": ["Income!A1"]}],
+                "business_correctness_certified": False}
+    inv = tmp_path / "inventory.json"
+    inv.write_text(json.dumps({"selected": [{"sha256": digest, "local_path": str(path),
+                                             "finance_evidence": evidence}]}))
+    result = selector.select(args(inv, require_business_evidence=True))
+    assert result["selected"]["financial_modeling"] == [digest]
+    assert result["candidates"][0]["business_evidence"] == evidence
+    assert result["candidates"][0]["generation_approval"] is False
+
+
 def test_original_and_normalized_hashes_are_not_confused(tmp_path):
     raw = tmp_path / "original.xls"
     raw.write_bytes(b"original source bytes, not opened in this fixture")

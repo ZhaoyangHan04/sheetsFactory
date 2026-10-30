@@ -296,6 +296,8 @@ def select(args) -> dict:
     candidates = []
     for row in inventories:
         digest = row["source_sha256"]
+        if isinstance(row.get("finance_evidence"), dict):
+            evidence[digest] = {**evidence.get(digest, {}), **row["finance_evidence"]}
         raw = row.get("local_path", row.get("source_path", row.get("source")))
         normalized = row.get("normalized_path")
         if not normalized and raw and Path(raw).suffix.lower() == ".xlsx":
