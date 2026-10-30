@@ -42,11 +42,13 @@ def test_projection_is_deterministic_bounded_and_has_no_hidden_full_contract(fin
     assert projected == project_business_brief(financial_spec)
     assert financial_spec == original
     assert projected["presentation_style"] == "business_brief"
+    assert projected["presentation_version"] == 2
     assert 400 <= len(" ".join(projected["public_rules"]).split()) <= 600
     # Removing the sole intentional metadata/text differences recovers the
     # exact original spec. No second, hidden copy of full procedural rules.
     stripped = deepcopy(projected)
     stripped.pop("presentation_style")
+    stripped.pop("presentation_version")
     stripped["public_rules"] = original["public_rules"]
     assert stripped == original
     for rule in original["public_rules"]:
