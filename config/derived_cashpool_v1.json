@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "scenario_id": "four-holding-partnerships-cashpool-v1",
+  "verified_source_manifest": "outputs/research/portfolio_source_20261030T101350Z/manifest.json",
+  "treasury": {
+    "opening_cash": 500000,
+    "minimum_cash": 50000,
+    "bank_limit": 5000000,
+    "bank_rate": "0.06",
+    "borrowing_rate": "0.08",
+    "deposit_rate": "0.03",
+    "monthly_fee": 1000
+  },
+  "members": [
+    {
+      "id": "P1",
+      "contract": "demand_provider",
+      "projects": [
+        "T01",
+        "T02",
+        "T03"
+      ],
+      "ownership": "0.25",
+      "opening_cash": 2000000,
+      "minimum_cash": 100000,
+      "loan_limit": 0,
+      "capital_commitment": 0,
+      "monthly_fee": 10000,
+      "note_rate": "0.05",
+      "note_purchases": {}
+    },
+    {
+      "id": "P2",
+      "contract": "revolving_borrower",
+      "projects": [
+        "T04",
+        "T05",
+        "T06"
+      ],
+      "ownership": "0.25",
+      "opening_cash": 100000,
+      "minimum_cash": 100000,
+      "loan_limit": 5000000,
+      "capital_commitment": 1000000,
+      "monthly_fee": 15000,
+      "note_rate": "0.05",
+      "note_purchases": {
+        "1": 4000000
+      }
+    },
+    {
+      "id": "P3",
+      "contract": "term_depositor",
+      "projects": [
+        "T07",
+        "T08",
+        "T09"
+      ],
+      "ownership": "0.25",
+      "opening_cash": 1000000,
+      "minimum_cash": 100000,
+      "loan_limit": 2500000,
+      "capital_commitment": 1000000,
+      "monthly_fee": 10000,
+      "note_rate": "0.05",
+      "note_purchases": {
+        "9": 1500000
+      },
+      "release_months": [
+        13,
+        25,
+        36
+      ],
+      "forward_reserve_months": 3
+    },
+    {
+      "id": "P4",
+      "contract": "nav_borrower",
+      "projects": [
+        "T10",
+        "T11",
+        "T12"
+      ],
+      "ownership": "0.25",
+      "opening_cash": 100000,
+      "minimum_cash": 100000,
+      "loan_limit": 2000000,
+      "capital_commitment": 4000000,
+      "monthly_fee": 12000,
+      "note_rate": "0.05",
+      "note_purchases": {
+        "4": 3000000
+      },
+      "advance_rate": "0.10"
+    }
+  ],
+  "funding_order": [
+    "P2",
+    "P3",
+    "P4",
+    "P1"
+  ],
+  "required_regimes": [
+    "bank_draw",
+    "bank_repayment",
+    "demand_withdrawal",
+    "member_loan_draw",
+    "member_loan_repayment",
+    "term_locked_borrowing",
+    "term_release",
+    "nav_cap_binding",
+    "nav_margin_payment",
+    "capital_call",
+    "cross_member_funding"
+  ],
+  "public_contract_version": 9
+}
