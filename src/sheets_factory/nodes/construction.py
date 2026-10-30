@@ -15,6 +15,8 @@ from openpyxl.utils.cell import range_boundaries
 from ..core.node import BaseNode, TaskRejected
 from ..workbook import profile_workbook, compare_workbooks, formula_references
 from ..checkers.unsafe_regions import evaluate_native_risk_guard
+from ..checkers.native_error_probe import probe_native_errors
+from ..checkers.native_error_dependencies import validate_static_reference_syntax
 
 
 def digest(path):
@@ -61,7 +63,9 @@ def construction_contract(mode=None, config=None):
             'at_least_one_finite_numeric_target_with_absolute_value_above': 0.005},
         'dependency_requirements': {'true_cross_sheet_formula_edge_in_target_closure': True,
             'independent_local_targets_on_two_sheets_do_not_suffice': True,
-            'max_dependency_closure_cells': 20000, 'no_native_calculation_errors': True,
+            'max_dependency_closure_cells': 20000, 'no_native_calculation_errors_in_required_D': True,
+            'ancestor_cached_errors_require_narrow_path_certificates_and_actual_LO_probes': True,
+            'unchanged_finite_sentinels_alone_cannot_clear_errors': True,
             'all_formula_references_must_be_supported': True,
             'forbidden_volatile_functions': ['NOW', 'TODAY', 'RAND', 'RANDBETWEEN']},
         'source_requirements': {'min_nonempty_sheets': 4, 'min_formula_count': 6,
@@ -281,6 +285,7 @@ def validate_plan(plan, baseline, mode, config=None):
     book = openpyxl.load_workbook(baseline, data_only=False, keep_links=False)
     values = openpyxl.load_workbook(baseline, data_only=True, keep_links=False)
     seen, involved, visited, cross_edges = set(), set(), set(), set()
+    native_errors = {}
     meaningful_targets = 0
 
     def inspect_dependencies(sheet_name, address):
@@ -294,13 +299,15 @@ def validate_plan(plan, baseline, mode, config=None):
             raise TaskRejected('Q10: target dependency references a missing sheet')
         source_cell = book[sheet_name][address]
         if values[sheet_name][address].data_type == 'e':
-            raise TaskRejected('Q09: native calculation error in target dependency closure')
+            native_errors[key] = {'sheet': sheet_name, 'cell': address,
+                'cached_error': values[sheet_name][address].value,
+                'formula': source_cell.value if source_cell.data_type == 'f' else None}
         if source_cell.data_type != 'f':
             return
         if not isinstance(source_cell.value, str) or re.search(r'\b(?:NOW|TODAY|RAND|RANDBETWEEN)\s*\(', source_cell.value, re.I):
             raise TaskRejected('Q10: unsupported or volatile formula in target dependency closure')
         dependencies = formula_references(source_cell.value, sheet_name)
-        if not dependencies['fully_supported']:
+        if not dependencies['fully_supported'] or validate_static_reference_syntax(source_cell.value):
             raise TaskRejected('Q10: unresolved target dependency closure')
         for reference in dependencies['references']:
             involved.add(reference['sheet'])
@@ -330,8 +337,8 @@ def validate_plan(plan, baseline, mode, config=None):
             involved.add(key[0])
             for ref in refs['references']:
                 involved.add(ref['sheet'])
-                if ref['sheet'] not in values.sheetnames or values[ref['sheet']][ref['cell']].data_type == 'e':
-                    raise TaskRejected('Q09: direct input error contaminates target')
+                if ref['sheet'] not in values.sheetnames:
+                    raise TaskRejected('Q10: direct input references a missing sheet')
             if mode == 'financial_modeling' and edit.get('after') is not None:
                 raise TaskRejected('Modeling mask may only clear approved formulas')
             if mode == 'debugging' and (not isinstance(edit.get('after'), str) or not edit['after'].startswith('=') or edit['after'] == edit['before']):
@@ -344,7 +351,10 @@ def validate_plan(plan, baseline, mode, config=None):
         book.close(); values.close()
     return {'edit_count': len(edits), 'dependency_sheets': sorted(involved), 'before_assertions_passed': True,
             'dependency_closure_cells': len(visited), 'cross_sheet_edges': sorted(cross_edges),
-            'meaningful_nonzero_targets': meaningful_targets}
+            'meaningful_nonzero_targets': meaningful_targets,
+            'native_error_candidates': [native_errors[key] for key in sorted(native_errors)],
+            'native_error_candidates_provisional': bool(native_errors),
+            'native_error_policy': 'all paths require narrow certificates; actual full-D LO sensitivity probes are additional evidence, not business correctness'}
 
 
 class ConstructNode(BaseNode):
@@ -405,6 +415,27 @@ class ConstructNode(BaseNode):
                                for cell in issue['affected_cells']})
             raise TaskRejected('Q09: confirmed native unsafe region intersects complete changed-value set: '
                                + ', '.join(affected[:16]) + '; see private/native_risk_guard.json')
+        # Cached errors in an expanded lookup range are provisional, never
+        # automatically cleared. Recheck the complete actual D, not roots only.
+        error_probe = probe_native_errors(goal=goal, required_delta=delta['expected_changes'],
+            candidates=validation['native_error_candidates'], engine=ctx.engine,
+            directory=private / 'native_error_probes', source_sha256=ctx.data.get('source_id') or digest(ctx.source),
+            plan=ctx.data['plan'], revision=ctx.revision,
+            immutable_files={'source': ctx.source, 'baseline': ctx.data['baseline']},
+            engine_metadata=ctx.data.get('engine_report', {}).get('engine'))
+        validation['native_error_probe'] = error_probe
+        validation['native_error_candidates'] = error_probe.get('candidates', validation['native_error_candidates'])
+        validation['native_error_candidates_provisional'] = bool(validation['native_error_candidates'])
+        ctx.save('native_error_probe.json', error_probe)
+        ctx.save('edit_validation.json', validation)
+        ctx.data['construction_validation'] = validation
+        ctx.audit.emit('native_error_probe.result', task_id=ctx.task_id, revision=ctx.revision,
+                       state=error_probe['state'], blocking=error_probe['blocking'],
+                       candidates=len(error_probe['candidates']), probes=len(error_probe['probes']),
+                       duration_ms=error_probe['duration_ms'])
+        if error_probe['blocking']:
+            raise TaskRejected(error_probe['problem_id'] + ': ' + error_probe.get('reason', 'native-error evidence incomplete')
+                               + '; see private/native_error_probe.json')
         # Every root must have an effect by itself, not merely a syntactic edit.
         root_impacts = []
         if ctx.mode == 'debugging':
