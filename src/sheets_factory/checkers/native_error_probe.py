@@ -18,6 +18,7 @@ import openpyxl
 
 from .native_error_dependencies import dependency_error_reach, validate_static_reference_syntax
 from ..workbook.profile import formula_references
+from ..workbook.static_references import expand_static_formula, static_formula_text, StaticReferenceError
 
 
 def _digest(path):
@@ -90,12 +91,17 @@ def _full_closure_candidates(goal, labels, candidates, max_cells):
                               'formula': cell.value if cell.data_type == 'f' else None}
             if cell.data_type != 'f':
                 continue
-            if not isinstance(cell.value, str) or re.search(r'\b(?:NOW|TODAY|RAND|RANDBETWEEN)\s*\(', cell.value, re.I):
+            try:
+                formula_text = static_formula_text(cell)
+                resolved_formula = expand_static_formula(formula_text, sheet, book)
+            except StaticReferenceError as exc:
+                raise ValueError('Q10: ' + str(exc) + ' in full required-D closure') from exc
+            if re.search(r'\b(?:NOW|TODAY|RAND|RANDBETWEEN)\s*\(', formula_text, re.I):
                 raise ValueError('Q10: unsupported or volatile full required-D dependency')
-            references = formula_references(cell.value, sheet)
+            references = formula_references(formula_text, sheet, workbook=book)
             if not references['fully_supported']:
                 raise ValueError('Q10: unresolved full required-D dependency')
-            syntax_problem = validate_static_reference_syntax(cell.value)
+            syntax_problem = validate_static_reference_syntax(resolved_formula)
             if syntax_problem:
                 raise ValueError('Q10: ' + syntax_problem + ' in full required-D closure')
             pending.extend((r['sheet'], r['cell']) for r in references['references'])

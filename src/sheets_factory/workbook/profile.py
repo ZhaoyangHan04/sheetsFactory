@@ -10,6 +10,8 @@ import openpyxl
 from openpyxl.formula.tokenizer import Tokenizer
 from openpyxl.utils.cell import range_boundaries, get_column_letter
 
+from .static_references import StaticReferenceError, expand_static_formula_details, static_formula_text
+
 _A1 = re.compile(r"\$?[A-Za-z]{1,3}\$?\d+(?::\$?[A-Za-z]{1,3}\$?\d+)?$")
 
 
@@ -24,13 +26,20 @@ def json_value(value):
     return str(value)
 
 
-def formula_references(formula: str, sheet_name: str, max_expansion: int = 5000) -> dict:
+def formula_references(formula: str, sheet_name: str, max_expansion: int = 5000, *, workbook=None) -> dict:
     refs, unsupported = [], []
+    analysis = None
+    if workbook is not None:
+        try:
+            analysis = expand_static_formula_details(formula, sheet_name, workbook, max_expansion)
+            formula = analysis["formula"]
+        except StaticReferenceError as error:
+            return {"references": [], "unsupported": [str(error)], "fully_supported": False}
     try:
         tokens = Tokenizer(formula).items
     except Exception:
         return {"references": [], "unsupported": ["formula_parse_error"], "fully_supported": False}
-    if re.search(r"\b(?:INDIRECT|OFFSET)\s*\(", formula, re.I):
+    if analysis is None and re.search(r"\b(?:INDIRECT|OFFSET)\s*\(", formula, re.I):
         unsupported.append("dynamic_reference")
     for token in tokens:
         if token.type != "OPERAND" or token.subtype != "RANGE":
@@ -60,7 +69,12 @@ def formula_references(formula: str, sheet_name: str, max_expansion: int = 5000)
                     refs.append({"sheet": sheet, "cell": f"{get_column_letter(col)}{row}"})
         except (TypeError, ValueError):
             unsupported.append(value)
-    return {"references": refs, "unsupported": unsupported, "fully_supported": not unsupported}
+    result = {"references": refs, "unsupported": unsupported, "fully_supported": not unsupported}
+    if analysis is not None:
+        result["resolved_names"] = analysis["resolved_names"]
+        result["bounded_ranges"] = analysis["bounded_ranges"]
+        result["analysis_only"] = True
+    return result
 
 
 def profile_workbook(path: Path, max_cells: int = 30000) -> dict:
@@ -98,10 +112,12 @@ def profile_workbook(path: Path, max_cells: int = 30000) -> dict:
                     "row_labels": row_labels, "column_labels": column_labels}
             if cell.data_type == "f":
                 formula_text = cell.value if isinstance(cell.value, str) else getattr(cell.value, "text", "")
-                dependencies = formula_references(formula_text, sheet.title)
+                try:
+                    formula_text = static_formula_text(cell)
+                    dependencies = formula_references(formula_text, sheet.title, workbook=book)
+                except StaticReferenceError as error:
+                    dependencies = {"references": [], "unsupported": [str(error)], "fully_supported": False}
                 if not isinstance(cell.value, str):
-                    dependencies["fully_supported"] = False
-                    dependencies["unsupported"].append("formula_group:" + cell.value.__class__.__name__)
                     item["formula_group"] = json_value(cell.value)
                 item.update({"formula": formula_text,
                              "cached_value": json_value(cached[sheet.title][cell.coordinate].value),

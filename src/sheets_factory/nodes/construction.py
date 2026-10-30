@@ -14,6 +14,7 @@ from openpyxl.utils.cell import range_boundaries, coordinate_to_tuple, get_colum
 
 from ..core.node import BaseNode, TaskRejected
 from ..workbook import profile_workbook, compare_workbooks, formula_references
+from ..workbook.static_references import expand_static_formula, static_formula_text, StaticReferenceError
 from ..checkers.unsafe_regions import evaluate_native_risk_guard
 from ..checkers.native_error_probe import probe_native_errors
 from ..checkers.native_error_dependencies import validate_static_reference_syntax
@@ -331,11 +332,16 @@ def validate_plan(plan, baseline, mode, config=None):
                 'formula': source_cell.value if source_cell.data_type == 'f' else None}
         if source_cell.data_type != 'f':
             return
-        if not isinstance(source_cell.value, str) or re.search(r'\b(?:NOW|TODAY|RAND|RANDBETWEEN)\s*\(', source_cell.value, re.I):
+        try:
+            formula_text = static_formula_text(source_cell)
+            resolved_formula = expand_static_formula(formula_text, sheet_name, book)
+        except StaticReferenceError as exc:
+            raise TaskRejected(f'Q10: unresolved dependency at {sheet_name}!{address}: {exc}') from exc
+        if re.search(r'\b(?:NOW|TODAY|RAND|RANDBETWEEN)\s*\(', formula_text, re.I):
             raise TaskRejected('Q10: unsupported or volatile formula in target dependency closure')
-        dependencies = formula_references(source_cell.value, sheet_name)
-        if not dependencies['fully_supported'] or validate_static_reference_syntax(source_cell.value):
-            raise TaskRejected('Q10: unresolved target dependency closure')
+        dependencies = formula_references(formula_text, sheet_name, workbook=book)
+        if not dependencies['fully_supported'] or validate_static_reference_syntax(resolved_formula):
+            raise TaskRejected(f'Q10: unresolved target dependency closure at {sheet_name}!{address}')
         for reference in dependencies['references']:
             involved.add(reference['sheet'])
             if reference['sheet'] != sheet_name:
@@ -350,7 +356,7 @@ def validate_plan(plan, baseline, mode, config=None):
             cell = book[key[0]][key[1]]
             if cell.data_type != 'f' or not isinstance(cell.value, str) or cell.value != edit['before']:
                 raise TaskRejected('Q06: before assertion does not match actual original formula at ' + str(key))
-            refs = formula_references(cell.value, key[0])
+            refs = formula_references(cell.value, key[0], workbook=book)
             if not refs['fully_supported']:
                 raise TaskRejected('Q10: unresolved references at target ' + str(key))
             value = values[key[0]][key[1]]

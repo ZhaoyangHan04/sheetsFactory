@@ -13,6 +13,7 @@ from openpyxl.formula.tokenizer import Tokenizer
 from openpyxl.utils.cell import get_column_letter, range_boundaries
 
 from ..workbook.profile import formula_references
+from ..workbook.static_references import expand_static_formula, static_formula_text, StaticReferenceError
 
 
 _CELL = re.compile(r"\$?[A-Za-z]{1,3}\$?[1-9][0-9]*$")
@@ -185,7 +186,13 @@ def _narrow_occurrences(tokens):
     return tables, skipped, branches
 
 
-def _references(formula, sheet, key, candidates):
+def _references(formula, sheet, key, candidates, workbook=None):
+    source_formula = formula
+    if workbook is not None:
+        try:
+            formula = expand_static_formula(formula, sheet, workbook)
+        except StaticReferenceError as exc:
+            return set(), [], str(exc) + ' at ' + _label(key)
     ordinary = formula_references(formula, sheet)
     fallback = {(ref['sheet'], ref['cell']) for ref in ordinary['references']}
     if not ordinary['fully_supported']:
@@ -208,7 +215,7 @@ def _references(formula, sheet, key, candidates):
                 ignored.update((ref['sheet'], ref['cell']) for ref in refs)
         if branch['ignored_tokens']:
             exclusions.append({'kind': 'if_literal_condition',
-                'formula_cell': _label(key), 'formula': formula,
+                'formula_cell': _label(key), 'formula': source_formula,
                 'condition': branch['condition'], 'selected_argument': branch['selected_argument'],
                 'ignored_errors': sorted(_label(item) for item in ignored & candidates),
                 'ignored_token_indices': branch['ignored_tokens'],
@@ -239,7 +246,7 @@ def _references(formula, sheet, key, candidates):
                 ignored.add(ref_key)
         if ignored:
             certificate = {'kind': table['kind'],
-                'formula_cell': _label(key), 'formula': formula,
+                'formula_cell': _label(key), 'formula': source_formula,
                 'table': token.value, 'table_token_index': index,
                 'table_sheet': entries[0]['sheet'],
                 'selected_column_index': table['selected_column_index'],
@@ -296,13 +303,14 @@ def dependency_error_reach(goal: Path, delta_labels: list[str], candidates: list
             cell = book[key[0]][address]
             references = set()
             if cell.data_type == 'f':
-                if not isinstance(cell.value, str):
-                    problems.append('unsupported formula object at ' + _label(key))
-                else:
-                    references, exclusions, problem = _references(cell.value, key[0], key, candidate_keys)
+                try:
+                    formula_text = static_formula_text(cell)
+                    references, exclusions, problem = _references(formula_text, key[0], key, candidate_keys, workbook=book)
                     result['exclusions'].extend(exclusions)
                     if problem:
                         problems.append(problem)
+                except StaticReferenceError as exc:
+                    problems.append(str(exc) + ' at ' + _label(key))
             graph[key] = references
             pending.extend(sorted(references - graph.keys()))
         result['closure_cells'] = len(graph)
