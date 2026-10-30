@@ -1,0 +1,13 @@
+version: 1
+nodes:
+  normalize: sheets_factory.nodes.construction:NormalizeNode
+  profile: sheets_factory.task_adapters.scaled_capital_allocation:ScaledCapitalAllocationProfileNode
+  plan: sheets_factory.task_adapters.scaled_capital_allocation:ScaledCapitalAllocationPlanNode
+  construct: sheets_factory.task_adapters.scaled_capital_allocation:ScaledCapitalAllocationConstructNode
+  instruction: sheets_factory.nodes.construction:InstructionNode
+  precheck: sheets_factory.nodes.construction:ControlsNode
+  independent_recovery: sheets_factory.workbook.capital_allocation_scaled.public_recovery:ScaledCapitalAllocationRecoveryNode
+  trajectory: sheets_factory.nodes.quality:TrajectoryNode
+  diagnose: sheets_factory.task_adapters.scaled_capital_allocation:ScaledCapitalAllocationDiagnoseNode
+  repair: sheets_factory.nodes.quality:RepairNode
+  export: sheets_factory.task_adapters.scaled_capital_allocation:ScaledCapitalAllocationExportNode
