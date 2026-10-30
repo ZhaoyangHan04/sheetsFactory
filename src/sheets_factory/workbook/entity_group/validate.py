@@ -78,8 +78,15 @@ def expected_values(specification, ledger, bindings):
     for item in bindings['input_bindings']:
         value = _path(public, item['path'])
         if value != item['value'] or type(value) is not type(item['value']): raise ValueError('A public primitive binding changed')
+        if type(value) is bool:
+            if (item.get('encoding') != 'public_boolean_as_binary_integer'
+                    or type(item.get('stored_value')) is not int or item['stored_value'] != int(value)):
+                raise ValueError('The explicit public Boolean-to-binary input encoding differs')
+        elif (item.get('encoding') != 'identity' or type(item.get('stored_value')) is not type(value)
+                or item['stored_value'] != value):
+            raise ValueError('A non-Boolean primitive cannot change its literal type or encoding')
         from .excel import _ref
-        values[_ref(item['sheet'], item['cell'])] = int(value) if type(value) is bool else value
+        values[_ref(item['sheet'], item['cell'])] = item['stored_value']
     for item in bindings['formula_bindings']:
         key = (item['sheet'], item['cell'])
         if key in formula_cells: raise ValueError('A physical formula binding repeats')
@@ -165,7 +172,7 @@ def audit_entity_group_workbook(path, specification, ledger, bindings):
         if actual_formulas != bound_formulas: controls.append('physical_formula_scope')
         for item in bindings['input_bindings']:
             cell = definitions[item['sheet']][item['cell']]
-            if cell.data_type == 'f' or cell.value != item['value'] or type(cell.value) is not type(item['value']):
+            if cell.data_type == 'f' or cell.value != item['stored_value'] or type(cell.value) is not type(item['stored_value']):
                 controls.append('input:' + item['sheet'] + '!' + item['cell'])
             if definitions[item['sheet']].cell(cell.row, 1).value != '/'.join(map(str, item['path'])):
                 controls.append('input_label:' + item['sheet'] + '!' + item['cell'])

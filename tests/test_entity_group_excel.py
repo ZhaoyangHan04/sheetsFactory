@@ -199,6 +199,40 @@ def test_count_only_compiles_the_same_complete_toy_without_materializing_a_workb
     book.close()
 
 
+def test_Boolean_public_primitives_have_explicit_binary_cells_and_unchanged_JSON():
+    spec, book, bindings = emitted()
+    flags = [item for item in bindings['input_bindings'] if type(item['value']) is bool]
+    assert len(flags) == 2
+    for item in bindings['input_bindings']:
+        actual = book[item['sheet']][item['cell']].value
+        if type(item['value']) is bool:
+            assert item['encoding'] == 'public_boolean_as_binary_integer'
+            assert type(actual) is int and actual == item['stored_value'] == int(item['value'])
+        else:
+            assert item['encoding'] == 'identity'
+            assert type(actual) is type(item['value']) and actual == item['stored_value'] == item['value']
+    contract = json.loads(''.join(book['Group Contract'].cell(row, 2).value for row in range(2, book['Group Contract'].max_row + 1)))
+    assert type(contract['entities'][0]['opening_trap']) is bool
+    assert contract == spec
+    assert '0=false, 1=true' in book['Group Inputs']['B1'].value
+    book.close()
+
+
+@pytest.mark.parametrize('change', ['missing_encoding', 'wrong_encoding', 'Boolean_stored', 'opposite_binary', 'integer_as_Boolean'])
+def test_input_encoding_is_not_an_unmarked_bool_integer_equivalence(change):
+    spec, book, bindings = emitted(); ledger = simulate(spec)
+    flag = next(item for item in bindings['input_bindings'] if type(item['value']) is bool)
+    if change == 'missing_encoding': flag.pop('encoding')
+    if change == 'wrong_encoding': flag['encoding'] = 'identity'
+    if change == 'Boolean_stored': flag['stored_value'] = flag['value']
+    if change == 'opposite_binary': flag['stored_value'] = 1 - int(flag['value'])
+    if change == 'integer_as_Boolean':
+        integer = next(item for item in bindings['input_bindings'] if type(item['value']) is int)
+        integer.update(encoding='public_boolean_as_binary_integer', stored_value=bool(integer['value']))
+    with pytest.raises(ValueError): expected_values(spec, ledger, bindings)
+    book.close()
+
+
 @pytest.mark.parametrize('fault', ['drop_field', 'wrong_money', 'bad_residual', 'hide_queue', 'alter_fixed_plan'])
 def test_full_field_audit_rejects_missing_financial_fields_and_wrong_journal(fault):
     spec, book, binding = emitted(); ledger = simulate(spec)

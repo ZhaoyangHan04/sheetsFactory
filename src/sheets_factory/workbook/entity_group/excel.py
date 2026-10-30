@@ -142,16 +142,19 @@ class _Emitter:
         contract.append(['Complete public primitive JSON'])
         text = json.dumps(spec, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
         for start in range(0, len(text), 30000): contract.append(['JSON part ' + str(start // 30000 + 1), text[start:start + 30000]])
-        sheet = book.create_sheet('Group Inputs'); sheet.append(['Public primitive path', 'Literal value'])
+        sheet = book.create_sheet('Group Inputs'); sheet.append(['Public primitive path', 'Literal value (Boolean flags: 0=false, 1=true)'])
         def flatten(value, path=()):
             if isinstance(value, dict):
                 for key, child in value.items(): flatten(child, (*path, key))
             elif isinstance(value, list):
                 for index, child in enumerate(value): flatten(child, (*path, index))
             else:
-                sheet.append(['/'.join(map(str, path)), value]); address = 'B' + str(sheet.max_row)
+                encoding = 'public_boolean_as_binary_integer' if type(value) is bool else 'identity'
+                stored = int(value) if type(value) is bool else value
+                sheet.append(['/'.join(map(str, path)), stored]); address = 'B' + str(sheet.max_row)
                 self.inputs[path] = _ref(sheet.title, address)
-                self.literals.append({'sheet': sheet.title, 'cell': address, 'path': list(path), 'value': value})
+                self.literals.append({'sheet': sheet.title, 'cell': address, 'path': list(path),
+                    'value': value, 'stored_value': stored, 'encoding': encoding})
         flatten(spec)
 
     def inp(self, *path): return self.inputs[tuple(path)]
