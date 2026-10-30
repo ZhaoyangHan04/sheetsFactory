@@ -62,16 +62,104 @@ COVENANT_PARAMETER_NAMES = ("covenant_enabled", "covenant_first_test_month", "co
                             "dsra_normal_payment_months", "dsra_trap_payment_months")
 COVENANT_ANNUAL = {key: row for row, key in enumerate(
     ("dsra_open", "dsra_close", "dsra_funding", "dsra_support", "dsra_release", "total_cash_close"), 67)}
+ADVANCED_TAX_PARAMETER_NAMES = ("advanced_tax_enabled", "initial_tax_rate_y1", "initial_tax_rate_y2",
+                                "initial_tax_rate_y3", "refresh_tax_rate_y1", "refresh_tax_rate_y2",
+                                "refresh_tax_rate_y3", "interest_deduction_ebitda_fraction",
+                                "nol_carryforward_years")
+TAX_AGGREGATE_KEYS = ("ebitda", "book_depreciation", "cash_interest", "book_ebt",
+    "initial_tax_depreciation", "refresh_tax_depreciation", "tax_depreciation", "tax_basis_close",
+    "interest_capacity", "interest_cf_open", "interest_cf_used", "current_interest_deducted",
+    "current_interest_carried", "interest_deduction", "interest_cf_close", "taxable_before_nol",
+    "nol_open", "nol_expired", "nol_use_cap", "nol_used", "nol_new", "nol_close", "current_tax",
+    "book_net_ppe", "dta_nol", "dta_interest", "dta_basis", "dta_close", "dtl_close",
+    "deferred_tax_expense", "book_tax")
+TAX_VINTAGE_KEYS = tuple(key for vintage in range(1, 4) for key in (
+    f"nol_v{vintage}_open", f"nol_v{vintage}_expired", f"nol_v{vintage}_used", f"nol_v{vintage}_close",
+    f"interest_v{vintage}_open", f"interest_v{vintage}_used", f"interest_v{vintage}_close"))
+TAX_ANNUAL_BINDINGS = {key: row for row, key in enumerate((*TAX_AGGREGATE_KEYS, *TAX_VINTAGE_KEYS), 3)}
+TAX_MONTHLY_BINDINGS = {"current_tax": 7, "nol_expired": 8, "interest_cf_close": 9,
+                        "deferred_tax_expense": 10, "dta_close": 11, "dtl_close": 12}
+ADVANCED_TAX_ANNUAL = {key: row for row, key in enumerate(
+    ("current_tax", "deferred_tax_expense", "nol_expired", "dta_close", "dtl_close", "interest_cf_close"), 73)}
 
 
 def _sheet_ref(sheet, cell):
     return "'" + sheet.replace("'", "''") + "'!" + cell
 
 
+def _emit_tax_vintages(book, param, tax_param):
+    """Emit independent annual tax formulas from stated public assumptions."""
+    ws = book["Tax Vintages"]
+    ws["A1"], ws["B1"] = "Annual tax events and FIFO vintages", "Posted USD"
+    ws["A2"] = "Model year"
+    for key, row in TAX_ANNUAL_BINDINGS.items():
+        ws.cell(row, 1, key.replace("_", " "))
+        ws.cell(row, 2, "USD")
+    for year in range(1, 4):
+        col, prev = L(year + 2), L(year + 1)
+        first, final = L(3 + (year - 1) * 12), L(2 + year * 12)
+        ws[col + "2"] = year
+        def here(key):
+            return col + str(TAX_ANNUAL_BINDINGS[key])
+        def old(key):
+            return "0" if year == 1 else prev + str(TAX_ANNUAL_BINDINGS[key])
+        def put(key, expression):
+            ws[here(key)] = "=ROUND(" + expression + ",2)"
+        def sum_fields(keys):
+            return "+".join(here(key) for key in keys) or "0"
+        put("ebitda", "SUM(" + _sheet_ref("Operations", first + "6:" + final + "6") + ")")
+        put("book_depreciation", "SUM(" + _sheet_ref("Assets", first + "5:" + final + "5") + ")")
+        put("cash_interest", "SUM(" + _sheet_ref("Debt", first + "16:" + final + "16") + ")")
+        put("book_ebt", here("ebitda") + "-" + here("book_depreciation") + "-" + here("cash_interest"))
+        for prefix, key, cost, service in (("initial", "initial_tax_depreciation", "initial_asset_cost", "initial_asset_service_month"),
+                                           ("refresh", "refresh_tax_depreciation", "refresh_capex", "refresh_service_month")):
+            used = "0" if year == 1 else "SUM($C" + str(TAX_ANNUAL_BINDINGS[key]) + ":" + prev + str(TAX_ANNUAL_BINDINGS[key]) + ")"
+            basis = "MAX(0," + param(cost) + "-" + used + ")"
+            age = str(year) + "-INT((" + param(service) + "-1)/12)-1"
+            rate = "IF(" + age + "=0," + tax_param(prefix + "_tax_rate_y1") + "," + tax_param(prefix + "_tax_rate_y2") + ")"
+            acquired = "1" if prefix == "initial" else "IF(" + str(year * 12) + ">=" + param("refresh_paid_month") + ",1,0)"
+            put(key, "IF(OR(" + age + "<0," + age + ">2," + acquired + "=0),0,IF(" + age + "=2," + basis + ",MIN(" + basis + ",ROUND(" + param(cost) + "*" + rate + ",2))))")
+        put("tax_depreciation", here("initial_tax_depreciation") + "+" + here("refresh_tax_depreciation"))
+        put("tax_basis_close", param("initial_asset_cost") + "+SUM(" + _sheet_ref("Assets", "$C2:" + final + "2") + ")-SUM($C" + str(TAX_ANNUAL_BINDINGS["tax_depreciation"]) + ":" + here("tax_depreciation") + ")")
+        put("interest_capacity", "MAX(0," + here("ebitda") + ")*" + tax_param("interest_deduction_ebitda_fraction"))
+        for vintage in range(1, 4):
+            np, ip = f"nol_v{vintage}_", f"interest_v{vintage}_"
+            put(np + "open", old(np + "close") if vintage < year else "0")
+            put(np + "expired", "IF(" + str(year - vintage) + ">" + tax_param("nol_carryforward_years") + "," + here(np + "open") + ",0)")
+            earlier_nol = sum_fields(f"nol_v{v}_used" for v in range(1, vintage))
+            put(np + "used", "MIN(MAX(0," + here(np + "open") + "-" + here(np + "expired") + "),MAX(0," + here("nol_use_cap") + "-(" + earlier_nol + ")))")
+            put(np + "close", here(np + "open") + "-" + here(np + "expired") + "-" + here(np + "used") + ("+" + here("nol_new") if vintage == year else ""))
+            put(ip + "open", old(ip + "close") if vintage < year else "0")
+            earlier_interest = sum_fields(f"interest_v{v}_used" for v in range(1, vintage))
+            put(ip + "used", "MIN(" + here(ip + "open") + ",MAX(0," + here("interest_capacity") + "-(" + earlier_interest + ")))")
+            put(ip + "close", here(ip + "open") + "-" + here(ip + "used") + ("+" + here("current_interest_carried") if vintage == year else ""))
+        for key, suffix in (("interest_cf_open", "open"), ("interest_cf_used", "used"), ("interest_cf_close", "close")):
+            put(key, sum_fields(f"interest_v{v}_{suffix}" for v in range(1, 4)))
+        put("current_interest_deducted", "MIN(" + here("cash_interest") + ",MAX(0," + here("interest_capacity") + "-" + here("interest_cf_used") + "))")
+        put("current_interest_carried", here("cash_interest") + "-" + here("current_interest_deducted"))
+        put("interest_deduction", here("interest_cf_used") + "+" + here("current_interest_deducted"))
+        put("taxable_before_nol", here("ebitda") + "-" + here("tax_depreciation") + "-" + here("interest_deduction"))
+        for key, suffix in (("nol_open", "open"), ("nol_expired", "expired"), ("nol_used", "used"), ("nol_close", "close")):
+            put(key, sum_fields(f"nol_v{v}_{suffix}" for v in range(1, 4)))
+        put("nol_use_cap", "MAX(0," + here("taxable_before_nol") + ")*" + param("nol_utilization_cap"))
+        put("nol_new", "MAX(0,-" + here("taxable_before_nol") + ")")
+        put("current_tax", "MAX(0," + here("taxable_before_nol") + "-" + here("nol_used") + ")*" + param("tax_rate"))
+        put("book_net_ppe", _sheet_ref("Assets", final + "9"))
+        put("dta_nol", here("nol_close") + "*" + param("tax_rate"))
+        put("dta_interest", here("interest_cf_close") + "*" + param("tax_rate"))
+        put("dta_basis", "MAX(0," + here("tax_basis_close") + "-" + here("book_net_ppe") + ")*" + param("tax_rate"))
+        put("dta_close", here("dta_nol") + "+" + here("dta_interest") + "+" + here("dta_basis"))
+        put("dtl_close", "MAX(0," + here("book_net_ppe") + "-" + here("tax_basis_close") + ")*" + param("tax_rate"))
+        put("deferred_tax_expense", here("dtl_close") + "-(" + old("dtl_close") + ")-" + here("dta_close") + "+(" + old("dta_close") + ")")
+        put("book_tax", here("current_tax") + "+" + here("deferred_tax_expense"))
+
+
 def emit_workbook(spec: dict, destination: Path) -> dict:
     p = spec["parameters"]
     cov = spec.get("covenant_parameters")
     enabled = cov is not None and int(cov["covenant_enabled"]) == 1
+    tax = spec.get("advanced_tax_parameters")
+    tax_enabled = tax is not None and int(tax["advanced_tax_enabled"]) == 1
     n = int(p["months"])
     book = openpyxl.Workbook()
     book.active.title = "Read Me"
@@ -79,6 +167,8 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
         book.create_sheet(sheet)
     if enabled:
         book.create_sheet("Covenants")
+    if tax_enabled:
+        book.create_sheet("Tax Vintages")
     readme = book["Read Me"]
     readme["A1"], readme["B1"] = "Model", spec["title"]
     readme["A2"], readme["B2"] = "Scenario", spec["scenario_id"]
@@ -146,6 +236,18 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
             scenario.cell(row, 3, "explicit hypothetical covenant assumption")
     def covenant_param(key):
         return _sheet_ref("Scenario", f"$B${covenant_parameter_rows[key]}")
+    tax_parameter_rows = {}
+    if tax_enabled:
+        scenario["A62"] = "Explicit hypothetical advanced tax contract"
+        for row, key in enumerate(ADVANCED_TAX_PARAMETER_NAMES, 63):
+            tax_parameter_rows[key] = row
+            scenario.cell(row, 1, key)
+            scenario.cell(row, 2, float(tax[key]))
+            scenario.cell(row, 3, "explicit hypothetical tax assumption")
+    def tax_param(key):
+        return _sheet_ref("Scenario", f"$B${tax_parameter_rows[key]}")
+    if tax_enabled:
+        _emit_tax_vintages(book, param, tax_param)
 
     for sheet, keys in MAPPINGS.items():
         for key, row in keys.items():
@@ -171,6 +273,16 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
         book["Balance Sheet"]["A2"] = "Operating cash"
         book["Balance Sheet"]["A20"] = "DSRA restricted cash"
         book["Balance Sheet"]["B20"] = "USD"
+    if tax_enabled:
+        book["Operations"]["A13"] = "Total book income-tax expense (signed)"
+        for key, row in TAX_MONTHLY_BINDINGS.items():
+            book["Tax"].cell(row, 1, key.replace("_", " "))
+            book["Tax"].cell(row, 2, "USD")
+        for sheet, row, label in (("Cash Flow", 19, "Deferred tax adjustment (signed)"),
+                                  ("Balance Sheet", 21, "Gross deferred tax asset"),
+                                  ("Balance Sheet", 22, "Gross deferred tax liability")):
+            book[sheet].cell(row, 1, label)
+            book[sheet].cell(row, 2, "USD")
 
     for t in range(1, n + 1):
         col, prev = L(t + 2), L(t + 1)
@@ -280,6 +392,21 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
         put("Tax", 5, "IF(" + yearend + "=1,MAX(0,-" + col + "2),0)")
         put("Tax", 6, col + "3+" + col + "5-" + col + "4")
         put("Tax", 7, "IF(" + yearend + "=1,ROUND((MAX(0," + col + "2)-" + col + "4)*" + param("tax_rate") + ",2),0)")
+        if tax_enabled:
+            tax_year_col = L(3 + (t - 1) // 12)
+            def annual_tax(key):
+                return _sheet_ref("Tax Vintages", tax_year_col + str(TAX_ANNUAL_BINDINGS[key]))
+            for row, key in ((4, "nol_used"), (5, "nol_new"), (7, "current_tax"),
+                             (8, "nol_expired"), (10, "deferred_tax_expense")):
+                # Non-event months contain no dependency on the future annual
+                # tax event, including in an unused IF branch. This keeps the
+                # graph acyclic when annual cash interest feeds the tax event.
+                put("Tax", row, annual_tax(key) if t % 12 == 0 else "0")
+            put("Tax", 6, col + "3-" + col + "8-" + col + "4+" + col + "5")
+            for row, key in ((9, "interest_cf_close"), (11, "dta_close"), (12, "dtl_close")):
+                previous = "0" if t == 1 else prev + str(row)
+                put("Tax", row, annual_tax(key) if t % 12 == 0 else previous)
+            put("Operations", 13, ref("Tax", 7) + "+" + ref("Tax", 10))
 
         put("Cash Flow", 2, param("opening_cash") if t == 1 else prev + "12")
         put("Cash Flow", 3, ref("Operations", 2) + "-" + ref("Operations", 17) + "-" + ref("Operations", 3) + "-" + ref("Operations", 4) + "-" + ref("Operations", 5) + "-" + ref("Operations", 20) + "+" + ref("Operations", 23) + "-" + ref("Operations", 11) + "-" + ref("Operations", 13))
@@ -295,6 +422,10 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
         put("Cash Flow", 13, "MAX(0," + col + "8+" + ref("Debt", 13) + "-" + ref("Debt", 14) + "-" + param("minimum_cash") + ")")
         put("Cash Flow", 14, "IF(" + period + ">=" + param("cash_allocation_start") + ",1,0)")
         put("Cash Flow", 15, col + "2+" + col + "3+" + col + "5+" + col + "11-" + col + "12")
+        if tax_enabled:
+            put("Cash Flow", 19, ref("Tax", 10))
+            put("Cash Flow", 3, ref("Operations", 2) + "-" + ref("Operations", 17) + "-" + ref("Operations", 3) + "-" + ref("Operations", 4) + "-" + ref("Operations", 5) + "-" + ref("Operations", 20) + "+" + ref("Operations", 23) + "-" + ref("Operations", 11) + "-" + ref("Tax", 7))
+            put("Cash Flow", 4, ref("Operations", 14) + "+" + ref("Operations", 9) + "-" + ref("Operations", 17) + "-" + ref("Operations", 20) + "+" + ref("Operations", 23) + "+" + col + "19")
         if enabled:
             put("Cash Flow", 9, "MAX(0," + param("minimum_cash") + "-" + col + "8-" + cv(16) + "-" + cv(17) + "-" + ref("Debt", 13) + ")")
             put("Cash Flow", 10, "IF(AND(" + col + "14=1," + cv(13) + "=0," + cv(20) + "=0)," + col + "13-" + ref("Debt", 5) + ",0)")
@@ -320,6 +451,11 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
         if enabled:
             put("Balance Sheet", 20, cv(19))
             put("Balance Sheet", 9, col + "2+" + col + "3+" + col + "4+" + col + "8+" + col + "20")
+        if tax_enabled:
+            put("Balance Sheet", 21, ref("Tax", 11))
+            put("Balance Sheet", 22, ref("Tax", 12))
+            put("Balance Sheet", 9, col + "2+" + col + "3+" + col + "4+" + col + "8" + ("+" + col + "20" if enabled else "") + "+" + col + "21")
+            put("Balance Sheet", 14, "SUM(" + col + "10:" + col + "13)+" + col + "22")
 
     eq = book["Equity Value"]
     for key, address in VALUATION_BINDINGS.items():
@@ -387,6 +523,16 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
                                if key.endswith(("_open", "_close"))
                                else "=ROUND(SUM(" + _sheet_ref("Covenants", first + str(cr) + ":" + final + str(cr)) + "),2)")
                 annual.cell(row, year + 2, formula)
+    if tax_enabled:
+        for key, row in ADVANCED_TAX_ANNUAL.items():
+            annual.cell(row, 1, key.replace("_", " "))
+            annual.cell(row, 2, "USD")
+            for year in range(1, 4):
+                first, final = L(3 + (year - 1) * 12), L(2 + year * 12)
+                rr = TAX_MONTHLY_BINDINGS[key]
+                formula = ("=" + _sheet_ref("Tax", final + str(rr)) if key.endswith("_close")
+                           else "=ROUND(SUM(" + _sheet_ref("Tax", first + str(rr) + ":" + final + str(rr)) + "),2)")
+                annual.cell(row, year + 2, formula)
 
     for ws in book:
         ws.freeze_panes = "C2"
@@ -426,4 +572,8 @@ def emit_workbook(spec: dict, destination: Path) -> dict:
             "source_anchor_rows": anchor_rows, "payment_row": payment_row,
             "covenant": COVENANT_BINDINGS if enabled else {},
             "covenant_parameter_rows": covenant_parameter_rows,
-            "covenant_annual": COVENANT_ANNUAL if enabled else {}}
+            "covenant_annual": COVENANT_ANNUAL if enabled else {},
+            "tax_parameter_rows": tax_parameter_rows,
+            "tax_monthly": TAX_MONTHLY_BINDINGS if tax_enabled else {},
+            "tax_annual": TAX_ANNUAL_BINDINGS if tax_enabled else {},
+            "advanced_tax_annual": ADVANCED_TAX_ANNUAL if tax_enabled else {}}

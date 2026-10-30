@@ -30,10 +30,16 @@ def ledger_invariants_pass(checks: dict) -> bool:
                 and abs(Decimal(str(checks["loan_a_payment_residual"]))) < Decimal("1e-30")
                 and checks["irr_exists"] is True and checks["irr_sign_changes"] == 1)
         if checks.get("covenant_enabled"):
-            return (base and checks["covenant_enabled"] is True and checks["covenant_constraints_ok"] is True
+            base = (base and checks["covenant_enabled"] is True and checks["covenant_constraints_ok"] is True
                     and all(Decimal(str(checks[key])) == 0 for key in (
                         "max_total_cash_reconciliation_error", "max_reserve_reconciliation_error",
                         "max_transfer_reconciliation_error")))
+        if checks.get("advanced_tax_enabled"):
+            base = (base and checks["advanced_tax_enabled"] is True
+                    and all(checks[key] is True for key in (
+                        "tax_vintage_rollforwards_ok", "tax_interest_capacity_ok",
+                        "tax_nol_fifo_ok", "tax_interest_fifo_ok", "tax_bridge_ok",
+                        "tax_depreciation_basis_ok")))
         return base
     except (KeyError, ArithmeticError, ValueError, TypeError):
         return False
@@ -46,6 +52,7 @@ def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict
     kinds = {}
     p = spec["parameters"]
     covenant = bool(bindings.get("covenant"))
+    advanced_tax = bool(bindings.get("tax_annual"))
     dec = lambda value: Decimal(str(value))
     def add(sheet, cell, value, kind="money"):
         key = sheet + "!" + cell
@@ -71,7 +78,13 @@ def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict
         add("Debt", c + "16", row["interest"])
         add("Debt", c + "17", ledger["valuation"]["loan_a_payment"])
         add("Tax", c + "2", sum(r["ebt"] for r in ledger["monthly"][(i // 12) * 12:i + 1]))
-        add("Tax", c + "7", row["tax"])
+        add("Tax", c + "7", row["current_tax"] if advanced_tax else row["tax"])
+        if advanced_tax:
+            for key, rr in bindings["tax_monthly"].items():
+                add("Tax", c + str(rr), row[key])
+            add("Cash Flow", c + "19", row["deferred_tax_expense"])
+            add("Balance Sheet", c + "21", row["dta_close"])
+            add("Balance Sheet", c + "22", row["dtl_close"])
         add("Cash Flow", c + "6", row["loan_a_scheduled_principal"])
         add("Cash Flow", c + "7", row["loan_b_principal"])
         add("Cash Flow", c + "13", row["allocation_excess"] if covenant else max(Decimal(0), row["cash_before_allocation"] + row["revolver_draw"] - row["revolver_repayment"] - dec(p["minimum_cash"])))
@@ -106,6 +119,14 @@ def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict
             add("Annual Statements", c + str(rr), row[key])
         for key, rr in bindings.get("covenant_annual", {}).items():
             add("Annual Statements", c + str(rr), row[key])
+        for key, rr in bindings.get("advanced_tax_annual", {}).items():
+            add("Annual Statements", c + str(rr), row[key])
+    if advanced_tax:
+        for i, row in enumerate(ledger["tax_annual"]):
+            c = L(i + 3)
+            add("Tax Vintages", c + "2", row["year"], "control")
+            for key, rr in bindings["tax_annual"].items():
+                add("Tax Vintages", c + str(rr), row[key])
     for key, address in bindings["valuation"].items():
         add("Equity Value", address, ledger["valuation"][key], "ratio" if "rate" in key or "irr" in key else "money")
     add("Equity Value", "B16", -dec(p["equity_paid_in"]))
@@ -126,6 +147,9 @@ def audit_workbook(path: Path, spec: dict, ledger: dict, bindings: dict) -> dict
     for key, rr in bindings.get("covenant_parameter_rows", {}).items():
         add("Scenario", "B" + str(rr), spec["covenant_parameters"][key],
             "ratio" if key == "covenant_dscr_threshold" else "control")
+    for key, rr in bindings.get("tax_parameter_rows", {}).items():
+        add("Scenario", "B" + str(rr), spec["advanced_tax_parameters"][key],
+            "control" if key in {"advanced_tax_enabled", "nol_carryforward_years"} else "ratio")
 
     checks, failed = [], []
     for address, want in sorted(expected.items()):

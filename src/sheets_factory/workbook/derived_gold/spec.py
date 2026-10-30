@@ -26,8 +26,13 @@ ANCHORS = {
 
 PUBLIC_CONTRACT_VERSION = 4
 COVENANT_CONTRACT_VERSION = 6
+ADVANCED_TAX_CONTRACT_VERSION = 7
 COVENANT_FIELDS = ("covenant_enabled", "covenant_first_test_month", "covenant_dscr_threshold",
                    "dsra_normal_payment_months", "dsra_trap_payment_months")
+ADVANCED_TAX_FIELDS = ("advanced_tax_enabled", "initial_tax_rate_y1", "initial_tax_rate_y2",
+                      "initial_tax_rate_y3", "refresh_tax_rate_y1", "refresh_tax_rate_y2",
+                      "refresh_tax_rate_y3", "interest_deduction_ebitda_fraction",
+                      "nol_carryforward_years")
 
 RULES = [
     "This is a hypothetical project calibrated to a public workbook's cash EBITDA margin and rate benchmarks; it is not a forecast of that workbook's named company.",
@@ -85,6 +90,47 @@ def covenant_rules() -> list[str]:
     rules[12] += " The buyer acquires the remaining DSRA cash asset at par with no restriction discount. Do not liquidate it into a separate owner dividend or change closing entity accounts because of the share sale; include it exactly once in the sale bridge after this month's ordinary covenant and allocation steps."
     rules[14] += " Annual operating-cash opening/closing fields retain their operating-cash meaning. The separate DSRA open and close fields use January opening and December closing values; DSRA funding, support and surplus release are monthly sums, and total cash close including DSRA is a December snapshot. Never sum covenant flags, streaks, ratios or reserve targets as annual money."
     return rules
+
+
+def advanced_tax_parameters(config: dict, parameters: dict) -> dict | None:
+    """Validate the optional stated tax contract without calculating a forecast."""
+    tax = config.get("advanced_tax_parameters")
+    if tax is None:
+        return None
+    if not isinstance(tax, dict) or set(tax) != set(ADVANCED_TAX_FIELDS):
+        raise ValueError("Advanced tax requires exactly nine explicit parameters")
+    values = {key: _decimal(value) for key, value in tax.items()}
+    if values["advanced_tax_enabled"] not in (0, 1):
+        raise ValueError("advanced_tax_enabled must be numeric zero or one")
+    if values["nol_carryforward_years"] not in (1, 2):
+        raise ValueError("nol_carryforward_years must be the integer one or two")
+    for prefix in ("initial", "refresh"):
+        rates = [values[f"{prefix}_tax_rate_y{year}"] for year in (1, 2, 3)]
+        if any(rate < 0 or rate > 1 for rate in rates) or sum(rates) != 1:
+            raise ValueError("Tax depreciation fractions must be nonnegative and sum exactly to one")
+    if not 0 <= values["interest_deduction_ebitda_fraction"] <= 1:
+        raise ValueError("Interest deduction fraction must be between zero and one")
+    if values["advanced_tax_enabled"] and any(_decimal(parameters[key]) != 0 for key in ("opening_nol", "opening_retained")):
+        raise ValueError("Advanced tax requires zero opening NOL and retained earnings")
+    return dict(tax)
+
+
+def advanced_tax_rules(rules: list[str]) -> list[str]:
+    """Replace incompatible simple-tax clauses while retaining all other rules."""
+    result = list(rules)
+    result[1] = result[1].replace("interest, tax, capex", "interest, current cash tax, capex")
+    result[1] += " Total book income-tax expense and deferred tax expense are signed; negative means a tax benefit. All NOL and interest-vintage helpers, tax depreciation, DTA and DTL are nonnegative magnitudes. Future vintage helpers are zero. Tax Vintages year columns contain posted cents, not ratios."
+    result[9] = (
+        "The advanced tax inputs are in Scenario rows 63 through 71. These are explicit hypothetical management-model rules, not tax law or accounting standards. Initial deferred tax, interest carry and tax depreciation are zero. Tax calculations and payments occur only at each December month end. Between December events, NOL, carried interest, DTA and DTL retain their last posted closing balances; there is no January write-off. Annual EBITDA, book depreciation and cash interest are sums of posted monthly amounts, and annual book EBT is EBITDA minus book depreciation minus cash interest. Tax Vintages reports model years 1, 2 and 3, not calendar dates. "
+        "Tax depreciation uses each asset's calendar-year service vintage: in its first and second service calendar years deduct asset cost times the corresponding stated fraction, rounded to cents and capped at remaining tax basis; in its third service calendar year deduct all remaining basis to exhaust cent residuals. Use the full annual fraction in the first service year without monthly proration. Before service or after exhaustion charge zero. The initial cost is acquired at month zero; refresh cost enters tax basis only in its payment month, and pre-service cost remains in basis. Closing tax basis equals acquired cost less cumulative tax depreciation. Never deduct capex separately from taxable income. "
+        "Annual interest capacity is positive annual EBITDA times interest_deduction_ebitda_fraction, rounded to cents. Deduct carried-interest vintages oldest first within capacity, then current-year cash interest within remaining capacity. Interest_cf_used includes old carry only; current_interest_deducted includes current-year interest only. Interest_deduction is their sum. Unused current cash interest creates the current-year interest carry vintage, which never expires in this horizon. Never deduct interest twice. "
+        "Taxable_before_nol equals annual EBITDA minus tax depreciation minus allowed interest. At this December event first discard old NOL vintages whose current model year minus creation year exceeds nol_carryforward_years. Carry years one permits year-1 loss at year-2 December and expires it before year-3 use. Then use eligible old NOL vintages oldest first up to the smaller of their total and positive taxable_before_nol times nol_utilization_cap rounded to cents. A negative taxable_before_nol creates a current-year NOL; it is never used during its creation year. For each vintage, opening means last December's closing, zero in its creation year; current-year new loss or new carried interest enters only that vintage's closing. NOL closing equals opening less expiry less use plus new loss. Cash current tax is positive taxable income after NOL times tax rate, rounded to cents. "
+        "Recognize gross deferred taxes in full without a valuation allowance or netting: DTA is the SUM of three separately cent-rounded components, closing NOL times tax rate, closing interest carry times tax rate, and positive closing tax basis minus book net PPE times tax rate. DTL is positive book net PPE minus tax basis times tax rate, rounded to cents. Deferred tax expense equals the change in DTL minus the change in DTA; total book income-tax expense equals cash current tax plus deferred tax expense. NOL expiry writes off the corresponding deferred benefit. Neither deferred tax nor book tax determines taxable income. Operations total book tax may therefore be negative. Tax year-to-date pretax income remains year-to-date BOOK EBT. Monthly Tax row 7 is current cash tax, row 8 NOL expiry, row 9 closing interest carry, row 10 signed deferred tax expense, row 11 closing DTA and row 12 closing DTL."
+    )
+    result[11] += " In advanced mode net income subtracts total book tax; direct CFO deducts current cash tax only. Indirect CFO adds the signed deferred tax expense back to net income, together with book depreciation and the stated working-capital bridge. The deferred adjustment is noncash; changes in gross DTA and DTL never enter CFO, CFI, CFF or the reserve waterfall as entity cash flows. Record DTA as a separate asset and DTL as a separate liability, with balanced noncash tax journal entries and no equity plug."
+    result[12] += " The sale multiple already incorporates the purchaser's view of tax attributes: do not add DTA or subtract DTL again in the owner sale bridge."
+    result[14] += " New annual advanced-tax lines sum current cash tax, signed deferred tax expense and NOL expiry; DTA, DTL and interest carry are December closing snapshots. The original annual tax line is total book tax. Tax Vintages depreciation and FIFO calculations are annual tax events; they do not replace the original monthly book depreciation."
+    return result
 
 
 def _decimal(value) -> Decimal:
@@ -155,8 +201,13 @@ def resolve_spec(project_root: Path, config_path: Path) -> dict:
     validate_parameters(p)
     covenant = covenant_parameters(config)
     enabled = covenant is not None and _decimal(covenant["covenant_enabled"]) == 1
+    tax = advanced_tax_parameters(config, p)
+    tax_enabled = tax is not None and _decimal(tax["advanced_tax_enabled"]) == 1
+    rules = covenant_rules() if enabled else list(RULES)
+    if tax_enabled:
+        rules = advanced_tax_rules(rules)
     return {
-        "schema_version": 1, "public_contract_version": COVENANT_CONTRACT_VERSION if enabled else PUBLIC_CONTRACT_VERSION,
+        "schema_version": 1, "public_contract_version": ADVANCED_TAX_CONTRACT_VERSION if tax_enabled else COVENANT_CONTRACT_VERSION if enabled else PUBLIC_CONTRACT_VERSION,
         "scenario_id": config["scenario_id"],
         "title": "Hypothetical project: commissioning, financing and equity returns",
         "status": "experimental_seed_not_a_qualified_task",
@@ -164,7 +215,7 @@ def resolve_spec(project_root: Path, config_path: Path) -> dict:
                            "download_url": config["source"]["download_url"],
                            "sha256": digest, "anchors": anchors,
                            "derivation": "Cash EBITDA margin = (unadjusted operating income + D&A) / revenue; reused as a hypothetical project benchmark, not as company-specific future facts."},
-        "parameters": p, "covenant_parameters": covenant,
-        "public_rules": covenant_rules() if enabled else list(RULES),
+        "parameters": p, "covenant_parameters": covenant, "advanced_tax_parameters": tax,
+        "public_rules": rules,
         "qualification": "No task or difficulty qualification. Every future task must pass all existing quality, recovery, Harbor and specified strong-agent difficulty gates.",
     }
