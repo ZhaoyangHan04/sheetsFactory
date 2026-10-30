@@ -116,3 +116,30 @@ def test_machine_contract_preserves_current_thresholds_and_distinguishes_prefere
     assert contract['planning_preferences_only']['debugging_edit_count'] == [2, 4]
     contract['modes']['financial_modeling']['edit_count']['min'] = 0
     assert construction_contract()['modes']['financial_modeling']['edit_count']['min'] == 6
+
+
+def test_per_mode_planning_never_reuses_the_other_category_null_cache(tmp_path):
+    captured = []
+    class Backend:
+        def complete(self, text, **kwargs):
+            payload = json.loads(text.rsplit('\nINPUT JSON:\n', 1)[1])
+            captured.append(payload)
+            mode = payload['requested_modes'][0]
+            return {name: {'title': name, 'edits': []} if name == mode else None
+                    for name in ('financial_modeling', 'debugging')}
+    ctx = context(tmp_path, Backend())
+    ctx.config['construction'] = {'planning_scope': 'per_mode'}
+    assert PlanNode().execute(ctx)['plan']['title'] == 'financial_modeling'
+    ctx.mode = 'debugging'
+    assert PlanNode().execute(ctx)['plan']['title'] == 'debugging'
+    assert PlanNode().execute(ctx)['plan']['title'] == 'debugging'
+    assert [p['requested_modes'] for p in captured] == [['financial_modeling'], ['debugging']]
+    assert [p['construction_contract']['active_mode'] for p in captured] == ['financial_modeling', 'debugging']
+    assert len(list(ctx.data['source_cache'].glob('task_plans_v0_*.json'))) == 2
+
+
+def test_invalid_planning_scope_fails_before_a_model_request(tmp_path):
+    ctx = context(tmp_path, None)
+    ctx.config['construction'] = {'planning_scope': 'invalid'}
+    with pytest.raises(ValueError, match='planning_scope'):
+        PlanNode().execute(ctx)

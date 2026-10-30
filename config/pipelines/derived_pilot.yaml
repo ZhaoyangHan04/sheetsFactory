@@ -16,6 +16,7 @@ run:
   infrastructure_retries_per_stage: 2
   seed_manifest: data/manifests/hard_financial_sources.json
 construction:
+  planning_scope: per_mode
   max_edit_count:
     financial_modeling: 4096
     debugging: 160

@@ -231,7 +231,12 @@ class PlanNode(BaseNode):
 
     def execute(self, ctx):
         variant = ctx.data.get('variant', 0)
-        path = ctx.data['source_cache'] / f'task_plans_v{variant}.json'
+        scope = ctx.config.get('construction', {}).get('planning_scope', 'both_modes')
+        if scope not in {'both_modes', 'per_mode'}:
+            raise ValueError('construction.planning_scope must be both_modes or per_mode')
+        requested = [ctx.mode] if scope == 'per_mode' else ['financial_modeling', 'debugging']
+        suffix = '_' + ctx.mode if scope == 'per_mode' else ''
+        path = ctx.data['source_cache'] / f'task_plans_v{variant}{suffix}.json'
         if path.exists():
             plans = json.loads(path.read_text())
         else:
@@ -244,7 +249,10 @@ class PlanNode(BaseNode):
                                  'mask_ranges': task.get('mask_ranges', []),
                                  'cells': [(e['sheet'], e['cell']) for e in task.get('edits', [])]}
                                 for mode, task in prior.items() if mode in ['financial_modeling', 'debugging'] and task)
-            payload = {**authoring_source_context(ctx), 'construction_contract': construction_contract(config=ctx.config),
+            payload = {**authoring_source_context(ctx),
+                       'requested_modes': requested,
+                       'construction_contract': construction_contract(
+                           ctx.mode if scope == 'per_mode' else None, ctx.config),
                        'variant': variant, 'previous_target_groups': previous,
                        'generation_feedback': ctx.config.get('generation_feedback', {}),
                        'known_source_business_issues': ctx.data.get('source_business_issues', []),
