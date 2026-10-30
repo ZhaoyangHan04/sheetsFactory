@@ -31,10 +31,14 @@ from ..core.audit import AuditStore
 from ..dashboard.server import DashboardServer
 from ..llm.codex import CodexCLI, NATIVE_CODEX
 from .harbor import inspect_export
+from .tool_time import account_trial_tool_time
 
 
 MODEL = 'gpt-6.1-sol'
 EFFORT = 'xhigh'
+TOOL_TIME_POLICY = {'budget_seconds': 1800, 'strict_less_than': True,
+                    'exclude_model_response_time': True, 'parallel_executions': 'sum',
+                    'measurement': 'native_tool_events_and_wrapper_intervals'}
 MODES = ('financial_modeling', 'debugging')
 TASK_FILES = frozenset({
     'instruction.md', 'task.toml', 'export_manifest.json', 'environment/Dockerfile',
@@ -47,7 +51,10 @@ PROMPT = ('Complete the spreadsheet task using the public instruction and input 
           'the final workbook to the output path required by the task. You may use Python '
           'and the installed recalculate command. Work independently; no reference answer '
           'or private construction evidence is available. Use your full allotted budget '
-          'when needed and verify your work before finishing.')
+          'when needed and verify your work before finishing. Cumulative tool execution '
+          'time must be strictly less than 1800 seconds. Model reasoning and response '
+          'generation do not count; parallel tool executions add separately. Reaching '
+          'or exceeding this tool budget makes the attempt unsuccessful.')
 
 
 class FrontierError(ValueError):
@@ -79,6 +86,8 @@ def _runtime_provenance(project_root, binary):
     """Bind the runner and native CLI without inspecting any credential file."""
     root, binary = Path(project_root), Path(binary)
     provenance = {'runner': {'path': str(Path(__file__).resolve()), 'sha256': _sha(__file__)},
+                  'tool_time_parser': {'path': str(Path(__file__).with_name('tool_time.py').resolve()),
+                                       'sha256': _sha(Path(__file__).with_name('tool_time.py'))},
                   'native_cli': {'path': str(binary), 'sha256': _sha(binary) if binary.is_file() else None}}
     for name, arguments in [('revision', ['rev-parse', 'HEAD']), ('dirty_status', ['status', '--porcelain'])]:
         try:
@@ -201,7 +210,8 @@ def freeze_selection(source_manifest, run_dir, *, phase, task_ids=None, task_roo
                  'Snapshot copy differs from source')
         tasks.append({key: task.get(key) for key in ('task_id', 'mode', 'revision', 'revision_hash', 'source_id')} | {
             'harbor_export_binding': binding, 'task_directory': str(target),
-            'task_checksum': dirhash(target, 'sha256'), 'timeout_seconds': timeout_seconds})
+            'task_checksum': dirhash(target, 'sha256'), 'timeout_seconds': timeout_seconds,
+            'tool_time_policy': dict(TOOL_TIME_POLICY)})
     prior = []
     for location in prior_selections:
         path = Path(location).resolve()
@@ -216,6 +226,7 @@ def freeze_selection(source_manifest, run_dir, *, phase, task_ids=None, task_roo
         'source_manifest': {'path': str(source_manifest), 'sha256': sha256(source_raw).hexdigest()},
         'selected_task_ids': [task['task_id'] for task in tasks], 'tasks': tasks,
         'model': model, 'reasoning_effort': reasoning_effort, 'timeout_seconds': timeout_seconds,
+        'tool_time_policy': dict(TOOL_TIME_POLICY),
         'n_attempts': 1, 'prompt': PROMPT, 'prompt_sha256': sha256(PROMPT.encode()).hexdigest(),
         'infrastructure_retry_policy': {'max_retries': 2, 'scored_attempts_per_task': 1,
                                         'never_retry_scored': True},
@@ -346,6 +357,22 @@ def classify_result(result, task, *, diagnostics=None, timeout_review=None):
     return 'scored', int(reward), None
 
 
+def apply_tool_time_policy(entry, selection):
+    """Preserve raw verifier rewards; missing timing cannot authorize resampling."""
+    policy = selection.get('tool_time_policy')
+    if not policy or entry['status'] != 'scored':
+        return entry
+    _require(policy == TOOL_TIME_POLICY, 'Unsupported cumulative tool-time policy')
+    entry['raw_verifier_reward'] = entry['reward']
+    receipt = account_trial_tool_time(entry['result_file'], budget_seconds=policy['budget_seconds'])
+    entry['tool_time'] = receipt
+    if receipt['state'] != 'verified':
+        entry.update(status='evidence_incomplete', reward=None, failure_kind='native_tool_timing_incomplete')
+    elif receipt['passed'] is False:
+        entry.update(reward=0, failure_kind='cumulative_tool_budget_exhausted')
+    return entry
+
+
 def summarize(selection, attempts):
     scored = [attempt for attempt in attempts if attempt['status'] == 'scored']
     all_scored = len(scored) == len(selection['tasks']) and len(attempts) == len(selection['tasks'])
@@ -358,9 +385,16 @@ def summarize(selection, attempts):
             'successes': sum(attempt['reward'] for attempt in results),
             'pass_at_1': sum(attempt['reward'] for attempt in results) / len(results)
                 if results and len(results) == len(group) else None}
+    timed = [attempt['tool_time']['cumulative_tool_seconds'] for attempt in attempts
+             if (attempt.get('tool_time') or {}).get('state') == 'verified']
     score = {'overall_pass_at_1': overall, 'by_mode': by_mode, 'total_tasks': len(selection['tasks']),
              'scored_tasks': len(scored), 'infrastructure_errors': sum(
-                 attempt['status'] == 'infrastructure_error' for attempt in attempts)}
+                 attempt['status'] == 'infrastructure_error' for attempt in attempts),
+             'incomplete_timing_evidence': sum(attempt['status'] == 'evidence_incomplete' for attempt in attempts),
+             'tool_budget_failures': sum(attempt.get('failure_kind') == 'cumulative_tool_budget_exhausted'
+                                         for attempt in attempts),
+             'timed_attempts': len(timed), 'known_tool_seconds': sum(timed),
+             'cumulative_tool_seconds': sum(timed) if timed and len(timed) == len(attempts) else None}
     passed = (selection['phase'] == 'confirmation' and overall is not None and overall <= .2
               and all(by_mode[mode]['tasks'] >= 10 for mode in MODES))
     return score, passed
@@ -389,10 +423,11 @@ def collect_attempts(run_dir, selection, *, include_infrastructure_history=False
             'job_name': path.parent.parent.name, 'trial_name': path.parent.name}
         if timeout_review is not None:
             entry['exception_resolution'] = timeout_review
+        apply_tool_time_policy(entry, selection)
         found.setdefault(name, []).append(entry)
     selected, history = [], []
     for entries in found.values():
-        scored = [entry for entry in entries if entry['status'] == 'scored']
+        scored = [entry for entry in entries if entry['status'] in {'scored', 'evidence_incomplete'}]
         _require(len(scored) <= 1, 'Multiple scored attempts found for a Pass@1 task')
         _require(len({entry['job_name'] for entry in entries}) == len(entries),
                  'Multiple attempts for one task in a Harbor job')
@@ -447,7 +482,7 @@ def _job_config(run_dir, selection, *, concurrency, binary, base_url, job_name='
         'n_attempts': 1, 'n_concurrent_trials': concurrency, 'quiet': True,
         'retry': {'max_retries': 0}, 'environment': {'type': 'docker'},
         'tasks': [{'path': task['task_directory']} for task in selection['tasks']],
-        'extra_instructions': [PROMPT],
+        'extra_instructions': [selection['prompt']],
         'agents': [{'import_path': 'sheets_factory.evaluation.frontier:LocalCodex',
             'model_name': MODEL, 'base_url': base_url, 'model_api_key_name': 'SHEETS_FACTORY_API_KEY',
             'model_api_format': 'openai_responses',
@@ -489,9 +524,22 @@ async def execute_evaluation(run_dir, selection, audit, *, concurrency=4, backen
             task = next(task for task in selection['tasks'] if task['task_id'] == task_id)
             record = event.result.model_dump(mode='json')
             status, reward, error = classify_result(record, task)
-            audit.task(task_id, status='evaluated' if status == 'scored' else 'infrastructure_error',
-                       reward=reward, failure_kind=error, node='frontier_finished')
-            audit.emit('frontier.task_finished', task_id=task_id, reward=reward, status=status, failure_kind=error)
+            persisted = run_dir / 'harbor_jobs' / job_name / str(record.get('trial_name', '')) / 'result.json'
+            timing_fields = {}
+            if persisted.is_file():
+                actual = json.loads(persisted.read_text())
+                diagnostic_path = persisted.parent / 'verifier/diagnostics.json'
+                diagnostic = json.loads(diagnostic_path.read_text()) if diagnostic_path.is_file() else None
+                review = review_agent_timeout(actual, task, result_file=persisted, diagnostics=diagnostic)
+                status, reward, error = classify_result(actual, task, diagnostics=diagnostic, timeout_review=review)
+                measured = apply_tool_time_policy({'status': status, 'reward': reward,
+                    'failure_kind': error, 'result_file': str(persisted)}, selection)
+                status, reward, error = measured['status'], measured['reward'], measured['failure_kind']
+                timing_fields = {key: measured.get(key) for key in ('tool_time', 'raw_verifier_reward')}
+            audit.task(task_id, status='evaluated' if status == 'scored' else status,
+                       reward=reward, failure_kind=error, node='frontier_finished', **timing_fields)
+            audit.emit('frontier.task_finished', task_id=task_id, reward=reward, status=status,
+                       failure_kind=error, **timing_fields)
             usage = record.get('agent_result') or {}
             timing = record.get('agent_execution') or {}
             start = datetime.fromisoformat(timing['started_at']) if timing.get('started_at') else None
@@ -553,6 +601,7 @@ def run_evaluation(source_manifest, run_dir, *, phase, task_ids=None, task_root=
     manifest = {'schema_version': 1, 'phase': phase, 'status': 'running', 'started_at': started,
         'finished_at': None, 'selection_manifest': {'path': str(selection_path), 'sha256': selection_sha},
         'model': MODEL, 'reasoning_effort': EFFORT, 'timeout_seconds': timeout_seconds,
+        'tool_time_policy': selection['tool_time_policy'],
         'n_attempts': 1, 'prompt_sha256': selection['prompt_sha256'], 'attempts': [],
         'infra_history': [], 'infrastructure_retries': [],
         'infrastructure_retry_policy': selection['infrastructure_retry_policy'],
@@ -592,9 +641,10 @@ def run_evaluation(source_manifest, run_dir, *, phase, task_ids=None, task_root=
             duration_seconds=round(time.monotonic() - clock, 3))
         _write(run_dir / 'evaluation_manifest.json', manifest)
         for attempt in attempts:
-            audit.task(attempt['task_id'], status='evaluated' if attempt['status'] == 'scored' else 'infrastructure_error',
+            audit.task(attempt['task_id'], status='evaluated' if attempt['status'] == 'scored' else attempt['status'],
                        reward=attempt['reward'], failure_kind=attempt['failure_kind'],
-                       exception_resolution=attempt.get('exception_resolution'))
+                       exception_resolution=attempt.get('exception_resolution'),
+                       tool_time=attempt.get('tool_time'), raw_verifier_reward=attempt.get('raw_verifier_reward'))
         audit.update_run(status=manifest['status'], finished_at=manifest['finished_at'],
                          wall_seconds=manifest['duration_seconds'], frontier_score=score,
                          gate_passed=manifest['gate_passed'], producer_active=False)
@@ -671,7 +721,7 @@ def resume_infrastructure(run_dir, *, max_infrastructure_retries=2, concurrency=
         for task in selection['tasks']:
             task_id = task['task_id']
             attempt = previous.get(task_id)
-            if attempt and attempt['status'] == 'scored':
+            if attempt and attempt['status'] in {'scored', 'evidence_incomplete'}:
                 continue
             receipt = (assess_infrastructure_retry(attempt) if attempt else
                        {'eligible': True, 'reason': 'no_persisted_attempt', 'result_file': None,
@@ -747,9 +797,10 @@ def resume_infrastructure(run_dir, *, max_infrastructure_retries=2, concurrency=
                 duration_seconds=round((manifest.get('duration_seconds') or 0) + retry['duration_seconds'], 3))
             _write(manifest_path, manifest)
             for attempt in attempts:
-                audit.task(attempt['task_id'], status='evaluated' if attempt['status'] == 'scored' else 'infrastructure_error',
+                audit.task(attempt['task_id'], status='evaluated' if attempt['status'] == 'scored' else attempt['status'],
                            reward=attempt['reward'], failure_kind=attempt['failure_kind'],
-                           exception_resolution=attempt.get('exception_resolution'))
+                           exception_resolution=attempt.get('exception_resolution'),
+                           tool_time=attempt.get('tool_time'), raw_verifier_reward=attempt.get('raw_verifier_reward'))
             audit.update_run(status=manifest['status'], finished_at=finished, frontier_score=score,
                              gate_passed=manifest['gate_passed'], producer_active=False)
             audit.export()

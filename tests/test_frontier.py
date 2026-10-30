@@ -50,6 +50,8 @@ def actual_result(task, reward=0):
                 'kwargs': {'reasoning_effort': EFFORT}}},
             'agent_info': {'model_info': {'name': MODEL}}, 'agent_result': {'n_output_tokens': 17},
             'verifier_result': {'rewards': {'reward': reward}}, 'exception_info': None,
+            'agent_execution': {'started_at': '2026-10-30T00:00:00+00:00',
+                                'finished_at': '2026-10-30T00:00:01+00:00'},
             'started_at': '2026-10-30T00:00:00+00:00', 'finished_at': '2026-10-30T00:00:01+00:00'}
 
 
@@ -57,7 +59,34 @@ def persist_result(run_dir, task, reward=0, trial='trial', job_name='frontier-pa
     path = run_dir / 'harbor_jobs' / job_name / (task['task_id'] + '-' + trial) / 'result.json'
     path.parent.mkdir(parents=True)
     path.write_text(json.dumps(actual_result(task, reward)))
+    persist_timing(path)
     return path
+
+
+def persist_timing(result_file, seconds=1):
+    """Synthetic native timing; this fixture never runs or scores a model."""
+    directory = result_file.parent / 'agent'
+    session = directory / 'sessions/fixture.jsonl'
+    session.parent.mkdir(parents=True, exist_ok=True)
+    from datetime import datetime, timezone
+    actual = json.loads(result_file.read_text())
+    origin = (actual.get('agent_execution') or {}).get('started_at') or actual['started_at']
+    start = int(datetime.fromisoformat(origin.replace('Z', '+00:00')).timestamp() * 1000)
+    stamp = lambda ms: datetime.fromtimestamp(ms / 1000, timezone.utc).isoformat()
+    records = [
+        {'type': 'response_item', 'timestamp': stamp(start), 'payload': {
+            'type': 'function_call', 'name': 'exec_command', 'call_id': 'fixture-call', 'arguments': '{"cmd":"true"}'}},
+        {'type': 'event_msg', 'payload': {'type': 'item_completed',
+            'started_at_ms': start, 'completed_at_ms': start + seconds * 1000,
+            'item': {'type': 'CommandExecution', 'id': 'fixture-command', 'process_id': '1',
+                     'status': 'completed', 'duration': {'secs': seconds, 'nanos': 0}}}},
+        {'type': 'response_item', 'timestamp': stamp(start + seconds * 1000), 'payload': {
+            'type': 'function_call_output', 'call_id': 'fixture-call', 'output': 'done'}}]
+    session.write_text('\n'.join(json.dumps(record) for record in records) + '\n')
+    log = directory / 'codex.txt'
+    if not log.exists():
+        log.write_text(json.dumps({'type': 'item.completed', 'item': {
+            'type': 'command_execution', 'id': 'fixture-command'}}) + '\n')
 
 
 def test_freeze_binds_exact_bytes_and_budget_before_execution(tmp_path):
@@ -66,6 +95,9 @@ def test_freeze_binds_exact_bytes_and_budget_before_execution(tmp_path):
     selection = freeze_selection(manifest, tmp_path / 'evaluation', phase='development', timeout_seconds=900)
     assert selection['n_attempts'] == 1
     assert selection['model'] == MODEL and selection['reasoning_effort'] == EFFORT
+    assert selection['tool_time_policy']['budget_seconds'] == 1800
+    assert selection['tool_time_policy']['strict_less_than'] is True
+    assert 'Cumulative tool execution' in selection['prompt']
     assert all(task['timeout_seconds'] == 900 for task in selection['tasks'])
     assert all(Path(task['task_directory']).is_relative_to(tmp_path / 'evaluation') for task in selection['tasks'])
     assert selection['source_manifest']['sha256'] == sha256(manifest.read_bytes()).hexdigest()
@@ -190,6 +222,45 @@ def test_job_uses_actual_harbor_agent_and_no_retries(tmp_path, frozen):
     assert config.agents[0].model_api_format.value == 'openai_responses'
     LocalCodex.preflight(config.agents[0].kwargs)
     assert all(str(task.path) == frozen['tasks'][index]['task_directory'] for index, task in enumerate(config.tasks))
+    assert config.extra_instructions == [frozen['prompt']]
+
+
+def test_tool_budget_overrides_success_but_preserves_actual_reward(tmp_path, frozen):
+    path = persist_result(tmp_path, frozen['tasks'][0], reward=1)
+    actual = json.loads(path.read_text())
+    actual['finished_at'] = '2026-10-30T00:30:01+00:00'
+    actual['agent_execution']['finished_at'] = '2026-10-30T00:30:00+00:00'
+    path.write_text(json.dumps(actual))
+    persist_timing(path, seconds=1800)
+    entry = collect_attempts(tmp_path, frozen)[0]
+    assert entry['status'] == 'scored' and entry['reward'] == 0
+    assert entry['raw_verifier_reward'] == 1
+    assert entry['failure_kind'] == 'cumulative_tool_budget_exhausted'
+    assert entry['tool_time']['cumulative_tool_seconds'] == 1800
+    with pytest.raises(FrontierError, match='never be retried'):
+        assess_infrastructure_retry(entry)
+
+
+def test_missing_tool_timing_is_unknown_and_never_allows_second_valid_attempt(tmp_path, frozen):
+    path = persist_result(tmp_path, frozen['tasks'][0], reward=1)
+    (path.parent / 'agent/sessions/fixture.jsonl').unlink()
+    entry = collect_attempts(tmp_path, frozen)[0]
+    assert entry['status'] == 'evidence_incomplete' and entry['reward'] is None
+    assert entry['raw_verifier_reward'] == 1 and entry['tool_time']['passed'] is None
+    assert summarize(frozen, [entry])[0]['overall_pass_at_1'] is None
+    persist_result(tmp_path, frozen['tasks'][0], trial='replacement')
+    with pytest.raises(FrontierError, match='Multiple scored attempts'):
+        collect_attempts(tmp_path, frozen)
+
+
+def test_legacy_frozen_attempt_keeps_its_original_protocol(tmp_path, frozen):
+    persist_result(tmp_path, frozen['tasks'][0], reward=1)
+    frozen.pop('tool_time_policy')
+    entry = collect_attempts(tmp_path, frozen)[0]
+    assert entry['reward'] == 1 and 'tool_time' not in entry
+    frozen['prompt'] = 'The original frozen instruction.'
+    config = _job_config(tmp_path, frozen, concurrency=1, binary='/usr/bin/codex', base_url='https://test.invalid/v1')
+    assert config.extra_instructions == [frozen['prompt']]
 
 
 def test_local_install_only_uploads_native_tools(tmp_path):
@@ -302,7 +373,7 @@ def make_infra_evaluation(tmp_path, *, failure='NonZeroAgentExitCodeError', prov
         path.write_text(json.dumps(result))
         if provider_error:
             log = path.parent / 'agent/codex.txt'
-            log.parent.mkdir()
+            log.parent.mkdir(exist_ok=True)
             log.write_text(json.dumps({'type': 'turn.failed', 'error': {
                 'message': 'stream disconnected before completion: error sending request'}}) + '\n')
 
@@ -430,7 +501,7 @@ def timeout_result(tmp_path, frozen, reward=0, *, command_output='ordinary comma
         agent_result={'n_input_tokens': 100, 'n_output_tokens': 20})
     path.write_text(json.dumps(result))
     log = path.parent / 'agent/codex.txt'
-    log.parent.mkdir()
+    log.parent.mkdir(exist_ok=True)
     log.write_text(json.dumps({'type': 'item.completed', 'item': {'type': 'command_execution',
         'status': 'failed', 'exit_code': 1, 'aggregated_output': command_output}}) + '\n')
     diagnostics = path.parent / 'verifier/diagnostics.json'

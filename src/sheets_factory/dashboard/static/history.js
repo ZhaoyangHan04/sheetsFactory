@@ -4,6 +4,7 @@ labels.ready='待 Harbor 验证';
 labels.constructing='构造中';
 labels.harbor_validation='Harbor 验证中';
 labels.shortfall='题量不足';
+labels.evidence_incomplete='计时证据不完整';
 const historyStageFilter=elem('select');
 historyStageFilter.id='filter-stage';
 historyStageFilter.setAttribute('aria-label','阶段');

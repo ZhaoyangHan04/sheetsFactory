@@ -15,6 +15,8 @@ from sheets_factory.core.audit import AuditStore
 from sheets_factory.evaluation.harbor import inspect_export
 from dirhash import dirhash
 from test_package_release import fixture_task, write_json
+from test_frontier import persist_timing
+from sheets_factory.evaluation.frontier import TOOL_TIME_POLICY, apply_tool_time_policy
 
 
 spec = importlib.util.spec_from_file_location('publish_dataset', Path(__file__).parents[1] / 'scripts/publish_dataset.py')
@@ -46,11 +48,13 @@ def fixture_publication(tmp_path, monkeypatch):
         binding = inspect_export(export)
         entries.append({'task_id': task_id, 'mode': mode, 'revision': 0,
                         'revision_hash': binding['revision_hash'], 'harbor_export_binding': binding,
+                        'tool_time_policy': dict(TOOL_TIME_POLICY),
                         'task_directory': str(export), 'task_checksum': dirhash(export, 'sha256')})
     frozen = root / 'outputs/confirmation/frozen_selection.json'
     write_json(frozen, {'schema_version': 1, 'phase': 'confirmation',
                        'model': publish.MODEL, 'reasoning_effort': publish.EFFORT,
                        'timeout_seconds': 1800, 'prompt_sha256': 'c' * 64,
+                       'tool_time_policy': dict(TOOL_TIME_POLICY),
                        'frozen_at': '2026-10-29T12:00:00Z',
                        'selected_task_ids': [entry['task_id'] for entry in entries], 'tasks': entries})
     evaluation = root / 'outputs/confirmation/evaluation_manifest.json'
@@ -80,12 +84,16 @@ def confirmation(fixture, *, rewards=None, phase='confirmation'):
                 'override_timeout_sec': 1800, 'import_path': 'sheets_factory.evaluation.frontier:LocalCodex'}},
             'agent_info': {'name': 'codex', 'model_info': {'name': publish.MODEL}},
             'exception_info': None, 'verifier_result': {'rewards': {'reward': reward}},
+            'agent_execution': {'started_at': '2026-10-29T12:01:01Z', 'finished_at': '2026-10-29T12:01:02Z'},
             'started_at': '2026-10-29T12:01:01Z', 'finished_at': '2026-10-29T12:01:02Z',
             'offline_fixture': True}
         result = fixture['evaluation'].parent / 'harbor_jobs/frontier-pass1' / item['task_id'] / 'result.json'
         write_json(result, record)
-        entries.append({**deepcopy(item), 'status': 'scored', 'reward': reward,
-                        'result_file': str(result), 'result_sha256': digest(result)})
+        persist_timing(result)
+        entry = {**deepcopy(item), 'status': 'scored', 'reward': reward,
+                 'result_file': str(result), 'result_sha256': digest(result)}
+        apply_tool_time_policy(entry, {'tool_time_policy': TOOL_TIME_POLICY})
+        entries.append(entry)
     by_mode = {mode: {'tasks': sum(item['mode'] == mode for item in entries),
                      'scored': sum(item['mode'] == mode for item in entries),
                      'successes': sum(item['reward'] for item in entries if item['mode'] == mode)}
@@ -96,6 +104,7 @@ def confirmation(fixture, *, rewards=None, phase='confirmation'):
     write_json(fixture['evaluation'], {'schema_version': 1, 'phase': phase,
         'status': 'completed', 'model': publish.MODEL, 'reasoning_effort': publish.EFFORT,
         'timeout_seconds': 1800,
+        'tool_time_policy': dict(TOOL_TIME_POLICY),
         'selection_manifest': {'path': str(fixture['selection']), 'sha256': digest(fixture['selection'])},
         'started_at': '2026-10-29T12:01:00Z', 'finished_at': '2026-10-29T12:02:00Z',
         'attempts': entries, 'threshold': .2, 'gate_passed': overall <= .2,
@@ -480,6 +489,7 @@ def test_twenty_task_gate_only_enforces_overall_rate(fixture_publication, monkey
             binding = inspect_export(export)
             f['entries'].append({'task_id': task_id, 'mode': mode, 'revision': 0,
                 'revision_hash': binding['revision_hash'], 'harbor_export_binding': binding,
+                'tool_time_policy': dict(TOOL_TIME_POLICY),
                 'task_directory': str(export), 'task_checksum': dirhash(export, 'sha256')})
     frozen = json.loads(f['selection'].read_text())
     frozen.update(selected_task_ids=[item['task_id'] for item in f['entries']], tasks=f['entries'])
@@ -524,7 +534,7 @@ def normal_timeout(fixture):
         finished_at='2026-10-29T12:31:04Z')
     write_json(file, actual)
     log = file.parent / 'agent/codex.txt'
-    log.parent.mkdir()
+    log.parent.mkdir(exist_ok=True)
     log.write_text(json.dumps({'type': 'item.completed', 'item': {
         'type': 'command_execution', 'command': 'python work.py', 'exit_code': 1,
         'aggregated_output': 'An ordinary tool mistake; agent continued reasoning.'}}) + '\n')
@@ -533,6 +543,7 @@ def normal_timeout(fixture):
     entry['result_sha256'] = digest(file)
     entry['exception_resolution'] = review_agent_timeout(actual, fixture['entries'][0], result_file=file)
     assert entry['exception_resolution'] is not None
+    apply_tool_time_policy(entry, {'tool_time_policy': TOOL_TIME_POLICY})
     manifest['finished_at'] = '2026-10-29T12:32:00Z'
     write_json(fixture['evaluation'], manifest)
     return manifest, file, log
@@ -547,6 +558,46 @@ def test_normal_budget_timeout_requires_the_exact_shared_review(fixture_publicat
     assert reviewed['budget_seconds'] == 1800 and reviewed['agent_elapsed_seconds'] == 1800
     assert reviewed['completed_command_events'] == 1  # Ordinary exit=1 remains valid activity.
     assert 'native_log_file' not in reviewed and 'result_file' not in reviewed
+
+
+def test_tool_budget_failure_retains_raw_success_and_publishes_effective_zero(fixture_publication):
+    f = fixture_publication
+    confirmation(f)
+    manifest = json.loads(f['evaluation'].read_text())
+    entry = manifest['attempts'][0]
+    path = Path(entry['result_file'])
+    raw = json.loads(path.read_text())
+    raw['verifier_result']['rewards']['reward'] = 1
+    raw['finished_at'] = '2026-10-29T12:31:01Z'
+    raw['agent_execution']['finished_at'] = '2026-10-29T12:31:01Z'
+    write_json(path, raw)
+    persist_timing(path, seconds=1800)
+    entry.update(reward=1, result_sha256=digest(path))
+    apply_tool_time_policy(entry, {'tool_time_policy': TOOL_TIME_POLICY})
+    assert entry['reward'] == 0 and entry['raw_verifier_reward'] == 1
+    manifest['finished_at'] = '2026-10-29T12:32:00Z'
+    write_json(f['evaluation'], manifest)
+    result = invoke(f, dry_run=True)
+    task = result['manifest']['confirmation']['tasks'][0]
+    assert task['reward'] == 0 and task['raw_verifier_reward'] == 1
+    assert task['tool_time']['cumulative_tool_seconds'] == 1800
+
+
+@pytest.mark.parametrize('problem', ['missing_policy', 'missing_session', 'forged_receipt'])
+def test_publication_requires_reproducible_native_tool_timing(fixture_publication, problem):
+    f = fixture_publication
+    confirmation(f)
+    manifest = json.loads(f['evaluation'].read_text())
+    entry = manifest['attempts'][0]
+    if problem == 'missing_policy':
+        manifest.pop('tool_time_policy')
+    elif problem == 'missing_session':
+        (Path(entry['result_file']).parent / 'agent/sessions/fixture.jsonl').unlink()
+    else:
+        entry['tool_time']['cumulative_tool_seconds'] = 0
+    write_json(f['evaluation'], manifest)
+    with pytest.raises(publish.PublishError, match='tool (budget|timing)'):
+        invoke(f, dry_run=True)
 
 
 @pytest.mark.parametrize('problem', ['missing_receipt', 'forged_receipt', 'short_budget', 'provider_error',
@@ -604,7 +655,7 @@ def recovered_confirmation(fixture):
     failed.update(exception_info={'exception_type': 'NonZeroAgentExitCodeError'}, verifier_result=None)
     write_json(original, failed)
     log = original.parent / 'agent/codex.txt'
-    log.parent.mkdir()
+    log.parent.mkdir(exist_ok=True)
     log.write_text(json.dumps({'type': 'turn.failed', 'error': {'message': 'stream disconnected'}}) + '\n')
     old_attempts, old_history = collect_attempts(fixture['evaluation'].parent, frozen, include_infrastructure_history=True)
     before = deepcopy(manifest)
@@ -614,7 +665,9 @@ def recovered_confirmation(fixture):
     write_json(previous, before)
     replacement = fixture['evaluation'].parent / 'harbor_jobs/frontier-infra-001/fm-a/result.json'
     healthy.update(started_at='2026-10-29T12:01:03Z', finished_at='2026-10-29T12:01:04Z')
+    healthy['agent_execution'] = {'started_at': healthy['started_at'], 'finished_at': healthy['finished_at']}
     write_json(replacement, healthy)
+    persist_timing(replacement)
     current, history = collect_attempts(fixture['evaluation'].parent, frozen, include_infrastructure_history=True)
     authorization = assess_infrastructure_retry(old_history[0])
     manifest.update(attempts=current, infra_history=history, infrastructure_retries=[{

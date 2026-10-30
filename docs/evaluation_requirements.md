@@ -31,6 +31,8 @@ Every natural attempt is diagnosed whether it creates a complete, partial or mis
 
 Q08 remains registered and enabled. Candidate-level quality diagnosis is separate from the frozen-dataset difficulty gate. Every candidate must still pass public-information recovery, all enabled quality checks and actual Harbor controls before the full cohort is measured. A fresh confirmation uses new model calls on a cohort selected before those calls; no post-selection of failed tasks. A valid first reward, including zero, is never retried. Only evidenced infrastructure failures have bounded recovery, and an unfinished cohort has no Overall Pass@1.
 
+The frozen execution contract additionally requires cumulative tool execution time strictly below 1800 seconds. Model reasoning and response generation are excluded. Parallel primitive executions add separately; nested wrappers and polling of the same process do not charge that execution twice. The native timestamped session records and command-event stream must agree. Reaching the limit sets the effective attempt reward to zero while retaining the original verifier reward. Missing or incomplete timing is unknown evidence, not a model failure and not permission to resample a valid answer. Publication recomputes this receipt from the hash-bound raw files. The separate 1800-second elapsed agent limit remains in force.
+
 ## Grading contract
 
 After isolated full recalculation of original input I, reference G and submission O, let D(I,X) be the coordinates whose normalized typed values differ. Reward is one only when D(I,O) equals D(I,G), all expected changed values match, and declared workbook-structure requirements hold. Otherwise reward is zero. Formula and formatting strings are not primary scoring targets.
