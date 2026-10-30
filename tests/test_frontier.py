@@ -9,8 +9,9 @@ from openpyxl import Workbook
 import pytest
 
 from sheets_factory.evaluation.frontier import (
-    EFFORT, MODEL, FrontierError, LocalCodex, _execution_environment, _job_config, _persist_failure, classify_result,
-    collect_attempts, freeze_selection, run_evaluation, summarize,
+    EFFORT, MODEL, FrontierError, LocalCodex, _execution_environment, _job_config, _persist_failure,
+    assess_infrastructure_retry, classify_result, collect_attempts, freeze_selection,
+    resume_infrastructure, review_agent_timeout, run_evaluation, summarize,
 )
 from sheets_factory.evaluation.harbor import export_harbor, inspect_export
 from sheets_factory.llm.codex import CodexCLI
@@ -52,8 +53,8 @@ def actual_result(task, reward=0):
             'started_at': '2026-10-30T00:00:00+00:00', 'finished_at': '2026-10-30T00:00:01+00:00'}
 
 
-def persist_result(run_dir, task, reward=0, trial='trial'):
-    path = run_dir / 'harbor_jobs/frontier-pass1' / (task['task_id'] + '-' + trial) / 'result.json'
+def persist_result(run_dir, task, reward=0, trial='trial', job_name='frontier-pass1'):
+    path = run_dir / 'harbor_jobs' / job_name / (task['task_id'] + '-' + trial) / 'result.json'
     path.parent.mkdir(parents=True)
     path.write_text(json.dumps(actual_result(task, reward)))
     return path
@@ -175,7 +176,7 @@ def test_collect_only_persisted_trials_and_refuses_duplicate_attempts(tmp_path, 
     assert attempts[0]['result_sha256'] == sha256(path.read_bytes()).hexdigest()
     assert attempts[0]['reward'] == 1 and attempts[0]['status'] == 'scored'
     persist_result(tmp_path, task, trial='second')
-    with pytest.raises(FrontierError, match='Multiple attempts'):
+    with pytest.raises(FrontierError, match='Multiple scored attempts'):
         collect_attempts(tmp_path, frozen)
 
 
@@ -286,3 +287,202 @@ def test_run_writes_final_audit_and_preserves_infrastructure_status(tmp_path, mu
         assert result['score']['overall_pass_at_1'] is None
     with pytest.raises(FrontierError, match='already exists'):
         run_evaluation(manifest, directory, phase='development', project_root=tmp_path, execute=fake_execute)
+
+
+def make_infra_evaluation(tmp_path, *, failure='NonZeroAgentExitCodeError', provider_error=True, missing=False):
+    manifest = make_release(tmp_path)
+
+    async def initial(directory, selection, audit, **kwargs):
+        persist_result(directory, selection['tasks'][0], reward=0)
+        if missing:
+            return
+        path = persist_result(directory, selection['tasks'][1], reward=0)
+        result = json.loads(path.read_text())
+        result['exception_info'] = {'exception_type': failure}
+        path.write_text(json.dumps(result))
+        if provider_error:
+            log = path.parent / 'agent/codex.txt'
+            log.parent.mkdir()
+            log.write_text(json.dumps({'type': 'turn.failed', 'error': {
+                'message': 'stream disconnected before completion: error sending request'}}) + '\n')
+
+    directory = tmp_path / 'evaluation'
+    result = run_evaluation(manifest, directory, phase='development', project_root=tmp_path, execute=initial)
+    assert result['status'] == 'infrastructure_failed'
+    return directory, result
+
+
+@pytest.mark.parametrize('missing', [False, True])
+def test_resume_only_infrastructure_keeps_valid_zero_and_all_raw_evidence(tmp_path, missing):
+    directory, before = make_infra_evaluation(tmp_path, missing=missing)
+    selection_raw = (directory / 'selection_manifest.json').read_bytes()
+    raw_results = {attempt['result_file']: Path(attempt['result_file']).read_bytes() for attempt in before['attempts']}
+    manifest_raw = (directory / 'evaluation_manifest.json').read_bytes()
+    seen = []
+
+    async def recovery(run_dir, selection, audit, *, job_name, **kwargs):
+        seen.extend(selection['selected_task_ids'])
+        for task in selection['tasks']:
+            persist_result(run_dir, task, reward=1, job_name=job_name)
+
+    result = resume_infrastructure(directory, project_root=tmp_path, execute=recovery)
+    assert result['status'] == 'completed' and result['score']['overall_pass_at_1'] == .5
+    assert seen == ['task-01']
+    assert [(attempt['task_id'], attempt['reward']) for attempt in result['attempts']] == [('task-01', 1), ('task-00', 0)]
+    assert (directory / 'selection_manifest.json').read_bytes() == selection_raw
+    assert all(Path(path).read_bytes() == raw for path, raw in raw_results.items())
+    retry = result['infrastructure_retries'][0]
+    assert retry['task_ids'] == ['task-01'] and retry['job_name'] == 'frontier-infra-001'
+    assert retry['previous_manifest_sha256'] == sha256(manifest_raw).hexdigest()
+    assert Path(retry['previous_manifest_file']).read_bytes() == manifest_raw
+    assert len(result['infra_history']) == (0 if missing else 1)
+    if not missing:
+        proof = retry['authorization'][0]
+        assert proof['reason'] == 'terminal_provider_failure'
+        assert proof['evidence_sha256'] == sha256(Path(proof['evidence_file']).read_bytes()).hexdigest()
+    with pytest.raises(FrontierError, match='ended infrastructure failure'):
+        resume_infrastructure(directory, project_root=tmp_path, execute=recovery)
+
+
+def test_ambiguous_agent_exit_and_unproven_timeout_are_not_retried(tmp_path):
+    directory, before = make_infra_evaluation(tmp_path, provider_error=False)
+    attempt = next(attempt for attempt in before['attempts'] if attempt['status'] == 'infrastructure_error')
+    assert assess_infrastructure_retry(attempt)['eligible'] is False
+    with pytest.raises(FrontierError, match='No certified infrastructure failures'):
+        resume_infrastructure(directory, project_root=tmp_path)
+    attempt['failure_kind'] = 'AgentTimeoutError'
+    assert assess_infrastructure_retry(attempt)['eligible'] is False
+
+
+def test_resume_has_a_bounded_infrastructure_retry_budget(tmp_path):
+    directory, before = make_infra_evaluation(tmp_path)
+
+    async def still_unavailable(run_dir, selection, audit, *, job_name, **kwargs):
+        for task in selection['tasks']:
+            path = persist_result(run_dir, task, job_name=job_name)
+            result = json.loads(path.read_text())
+            result['exception_info'] = {'exception_type': 'ServiceUnavailableError'}
+            path.write_text(json.dumps(result))
+
+    for index in [1, 2]:
+        result = resume_infrastructure(directory, project_root=tmp_path, execute=still_unavailable)
+        assert result['status'] == 'infrastructure_failed'
+        assert len(result['infrastructure_retries']) == index
+        assert result['score']['overall_pass_at_1'] is None
+    with pytest.raises(FrontierError, match='No certified infrastructure failures'):
+        resume_infrastructure(directory, project_root=tmp_path, execute=still_unavailable)
+    assert len(list((directory / 'harbor_jobs').glob('*/*/result.json'))) == 4
+
+
+@pytest.mark.parametrize('artifact', ['selection', 'task', 'result'])
+def test_resume_refuses_changed_evidence_before_calling_model(tmp_path, artifact):
+    directory, before = make_infra_evaluation(tmp_path)
+    if artifact == 'selection':
+        path = directory / 'selection_manifest.json'
+    elif artifact == 'task':
+        selection = json.loads((directory / 'selection_manifest.json').read_text())
+        path = Path(selection['tasks'][0]['task_directory']) / 'instruction.md'
+    else:
+        path = Path(before['attempts'][0]['result_file'])
+    path.write_text(path.read_text() + ' ')
+    with pytest.raises((FrontierError, ValueError)):
+        resume_infrastructure(directory, project_root=tmp_path)
+
+
+@pytest.mark.parametrize('bound', [True, False])
+def test_resume_never_restarts_an_intentional_early_stop(tmp_path, bound):
+    directory, before = make_infra_evaluation(tmp_path)
+    path = directory / 'private/early_stop.json'
+    path.parent.mkdir(exist_ok=True)
+    path.write_text(json.dumps({'reason': 'observed_success_lower_bound_exceeds_threshold',
+        'selection_manifest_sha256': before['selection_manifest']['sha256'] if bound else '0' * 64}))
+    with pytest.raises(FrontierError, match='[Ii]ntentional early.stop'):
+        resume_infrastructure(directory, project_root=tmp_path)
+
+
+def timeout_result(tmp_path, frozen, reward=0, *, command_output='ordinary command exited 1'):
+    task = frozen['tasks'][0]
+    path = persist_result(tmp_path, task, reward)
+    result = json.loads(path.read_text())
+    result.update(exception_info={'exception_type': 'AgentTimeoutError'},
+        agent_execution={'started_at': '2026-10-30T01:00:00+01:00', 'finished_at': '2026-10-30T01:30:00+01:00'},
+        verifier={'started_at': '2026-10-30T00:30:01Z', 'finished_at': '2026-10-30T00:30:02Z'},
+        agent_result={'n_input_tokens': 100, 'n_output_tokens': 20})
+    path.write_text(json.dumps(result))
+    log = path.parent / 'agent/codex.txt'
+    log.parent.mkdir()
+    log.write_text(json.dumps({'type': 'item.completed', 'item': {'type': 'command_execution',
+        'status': 'failed', 'exit_code': 1, 'aggregated_output': command_output}}) + '\n')
+    diagnostics = path.parent / 'verifier/diagnostics.json'
+    diagnostics.parent.mkdir()
+    diagnostics.write_text(json.dumps({'reward': reward,
+        'reason': 'matched' if reward else 'value_or_modified_set_mismatch'}))
+    (diagnostics.parent / 'reward.txt').write_text(str(reward))
+    return path, result
+
+
+@pytest.mark.parametrize('reward', [0, 1])
+def test_normal_exhausted_budget_uses_actual_verifier_reward_and_bound_review(tmp_path, frozen, reward):
+    path, result = timeout_result(tmp_path, frozen, reward)
+    task = frozen['tasks'][0]
+    review = review_agent_timeout(result, task, result_file=path)
+    assert review['classification'] == 'normal_agent_budget_exhaustion'
+    assert review['reward'] == reward and review['agent_elapsed_seconds'] == 1800
+    assert review['native_log_sha256'] == sha256(Path(review['native_log_file']).read_bytes()).hexdigest()
+    assert review['diagnostics_sha256'] == sha256(Path(review['diagnostics_file']).read_bytes()).hexdigest()
+    assert classify_result(result, task, timeout_review=review) == ('scored', reward, None)
+    attempts = collect_attempts(tmp_path, frozen)
+    assert attempts[0]['status'] == 'scored' and attempts[0]['exception_resolution'] == review
+    assert attempts[0]['reward'] == reward
+
+
+@pytest.mark.parametrize('defect', ['short', 'no_usage', 'missing_log', 'no_tools', 'provider_failure',
+    'provider_pending', 'recalculate_permissions', 'verifier_runtime', 'missing_reward', 'wrong_reward',
+    'missing_verifier_timing', 'wrong_exception', 'multiplier', 'naive_timestamp'])
+def test_timeout_without_healthy_budget_and_verifier_proof_stays_infrastructure(tmp_path, frozen, defect):
+    path, result = timeout_result(tmp_path, frozen)
+    log = path.parent / 'agent/codex.txt'
+    diagnostics = path.parent / 'verifier/diagnostics.json'
+    if defect == 'short':
+        result['agent_execution']['finished_at'] = '2026-10-30T01:00:10+01:00'
+    elif defect == 'no_usage':
+        result['agent_result']['n_output_tokens'] = 0
+    elif defect == 'missing_log':
+        log.unlink()
+    elif defect == 'no_tools':
+        log.write_text(json.dumps({'type': 'turn.started'}))
+    elif defect in {'provider_failure', 'provider_pending'}:
+        event = ({'type': 'turn.failed', 'error': {'message': 'stream disconnected'}} if defect == 'provider_failure'
+                 else {'type': 'error', 'message': 'Reconnecting after stream disconnected'})
+        log.write_text(log.read_text() + json.dumps(event) + '\n')
+    elif defect == 'recalculate_permissions':
+        log.write_text(log.read_text().replace('ordinary command exited 1', '/usr/local/bin/recalculate: Permission denied'))
+    elif defect == 'verifier_runtime':
+        diagnostics.write_text(json.dumps({'reward': 0, 'reason': 'verification_error', 'error_type': 'RuntimeError'}))
+    elif defect == 'missing_reward':
+        (diagnostics.parent / 'reward.txt').unlink()
+    elif defect == 'wrong_reward':
+        (diagnostics.parent / 'reward.txt').write_text('1')
+    elif defect == 'missing_verifier_timing':
+        result['verifier'] = None
+    elif defect == 'wrong_exception':
+        result['exception_info']['exception_type'] = 'AgentSetupTimeoutError'
+    elif defect == 'multiplier':
+        result['config']['agent_timeout_multiplier'] = 2
+    else:
+        result['agent_execution']['started_at'] = '2026-10-30T00:00:00'
+    path.write_text(json.dumps(result))
+    assert review_agent_timeout(result, frozen['tasks'][0], result_file=path) is None
+    assert collect_attempts(tmp_path, frozen)[0]['status'] == 'infrastructure_error'
+
+
+def test_ordinary_solver_tool_errors_are_neither_provider_failure_nor_infra_retry(tmp_path, frozen):
+    path, result = timeout_result(tmp_path, frozen,
+        command_output='My diagnostic script printed: stream disconnected; subprocess.TimeoutExpired')
+    review = review_agent_timeout(result, frozen['tasks'][0], result_file=path)
+    assert review is not None
+    assert collect_attempts(tmp_path, frozen)[0]['status'] == 'scored'
+    result['exception_info']['exception_type'] = 'NonZeroAgentExitCodeError'
+    path.write_text(json.dumps(result))
+    attempt = collect_attempts(tmp_path, frozen)[0]
+    assert assess_infrastructure_retry(attempt)['eligible'] is False
