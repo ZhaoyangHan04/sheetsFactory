@@ -1,0 +1,61 @@
+{
+  "kind": "composite_full_state_fm_policy",
+  "version": 1,
+  "selection": "existing_financial_targets_union_explicit_contractual_states",
+  "lease_fields": [
+    "active_flag",
+    "annual_discount_rate",
+    "event_flag",
+    "event_index_ratio",
+    "event_kind_code",
+    "event_new_end",
+    "event_new_rate",
+    "event_rate_changed",
+    "event_retention_fraction",
+    "lease_current_end_month",
+    "lease_index_factor",
+    "lease_monthly_discount_rate",
+    "lease_retained_exposure",
+    "measurement_flag"
+  ],
+  "covenant_fields": [
+    "test_due",
+    "test_passed",
+    "lock_open",
+    "passes_open",
+    "passes_close",
+    "lock_close"
+  ],
+  "partner_fields": [
+    "hurdle_xnpv",
+    "carry_rate",
+    "next_carry_rate",
+    "flip_earned",
+    "flip_effective_year",
+    "lp_sign_changes",
+    "lp_xirr_eligible",
+    "lp_last_nonzero_sign"
+  ],
+  "operating_cash_fields": [
+    "optional_allocation_allowed"
+  ],
+  "operating_valuation_fields": [
+    "annual_discount_rate",
+    "monthly_discount_rate"
+  ],
+  "lease_count": 4,
+  "lease_months": 240,
+  "operating_months": 36,
+  "partner_years": 20,
+  "additional_state_cells": 13854,
+  "provided": [
+    "dates",
+    "calendars",
+    "period_identifiers",
+    "ramp_factors",
+    "source_anchors",
+    "scenario_displays",
+    "empty_unqualified_XIRR_results"
+  ],
+  "public_scope_clause": "Keep exactly the input workbook's worksheet names and order; do not add, remove or rename worksheets. Edit only existing model cells needed for the requested completion or repair. Do not add helper cells or populate otherwise blank cells. The only exception is completing the missing financial formulas identified by this task, without expanding the stated targets. Preserve provided inputs and unrelated formulas; allow dependent formula results to recalculate."
+}
