@@ -264,6 +264,59 @@ def _track_tool_time_evidence(timing, result_path, tracked):
             'trial_config_sha256': identity['trial_config']['sha256']}
 
 
+def _execution_budget(selection, evaluation=None):
+    from sheets_factory.evaluation.budget import ExecutionBudgetError, validate_selection_execution_budget
+    try:
+        return validate_selection_execution_budget(selection, evaluation)
+    except ExecutionBudgetError as error:
+        raise PublishError(str(error)) from error
+
+
+def _execution_budget_source(frozen, frozen_path, budget, tracked):
+    """A new operational guard must originate in the hash-bound source."""
+    from sheets_factory.evaluation.budget import ExecutionBudgetError, validate_execution_budget
+    source_ref = frozen.get('source_manifest') or {}
+    path = Path(source_ref.get('path', ''))
+    if not path.is_absolute():
+        path = frozen_path.parent / path
+    if budget is None:
+        # Preserve legacy publication without adding a source-file dependency.
+        # A still-available source cannot introduce a partial prospective opt-in.
+        if path.is_file() and 'execution_budget' in _json_file(path, tracked):
+            raise PublishError('Source execution_budget is absent from the frozen selection')
+        return None
+    _require(isinstance(source_ref.get('path'), str) and bool(source_ref['path']),
+             'Prospective execution_budget requires its frozen source manifest')
+    source = _json_file(path, tracked)
+    _require(tracked[str(path.absolute())] == source_ref.get('sha256'),
+             'Execution budget source manifest hash differs')
+    try:
+        _require('execution_budget' in source and validate_execution_budget(source['execution_budget']) == budget,
+                 'Source execution_budget differs from selection')
+        if 'timeout_seconds' in source:
+            _require(type(source['timeout_seconds']) is int
+                     and source['timeout_seconds'] == budget['elapsed_guard_seconds'],
+                     'Source timeout differs from execution_budget elapsed guard')
+        selected = set(frozen['selected_task_ids'])
+        source_tasks = {task['task_id']: task for task in source.get('tasks', [])}
+        _require(selected <= source_tasks.keys(), 'Execution budget source leaves selected tasks unbound')
+        for task_id in selected:
+            task = source_tasks[task_id]
+            if 'execution_budget' in task:
+                _require(validate_execution_budget(task['execution_budget']) == budget,
+                         'Source task execution_budget differs from source')
+            if 'timeout_seconds' in task:
+                _require(type(task['timeout_seconds']) is int
+                         and task['timeout_seconds'] == budget['elapsed_guard_seconds'],
+                         'Source task timeout differs from execution_budget elapsed guard')
+            if 'tool_time_policy' in task:
+                _require(task['tool_time_policy'] == frozen['tool_time_policy'],
+                         'Source task tool-time policy differs from selection')
+    except ExecutionBudgetError as error:
+        raise PublishError(str(error)) from error
+    return source_ref['sha256']
+
+
 def _validate_confirmation_history(evidence, directory, frozen, tracked):
     """Replay retry authorization without counting failed infrastructure as zero."""
     from sheets_factory.evaluation.frontier import collect_attempts, assess_infrastructure_retry
@@ -302,6 +355,7 @@ def _validate_confirmation_history(evidence, directory, frozen, tracked):
         jobs[job] = set(task_ids)
         previous_path = Path(retry.get('previous_manifest_file', ''))
         previous = release._json(previous_path, directory, tracked)
+        _execution_budget(frozen, previous)
         _require(tracked[str(previous_path.absolute())] == retry.get('previous_manifest_sha256')
                  and previous.get('status') == 'infrastructure_failed'
                  and previous.get('phase') == evidence.get('phase')
@@ -371,6 +425,8 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
     timing_policy = _frozen_tool_time_policy(frozen)
     _require(_frozen_tool_time_policy(evidence) == timing_policy,
              'Confirmation must freeze the strict cumulative 1800-second tool budget')
+    execution_budget = _execution_budget(frozen, evidence)
+    execution_budget_source_sha = _execution_budget_source(frozen, frozen_path, execution_budget, tracked)
     frozen_at = _timestamp(frozen.get('frozen_at', frozen.get('created_at')), 'Frozen selection')
     started_at = _timestamp(evidence.get('started_at'), 'Confirmation start')
     finished_at = _timestamp(evidence.get('finished_at'), 'Confirmation finish')
@@ -427,6 +483,7 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
                  and (agent_info.get('model_info') or {}).get('name') == MODEL,
                  'Actual confirmation result lacks the required identity or execution binding')
         resolution = None
+        guard_stop = False
         if actual.get('exception_info'):
             from sheets_factory.evaluation.frontier import review_agent_timeout
             _require(actual['exception_info'].get('exception_type') == 'AgentTimeoutError',
@@ -434,26 +491,34 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
             resolution = review_agent_timeout(actual, declared, result_file=result_path)
             _require(resolution is not None and entry.get('exception_resolution') == resolution,
                      'Normal agent timeout lacks an exact reproducible review receipt')
-            for label in ('native_log', 'diagnostics'):
-                file = Path(resolution[label + '_file'])
-                raw = release._file(file, result_path.parent, tracked)
-                _require(_sha(raw) == resolution[label + '_sha256'],
-                         'Agent timeout review evidence changed')
-            release._file(result_path.parent / 'verifier/reward.txt', result_path.parent, tracked)
+            guard_stop = resolution.get('classification') == 'operational_elapsed_guard_reached'
+            if not guard_stop:
+                for label in ('native_log', 'diagnostics'):
+                    file = Path(resolution[label + '_file'])
+                    raw = release._file(file, result_path.parent, tracked)
+                    _require(_sha(raw) == resolution[label + '_sha256'],
+                             'Agent timeout review evidence changed')
+                release._file(result_path.parent / 'verifier/reward.txt', result_path.parent, tracked)
         rewards = (actual.get('verifier_result') or {}).get('rewards') or {}
         reward = rewards.get('reward')
         if reward is None and isinstance(rewards, dict) and len(rewards) == 1:
             reward = next(iter(rewards.values()))
-        _require(type(reward) in (int, float) and reward in (0, 1),
+        _require((type(reward) in (int, float) and reward in (0, 1))
+                 or (guard_stop and reward is None),
                  'Confirmation first-attempt reward is missing or inconsistent')
-        computed = apply_tool_time_policy({'status': 'scored', 'reward': int(reward),
-                                           'result_file': str(result_path)}, frozen)
+        timing_input = {'status': 'scored', 'reward': int(reward) if reward is not None else None,
+                        'result_file': str(result_path)}
+        if guard_stop:
+            timing_input.update(status='evidence_incomplete', reward=None, raw_verifier_reward=reward,
+                                failure_kind='operational_elapsed_guard_reached')
+        computed = apply_tool_time_policy(timing_input, frozen)
         _require(computed['status'] == 'scored' and entry.get('tool_time') == computed['tool_time']
+                 and 'raw_verifier_reward' in entry
                  and entry.get('raw_verifier_reward') == reward
                  and type(entry.get('reward')) in (int, float) and entry['reward'] == computed['reward'],
                  'Confirmation tool timing is incomplete or differs from native execution evidence')
         timing_evidence = _track_tool_time_evidence(computed['tool_time'], result_path, tracked)
-        raw_reward, reward = int(reward), computed['reward']
+        raw_reward, reward = int(reward) if reward is not None else None, computed['reward']
         attempt_started = _timestamp(actual.get('started_at'), 'Actual attempt start')
         attempt_finished = _timestamp(actual.get('finished_at'), 'Actual attempt finish')
         _require(started_at <= attempt_started <= attempt_finished <= finished_at,
@@ -476,9 +541,12 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
                     'upper_bound_may_include_idle_cleanup_time')})
                 public_result['tool_time']['evidence_sha256'] = timing_evidence
         if resolution:
-            public_result['exception_resolution'] = {key: resolution[key] for key in (
+            fields = ('classification', 'elapsed_guard_seconds', 'agent_elapsed_seconds') if guard_stop else (
                 'classification', 'budget_seconds', 'agent_elapsed_seconds', 'model_output_tokens',
-                'completed_command_events', 'reward', 'native_log_sha256', 'diagnostics_sha256')}
+                'completed_command_events', 'reward', 'native_log_sha256', 'diagnostics_sha256')
+            public_result['exception_resolution'] = {key: resolution[key] for key in fields}
+        if execution_budget is not None:
+            public_result['execution_budget'] = dict(execution_budget)
         results.append(public_result)
     _require(seen == set(by_id), 'Confirmation leaves selected tasks unevaluated')
     passed = sum(item['reward'] for item in results)
@@ -500,7 +568,7 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
                  and declared.get('pass_at_1') == computed['pass_at_1'],
                  'Reported mode scores differ from actual confirmation results')
     history = _validate_confirmation_history(evidence, path.parent, frozen, tracked)
-    return {'phase': 'confirmation', 'status': 'completed', 'model': MODEL,
+    result = {'phase': 'confirmation', 'status': 'completed', 'model': MODEL,
         'reasoning_effort': EFFORT, 'selection_manifest_sha256': selection_sha,
         'evaluation_manifest_sha256': tracked[str(path)], 'frozen_at': frozen_at.isoformat(),
         'started_at': started_at.isoformat(), 'finished_at': finished_at.isoformat(),
@@ -508,6 +576,9 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
         'maximum_overall_pass_at_1': MAX_PASS_AT_ONE, 'by_mode': by_mode, 'tasks': results,
         'tool_time_policy': timing_policy,
         'infrastructure_history': history}
+    if execution_budget is not None:
+        result.update(execution_budget=dict(execution_budget), execution_budget_source_sha256=execution_budget_source_sha)
+    return result
 
 
 def publish_dataset(*, release_dir=None, run_dir=None, selection_manifest=None,
@@ -547,6 +618,10 @@ def publish_dataset(*, release_dir=None, run_dir=None, selection_manifest=None,
                                   for agent, entry in item['controls'].items()}}
                   for item in validated], 'runtime': runtime,
         'evidence_policy': 'Only task allowlist and hash-bound aggregate receipts; no private logs or credentials.'}
+    if 'execution_budget' in evaluation:
+        manifest['execution_budget'] = dict(evaluation['execution_budget'])
+        for task in manifest['tasks']:
+            task['execution_budget'] = dict(evaluation['execution_budget'])
     raw_manifest = (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode()
     _check_credentials(raw_manifest, secrets)
     for raw in runtime_files.values():

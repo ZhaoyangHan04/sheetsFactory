@@ -74,7 +74,9 @@ def file_hashes(directory):
 
 
 def confirmation(fixture, *, rewards=None, phase='confirmation'):
-    policy = json.loads(fixture['selection'].read_text())['tool_time_policy']
+    selection = json.loads(fixture['selection'].read_text())
+    policy = selection['tool_time_policy']
+    timeout = selection['timeout_seconds']
     entries = []
     for index, item in enumerate(fixture['entries']):
         reward = rewards[index] if rewards else 0
@@ -83,7 +85,7 @@ def confirmation(fixture, *, rewards=None, phase='confirmation'):
             'task_id': {'path': item['task_directory']},
             'config': {'task': {'path': item['task_directory']}, 'agent': {
                 'model_name': publish.MODEL, 'kwargs': {'reasoning_effort': publish.EFFORT},
-                'override_timeout_sec': 1800, 'import_path': 'sheets_factory.evaluation.frontier:LocalCodex'}},
+                'override_timeout_sec': timeout, 'import_path': 'sheets_factory.evaluation.frontier:LocalCodex'}},
             'agent_info': {'name': 'codex', 'model_info': {'name': publish.MODEL}},
             'exception_info': None, 'verifier_result': {'rewards': {'reward': reward}},
             'agent_execution': {'started_at': '2026-10-29T12:01:01Z', 'finished_at': '2026-10-29T12:01:02Z'},
@@ -105,13 +107,17 @@ def confirmation(fixture, *, rewards=None, phase='confirmation'):
     overall = sum(item['reward'] for item in entries) / len(entries)
     write_json(fixture['evaluation'], {'schema_version': 1, 'phase': phase,
         'status': 'completed', 'model': publish.MODEL, 'reasoning_effort': publish.EFFORT,
-        'timeout_seconds': 1800,
+        'timeout_seconds': timeout,
         'tool_time_policy': dict(policy),
         'selection_manifest': {'path': str(fixture['selection']), 'sha256': digest(fixture['selection'])},
         'started_at': '2026-10-29T12:01:00Z', 'finished_at': '2026-10-29T12:02:00Z',
         'attempts': entries, 'threshold': .2, 'gate_passed': overall <= .2,
         'score': {'overall_pass_at_1': overall, 'by_mode': by_mode, 'total_tasks': len(entries),
                   'scored_tasks': len(entries), 'infrastructure_errors': 0}})
+    if 'execution_budget' in selection:
+        manifest = json.loads(fixture['evaluation'].read_text())
+        manifest['execution_budget'] = deepcopy(selection['execution_budget'])
+        write_json(fixture['evaluation'], manifest)
     return entries
 
 
@@ -159,6 +165,8 @@ def test_dry_run_is_read_only_and_real_publication_has_no_output_links(fixture_p
     assert file_hashes(f['root']) == before
     assert not (f['root'] / 'SpreadsheetEval').exists()
     assert result['manifest']['confirmation']['overall_pass_at_1'] == 0
+    assert 'execution_budget' not in result['manifest']
+    assert 'execution_budget' not in result['manifest']['confirmation']
     result = invoke(f)
     dataset = f['root'] / 'SpreadsheetEval'
     assert result['status'] == 'published'
@@ -887,3 +895,167 @@ def test_unreported_second_scored_attempt_cannot_select_the_lower_reward(fixture
     write_json(extra, json.loads(Path(entries[0]['result_file']).read_text()))
     with pytest.raises(publish.PublishError, match='repeated scored attempts'):
         invoke(f)
+
+
+EXECUTION_BUDGET = {'version': 1, 'elapsed_policy': 'operational_guard',
+                    'elapsed_guard_seconds': 14400, 'tool_budget_seconds': 1800}
+
+
+def prospective_confirmation(fixture, policy=POLICY_V2):
+    set_timing_policy(fixture, policy)
+    frozen = json.loads(fixture['selection'].read_text())
+    frozen.update(execution_budget=deepcopy(EXECUTION_BUDGET), timeout_seconds=14400)
+    for task in fixture['entries']:
+        task.update(execution_budget=deepcopy(EXECUTION_BUDGET), timeout_seconds=14400)
+    frozen['tasks'] = deepcopy(fixture['entries'])
+    source = fixture['selection'].parent / 'source_manifest.json'
+    write_json(source, {'execution_budget': deepcopy(EXECUTION_BUDGET),
+                        'selected_task_ids': frozen['selected_task_ids'], 'tasks': deepcopy(frozen['tasks'])})
+    frozen['source_manifest'] = {'path': str(source), 'sha256': digest(source)}
+    write_json(fixture['selection'], frozen)
+    confirmation(fixture)
+    return source
+
+
+@pytest.mark.parametrize('policy', [TOOL_TIME_POLICY, POLICY_V2])
+def test_explicit_operational_guard_publishes_consistent_contract_and_long_model_time(fixture_publication, policy):
+    f = fixture_publication
+    source = prospective_confirmation(f, policy)
+    manifest = json.loads(f['evaluation'].read_text())
+    entry = manifest['attempts'][0]
+    result = Path(entry['result_file'])
+    actual = json.loads(result.read_text())
+    actual['agent_execution']['finished_at'] = '2026-10-29T12:46:01Z'
+    actual['finished_at'] = '2026-10-29T12:46:02Z'
+    write_json(result, actual)
+    entry['result_sha256'] = digest(result)
+    apply_tool_time_policy(entry, json.loads(f['selection'].read_text()))
+    manifest['finished_at'] = '2026-10-29T12:47:00Z'
+    write_json(f['evaluation'], manifest)
+    before = file_hashes(f['root'])
+    published = invoke(f, dry_run=True)['manifest']
+    assert published['execution_budget'] == EXECUTION_BUDGET
+    assert published['confirmation']['execution_budget'] == EXECUTION_BUDGET
+    assert published['confirmation']['execution_budget_source_sha256'] == digest(source)
+    assert all(t['execution_budget'] == EXECUTION_BUDGET for t in published['tasks'])
+    assert all(t['execution_budget'] == EXECUTION_BUDGET for t in published['confirmation']['tasks'])
+    assert published['confirmation']['tasks'][0]['tool_time']['cumulative_tool_seconds'] == 1
+    assert file_hashes(f['root']) == before
+
+
+@pytest.mark.parametrize('defect', ['source_missing', 'source_hash', 'source_budget', 'source_task',
+    'source_timeout', 'source_task_timeout', 'source_task_policy',
+    'selection_tool_budget', 'evaluation_missing', 'evaluation_budget', 'evaluation_timeout',
+    'task_missing', 'task_timeout', 'attempt_missing', 'attempt_budget'])
+def test_prospective_budget_rejects_partial_or_mixed_bundle(fixture_publication, defect):
+    f = fixture_publication
+    source_path = prospective_confirmation(f)
+    source = json.loads(source_path.read_text())
+    frozen = json.loads(f['selection'].read_text())
+    manifest = json.loads(f['evaluation'].read_text())
+    if defect == 'source_missing': frozen.pop('source_manifest')
+    elif defect == 'source_hash': frozen['source_manifest']['sha256'] = '0' * 64
+    elif defect == 'source_budget': source['execution_budget']['elapsed_guard_seconds'] += 1
+    elif defect == 'source_task': source['tasks'][0]['execution_budget']['elapsed_guard_seconds'] += 1
+    elif defect == 'source_timeout': source['timeout_seconds'] = 1800
+    elif defect == 'source_task_timeout': source['tasks'][0]['timeout_seconds'] = 1800
+    elif defect == 'source_task_policy': source['tasks'][0]['tool_time_policy'] = dict(TOOL_TIME_POLICY)
+    elif defect == 'selection_tool_budget': frozen['tool_time_policy']['budget_seconds'] = 1801
+    elif defect == 'evaluation_missing': manifest.pop('execution_budget')
+    elif defect == 'evaluation_budget': manifest['execution_budget']['elapsed_guard_seconds'] += 1
+    elif defect == 'evaluation_timeout': manifest['timeout_seconds'] = 1800
+    elif defect == 'task_missing': frozen['tasks'][0].pop('execution_budget')
+    elif defect == 'task_timeout': frozen['tasks'][0]['timeout_seconds'] = 1800
+    elif defect == 'attempt_missing': manifest['attempts'][0].pop('execution_budget')
+    else: manifest['attempts'][0]['execution_budget']['elapsed_guard_seconds'] += 1
+    write_json(source_path, source)
+    if defect not in {'source_missing', 'source_hash'}: frozen['source_manifest']['sha256'] = digest(source_path)
+    write_json(f['selection'], frozen)
+    manifest['selection_manifest']['sha256'] = digest(f['selection'])
+    write_json(f['evaluation'], manifest)
+    with pytest.raises(publish.PublishError): invoke(f, dry_run=True)
+
+
+@pytest.mark.parametrize('tool_seconds', [1, 1800])
+@pytest.mark.parametrize('raw_reward', [0, None])
+@pytest.mark.parametrize('policy', [TOOL_TIME_POLICY, POLICY_V2])
+def test_elapsed_guard_alone_cannot_publish_zero_but_proven_tool_exhaustion_can(fixture_publication, tool_seconds, raw_reward, policy):
+    from sheets_factory.evaluation.frontier import collect_attempts
+    f = fixture_publication
+    prospective_confirmation(f, policy)
+    manifest = json.loads(f['evaluation'].read_text())
+    original = manifest['attempts'][0]
+    result = Path(original['result_file'])
+    actual = json.loads(result.read_text())
+    actual.update(exception_info={'exception_type': 'AgentTimeoutError'}, finished_at='2026-10-29T16:01:02Z')
+    actual['verifier_result'] = None if raw_reward is None else {'rewards': {'reward': raw_reward}}
+    actual['agent_execution']['finished_at'] = '2026-10-29T16:01:01Z'
+    write_json(result, actual)
+    persist_timing(result, seconds=tool_seconds)
+    frozen = json.loads(f['selection'].read_text())
+    entries = collect_attempts(f['evaluation'].parent, frozen)
+    guarded = next(e for e in entries if e['task_id'] == original['task_id'])
+    assert guarded['exception_resolution']['classification'] == 'operational_elapsed_guard_reached'
+    manifest.update(attempts=entries, finished_at='2026-10-29T16:02:00Z')
+    if tool_seconds == 1:
+        assert guarded['status'] == 'evidence_incomplete' and guarded['reward'] is None
+        # Even a forged scored declaration cannot turn elapsed guard into failure.
+        guarded.update(status='scored', reward=0)
+        write_json(f['evaluation'], manifest)
+        with pytest.raises(publish.PublishError, match='tool timing is incomplete'): invoke(f, dry_run=True)
+    else:
+        assert guarded['status'] == 'scored' and guarded['reward'] == 0
+        write_json(f['evaluation'], manifest)
+        published = next(t for t in invoke(f, dry_run=True)['manifest']['confirmation']['tasks']
+                         if t['task_id'] == original['task_id'])
+        assert published['exception_resolution']['classification'] == 'operational_elapsed_guard_reached'
+        assert published['tool_time']['passed'] is False
+        assert published['tool_time']['cumulative_tool_seconds'] == 1800
+        assert published['raw_verifier_reward'] is raw_reward
+
+
+def test_source_cannot_opt_in_after_legacy_selection(fixture_publication):
+    f = fixture_publication
+    confirmation(f)
+    frozen = json.loads(f['selection'].read_text())
+    source = f['selection'].parent / 'source_only.json'
+    write_json(source, {'execution_budget': EXECUTION_BUDGET})
+    frozen['source_manifest'] = {'path': str(source), 'sha256': digest(source)}
+    write_json(f['selection'], frozen)
+    evaluation = json.loads(f['evaluation'].read_text())
+    evaluation['selection_manifest']['sha256'] = digest(f['selection'])
+    write_json(f['evaluation'], evaluation)
+    with pytest.raises(publish.PublishError, match='absent from the frozen selection'):
+        invoke(f, dry_run=True)
+
+
+def test_execution_budget_source_changed_during_staging_prevents_publication(fixture_publication, monkeypatch):
+    f = fixture_publication
+    source = prospective_confirmation(f)
+    copy = publish.release._copy_payload
+    changed = False
+    def copy_then_change_source(*args):
+        nonlocal changed
+        copy(*args)
+        if not changed:
+            source.write_text(source.read_text() + '\n')
+            changed = True
+    monkeypatch.setattr(publish.release, '_copy_payload', copy_then_change_source)
+    with pytest.raises(publish.PublishError, match='evidence changed during staging'):
+        invoke(f)
+    assert not (f['root'] / 'SpreadsheetEval').exists()
+
+
+def test_normal_completed_trial_still_requires_binary_verifier_with_operational_contract(fixture_publication):
+    f = fixture_publication
+    prospective_confirmation(f)
+    manifest = json.loads(f['evaluation'].read_text())
+    entry = manifest['attempts'][0]
+    result = Path(entry['result_file'])
+    actual = json.loads(result.read_text())
+    actual['verifier_result'] = None
+    write_json(result, actual)
+    entry.update(result_sha256=digest(result), raw_verifier_reward=None, reward=0)
+    write_json(f['evaluation'], manifest)
+    with pytest.raises(publish.PublishError, match='reward is missing or inconsistent'):
+        invoke(f, dry_run=True)
