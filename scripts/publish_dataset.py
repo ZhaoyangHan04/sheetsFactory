@@ -8,6 +8,7 @@ copies private traces. This command does not run models, Docker, or Harbor.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import ctypes
 from datetime import datetime, timezone
 import errno
@@ -201,6 +202,87 @@ def _rename_new(source, destination):
         raise OSError(code, 'Publication rename failed')
 
 
+def _validate_confirmation_history(evidence, directory, frozen, tracked):
+    """Replay retry authorization without counting failed infrastructure as zero."""
+    from sheets_factory.evaluation.frontier import collect_attempts, assess_infrastructure_retry
+
+    directory = Path(directory)
+    try:
+        current, history = collect_attempts(directory, frozen, include_infrastructure_history=True)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise PublishError('Confirmation history has invalid or repeated scored attempts') from error
+    supplied = evidence['attempts']
+    identity = lambda item: (item['task_id'], item['result_file'], item['result_sha256'], item['status'], item['reward'])
+    _require({identity(item) for item in current} == {identity(item) for item in supplied},
+             'Final confirmation attempts differ from actual Harbor trial history')
+    reported_history = evidence.get('infra_history', [])
+    _require(isinstance(reported_history, list)
+             and len(reported_history) == len({identity(item) for item in reported_history})
+             and {identity(item) for item in history} == {identity(item) for item in reported_history},
+             'Raw infrastructure history differs from the manifest')
+    for item in current + history:
+        raw = release._file(Path(item['result_file']), directory, tracked)
+        _require(_sha(raw) == item['result_sha256'], 'Raw trial history changed')
+    retries = evidence.get('infrastructure_retries', [])
+    _require(isinstance(retries, list), 'Infrastructure retry ledger must be a list')
+    selected = set(frozen['selected_task_ids'])
+    counts, jobs = Counter(), {}
+    actual_history = {item['result_file']: item for item in history}
+    for index, retry in enumerate(retries, 1):
+        _require(retry.get('index') == index and retry.get('finished_at'), 'Infrastructure retry ledger is unfinished')
+        task_ids = retry.get('task_ids')
+        _require(isinstance(task_ids, list) and task_ids and len(task_ids) == len(set(task_ids))
+                 and set(task_ids) <= selected, 'Retry task IDs differ from the frozen cohort')
+        counts.update(task_ids)
+        _require(all(count <= 2 for count in counts.values()), 'Per-task infrastructure retry budget exceeds two')
+        job = retry.get('job_name')
+        _require(isinstance(job, str) and job not in jobs and job != 'frontier-pass1', 'Duplicate or invalid retry job')
+        jobs[job] = set(task_ids)
+        previous_path = Path(retry.get('previous_manifest_file', ''))
+        previous = release._json(previous_path, directory, tracked)
+        _require(tracked[str(previous_path.absolute())] == retry.get('previous_manifest_sha256')
+                 and previous.get('status') == 'infrastructure_failed'
+                 and previous.get('phase') == evidence.get('phase')
+                 and previous.get('selection_manifest') == evidence['selection_manifest'],
+                 'Previous evaluation manifest receipt differs')
+        _require(previous.get('infrastructure_retries', []) == retries[:index - 1],
+                 'Infrastructure retry manifests do not form the original ledger chain')
+        previous_attempts = {item['task_id']: item for item in previous.get('attempts', [])}
+        authorization = retry.get('authorization')
+        _require(isinstance(authorization, list), 'Retry authorization evidence is missing')
+        authorized = {item['task_id']: item for item in authorization}
+        _require(len(authorized) == len(authorization) and set(authorized) <= selected,
+                 'Retry authorization IDs are duplicated or outside the frozen cohort')
+        for task_id in task_ids:
+            old = previous_attempts.get(task_id)
+            _require(old is None or old.get('status') == 'infrastructure_error',
+                     'A previously scored model attempt was retried')
+            if old is None:
+                expected = {'eligible': True, 'reason': 'no_persisted_attempt', 'result_file': None, 'result_sha256': None}
+            else:
+                actual = actual_history.get(old.get('result_file'))
+                _require(actual is not None and identity(actual) == identity(old),
+                         'Previously failed infrastructure record changed classification')
+                expected = assess_infrastructure_retry(actual)
+            recorded = authorized.get(task_id, {})
+            _require(expected.get('eligible') is True and recorded == {**expected, 'task_id': task_id},
+                     'Retry lacks exact independently reproduced infrastructure authorization')
+            if expected.get('evidence_file'):
+                raw = release._file(Path(expected['evidence_file']), directory, tracked)
+                _require(_sha(raw) == expected['evidence_sha256'], 'Provider failure evidence changed')
+        start = _timestamp(retry.get('started_at'), 'Infrastructure retry start')
+        finish = _timestamp(retry.get('finished_at'), 'Infrastructure retry finish')
+        _require(_timestamp(previous.get('finished_at'), 'Previous evaluation finish') <= start <= finish
+                 <= _timestamp(evidence.get('finished_at'), 'Confirmation finish'),
+                 'Infrastructure retry timing differs from the previous and final receipts')
+    for attempt in current + history:
+        job = attempt['job_name']
+        _require(job == 'frontier-pass1' or attempt['task_id'] in jobs.get(job, set()),
+                 'Actual trial has no corresponding retry authorization ledger')
+    return {'retry_batches': len(retries), 'raw_infrastructure_records': len(history),
+            'scored_attempts_per_task': 1, 'maximum_infrastructure_retries_per_task': 2}
+
+
 def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
     """Check actual first attempts from the predeclared confirmation cohort."""
     from dirhash import dirhash
@@ -274,7 +356,20 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
                  and actual_agent.get('override_timeout_sec') == frozen.get('timeout_seconds')
                  and (agent_info.get('model_info') or {}).get('name') == MODEL,
                  'Actual confirmation result lacks the required identity or execution binding')
-        _require(not actual.get('exception_info'), 'Actual confirmation trial has an unresolved exception')
+        resolution = None
+        if actual.get('exception_info'):
+            from sheets_factory.evaluation.frontier import review_agent_timeout
+            _require(actual['exception_info'].get('exception_type') == 'AgentTimeoutError',
+                     'Actual confirmation trial has an unresolved exception')
+            resolution = review_agent_timeout(actual, declared, result_file=result_path)
+            _require(resolution is not None and entry.get('exception_resolution') == resolution,
+                     'Normal agent timeout lacks an exact reproducible review receipt')
+            for label in ('native_log', 'diagnostics'):
+                file = Path(resolution[label + '_file'])
+                raw = release._file(file, result_path.parent, tracked)
+                _require(_sha(raw) == resolution[label + '_sha256'],
+                         'Agent timeout review evidence changed')
+            release._file(result_path.parent / 'verifier/reward.txt', result_path.parent, tracked)
         rewards = (actual.get('verifier_result') or {}).get('rewards') or {}
         reward = rewards.get('reward')
         if reward is None and isinstance(rewards, dict) and len(rewards) == 1:
@@ -286,8 +381,13 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
         attempt_finished = _timestamp(actual.get('finished_at'), 'Actual attempt finish')
         _require(started_at <= attempt_started <= attempt_finished <= finished_at,
                  'Actual attempt timestamps differ from the confirmation window')
-        results.append({'task_id': task_id, 'mode': task['mode'], 'reward': reward,
-                        'result_sha256': result_sha})
+        public_result = {'task_id': task_id, 'mode': task['mode'], 'reward': reward,
+                         'result_sha256': result_sha}
+        if resolution:
+            public_result['exception_resolution'] = {key: resolution[key] for key in (
+                'classification', 'budget_seconds', 'agent_elapsed_seconds', 'model_output_tokens',
+                'completed_command_events', 'reward', 'native_log_sha256', 'diagnostics_sha256')}
+        results.append(public_result)
     _require(seen == set(by_id), 'Confirmation leaves selected tasks unevaluated')
     passed = sum(item['reward'] for item in results)
     overall = passed / len(results)
@@ -307,12 +407,14 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
                  and declared.get('successes') == computed['passed']
                  and declared.get('pass_at_1') == computed['pass_at_1'],
                  'Reported mode scores differ from actual confirmation results')
+    history = _validate_confirmation_history(evidence, path.parent, frozen, tracked)
     return {'phase': 'confirmation', 'status': 'completed', 'model': MODEL,
         'reasoning_effort': EFFORT, 'selection_manifest_sha256': selection_sha,
         'evaluation_manifest_sha256': tracked[str(path)], 'frozen_at': frozen_at.isoformat(),
         'started_at': started_at.isoformat(), 'finished_at': finished_at.isoformat(),
         'task_count': len(results), 'passed': passed, 'overall_pass_at_1': overall,
-        'maximum_overall_pass_at_1': MAX_PASS_AT_ONE, 'by_mode': by_mode, 'tasks': results}
+        'maximum_overall_pass_at_1': MAX_PASS_AT_ONE, 'by_mode': by_mode, 'tasks': results,
+        'infrastructure_history': history}
 
 
 def publish_dataset(*, release_dir=None, run_dir=None, selection_manifest=None,

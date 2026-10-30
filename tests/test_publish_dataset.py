@@ -80,7 +80,7 @@ def confirmation(fixture, *, rewards=None, phase='confirmation'):
             'exception_info': None, 'verifier_result': {'rewards': {'reward': reward}},
             'started_at': '2026-10-29T12:01:01Z', 'finished_at': '2026-10-29T12:01:02Z',
             'offline_fixture': True}
-        result = fixture['evaluation'].parent / 'results' / (item['task_id'] + '.json')
+        result = fixture['evaluation'].parent / 'harbor_jobs/frontier-pass1' / item['task_id'] / 'result.json'
         write_json(result, record)
         entries.append({**deepcopy(item), 'status': 'scored', 'reward': reward,
                         'result_file': str(result), 'result_sha256': digest(result)})
@@ -399,3 +399,163 @@ def test_root_oracle_command_resolves_all_tasks_and_ignores_manifest(fixture_pub
     config = json.loads(result.stdout)
     assert len(config['datasets']) == 1
     assert config['datasets'][0]['path'] == 'SpreadsheetEval'
+
+
+def normal_timeout(fixture):
+    from sheets_factory.evaluation.frontier import review_agent_timeout
+    confirmation(fixture)
+    manifest = json.loads(fixture['evaluation'].read_text())
+    entry = manifest['attempts'][0]
+    file = Path(entry['result_file'])
+    actual = json.loads(file.read_text())
+    actual.update(exception_info={'exception_type': 'AgentTimeoutError'},
+        agent_result={'n_input_tokens': 100, 'n_output_tokens': 10},
+        agent_execution={'started_at': '2026-10-29T12:01:01Z', 'finished_at': '2026-10-29T12:31:01Z'},
+        verifier={'started_at': '2026-10-29T12:31:02Z', 'finished_at': '2026-10-29T12:31:03Z'},
+        finished_at='2026-10-29T12:31:04Z')
+    write_json(file, actual)
+    log = file.parent / 'agent/codex.txt'
+    log.parent.mkdir()
+    log.write_text(json.dumps({'type': 'item.completed', 'item': {
+        'type': 'command_execution', 'command': 'python work.py', 'exit_code': 1,
+        'aggregated_output': 'An ordinary tool mistake; agent continued reasoning.'}}) + '\n')
+    write_json(file.parent / 'verifier/diagnostics.json', {'reward': 0, 'reason': 'value_or_modified_set_mismatch'})
+    (file.parent / 'verifier/reward.txt').write_text('0\n')
+    entry['result_sha256'] = digest(file)
+    entry['exception_resolution'] = review_agent_timeout(actual, fixture['entries'][0], result_file=file)
+    assert entry['exception_resolution'] is not None
+    manifest['finished_at'] = '2026-10-29T12:32:00Z'
+    write_json(fixture['evaluation'], manifest)
+    return manifest, file, log
+
+
+def test_normal_budget_timeout_requires_the_exact_shared_review(fixture_publication):
+    f = fixture_publication
+    normal_timeout(f)
+    result = invoke(f, dry_run=True)
+    reviewed = result['manifest']['confirmation']['tasks'][0]['exception_resolution']
+    assert reviewed['classification'] == 'normal_agent_budget_exhaustion'
+    assert reviewed['budget_seconds'] == 1800 and reviewed['agent_elapsed_seconds'] == 1800
+    assert reviewed['completed_command_events'] == 1  # Ordinary exit=1 remains valid activity.
+    assert 'native_log_file' not in reviewed and 'result_file' not in reviewed
+
+
+@pytest.mark.parametrize('problem', ['missing_receipt', 'forged_receipt', 'short_budget', 'provider_error',
+                                     'missing_diagnostics', 'recalculate_permission'])
+def test_incomplete_or_infrastructure_timeouts_are_not_scored_as_failures(fixture_publication, problem):
+    f = fixture_publication
+    manifest, file, log = normal_timeout(f)
+    entry = manifest['attempts'][0]
+    if problem == 'missing_receipt':
+        entry.pop('exception_resolution')
+    elif problem == 'forged_receipt':
+        entry['exception_resolution']['completed_command_events'] = 999
+    elif problem == 'short_budget':
+        actual = json.loads(file.read_text())
+        actual['agent_execution']['finished_at'] = '2026-10-29T12:02:00Z'
+        write_json(file, actual)
+        entry['result_sha256'] = digest(file)
+    elif problem == 'provider_error':
+        with log.open('a') as stream:
+            stream.write(json.dumps({'type': 'turn.failed', 'error': {'message': 'Service unavailable'}}) + '\n')
+    elif problem == 'missing_diagnostics':
+        (file.parent / 'verifier/diagnostics.json').unlink()
+    else:
+        log.write_text(json.dumps({'type': 'item.completed', 'item': {
+            'type': 'command_execution', 'aggregated_output': 'recalculate: Permission denied'}}) + '\n')
+    write_json(f['evaluation'], manifest)
+    with pytest.raises(publish.PublishError, match='timeout lacks an exact'):
+        invoke(f)
+    assert not (f['root'] / 'SpreadsheetEval').exists()
+
+
+def test_timeout_evidence_changed_during_copy_prevents_publication(fixture_publication, monkeypatch):
+    f = fixture_publication
+    _, _, log = normal_timeout(f)
+    copy = publish.release._copy_payload
+
+    def copy_then_change_log(*args):
+        copy(*args)
+        log.write_text(log.read_text() + '\n')
+
+    monkeypatch.setattr(publish.release, '_copy_payload', copy_then_change_log)
+    with pytest.raises(publish.PublishError, match='evidence changed during staging'):
+        invoke(f)
+    assert not (f['root'] / 'SpreadsheetEval').exists()
+
+
+def recovered_confirmation(fixture):
+    from sheets_factory.evaluation.frontier import collect_attempts, assess_infrastructure_retry
+    confirmation(fixture)
+    manifest = json.loads(fixture['evaluation'].read_text())
+    frozen = json.loads(fixture['selection'].read_text())
+    original = Path(manifest['attempts'][0]['result_file'])
+    healthy = json.loads(original.read_text())
+    failed = deepcopy(healthy)
+    failed.update(exception_info={'exception_type': 'NonZeroAgentExitCodeError'}, verifier_result=None)
+    write_json(original, failed)
+    log = original.parent / 'agent/codex.txt'
+    log.parent.mkdir()
+    log.write_text(json.dumps({'type': 'turn.failed', 'error': {'message': 'stream disconnected'}}) + '\n')
+    old_attempts, old_history = collect_attempts(fixture['evaluation'].parent, frozen, include_infrastructure_history=True)
+    before = deepcopy(manifest)
+    before.update(status='infrastructure_failed', gate_passed=False, attempts=old_attempts,
+                  infra_history=old_history, finished_at='2026-10-29T12:01:02Z')
+    previous = fixture['evaluation'].parent / 'private/evaluation_history/resume-001-before.json'
+    write_json(previous, before)
+    replacement = fixture['evaluation'].parent / 'harbor_jobs/frontier-infra-001/fm-a/result.json'
+    healthy.update(started_at='2026-10-29T12:01:03Z', finished_at='2026-10-29T12:01:04Z')
+    write_json(replacement, healthy)
+    current, history = collect_attempts(fixture['evaluation'].parent, frozen, include_infrastructure_history=True)
+    authorization = assess_infrastructure_retry(old_history[0])
+    manifest.update(attempts=current, infra_history=history, infrastructure_retries=[{
+        'index': 1, 'started_at': '2026-10-29T12:01:03Z', 'finished_at': '2026-10-29T12:01:05Z',
+        'task_ids': ['fm-a'], 'job_name': 'frontier-infra-001',
+        'previous_manifest_file': str(previous), 'previous_manifest_sha256': digest(previous),
+        'authorization': [{**authorization, 'task_id': 'fm-a'}]}])
+    write_json(fixture['evaluation'], manifest)
+    return manifest, previous, log
+
+
+def test_authorized_infrastructure_replacement_counts_only_one_scored_attempt(fixture_publication):
+    f = fixture_publication
+    recovered_confirmation(f)
+    result = invoke(f, dry_run=True)
+    history = result['manifest']['confirmation']['infrastructure_history']
+    assert history == {'retry_batches': 1, 'raw_infrastructure_records': 1,
+                       'scored_attempts_per_task': 1, 'maximum_infrastructure_retries_per_task': 2}
+    assert result['manifest']['confirmation']['task_count'] == 2
+    assert result['manifest']['confirmation']['overall_pass_at_1'] == 0
+    assert 'stream disconnected' not in json.dumps(result['manifest'])
+
+
+@pytest.mark.parametrize('problem', ['hidden_history', 'previous_manifest_sha', 'provider_log_sha', 'retried_scored'])
+def test_infrastructure_history_requires_independent_proof_chain(fixture_publication, problem):
+    f = fixture_publication
+    manifest, previous, log = recovered_confirmation(f)
+    retry = manifest['infrastructure_retries'][0]
+    if problem == 'hidden_history':
+        manifest['infra_history'] = []
+    elif problem == 'previous_manifest_sha':
+        previous.write_text(previous.read_text() + '\n')
+    elif problem == 'provider_log_sha':
+        log.write_text(log.read_text() + '\n')
+    else:
+        before = json.loads(previous.read_text())
+        old = next(item for item in before['attempts'] if item['task_id'] == 'fm-a')
+        old.update(status='scored', reward=0)
+        write_json(previous, before)
+        retry['previous_manifest_sha256'] = digest(previous)
+    write_json(f['evaluation'], manifest)
+    with pytest.raises(publish.PublishError):
+        invoke(f)
+    assert not (f['root'] / 'SpreadsheetEval').exists()
+
+
+def test_unreported_second_scored_attempt_cannot_select_the_lower_reward(fixture_publication):
+    f = fixture_publication
+    entries = confirmation(f)
+    extra = f['evaluation'].parent / 'harbor_jobs/unreported-rerun/fm-a/result.json'
+    write_json(extra, json.loads(Path(entries[0]['result_file']).read_text()))
+    with pytest.raises(publish.PublishError, match='repeated scored attempts'):
+        invoke(f)
