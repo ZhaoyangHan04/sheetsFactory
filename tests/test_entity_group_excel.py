@@ -222,6 +222,19 @@ def test_emitter_uses_only_public_primitives_and_formula_budget_fails_without_tr
     with pytest.raises(ValueError): emitted(spec)
 
 
+def test_larger_explicit_capacity_does_not_change_default_or_financial_outputs():
+    spec, ordinary, baseline = emitted()
+    _, large, binding = emitted(spec, maximum=2_000_000)
+    assert baseline['physical_formula_limit'] == 1_000_000
+    assert binding['physical_formula_limit'] == 2_000_000
+    assert binding['formula_bindings'] == baseline['formula_bindings']
+    assert binding['output_bindings'] == baseline['output_bindings']
+    assert binding['input_bindings'] == baseline['input_bindings']
+    ordinary.close(); large.close()
+    with pytest.raises(ValueError, match='Invalid physical formula budget'):
+        emitted(spec, maximum=2_000_001)
+
+
 def test_count_only_compiles_the_same_complete_toy_without_materializing_a_workbook(monkeypatch):
     spec, book, binding = emitted()
     physical_cells = sum(cell.value is not None for sheet in book for cell in sheet._cells.values())

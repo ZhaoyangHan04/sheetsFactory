@@ -282,7 +282,7 @@ def emit_entity_group_workbook(book, specification, *, max_formulas=1_000_000, a
     if public['dimension_mode'] == 'production' and not allow_production:
         raise ValueError('Production emission requires a separately authorised explicit opt-in')
     if _count_only and not isinstance(book, _CounterBook): raise ValueError('Count-only compilation cannot materialize an actual workbook')
-    if type(max_formulas) is not int or not 1 <= max_formulas <= (10_000_000 if _count_only else 1_000_000): raise ValueError('Invalid physical formula budget')
+    if type(max_formulas) is not int or not 1 <= max_formulas <= (10_000_000 if _count_only else 2_000_000): raise ValueError('Invalid physical formula budget')
     out = _Emitter(book, public, max_formulas, count_only=_count_only)
     months = public['months']; entity_ids = [e['id'] for e in public['entities']]
     entities = {e['id']: (i, e) for i, e in enumerate(public['entities'])}
