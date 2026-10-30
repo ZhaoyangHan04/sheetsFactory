@@ -71,6 +71,21 @@ def test_profile_has_explicit_equal_resources_and_independent_budgets():
         'max_dependency_closure_cells': 3000000, 'full_target_cells': 2000000, 'truncate': False}
 
 
+def test_new_capacity_profile_preserves_legacy_and_tool_budget():
+    original = resource.load_runtime_profile()
+    upgraded = resource.load_runtime_profile(resource.DEFAULT_PROFILE.with_name('entity_group_large_v2.yaml'))
+    assert original['id'] == 'entity_group_large_v1'
+    assert original['docker_resources']['source']['memory_bytes'] == 8 * 1024**3
+    assert upgraded['id'] == 'entity_group_large_v2'
+    assert all(upgraded['docker_resources'][role]['memory_bytes'] == 32 * 1024**3 for role in resource.ROLES)
+    assert upgraded['solver_tool_budget'] == original['solver_tool_budget']
+    assert upgraded['timeouts'] == original['timeouts'] and upgraded['limits'] == original['limits']
+    assert resource.docker_resource_flags(upgraded, 'source') == [
+        '--memory', '34359738368', '--cpus', '2', '--pids-limit', '256']
+    with pytest.raises(ValueError):
+        resource.load_runtime_profile({**upgraded, 'id': original['id']})
+
+
 @pytest.mark.parametrize('mutate', [
     lambda p: p.update(version=True),
     lambda p: p['docker_resources']['agent'].update(memory_bytes='8g'),

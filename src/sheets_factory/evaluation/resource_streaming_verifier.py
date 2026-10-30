@@ -33,14 +33,15 @@ def load_profile(path):
     profile = json.loads(path.read_text())
     if (type(profile.get('version')) is not int or profile['version'] != 1
             or profile.get('kind') != 'workbook_runtime_resource_profile'
-            or profile.get('id') != 'entity_group_large_v1'):
+            or profile.get('id') not in ('entity_group_large_v1', 'entity_group_large_v2')):
         raise ValueError('Unexpected resource profile')
+    memory_bytes = (8 if profile['id'] == 'entity_group_large_v1' else 32) * 1024**3
     for role in ('source', 'agent', 'verifier'):
         resource = profile.get('docker_resources', {}).get(role, {})
         if (type(resource.get('cpus')) is not int or resource['cpus'] != 2
                 or type(resource.get('memory_bytes')) is not int
-                or resource['memory_bytes'] != 8 * 1024**3):
-            raise ValueError('Every role requires 2 CPU and 8 GiB')
+                or resource['memory_bytes'] != memory_bytes):
+            raise ValueError('Every role must use 2 CPU and the declared profile memory')
     timeouts = profile.get('timeouts')
     if (timeouts != {'workbook_file_seconds': WORKBOOK_FILE_SECONDS,
                     'verifier_total_seconds': VERIFIER_TOTAL_SECONDS}

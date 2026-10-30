@@ -52,7 +52,8 @@ def load_runtime_profile(value=DEFAULT_PROFILE):
     _require(isinstance(p, dict) and set(p) == {'version', 'kind', 'id', 'image', 'docker_resources',
             'timeouts', 'solver_tool_budget', 'limits'}, 'Runtime profile fields differ')
     _require(type(p['version']) is int and p['version'] == 1
-             and p['kind'] == 'workbook_runtime_resource_profile' and p['id'] == 'entity_group_large_v1',
+             and p['kind'] == 'workbook_runtime_resource_profile'
+             and p['id'] in ('entity_group_large_v1', 'entity_group_large_v2'),
              'Unsupported prospective runtime profile')
     _require(isinstance(p['image'], dict) and set(p['image']) == {'tag', 'id'}
              and type(p['image']['tag']) is str and bool(p['image']['tag'])
@@ -60,13 +61,14 @@ def load_runtime_profile(value=DEFAULT_PROFILE):
              'Bind an existing immutable image ID')
     _require(isinstance(p['docker_resources'], dict) and set(p['docker_resources']) == set(ROLES),
              'Source, agent and verifier resources must all be explicit')
+    memory_bytes = (8 if p['id'] == 'entity_group_large_v1' else 32) * 1024**3
     for role in ROLES:
         r = p['docker_resources'][role]
         _require(isinstance(r, dict) and set(r) == {'cpus', 'memory_bytes', 'pids_limit'}
                  and type(r['cpus']) is int and r['cpus'] == 2
-                 and type(r['memory_bytes']) is int and r['memory_bytes'] == 8 * 1024**3
+                 and type(r['memory_bytes']) is int and r['memory_bytes'] == memory_bytes
                  and type(r['pids_limit']) is int and 64 <= r['pids_limit'] <= 4096,
-                 'This family explicitly requires 2 CPU, 8 GiB and a finite PID limit for every role')
+                 'Every role must use the declared 2 CPU, profile memory and finite PID limit')
     _require(all(p['docker_resources'][role] == p['docker_resources']['source'] for role in ROLES),
              'Source, agent and verifier must use identical resources')
     _require(p['timeouts'] == {'workbook_file_seconds': 600, 'verifier_total_seconds': 2400}

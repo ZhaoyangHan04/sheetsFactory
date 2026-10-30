@@ -14,7 +14,7 @@ from ..workbook import resource_engine
 from ..workbook.resource_engine import DEFAULT_PROFILE, load_runtime_profile
 
 UPSTREAM_HARBOR_SHA256 = '3166295f3af521031b078535465c65b9351b812357c24eea5880b72c88022d33'
-RESOURCE_ENGINE_SHA256 = 'b48cc936c8424862d2727e2695ea79414c5bb8f09c47052aab8bec575d682f85'
+RESOURCE_ENGINE_SHA256 = 'cc4fb863740a0fc403a5947a52fa1c2e644b81b75c358e2a3cbf47e7d33a9c8d'
 UNO_SHA256 = 'c6b854c4705d12a9d7d1ec36575f0634e50c93290bd62c40634cc826ee41fc41'
 RESOURCE_FIELD = 'resource_runtime'
 
@@ -52,7 +52,8 @@ def _file(task, candidates):
     raise FileNotFoundError('Missing task artifact: ' + ', '.join(candidates))
 
 
-def _toml(task_id, metadata):
+def _toml(task_id, metadata, profile):
+    memory_mb = profile['docker_resources']['agent']['memory_bytes'] // 1024**2
     return (
         'schema_version = "1.3"\nartifacts = ["/app/output.xlsx"]\n\n'
         '[task]\n' + f'name = {json.dumps("sheetsfactory/" + task_id)}\n'
@@ -61,8 +62,10 @@ def _toml(task_id, metadata):
         + f'difficulty_status = {json.dumps(metadata.get("difficulty_status", "deferred"))}\n\n'
         '[agent]\ntimeout_sec = 14400.0\n\n'
         '[verifier]\ntimeout_sec = 2400.0\nenvironment_mode = "separate"\n\n'
-        '[environment]\ncpus = 2\nmemory_mb = 8192\nstorage_mb = 2048\nnetwork_mode = "no-network"\n\n'
-        '[verifier.environment]\ncpus = 2\nmemory_mb = 8192\nstorage_mb = 2048\nnetwork_mode = "no-network"\n')
+        '[environment]\ncpus = 2\n' + f'memory_mb = {memory_mb}\n'
+        'storage_mb = 2048\nnetwork_mode = "no-network"\n\n'
+        '[verifier.environment]\ncpus = 2\n' + f'memory_mb = {memory_mb}\n'
+        'storage_mb = 2048\nnetwork_mode = "no-network"\n')
 
 
 def export_resource_harbor(task_dir, export_dir, metadata=None, project_root=None,
@@ -132,7 +135,7 @@ def export_resource_harbor(task_dir, export_dir, metadata=None, project_root=Non
         '--reward /logs/verifier/reward.txt --report /logs/verifier/diagnostics.json\n')
     for relative in ('environment/recalculate', 'solution/solve.sh', 'tests/test.sh'):
         (destination / relative).chmod(0o755)
-    (destination / 'task.toml').write_text(_toml(task_id, metadata))
+    (destination / 'task.toml').write_text(_toml(task_id, metadata, profile))
     manifest = {'task_id': task_id, 'metadata': metadata, 'files': {}}
     for path in sorted(destination.rglob('*')):
         if path.is_file():
@@ -161,9 +164,10 @@ def inspect_resource_export(export_dir):
              and contract.get('quality_or_difficulty_certified') is False,
              'An export cannot certify execution, quality or difficulty')
     config = tomllib.loads((path / 'task.toml').read_text())
-    for role in (config['environment'], config['verifier']['environment']):
+    for name, role in (('agent', config['environment']), ('verifier', config['verifier']['environment'])):
         _require(type(role.get('cpus')) is int and role['cpus'] == 2
-                 and type(role.get('memory_mb')) is int and role['memory_mb'] == 8192
+                 and type(role.get('memory_mb')) is int
+                 and role['memory_mb'] == profile['docker_resources'][name]['memory_bytes'] // 1024**2
                  and role.get('network_mode') == 'no-network', 'Agent/verifier resource configuration differs')
     _require(config['verifier']['timeout_sec'] == 2400
              and config['verifier']['environment_mode'] == 'separate'

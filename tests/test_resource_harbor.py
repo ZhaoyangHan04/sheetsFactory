@@ -56,6 +56,22 @@ def _rewrite_manifest(path):
     (path / 'export_manifest.json').write_text(json.dumps(manifest))
 
 
+def test_explicit_capacity_profile_is_consistent_in_agent_and_verifier(task, tmp_path):
+    from sheets_factory.workbook.resource_engine import DEFAULT_PROFILE
+    profile = DEFAULT_PROFILE.with_name('entity_group_large_v2.yaml')
+    path = export.export_resource_harbor(task, tmp_path / 'capacity_export', runtime_profile=profile)
+    binding = export.inspect_resource_export(path)
+    config = tomllib.loads((path / 'task.toml').read_text())
+    assert config['environment']['memory_mb'] == 32768
+    assert config['verifier']['environment']['memory_mb'] == 32768
+    assert config['agent']['timeout_sec'] == 14400 and config['verifier']['timeout_sec'] == 2400
+    assert binding['resource_runtime']['actual_container_resources_verified'] is False
+    for relative in ('environment/runtime_profile.json', 'tests/runtime_profile.json'):
+        actual = runner.load_profile(path / relative)
+        assert actual == load_runtime_profile(profile)
+        assert actual['solver_tool_budget']['seconds'] == 1800
+
+
 def test_real_harbor_schema_exact_resources_and_original_control_binding(exported):
     from harbor.models.task.task import Task
     task = Task(exported)
