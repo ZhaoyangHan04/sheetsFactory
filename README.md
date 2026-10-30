@@ -117,6 +117,17 @@ EUSES 下载与候选筛选可单独执行：
 
 高级项目模型另外包含契约与准备金状态，以及税务折旧、到期亏损批次、利息抵扣结转和递延税三表桥接。首个真实构建的高级模型有 14 张表、5,262 个公式，5,334 个绑定单元格通过独立记账与 LibreOffice 验算；这仍只是种子验证。`config/derived_advanced_tax_scenarios_v1.json` 预先声明各场景应触发的机制，适配器按实际计算结果筛选，分别记录亏损到期、批次竞争、利息结转、递延税变化及现金约束。只有真实执行产生证据的案例才进入造题清单。
 
+组合模型的构建入口为 `scripts/build_portfolio_source.py`，参数位于 `config/derived_portfolio_v1.json`。它保留 12 个明确的假设项目及各自政策，再加入集团汇总报表，共 171 张表、66,293 个公式；实际源验证检查了 67,157 个单元格，覆盖所有公式，并执行两次 LibreOffice 重算与稳定性比较。来源仍计为 1 个原始祖源。首次开发实验遮蔽 59,165 个公式，最强配置单次正常得分为 1；规模与公式数量本身不构成难度证明，该实验不能作为达标题交付。
+
+```bash
+.venv312/bin/python scripts/build_portfolio_source.py --output data/seeds/portfolio --recalculate
+.venv312/bin/python -m sheets_factory.cli --config config/pipelines/portfolio_scale.yaml
+```
+
+`portfolio_scale.yaml` 使用完整公式系列和独立财务参考复核。该证据模式要求全部 12 项检查，Q01–Q04 必须有明确支持，且参考、变化集合、诊断与运行控制均绑定当前文件哈希；它不声称执行了独立公开恢复。默认流水线继续使用独立公开恢复。调试可选择依赖分离证明：在原始与注入后的完整依赖图中排除所有根节点间依赖，再用真实联合重算的逐根值差异证明单独及边际影响，避免重复启动数百次相同计算。证明不成立时拒绝候选。
+
+循环融资模型具有真实的债务规模—利息—税款—现金流反馈，独立有限档位检查验证唯一固定点。迭代运行镜像位于 [runtime-lo-24.2-iterative-v1 Release](https://github.com/ZhaoyangHan04/sheetsFactory/releases/tag/runtime-lo-24.2-iterative-v1)，保留 LibreOffice 24.2.7.2，镜像 ID 为 `sha256:5c74b8a362305b20d736bdbad041a12a6159e31f3bde4a0a068a7ee71d6937d6`。镜像仅对启用迭代的工作簿执行有界的完整使用区域收敛检查；普通工作簿保持一次计算。附件 SHA256 与实际重新加载后的镜像身份均已验证。
+
 ## 打包交付
 
 发布脚本只从当前实际 qualified 且报告核验通过的集合选题，再复核原始 oracle/nop 结果、文件哈希、诊断和恢复证据。公开诊断缓存与私有参考诊断分别绑定来源和内容，私有诊断必须审阅当前恢复证据。每类数量不足时严格拒绝生成发布包。
