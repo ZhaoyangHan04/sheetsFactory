@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from decimal import Decimal
 import json
 import math
 import re
@@ -110,7 +111,11 @@ def expected_cells(spec, plan, ledger, bindings):
 
 
 def _formula_tokens(formula):
-    return [(token.type, token.subtype, token.value) for token in Tokenizer(formula).items if token.type != 'WHITE-SPACE']
+    # LibreOffice can write an integer coefficient as 1E+018. Decimal
+    # equality preserves its exact value, including digits beyond binary64.
+    return [(token.type, token.subtype,
+             Decimal(token.value) if token.type == 'OPERAND' and token.subtype == 'NUMBER' else token.value)
+            for token in Tokenizer(formula).items if token.type != 'WHITE-SPACE']
 
 
 def audit_capital_allocation_workbook(path, spec, plan, ledger, bindings):

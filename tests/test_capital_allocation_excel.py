@@ -342,3 +342,10 @@ def test_actual_run_cleanup_releases_lease_even_when_export_fails(tmp_path, monk
     with pytest.raises(RuntimeError, match='offline export failure'):
         builder.execute_prepared(tmp_path, tmp_path / 'not-read', tmp_path / 'not-read')
     assert released == closed == stopped == [True]
+def test_numeric_formula_tokens_allow_exact_scientific_notation():
+    from sheets_factory.workbook.capital_allocation.validate import _formula_tokens
+    assert _formula_tokens('=A1*1000000000000000000+B1*1000000000000000000000000') == _formula_tokens('=A1*1E+018+B1*1E+024')
+    assert _formula_tokens('=A1*1000000000000000001') != _formula_tokens('=A1*1E+018')
+    assert _formula_tokens('=A1*1000000000000000000') != _formula_tokens('=A2*1E+018')
+    assert _formula_tokens('=A1*1000000000000000000') != _formula_tokens('=A1+1E+018')
+
