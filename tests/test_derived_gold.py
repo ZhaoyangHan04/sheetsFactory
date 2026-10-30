@@ -198,9 +198,11 @@ def test_public_contract_resolves_fee_base_and_npv_rounding(contract):
     assert valuation["equity_npv"] == D("13410828.42")
     assert displayed_pv_sum == D("13410828.41")
     rules = " ".join(spec["public_rules"])
-    assert spec["public_contract_version"] >= 3
+    assert spec["public_contract_version"] >= 4
     assert "fee base is enterprise value" in rules
     assert "do not sum that rounded display row" in rules
+    assert "helper rows are positive payment magnitudes" in rules
+    assert "delta is closing balance minus opening balance" in rules
 
 
 def test_public_contract_resolves_depreciation_and_annual_snapshot(contract):
