@@ -40,7 +40,7 @@ def construction_contract(mode=None, config=None):
         raise ValueError('Unsupported construction mode: ' + str(mode))
     settings = (config or {}).get('construction', {})
     for name, maximum in settings.get('max_edit_count', {}).items():
-        if name not in modes or type(maximum) is not int or not modes[name]['edit_count']['min'] <= maximum <= 4096:
+        if name not in modes or type(maximum) is not int or not modes[name]['edit_count']['min'] <= maximum <= 8192:
             raise ValueError('Invalid configured construction edit limit')
         modes[name]['edit_count']['max'] = maximum
     preferences = {'financial_modeling_edit_count': [6, 20], 'debugging_edit_count': [2, 4]}
@@ -231,14 +231,33 @@ class PlanNode(BaseNode):
 
     def execute(self, ctx):
         variant = ctx.data.get('variant', 0)
+        backend = ctx.config.get('construction', {}).get('authoring_backend', 'llm')
+        if backend not in {'llm', 'project_template'}:
+            raise ValueError('Unsupported construction.authoring_backend')
+        if backend == 'project_template' and (
+                ctx.data.get('finance_evidence', {}).get('financial_seed_verified') is not True or variant != 0):
+            raise TaskRejected('Project template requires a verified financial source and a new source identity')
         scope = ctx.config.get('construction', {}).get('planning_scope', 'both_modes')
         if scope not in {'both_modes', 'per_mode'}:
             raise ValueError('construction.planning_scope must be both_modes or per_mode')
         requested = [ctx.mode] if scope == 'per_mode' else ['financial_modeling', 'debugging']
         suffix = '_' + ctx.mode if scope == 'per_mode' else ''
-        path = ctx.data['source_cache'] / f'task_plans_v{variant}{suffix}.json'
+        backend_suffix = '_project_template' if backend == 'project_template' else ''
+        path = ctx.data['source_cache'] / f'task_plans_v{variant}{suffix}{backend_suffix}.json'
         if path.exists():
             plans = json.loads(path.read_text())
+        elif backend == 'project_template':
+            evidence = ctx.data.get('finance_evidence', {})
+            from ..workbook.derived_gold.task_templates import propose_project_task
+            plans = {'source_assessment': {'financial_evidence': evidence,
+                                          'authoring_backend': backend, 'known_risks': []},
+                     'financial_modeling': None, 'debugging': None}
+            for requested_mode in requested:
+                plans[requested_mode] = propose_project_task(Path(ctx.data['baseline']), requested_mode)
+            path.write_text(json.dumps(plans, ensure_ascii=False, indent=2))
+            ctx.audit.emit('planning.template', task_id=ctx.task_id, mode=ctx.mode,
+                           backend=backend, baseline_sha256=digest(ctx.data['baseline']),
+                           plan_sha256=digest(path), llm_calls=0)
         else:
             previous = []
             for item in ctx.data['source_cache'].glob('task_plans_v*.json'):
@@ -514,7 +533,11 @@ class InstructionNode(BaseNode):
     def execute(self, ctx):
         text = ctx.data['plan']['public_instruction'].strip()
         rules = ctx.data['plan']['public_rules']
-        text += '\n\nPublic calculation rules and input evidence:\n' + '\n'.join(
+        style = ctx.config.get('construction', {}).get('instruction_style', 'full')
+        if style not in {'full', 'business_brief'}:
+            raise ValueError('Unsupported construction.instruction_style')
+        heading = 'Model context:' if style == 'business_brief' else 'Public calculation rules and input evidence:'
+        text += '\n\n' + heading + '\n' + '\n'.join(
             '- ' + (rule if isinstance(rule, str) else json.dumps(rule, ensure_ascii=False))
             for rule in rules) + '\n'
         scenario = ctx.data['plan'].get('scenario_inputs', [])
@@ -526,9 +549,14 @@ class InstructionNode(BaseNode):
             locations = (compact_target_regions(edits) if len(edits) > 80 else
                 '; '.join(f"'{e['sheet']}'!{e['cell']}" for e in edits))
             text += '\n\nMissing formula cells to complete: ' + locations + '.\n'
-        text += ('\n\nWork only within the stated financial-model scope. Preserve unrelated inputs, existing '
-                 'worksheets and unaffected values. Read /app/input.xlsx and save /app/output.xlsx. '
-                 'The file will be fully recalculated in LibreOffice before values are checked.\n')
+        if style == 'business_brief':
+            text += ('\n\nPreserve inputs, existing structure and unrelated formulas; allow dependent results '
+                     'to recalculate. Read /app/input.xlsx and save /app/output.xlsx. '
+                     'Values will be checked after LibreOffice recalculation.\n')
+        else:
+            text += ('\n\nWork only within the stated financial-model scope. Preserve unrelated inputs, existing '
+                     'worksheets and unaffected values. Read /app/input.xlsx and save /app/output.xlsx. '
+                     'The file will be fully recalculated in LibreOffice before values are checked.\n')
         path = ctx.revision_dir / 'public/instruction.md'; path.write_text(text)
         return {'instruction': text, 'instruction_path': path,
                 'revision_hash': hashlib.sha256(ctx.data['input'].read_bytes() + text.encode()).hexdigest()}
