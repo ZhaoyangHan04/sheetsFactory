@@ -1,0 +1,21 @@
+{
+  "adapter": "composite_complete_semantic_graph_v3",
+  "version": 3,
+  "seed": 2026103003,
+  "max_roots": 100000,
+  "scope": "unchanged_complete_source_monetary_scope_all_families_all_nonzero_members",
+  "policy_selection": "seed_field_identity_contract_calendar_bucket_and_compatible_definition",
+  "compound_nonalias_definitions": true,
+  "reference_binding": "genuine_related_account_component_or_earlier_snapshot_with_original_SCC_order",
+  "support_policy": "provided_numeric_zeros_dates_states_inputs_remain_unchanged",
+  "no_whole_correct_formula_wrapper": true,
+  "no_root_subset_or_truncation": true,
+  "activity_gate": "joint_fullD_and_normal_quality_controls_no_claim_of_individual_activity",
+  "new_cross_component_back_edges_allowed": false,
+  "counterfactual_global_uniqueness_claimed": false,
+  "LO_calls_authorized_by_config": false,
+  "model_calls_authorized_by_config": false,
+  "qualified": false,
+  "task_count": 0,
+  "selected": []
+}
