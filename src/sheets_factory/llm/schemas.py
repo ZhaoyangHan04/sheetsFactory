@@ -37,6 +37,11 @@ def diagnosis_output_schema(assigned_check_ids: list[str]) -> dict:
         "claim": {"type": "string"}, "evidence": deepcopy(evidence),
         "certainty": {"type": "string", "enum": ["confirmed", "suspected"]},
         "severity": {"type": "string", "enum": ["blocker", "warning"]},
+        "attribution": {"type": "string", "enum": ["task_defect", "reference_defect",
+            "agent_behavior", "environment_failure", "unresolved"]},
+        "artifact_scope": {"type": "array", "minItems": 1,
+            "items": {"type": "string", "enum": ["public_input", "public_instruction",
+                "reference_goal", "verifier", "runtime", "solver_output", "solver_trace", "unknown"]}},
     })
     request = obj({
         "check_ids": {"type": "array", "items": {"type": "string", "enum": assigned}},

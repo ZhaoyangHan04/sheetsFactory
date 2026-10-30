@@ -18,6 +18,11 @@ from .router import route_issues
 
 _STATES = {"clear", "flagged", "unknown", "not_applicable"}
 _BANNED_OBSERVATION_KEYS = {"reward", "solved", "completed_successfully", "completion_status", "pass_at_1"}
+_ATTRIBUTIONS = {"task_defect", "reference_defect", "agent_behavior", "environment_failure", "unresolved"}
+_ARTIFACT_SCOPES = {"public_input", "public_instruction", "reference_goal", "verifier",
+                    "runtime", "solver_output", "solver_trace", "unknown"}
+_AGENT_ARTIFACTS = {"solver_output", "solver_trace"}
+FINDING_ATTRIBUTION_CONTRACT = 1
 
 
 def _clean_trace(value):
@@ -126,6 +131,7 @@ class DiagnosisRunner:
                   "assigned_check_ids": enabled, "enabled_check_ids": enabled,
                   "disabled_check_ids": plan["disabled_check_ids"], "plan": plan,
                   "assessments": {}, "issues": [], "observations": [], "evidence_requests": [],
+                  "finding_attribution_contract": FINDING_ATTRIBUTION_CONTRACT,
                   "llm_batches": [], "execution_failures": []}
         cache_entries = batch_cache.setdefault('entries', {}) if batch_cache is not None else {}
         assessments = report["assessments"]
@@ -160,17 +166,22 @@ class DiagnosisRunner:
                        "checks": [{"id": c, "instructions": self.specs[c]["instructions"]} for c in active],
                        "public": task_bundle.get("public", {}), "traces": _clean_trace(traces),
                        "diagnostic_stage": "candidate_quality",
+                       "finding_attribution_contract": FINDING_ATTRIBUTION_CONTRACT,
                        "difficulty_review_context": task_bundle.get("public", {}).get("difficulty_review_context", {}),
                        "rules": ["Diagnose every assigned check regardless of task completion.",
                                  "Only evidence-backed clear/flagged conclusions; otherwise unknown.",
                                  "Do not output accept/reject or route choices.",
                                  "A solver error alone is not a task defect.",
+                                 "Attribute each finding to its actual artifact. Agent-only behavior is an observation, not a task issue.",
+                                 "A clear assessment may include agent observations. Flagged requires a task, reference, or environment issue; unknown requires evidence collection.",
                                  "Missing assumptions require a missing public source and result impact.",
                                  "Original formula existence alone is not proof of reference correctness."],
                        "required_output": {"assessments": [{"check_id": "assigned ID", "state":
                             "clear|flagged|unknown|not_applicable", "reason": "explanation", "evidence": ["source/evidence"]}],
                             "issues": [{"problem_id": "assigned ID", "claim": "specific defect", "evidence": ["source"],
-                                        "certainty": "confirmed|suspected", "severity": "blocker|warning"}],
+                                        "certainty": "confirmed|suspected", "severity": "blocker|warning",
+                                        "attribution": "task_defect|reference_defect|agent_behavior|environment_failure|unresolved",
+                                        "artifact_scope": ["public_input|public_instruction|reference_goal|verifier|runtime|solver_output|solver_trace|unknown"]}],
                             "evidence_requests": []}}
             if visibility != "public_only":
                 payload["private"] = task_bundle.get("private", {})
@@ -294,7 +305,7 @@ class DiagnosisRunner:
             if state in {"clear", "flagged"} and not evidence:
                 state = "unknown"
             parsed[check_id] = Assessment(check_id, state, item["reason"], evidence).to_dict()
-        issues = []
+        issues, observations = [], []
         for index, issue in enumerate(result.get("issues", []), 1):
             check_id = issue.get("problem_id")
             if check_id not in assigned:
@@ -306,6 +317,31 @@ class DiagnosisRunner:
             if issue.get("severity", "blocker") not in {"blocker", "warning"}:
                 raise ValueError("Invalid issue severity")
             issue = dict(issue)
+            attribution = issue.get('attribution')
+            if attribution is not None:
+                if attribution not in _ATTRIBUTIONS:
+                    raise ValueError('Invalid finding attribution')
+                scope = issue.get('artifact_scope')
+                if (not isinstance(scope, list) or not scope or len(scope) != len(set(scope))
+                        or any(not isinstance(value, str) or value not in _ARTIFACT_SCOPES for value in scope)):
+                    raise ValueError('Finding attribution requires a nonempty valid artifact scope')
+                agent_only = set(scope) <= _AGENT_ARTIFACTS
+                if attribution == 'agent_behavior':
+                    if not agent_only:
+                        raise ValueError('Agent observations may concern only solver output or solver trace; split mixed findings')
+                    observations.append({**issue, 'observation_id': f"{task_id}-{check_id}-agent-{len(report['observations']) + len(observations) + 1:03d}",
+                                         'revision_hash': revision, 'disposition': 'record_only'})
+                    continue
+                if attribution in {'task_defect', 'reference_defect'} and agent_only:
+                    raise ValueError('A solver artifact alone cannot establish a task or reference defect')
+                if attribution == 'task_defect' and not {'public_input', 'public_instruction', 'reference_goal', 'verifier'}.intersection(scope):
+                    raise ValueError('Task defect must identify the affected task artifact')
+                if attribution == 'reference_defect' and 'reference_goal' not in scope:
+                    raise ValueError('Reference defect must identify the affected reference artifact')
+                if attribution == 'environment_failure' and not {'runtime', 'verifier'}.intersection(scope):
+                    raise ValueError('Environment failure must identify runtime or verifier evidence')
+                if attribution == 'unresolved':
+                    issue['certainty'] = 'suspected'
             issue["issue_id"] = f"{task_id}-{check_id}-{len(report['issues']) + index:03d}"
             issue["revision_hash"] = revision
             issue.setdefault("certainty", "suspected")
@@ -319,6 +355,7 @@ class DiagnosisRunner:
                 raise ValueError(f"Flagged {check_id} requires an issue instance")
         report["assessments"].update(parsed)
         report["issues"].extend(issues)
+        report['observations'].extend(observations)
         report["evidence_requests"].extend(result.get("evidence_requests", []))
 
 

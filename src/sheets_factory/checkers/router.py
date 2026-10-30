@@ -23,7 +23,8 @@ def route_issues(issues: list[dict], catalog: dict, difficulty_deferred: bool = 
         for issue in ready:
             spec = specs[issue["problem_id"]]
             suspected = issue.get("certainty") != "confirmed"
-            destination = specs["Q12"] if suspected else spec
+            destination = (specs["Q12"] if suspected else
+                           specs["Q11"] if issue.get('attribution') == 'environment_failure' else spec)
             deferred = difficulty_deferred and issue["problem_id"] == "Q08"
             routes.append({
                 "issue_id": issue["issue_id"],
