@@ -35,7 +35,7 @@ def test_extended_mask_capacity_is_explicit_and_bounded():
     assert construction_contract(config={'construction': {'max_edit_count': {'financial_modeling': 8192}}})[
         'modes']['financial_modeling']['edit_count']['max'] == 8192
     with pytest.raises(ValueError):
-        construction_contract(config={'construction': {'max_edit_count': {'financial_modeling': 8193}}})
+        construction_contract(config={'construction': {'max_edit_count': {'financial_modeling': 200001}}})
 
 
 def test_template_backend_rejects_unverified_source_before_authoring(tmp_path):

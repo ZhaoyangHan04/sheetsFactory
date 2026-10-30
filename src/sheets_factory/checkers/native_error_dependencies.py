@@ -186,14 +186,14 @@ def _narrow_occurrences(tokens):
     return tables, skipped, branches
 
 
-def _references(formula, sheet, key, candidates, workbook=None):
+def _references(formula, sheet, key, candidates, workbook=None, per_formula_reference_cells=5000):
     source_formula = formula
     if workbook is not None:
         try:
-            formula = expand_static_formula(formula, sheet, workbook)
+            formula = expand_static_formula(formula, sheet, workbook, max_expansion=per_formula_reference_cells)
         except StaticReferenceError as exc:
             return set(), [], str(exc) + ' at ' + _label(key)
-    ordinary = formula_references(formula, sheet)
+    ordinary = formula_references(formula, sheet, max_expansion=per_formula_reference_cells)
     fallback = {(ref['sheet'], ref['cell']) for ref in ordinary['references']}
     if not ordinary['fully_supported']:
         return fallback, [], 'unsupported references at ' + _label(key)
@@ -211,7 +211,7 @@ def _references(formula, sheet, key, candidates, workbook=None):
         for index in branch['ignored_tokens']:
             token = tokens[index]
             if token.type == 'OPERAND' and token.subtype == 'RANGE':
-                refs = formula_references('=' + token.value, sheet)['references']
+                refs = formula_references('=' + token.value, sheet, max_expansion=per_formula_reference_cells)['references']
                 ignored.update((ref['sheet'], ref['cell']) for ref in refs)
         if branch['ignored_tokens']:
             exclusions.append({'kind': 'if_literal_condition',
@@ -225,7 +225,7 @@ def _references(formula, sheet, key, candidates, workbook=None):
             continue
         if index in skipped:
             continue
-        occurrence = formula_references('=' + token.value, sheet)
+        occurrence = formula_references('=' + token.value, sheet, max_expansion=per_formula_reference_cells)
         if not occurrence['fully_supported']:
             return fallback, [], 'unsupported reference occurrence at ' + _label(key)
         entries = occurrence['references']
@@ -263,7 +263,7 @@ def _references(formula, sheet, key, candidates, workbook=None):
 
 
 def dependency_error_reach(goal: Path, delta_labels: list[str], candidates: list[dict],
-                           max_cells=20000) -> dict:
+                           max_cells=20000, *, per_formula_reference_cells=5000) -> dict:
     """Find candidate-error ancestors of every actual changed output cell.
 
     ``verified`` means a complete, bounded conservative dependency traversal.
@@ -275,6 +275,8 @@ def dependency_error_reach(goal: Path, delta_labels: list[str], candidates: list
     try:
         if type(max_cells) is not int or max_cells < 1:
             raise ValueError('max_cells must be a positive integer')
+        if type(per_formula_reference_cells) is not int or not 1 <= per_formula_reference_cells <= 50000:
+            raise ValueError('per_formula_reference_cells must be within one through 50000')
         book = openpyxl.load_workbook(goal, data_only=False, keep_links=False)
         candidate_keys = set()
         for candidate in candidates:
@@ -305,7 +307,8 @@ def dependency_error_reach(goal: Path, delta_labels: list[str], candidates: list
             if cell.data_type == 'f':
                 try:
                     formula_text = static_formula_text(cell)
-                    references, exclusions, problem = _references(formula_text, key[0], key, candidate_keys, workbook=book)
+                    references, exclusions, problem = _references(formula_text, key[0], key, candidate_keys,
+                        workbook=book, per_formula_reference_cells=per_formula_reference_cells)
                     result['exclusions'].extend(exclusions)
                     if problem:
                         problems.append(problem)

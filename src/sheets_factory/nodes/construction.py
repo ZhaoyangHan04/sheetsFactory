@@ -40,19 +40,34 @@ def construction_contract(mode=None, config=None):
     if mode is not None and mode not in modes:
         raise ValueError('Unsupported construction mode: ' + str(mode))
     settings = (config or {}).get('construction', {})
+    root_impact_method = settings.get('root_impact_validation', 'strict')
+    if root_impact_method not in {'strict', 'separated_roots'}:
+        raise ValueError('Invalid construction.root_impact_validation')
     for name, maximum in settings.get('max_edit_count', {}).items():
-        if name not in modes or type(maximum) is not int or not modes[name]['edit_count']['min'] <= maximum <= 8192:
+        if name not in modes or type(maximum) is not int or not modes[name]['edit_count']['min'] <= maximum <= 200000:
             raise ValueError('Invalid configured construction edit limit')
         modes[name]['edit_count']['max'] = maximum
+    analysis = {'max_dependency_closure_cells': 20000, 'max_profile_cells': 200000,
+                'per_formula_reference_cells': 5000, 'max_mask_ranges': 64}
+    supported = {'max_dependency_closure_cells': 500000, 'max_profile_cells': 500000,
+                 'per_formula_reference_cells': 50000, 'max_mask_ranges': 1024}
+    configured = settings.get('analysis_limits', {})
+    if not isinstance(configured, dict):
+        raise ValueError('construction.analysis_limits must be a dictionary')
+    for name, maximum in configured.items():
+        if name not in analysis or type(maximum) is not int or not 1 <= maximum <= supported[name]:
+            raise ValueError('Invalid configured construction analysis limit: ' + str(name))
+        analysis[name] = maximum
     preferences = {'financial_modeling_edit_count': [6, 20], 'debugging_edit_count': [2, 4]}
     preferences.update(settings.get('planning_preferences_only', {}))
     return {'version': 2, 'active_mode': mode, 'modes': modes,
+        'root_impact_validation': root_impact_method,
         'planning_preferences_only': preferences,
         'range_authoring': {'financial_modeling_only': True, 'field': 'mask_ranges',
             'item_fields': ['sheet', 'range', 'reason', 'business_rule'],
             'existing_formula_cells_only': True, 'nonformula_cells_preserved': True,
             'before_assertions_compiled_from_immutable_baseline': True,
-            'overlapping_targets_rejected': True, 'max_ranges': 64},
+            'overlapping_targets_rejected': True, 'max_ranges': analysis['max_mask_ranges']},
         'scenario_inputs': {'max_count': 40, 'allowed_original_cells': ['numeric', 'blank'],
             'original_must_not_be_formula': True, 'before_must_match_original_exactly': True,
             'after_must_be_finite_numeric_and_not_boolean': True,
@@ -64,13 +79,15 @@ def construction_contract(mode=None, config=None):
             'at_least_one_finite_numeric_target_with_absolute_value_above': 0.005},
         'dependency_requirements': {'true_cross_sheet_formula_edge_in_target_closure': True,
             'independent_local_targets_on_two_sheets_do_not_suffice': True,
-            'max_dependency_closure_cells': 20000, 'no_native_calculation_errors_in_required_D': True,
+            'max_dependency_closure_cells': analysis['max_dependency_closure_cells'],
+            'per_formula_reference_cells': analysis['per_formula_reference_cells'],
+            'no_native_calculation_errors_in_required_D': True,
             'ancestor_cached_errors_require_narrow_path_certificates_and_actual_LO_probes': True,
             'unchanged_finite_sentinels_alone_cannot_clear_errors': True,
             'all_formula_references_must_be_supported': True,
             'forbidden_volatile_functions': ['NOW', 'TODAY', 'RAND', 'RANDBETWEEN']},
         'source_requirements': {'min_nonempty_sheets': 4, 'min_formula_count': 6,
-                                'max_profile_cells': 200000},
+                                'max_profile_cells': analysis['max_profile_cells']},
         'reference_scope': {'complete_recalculated_changed_value_set': True,
             'baseline_formula_correction_supported': False, 'immutable_source_and_baseline': True,
             'verbal_scope_exclusions_cannot_remove_affected_cells': True,
@@ -87,8 +104,10 @@ def compile_mask_ranges(plan, baseline, mode, config=None):
     if 'mask_ranges' not in plan:
         return plan
     ranges = plan['mask_ranges']
-    if mode != 'financial_modeling' or not isinstance(ranges, list) or not 1 <= len(ranges) <= 64:
-        raise TaskRejected('Q06: mask_ranges requires 1 through 64 financial-modeling ranges')
+    contract = construction_contract(mode, config)
+    max_ranges = contract['range_authoring']['max_ranges']
+    if mode != 'financial_modeling' or not isinstance(ranges, list) or not 1 <= len(ranges) <= max_ranges:
+        raise TaskRejected(f'Q06: mask_ranges requires 1 through {max_ranges} financial-modeling ranges')
     result = deepcopy(plan)
     edits = result.setdefault('edits', [])
     if not isinstance(edits, list) or any(not isinstance(e, dict) or not e.get('sheet') or not e.get('cell') for e in edits):
@@ -96,7 +115,8 @@ def compile_mask_ranges(plan, baseline, mode, config=None):
     seen = {(e['sheet'], e['cell']) for e in edits}
     if len(seen) != len(edits):
         raise TaskRejected('Q06: duplicate explicit mask targets')
-    maximum = construction_contract(mode, config)['modes'][mode]['edit_count']['max']
+    maximum = contract['modes'][mode]['edit_count']['max']
+    coverage = contract['source_requirements']['max_profile_cells']
     book = openpyxl.load_workbook(baseline, keep_links=False)
     receipts = []
     try:
@@ -108,7 +128,7 @@ def compile_mask_ranges(plan, baseline, mode, config=None):
                     r'\$?[A-Z]{1,3}\$?[1-9][0-9]{0,6}(?::\$?[A-Z]{1,3}\$?[1-9][0-9]{0,6})?', group['range']):
                 raise TaskRejected('Q06: invalid mask range or nonexistent sheet')
             left, top, right, bottom = range_boundaries(group['range'])
-            if left > right or top > bottom or right > 16384 or bottom > 1048576 or (right-left+1)*(bottom-top+1) > 200000:
+            if left > right or top > bottom or right > 16384 or bottom > 1048576 or (right-left+1)*(bottom-top+1) > coverage:
                 raise TaskRejected('Q06: mask range exceeds supported profile coverage')
             added = []
             for row in book[group['sheet']].iter_rows(min_row=top, max_row=bottom, min_col=left, max_col=right):
@@ -212,10 +232,14 @@ class ProfileNode(BaseNode):
 
     def execute(self, ctx):
         path = ctx.data['source_cache'] / 'profile.json'
-        if path.exists():
-            profile = json.loads(path.read_text())
-        else:
-            profile = profile_workbook(ctx.data['baseline'], max_cells=200000)
+        contract = construction_contract(ctx.mode, ctx.config)
+        limits = {'max_profile_cells': contract['source_requirements']['max_profile_cells'],
+                  'per_formula_reference_cells': contract['dependency_requirements']['per_formula_reference_cells']}
+        profile = json.loads(path.read_text()) if path.exists() else None
+        legacy_limits = {'max_profile_cells': 200000, 'per_formula_reference_cells': 5000}
+        if profile is None or profile.get('analysis_limits', legacy_limits) != limits:
+            profile = profile_workbook(ctx.data['baseline'], max_cells=limits['max_profile_cells'],
+                                       per_formula_reference_cells=limits['per_formula_reference_cells'])
             path.write_text(json.dumps(profile, ensure_ascii=False, indent=2))
         if profile['nonempty_sheet_count'] < 4 or profile['formula_count'] < 6:
             raise TaskRejected('Source lacks four nonempty sheets or a usable formula model')
@@ -233,28 +257,31 @@ class PlanNode(BaseNode):
     def execute(self, ctx):
         variant = ctx.data.get('variant', 0)
         backend = ctx.config.get('construction', {}).get('authoring_backend', 'llm')
-        if backend not in {'llm', 'project_template'}:
+        if backend not in {'llm', 'project_template', 'portfolio_template'}:
             raise ValueError('Unsupported construction.authoring_backend')
-        if backend == 'project_template' and (
+        if backend in {'project_template', 'portfolio_template'} and (
                 ctx.data.get('finance_evidence', {}).get('financial_seed_verified') is not True or variant != 0):
-            raise TaskRejected('Project template requires a verified financial source and a new source identity')
+            raise TaskRejected('Financial template requires a verified financial source and a new source identity')
         scope = ctx.config.get('construction', {}).get('planning_scope', 'both_modes')
         if scope not in {'both_modes', 'per_mode'}:
             raise ValueError('construction.planning_scope must be both_modes or per_mode')
         requested = [ctx.mode] if scope == 'per_mode' else ['financial_modeling', 'debugging']
         suffix = '_' + ctx.mode if scope == 'per_mode' else ''
-        backend_suffix = '_project_template' if backend == 'project_template' else ''
+        backend_suffix = '_' + backend if backend != 'llm' else ''
         path = ctx.data['source_cache'] / f'task_plans_v{variant}{suffix}{backend_suffix}.json'
         if path.exists():
             plans = json.loads(path.read_text())
-        elif backend == 'project_template':
+        elif backend in {'project_template', 'portfolio_template'}:
             evidence = ctx.data.get('finance_evidence', {})
-            from ..workbook.derived_gold.task_templates import propose_project_task
+            if backend == 'project_template':
+                from ..workbook.derived_gold.task_templates import propose_project_task as propose
+            else:
+                from ..workbook.derived_gold.portfolio_tasks import propose_portfolio_task as propose
             plans = {'source_assessment': {'financial_evidence': evidence,
                                           'authoring_backend': backend, 'known_risks': []},
                      'financial_modeling': None, 'debugging': None}
             for requested_mode in requested:
-                plans[requested_mode] = propose_project_task(Path(ctx.data['baseline']), requested_mode)
+                plans[requested_mode] = propose(Path(ctx.data['baseline']), requested_mode)
             path.write_text(json.dumps(plans, ensure_ascii=False, indent=2))
             ctx.audit.emit('planning.template', task_id=ctx.task_id, mode=ctx.mode,
                            backend=backend, baseline_sha256=digest(ctx.data['baseline']),
@@ -315,38 +342,50 @@ def validate_plan(plan, baseline, mode, config=None):
     seen, involved, visited, cross_edges = set(), set(), set(), set()
     native_errors = {}
     meaningful_targets = 0
+    reference_cache = {}
+    expansion = contract['dependency_requirements']['per_formula_reference_cells']
 
-    def inspect_dependencies(sheet_name, address):
-        key = (sheet_name, address)
-        if key in visited:
-            return
-        visited.add(key)
-        if len(visited) > contract['dependency_requirements']['max_dependency_closure_cells']:
-            raise TaskRejected('Target dependency closure exceeds supported analysis scope')
-        if sheet_name not in book.sheetnames:
-            raise TaskRejected('Q10: target dependency references a missing sheet')
-        source_cell = book[sheet_name][address]
-        if values[sheet_name][address].data_type == 'e':
-            native_errors[key] = {'sheet': sheet_name, 'cell': address,
-                'cached_error': values[sheet_name][address].value,
-                'formula': source_cell.value if source_cell.data_type == 'f' else None}
-        if source_cell.data_type != 'f':
-            return
+    def resolved_dependencies(sheet_name, address, source_cell):
         try:
             formula_text = static_formula_text(source_cell)
-            resolved_formula = expand_static_formula(formula_text, sheet_name, book)
         except StaticReferenceError as exc:
             raise TaskRejected(f'Q10: unresolved dependency at {sheet_name}!{address}: {exc}') from exc
         if re.search(r'\b(?:NOW|TODAY|RAND|RANDBETWEEN)\s*\(', formula_text, re.I):
             raise TaskRejected('Q10: unsupported or volatile formula in target dependency closure')
-        dependencies = formula_references(formula_text, sheet_name, workbook=book)
-        if not dependencies['fully_supported'] or validate_static_reference_syntax(resolved_formula):
+        dependencies = formula_references(formula_text, sheet_name, max_expansion=expansion,
+            workbook=book, cache=reference_cache, include_resolved_formula=True)
+        if (not dependencies['fully_supported']
+                or validate_static_reference_syntax(dependencies['resolved_formula'])):
             raise TaskRejected(f'Q10: unresolved target dependency closure at {sheet_name}!{address}')
-        for reference in dependencies['references']:
-            involved.add(reference['sheet'])
-            if reference['sheet'] != sheet_name:
-                cross_edges.add((sheet_name, address, reference['sheet'], reference['cell']))
-            inspect_dependencies(reference['sheet'], reference['cell'])
+        return dependencies
+
+    def inspect_dependencies(sheet_name, address):
+        pending = [(sheet_name, address)]
+        while pending:
+            key = pending.pop()
+            if key in visited:
+                continue
+            visited.add(key)
+            if len(visited) > contract['dependency_requirements']['max_dependency_closure_cells']:
+                raise TaskRejected('Target dependency closure exceeds supported analysis scope')
+            current_sheet, current_address = key
+            if current_sheet not in book.sheetnames:
+                raise TaskRejected('Q10: target dependency references a missing sheet')
+            source_cell = book[current_sheet][current_address]
+            if values[current_sheet][current_address].data_type == 'e':
+                native_errors[key] = {'sheet': current_sheet, 'cell': current_address,
+                    'cached_error': values[current_sheet][current_address].value,
+                    'formula': source_cell.value if source_cell.data_type == 'f' else None}
+            if source_cell.data_type != 'f':
+                continue
+            dependencies = resolved_dependencies(current_sheet, current_address, source_cell)
+            for reference in dependencies['references']:
+                involved.add(reference['sheet'])
+                if reference['sheet'] != current_sheet:
+                    cross_edges.add((current_sheet, current_address, reference['sheet'], reference['cell']))
+                target = (reference['sheet'], reference['cell'])
+                if target not in visited:
+                    pending.append(target)
     try:
         for edit in edits:
             key = (edit['sheet'], edit['cell'])
@@ -356,9 +395,7 @@ def validate_plan(plan, baseline, mode, config=None):
             cell = book[key[0]][key[1]]
             if cell.data_type != 'f' or not isinstance(cell.value, str) or cell.value != edit['before']:
                 raise TaskRejected('Q06: before assertion does not match actual original formula at ' + str(key))
-            refs = formula_references(cell.value, key[0], workbook=book)
-            if not refs['fully_supported']:
-                raise TaskRejected('Q10: unresolved references at target ' + str(key))
+            refs = resolved_dependencies(key[0], key[1], cell)
             value = values[key[0]][key[1]]
             if value.data_type == 'e' or value.value is None:
                 raise TaskRejected('Q04: target has no valid recalculated reference value')
@@ -455,7 +492,9 @@ class ConstructNode(BaseNode):
             directory=private / 'native_error_probes', source_sha256=ctx.data.get('source_id') or digest(ctx.source),
             plan=ctx.data['plan'], revision=ctx.revision,
             immutable_files={'source': ctx.source, 'baseline': ctx.data['baseline']},
-            engine_metadata=ctx.data.get('engine_report', {}).get('engine'))
+            engine_metadata=ctx.data.get('engine_report', {}).get('engine'),
+            max_dependency_cells=construction_contract(ctx.mode, ctx.config)['dependency_requirements']['max_dependency_closure_cells'],
+            per_formula_reference_cells=construction_contract(ctx.mode, ctx.config)['dependency_requirements']['per_formula_reference_cells'])
         validation['native_error_probe'] = error_probe
         validation['native_error_candidates'] = error_probe.get('candidates', validation['native_error_candidates'])
         validation['native_error_candidates_provisional'] = bool(validation['native_error_candidates'])
@@ -471,7 +510,31 @@ class ConstructNode(BaseNode):
                                + '; see private/native_error_probe.json')
         # Every root must have an effect by itself, not merely a syntactic edit.
         root_impacts = []
-        if ctx.mode == 'debugging':
+        root_method = construction_contract(ctx.mode, ctx.config)['root_impact_validation']
+        if ctx.mode == 'debugging' and root_method == 'separated_roots':
+            from ..checkers.separated_roots import certify_separated_roots
+            limits = construction_contract(ctx.mode, ctx.config)['dependency_requirements']
+            certificate = certify_separated_roots(goal=goal, combined_input=input_file, edits=edits,
+                max_dependency_cells=limits['max_dependency_closure_cells'],
+                per_formula_reference_cells=limits['per_formula_reference_cells'])
+            ctx.save('separated_roots_certificate.json', certificate)
+            ctx.audit.emit('root_impact_validation.result', task_id=ctx.task_id, revision=ctx.revision,
+                method=root_method, state=certificate.get('state'), passed=certificate.get('passed'),
+                root_count=len(edits))
+            if certificate.get('passed') is not True or certificate.get('blocking') is not False:
+                raise TaskRejected('Q06: separated-root proof rejected: ' + str(certificate.get('reason', 'incomplete proof')))
+            root_impacts = certificate.get('root_impacts', [])
+            expected_roots = {edit['sheet'] + '!' + edit['cell'] for edit in edits}
+            proven_roots = {next(iter(impact.get('expected_changes', [])), None) for impact in root_impacts
+                            if impact.get('proof_method') == 'separated_dependency_graph_and_actual_combined_value_change'
+                            and impact.get('expected_change_count', 0) >= 1
+                            and impact.get('combined_marginal', {}).get('expected_change_count', 0) >= 1}
+            if len(root_impacts) != len(edits) or proven_roots != expected_roots:
+                raise TaskRejected('Q06: separated-root certificate does not prove every declared root')
+            validation['root_impact_validation'] = {'method': root_method,
+                'proof_method': certificate.get('proof_method'), 'root_count': len(root_impacts),
+                'individual_LO_executions': False, 'marginal_LO_executions': False}
+        elif ctx.mode == 'debugging':
             for index, edit in enumerate(edits):
                 one = openpyxl.load_workbook(goal, keep_links=False)
                 one[edit['sheet']][edit['cell']] = edit['after']
@@ -489,7 +552,10 @@ class ConstructNode(BaseNode):
                 root_impacts[-1]['combined_marginal'] = marginal
                 if not marginal.get('expected_change_count'):
                     raise TaskRejected('Q06: a root is inactive in the combined mutation')
-        public_profile = profile_workbook(input_file, max_cells=200000)
+        analysis = construction_contract(ctx.mode, ctx.config)
+        public_profile = profile_workbook(input_file,
+            max_cells=analysis['source_requirements']['max_profile_cells'],
+            per_formula_reference_cells=analysis['dependency_requirements']['per_formula_reference_cells'])
         ctx.save('plan.json', ctx.data['plan']); ctx.save('edit_validation.json', validation)
         ctx.save('expected_delta.json', delta); ctx.save('root_impacts.json', root_impacts)
         ctx.save('profile.json', public_profile, private=False)

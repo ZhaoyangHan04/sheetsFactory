@@ -26,7 +26,20 @@ def json_value(value):
     return str(value)
 
 
-def formula_references(formula: str, sheet_name: str, max_expansion: int = 5000, *, workbook=None) -> dict:
+def formula_references(formula: str, sheet_name: str, max_expansion: int = 5000, *, workbook=None,
+                       cache=None, include_resolved_formula=False) -> dict:
+    """Resolve bounded references, optionally caching one immutable workbook.
+
+    A caller must discard its cache when workbook cells/names change. Defaults
+    retain the original expansion bound and response fields.
+    """
+    key = (id(workbook), sheet_name, formula, max_expansion, include_resolved_formula)
+    if cache is not None and key in cache:
+        return cache[key]
+    def finish(result):
+        if cache is not None:
+            cache[key] = result
+        return result
     refs, unsupported = [], []
     analysis = None
     if workbook is not None:
@@ -34,11 +47,11 @@ def formula_references(formula: str, sheet_name: str, max_expansion: int = 5000,
             analysis = expand_static_formula_details(formula, sheet_name, workbook, max_expansion)
             formula = analysis["formula"]
         except StaticReferenceError as error:
-            return {"references": [], "unsupported": [str(error)], "fully_supported": False}
+            return finish({"references": [], "unsupported": [str(error)], "fully_supported": False})
     try:
         tokens = Tokenizer(formula).items
     except Exception:
-        return {"references": [], "unsupported": ["formula_parse_error"], "fully_supported": False}
+        return finish({"references": [], "unsupported": ["formula_parse_error"], "fully_supported": False})
     if analysis is None and re.search(r"\b(?:INDIRECT|OFFSET)\s*\(", formula, re.I):
         unsupported.append("dynamic_reference")
     for token in tokens:
@@ -74,15 +87,18 @@ def formula_references(formula: str, sheet_name: str, max_expansion: int = 5000,
         result["resolved_names"] = analysis["resolved_names"]
         result["bounded_ranges"] = analysis["bounded_ranges"]
         result["analysis_only"] = True
-    return result
+    if include_resolved_formula:
+        result["resolved_formula"] = formula
+    return finish(result)
 
 
-def profile_workbook(path: Path, max_cells: int = 30000) -> dict:
+def profile_workbook(path: Path, max_cells: int = 30000, *, per_formula_reference_cells: int = 5000) -> dict:
     path = Path(path)
     book = openpyxl.load_workbook(path, data_only=False, keep_links=False)
     cached = openpyxl.load_workbook(path, data_only=True, keep_links=False)
     sheets, total_cells, total_formulas, emitted = [], 0, 0, 0
     all_errors, all_external = [], []
+    reference_cache = {}
     for index, sheet in enumerate(book.worksheets):
         actual = sorted((c for c in sheet._cells.values() if c.value is not None),
                         key=lambda cell: (cell.row, cell.column))
@@ -114,7 +130,8 @@ def profile_workbook(path: Path, max_cells: int = 30000) -> dict:
                 formula_text = cell.value if isinstance(cell.value, str) else getattr(cell.value, "text", "")
                 try:
                     formula_text = static_formula_text(cell)
-                    dependencies = formula_references(formula_text, sheet.title, workbook=book)
+                    dependencies = formula_references(formula_text, sheet.title,
+                        max_expansion=per_formula_reference_cells, workbook=book, cache=reference_cache)
                 except StaticReferenceError as error:
                     dependencies = {"references": [], "unsupported": [str(error)], "fully_supported": False}
                 if not isinstance(cell.value, str):
@@ -138,6 +155,8 @@ def profile_workbook(path: Path, max_cells: int = 30000) -> dict:
               "cells_emitted": emitted, "truncated": total_cells > emitted,
               "sheets": sheets, "errors": all_errors,
               "external_references": all_external,
+              "analysis_limits": {"max_profile_cells": max_cells,
+                                  "per_formula_reference_cells": per_formula_reference_cells},
               "defined_names": {name: str(value.attr_text)
                                 for name, value in book.defined_names.items()}}
     book.close()

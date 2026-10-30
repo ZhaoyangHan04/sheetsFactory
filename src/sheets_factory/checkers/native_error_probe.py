@@ -67,7 +67,7 @@ def _required_values(path, labels):
         book.close()
 
 
-def _full_closure_candidates(goal, labels, candidates, max_cells):
+def _full_closure_candidates(goal, labels, candidates, max_cells, per_formula_reference_cells=5000):
     """Inspect all D ancestors, including ancestors unique to downstream D."""
     book = openpyxl.load_workbook(goal, keep_links=False)
     values = openpyxl.load_workbook(goal, data_only=True, keep_links=False)
@@ -75,6 +75,7 @@ def _full_closure_candidates(goal, labels, candidates, max_cells):
         found = {(c['sheet'], c['cell']): dict(c) for c in candidates}
         pending = [tuple(label.rsplit('!', 1)) for label in labels]
         visited = set()
+        reference_cache = {}
         while pending:
             key = pending.pop()
             if key in visited:
@@ -93,15 +94,15 @@ def _full_closure_candidates(goal, labels, candidates, max_cells):
                 continue
             try:
                 formula_text = static_formula_text(cell)
-                resolved_formula = expand_static_formula(formula_text, sheet, book)
             except StaticReferenceError as exc:
                 raise ValueError('Q10: ' + str(exc) + ' in full required-D closure') from exc
             if re.search(r'\b(?:NOW|TODAY|RAND|RANDBETWEEN)\s*\(', formula_text, re.I):
                 raise ValueError('Q10: unsupported or volatile full required-D dependency')
-            references = formula_references(formula_text, sheet, workbook=book)
+            references = formula_references(formula_text, sheet, max_expansion=per_formula_reference_cells,
+                workbook=book, cache=reference_cache, include_resolved_formula=True)
             if not references['fully_supported']:
                 raise ValueError('Q10: unresolved full required-D dependency')
-            syntax_problem = validate_static_reference_syntax(resolved_formula)
+            syntax_problem = validate_static_reference_syntax(references['resolved_formula'])
             if syntax_problem:
                 raise ValueError('Q10: ' + syntax_problem + ' in full required-D closure')
             pending.extend((r['sheet'], r['cell']) for r in references['references'])
@@ -117,7 +118,8 @@ def _full_closure_candidates(goal, labels, candidates, max_cells):
 
 def probe_native_errors(*, goal, required_delta, candidates, engine, directory,
                         source_sha256, plan, revision, immutable_files=None,
-                        engine_metadata=None, max_candidates=64, max_dependency_cells=20000):
+                        engine_metadata=None, max_candidates=64, max_dependency_cells=20000,
+                        per_formula_reference_cells=5000):
     """Return a persisted, blocking-by-default receipt; never certify business logic."""
     goal, directory = Path(goal), Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
@@ -134,8 +136,14 @@ def probe_native_errors(*, goal, required_delta, candidates, engine, directory,
         'required_delta': labels, 'required_delta_sha256': _json_digest(labels),
         'immutable_before': before, 'engine': engine_metadata or {'backend': type(engine).__name__},
         'candidates': [], 'probes': []}
+    receipt['analysis_limits'] = {'max_dependency_closure_cells': max_dependency_cells,
+                                  'per_formula_reference_cells': per_formula_reference_cells}
     started = clock.monotonic()
     try:
+        if type(max_dependency_cells) is not int or not 1 <= max_dependency_cells <= 500000:
+            raise ValueError('Invalid native-probe dependency closure bound')
+        if type(per_formula_reference_cells) is not int or not 1 <= per_formula_reference_cells <= 50000:
+            raise ValueError('Invalid native-probe per-formula reference bound')
         if not labels:
             raise ValueError('complete required-D set is empty')
         expected, sheets = _required_values(goal, labels)
@@ -147,7 +155,8 @@ def probe_native_errors(*, goal, required_delta, candidates, engine, directory,
             return receipt
         if 'source' in before and before['source']['sha256'] != source_sha256:
             raise ValueError('bound source SHA differs from actual immutable source')
-        candidates, count = _full_closure_candidates(goal, labels, candidates, max_dependency_cells)
+        candidates, count = _full_closure_candidates(goal, labels, candidates, max_dependency_cells,
+                                                    per_formula_reference_cells)
         receipt.update(candidates=candidates, full_dependency_closure_cells=count)
         if not candidates:
             receipt.update(state='not_applicable', blocking=False,
@@ -155,7 +164,8 @@ def probe_native_errors(*, goal, required_delta, candidates, engine, directory,
             return receipt
         if len(candidates) > max_candidates:
             raise ValueError('native-error candidate probe limit exceeded')
-        reach = dependency_error_reach(goal, labels, candidates, max_cells=max_dependency_cells)
+        reach = dependency_error_reach(goal, labels, candidates, max_cells=max_dependency_cells,
+                                       per_formula_reference_cells=per_formula_reference_cells)
         receipt['dependency_certificates'] = reach
         remaining = {label: errors for label, errors in reach['per_delta_errors'].items() if errors}
         receipt['uncertified_paths'] = remaining

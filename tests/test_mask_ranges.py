@@ -77,7 +77,7 @@ def test_overlap_and_debugging_range_proposals_are_rejected(tmp_path):
         compile_mask_ranges(proposal(), path, 'debugging')
 
 
-@pytest.mark.parametrize('maximum', [0, 5, 8193, True, '800'])
+@pytest.mark.parametrize('maximum', [0, 5, 200001, True, '800'])
 def test_malformed_runtime_limits_are_configuration_errors(maximum):
     with pytest.raises(ValueError):
         construction_contract(config={'construction': {'max_edit_count': {'financial_modeling': maximum}}})
