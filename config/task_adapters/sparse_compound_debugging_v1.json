@@ -1,0 +1,29 @@
+{
+  "adapter": "sparse_capital_compound_debugging_v1",
+  "version": 1,
+  "enabled": false,
+  "provisional_plan": {
+    "rule": "zero_based_public_project_index_modulo",
+    "modulus": 4,
+    "selected_remainder": 0,
+    "uses_gold": false
+  },
+  "policy_families": [
+    {
+      "id": "lp_commitment_reuse",
+      "annual_field": "lp_call",
+      "mutation": "minimum_required_and_total_commitment"
+    },
+    {
+      "id": "bank_interest_omitted",
+      "annual_field": "bank_interest",
+      "mutation": "constant_zero"
+    }
+  ],
+  "scope": "every_scenario_and_financial_year",
+  "individual_root_activity_claimed": false,
+  "optimisation_performed": false,
+  "LO_calls_authorized": false,
+  "model_calls_authorized": false,
+  "qualified": false
+}
