@@ -131,7 +131,7 @@ def test_generic_runtime_copy_bundles_every_frozen_kernel_and_only_public_materi
     monkeypatch.setattr(model_b,'build_model',prohibited);monkeypatch.setattr(model_b,'solve_cp_sat',prohibited)
     monkeypatch.setattr(finance,'simulate_b',prohibited)
     prepared=recovery.prepare_public_runtime(tmp_path/'prepared');frozen=recovery.validate_public_runtime(prepared)
-    assert frozen['version']==2 and frozen['normal_quality_opaque_admission_available'] is False
+    assert frozen['version']==2 and frozen['normal_quality_opaque_admission_available'] is True
     assert frozen['model_calls']==frozen['solver_calls']==frozen['financial_forwards']==frozen['LO_calls']==0
     kernels=set(recovery._runtime_source_files())
     assert kernels=={'spec.py','finance.py','model_b.py','excel.py','frozen_spec.py','frozen_model_b.py',
@@ -230,11 +230,13 @@ def test_strict_two_LO_full_D_and_typed_witness_code_is_retained():
     assert '_linear_admission' not in validation and '_admission_source(ctx)' in validation
 
 
-def test_unknown_opaque_admission_explicitly_defers_without_old_fallback():
+def test_unknown_or_old_opaque_admission_is_rejected_without_old_fallback():
     ctx=SimpleNamespace(config={},data={'_linear_admission':SimpleNamespace(source=object())})
-    assert recovery.NORMAL_QUALITY_INTEGRATION_AVAILABLE is False
-    with pytest.raises(recovery.ScaledPublicAdmissionUnavailable,match='deferred'):recovery._source_binding(ctx)
-    with pytest.raises(recovery.ScaledPublicAdmissionUnavailable,match='deferred'):recovery._admission_source(ctx)
+    assert recovery.NORMAL_QUALITY_INTEGRATION_AVAILABLE is True
+    with pytest.raises(ValueError,match='explicit family route'):recovery._source_binding(ctx)
+    with pytest.raises(ValueError,match='explicit family route'):recovery._admission_source(ctx)
+    ctx.data={}
+    with pytest.raises(ValueError,match='explicit family route'):recovery._admission_source(ctx)
     node=object.__new__(recovery.LinearCapitalScaledRecoveryNode)
     with pytest.raises(recovery.ScaledPublicAdmissionUnavailable,match='Explicit N360'):node.execute(ctx)
     assert recovery.valid_linear_capital_scaled_recovery_witness(ctx,{'verified':True}) is False

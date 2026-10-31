@@ -1,0 +1,21 @@
+{
+  "kind": "linear_capital_scaled_source_provider_registry",
+  "version": 2,
+  "providers": [
+    {
+      "id": "scaled360",
+      "module": {
+        "path": "scripts/build_linear_capital_scaled_source.py",
+        "sha256": "743c49ff2af634d4c0a4c42989d74068c96be3689f6818d25f486262f5a18f72",
+        "bytes": 6403
+      },
+      "source_kind": "independently_verified_linear_capital_scaled_native_source",
+      "api_version": 1,
+      "functions": {
+        "validate_source": "validate_source",
+        "validate_actual_call": "validate_actual_call",
+        "runtime": "runtime"
+      }
+    }
+  ]
+}

@@ -35,13 +35,14 @@ typed values with no money quantization, immutable revision/attempt checksums,
 and an actual full-D match. Programmatic recovery is not attributed to a model
 attempt and claims no third independent financial ledger or second global proof.
 
-Normal-quality integration is deliberately deferred. No reviewed N360 opaque
-source/view admission provider exists yet. `_source_binding`,
-`_admission_source` and the new node therefore fail explicitly before quality
-execution. The witness validator cannot accept an old `_linear_admission` or
-fall through to old-family recovery. The generic parser and bundle interfaces
-are usable independently; this feature creates no actual recovery receipt or
-quality admission.
+Normal-quality integration uses only the new N360 opaque source/view provider
+in `pipelines.linear_capital_scaled_quality`. A source requires its actual
+three-pass complete independent audits and typed stability; a view requires
+the complete seven-call FM or eleven-call DBG protocol, full D and all five
+controls. `_source_binding` and `_admission_source` require that live checked
+object and the current input, goal, source and profile identities. Persisted
+flags, a missing admission and an old `_linear_admission` cannot substitute.
+This code integration creates no actual source, recovery or quality receipt.
 
 Offline tests use tiny public workbooks, generic vendor fixtures and mocked
 native/LO evidence. They exercise the unchanged replay lifecycle and cold

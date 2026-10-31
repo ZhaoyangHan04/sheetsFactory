@@ -30,7 +30,7 @@ UPSTREAM=Path(__file__).with_name('linear_capital_public_recovery.py')
 UPSTREAM_SHA256='40809694186ee35f3250ee4432f041bfb124d69f24c0e8420c2f758e08d5b47e'
 SETTING='linear_capital_scaled'
 BACKEND='linear_scaled_public_native_tables_shared_decimal_cp_sat_excel_v2'
-NORMAL_QUALITY_INTEGRATION_AVAILABLE=False
+NORMAL_QUALITY_INTEGRATION_AVAILABLE=True
 TABLE_BOUNDS={'ContractNotes':(64,2),'Projects':(388,22),'Scenarios':(16,24),
     'ResourceUse':(362,362),'Limits':(764,3),'Sites':(63,7),'Prerequisites':(123,5),'Portfolio':(376,512)}
 
@@ -44,13 +44,25 @@ class ScaledPublicAdmissionUnavailable(ValueError):
 
 
 def _source_binding(ctx):
-    raise ScaledPublicAdmissionUnavailable(
-        'N360 opaque source/view admission integration is deferred; the old family provider is not accepted')
+    from ..task_adapters.linear_capital_scaled import context_proof
+    proof=context_proof(ctx);_,profile,_,_=_settings(ctx)
+    require(proof['runtime_profile']==profile
+        and ctx.data.get('finance_evidence',{}).get('financial_seed_verified') is True,
+        'The replay must use the new opaque admitted financial source and profile')
+    for name in ('input','goal'):
+        require({k:reference(ctx.data[name])[k] for k in ('sha256','bytes')}
+            =={k:proof[name][k] for k in ('sha256','bytes')},'The current public input or goal changed')
+    return {key:proof[key] for key in ('source_manifest','workbook','runtime_profile',
+        'view_manifest','view_plan','actual_validation_terminal','input','goal','full_D')}
 
 
 def _admission_source(ctx):
-    raise ScaledPublicAdmissionUnavailable(
-        'N360 actual-LO admission helper is deferred; no old source helper may substitute')
+    from ..task_adapters.linear_capital_scaled import context_proof
+    from ..pipelines.linear_capital_scaled_quality import require_view_admission
+    context_proof(ctx)
+    session=ctx.data.get('_linear_scaled_admission')
+    require_view_admission(session)
+    return session.source
 
 
 def _fingerprint(path):
@@ -260,7 +272,7 @@ def prepare_public_runtime(output,*,vendor_site_packages=None):
             'version':2,'directory':str(directory),'inventory':inventory(directory),'public_recipe':recipe,
             'vendor_sources':sources,'solver_versions':runtime_support.DISTRIBUTIONS,'image_id':IMAGE,
             'model_calls':0,'LO_calls':0,'solver_calls':0,'financial_forwards':0,'qualified':False,
-            'normal_quality_opaque_admission_available':False})
+            'normal_quality_opaque_admission_available':NORMAL_QUALITY_INTEGRATION_AVAILABLE})
     except BaseException as error:
         _write(output/'failure.json',{'type':type(error).__name__,'error':str(error),
             'solver_calls':0,'model_calls':0,'LO_calls':0,'financial_forwards':0});raise
@@ -277,7 +289,8 @@ def validate_public_runtime(value):
         and type(result.get('version')) is int and result['version']==2
         and result.get('public_recipe')==public_implementation_recipe()
         and result.get('solver_versions')==runtime_support.DISTRIBUTIONS and result.get('image_id')==IMAGE
-        and result.get('qualified') is False and result.get('normal_quality_opaque_admission_available') is False
+        and result.get('qualified') is False
+        and result.get('normal_quality_opaque_admission_available') is NORMAL_QUALITY_INTEGRATION_AVAILABLE
         and all(type(result.get(k)) is int and result[k]==0 for k in ('model_calls','LO_calls','solver_calls','financial_forwards')),
         'A complete frozen new-scope zero-execution public runtime is required')
     directory=Path(result['directory']);require(directory==directory.resolve(),'A real runtime directory is required')

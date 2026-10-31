@@ -1,0 +1,13 @@
+version: 1
+nodes:
+  normalize: sheets_factory.task_adapters.linear_capital_scaled:LinearNormalizeNode
+  profile: sheets_factory.task_adapters.linear_capital_scaled:LinearProfileNode
+  plan: sheets_factory.task_adapters.linear_capital_scaled:LinearPlanNode
+  construct: sheets_factory.task_adapters.linear_capital_scaled:LinearConstructNode
+  instruction: sheets_factory.task_adapters.linear_capital_scaled:LinearInstructionNode
+  precheck: sheets_factory.task_adapters.linear_capital_scaled:LinearControlsNode
+  independent_recovery: sheets_factory.workbook.linear_capital_scaled_public_recovery:LinearCapitalScaledRecoveryNode
+  trajectory: sheets_factory.nodes.quality:TrajectoryNode
+  diagnose: sheets_factory.task_adapters.linear_capital_scaled:LinearDiagnoseNode
+  repair: sheets_factory.task_adapters.linear_capital_scaled:LinearRepairNode
+  export: sheets_factory.task_adapters.linear_capital_scaled:LinearExportNode
