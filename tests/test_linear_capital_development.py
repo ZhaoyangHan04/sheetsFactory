@@ -93,14 +93,17 @@ def test_real_seventeen_file_export_with_explicit_fake_actual_admission(case):
     assert frozen['normal_six_nodes_executed_or_inherited'] is False
     assert frozen['normal_ExportNode_executed'] is False
     assert frozen['local_controls'] == probe.CONTROL_REWARDS
+    assert probe.checked(frozen['thread_cap_export_audit'])
     assert frozen['actual_Harbor_controls_status'] == 'pending'
     assert frozen['quality_gates_pending'] == probe.PENDING
     assert frozen['tool_time_policy_version'] == 3 and frozen['tool_time_policy'] == probe.POLICY_V3
     assert set(frozen['resource_task_inventory']) == set(probe.TASK_FILES)
     task = Path(frozen['tasks'][0]['task_directory'])
-    assert probe.inspect_resource_export(task) == frozen['tasks'][0]['harbor_export_binding']
+    assert probe.inspect_resource_export(task,audit_path=frozen['thread_cap_export_audit']) == frozen['tasks'][0]['harbor_export_binding']
     assert (task/'instruction.md').read_bytes() == Path(case.instruction['path']).read_bytes()
     dockerfile = (task/'environment/Dockerfile').read_text()
+    assert dockerfile.splitlines()[1]=='ENV MAX_CONCURRENCY=2'
+    assert (task/'tests/Dockerfile').read_text().splitlines()[1]=='ENV MAX_CONCURRENCY=2'
     assert 'COPY input.xlsx /app/input.xlsx' in dockerfile
     assert not any(word in dockerfile for word in ('reference.xlsx', 'view_plan', 'specification', 'bindings', 'vendor'))
     assert probe.validate_prepared(case.output) == frozen and len(case.calls) == 2

@@ -26,8 +26,8 @@ from openpyxl import load_workbook
 from sheets_factory.evaluation.budget import validate_selection_execution_budget
 from sheets_factory.evaluation.clock_resource_frontier import POLICY_V3
 from sheets_factory.evaluation.resource_frontier import TASK_FILES, MODEL, EFFORT
-from sheets_factory.evaluation.resource_harbor import (
-    export_resource_harbor, inspect_resource_export, verify_local_base_image)
+from sheets_factory.evaluation.thread_capped_harbor_export import (
+    CAP_FIELD, CAP_VALUE, export_resource_harbor, inspect_resource_export, verify_local_base_image)
 from sheets_factory.evaluation.streaming_verifier import _sparse_cells, normalize
 from sheets_factory.task_adapters.heterogeneous_formula_identity import formula_signature
 from sheets_factory.workbook.resource_engine import load_runtime_profile
@@ -102,6 +102,7 @@ def recipes():
         ROOT/'src/sheets_factory/evaluation/resource_frontier.py',
         ROOT/'src/sheets_factory/evaluation/frontier.py',
         ROOT/'src/sheets_factory/evaluation/resource_harbor.py',
+        ROOT/'src/sheets_factory/evaluation/thread_capped_harbor_export.py',
         ROOT/'src/sheets_factory/evaluation/resource_streaming_verifier.py',
         ROOT/'src/sheets_factory/evaluation/resource_observer.py',
         ROOT/'src/sheets_factory/task_adapters/heterogeneous_formula_identity.py']
@@ -285,9 +286,11 @@ def _prepare(source_manifest, view_manifest, validation_manifest, output):
     exported = output/'SpreadsheetEval'/task_id
     metadata = {'task_id': task_id, 'mode': view['mode'], 'source_id': source['workbook']['sha256'],
         'source_kind': KIND, 'revision': 0, 'revision_hash': identity['sha256'],
-        'difficulty_status': 'prequality_development_probe', 'base_image': profile['image']['id']}
-    export_resource_harbor(task, exported, metadata, ROOT, runtime_profile=profile_ref['path'])
-    export_binding = inspect_resource_export(exported)
+        'difficulty_status': 'prequality_development_probe', 'base_image': profile['image']['id'], CAP_FIELD: CAP_VALUE}
+    cap_audit_path = output/'thread_cap_export_audit.json'
+    export_resource_harbor(task, exported, metadata, ROOT, runtime_profile=profile_ref['path'], audit_path=cap_audit_path)
+    cap_audit = reference(cap_audit_path)
+    export_binding = inspect_resource_export(exported, audit_path=cap_audit)
     require(export_binding['task_id'] == task_id and type(export_binding['revision']) is int
         and export_binding['revision'] == 0 and export_binding['revision_hash'] == identity['sha256'],
         'The resource export identity differs')
@@ -298,7 +301,7 @@ def _prepare(source_manifest, view_manifest, validation_manifest, output):
         and reference(exported/'environment/input.xlsx')['sha256'] == actual['input']['sha256']
         and reference(exported/'tests/reference.xlsx')['sha256'] == actual['goal']['sha256'],
         'The exported public instruction/input or private goal changed')
-    bind_references([base, *inventory.values()], bindings)
+    bind_references([base, cap_audit, read(cap_audit), *inventory.values()], bindings)
     verify_mapping(bindings)
     late_history = selection_history(identity)
     require(history == late_history, 'Model-selection history changed during preparation')
@@ -312,7 +315,7 @@ def _prepare(source_manifest, view_manifest, validation_manifest, output):
         'model': MODEL, 'reasoning_effort': EFFORT, 'execution_budget': dict(BUDGET), 'timeout_seconds': 14400,
         'tool_time_policy': dict(POLICY_V3), 'tool_time_policy_version': 3,
         'runtime_profile': profile_ref, 'source_artifacts_sha256': bindings, 'recipe_sha256': recipes(),
-        'resource_task_inventory': inventory, 'actual_local_base_image': base,
+        'resource_task_inventory': inventory, 'actual_local_base_image': base, 'thread_cap_export_audit': cap_audit,
         'actual_validation_LO_calls_retained': len(actual['actual_LO_calls']),
         'complete_changed_value_set_count': delta['expected_change_count'],
         'local_controls': dict(CONTROL_REWARDS), 'actual_Harbor_controls_status': 'pending',
@@ -361,12 +364,15 @@ def validate_prepared(output):
     require(len(frozen['tasks']) == 1 and frozen['selected_task_ids'] == [frozen['tasks'][0]['task_id']],
         'Only one fixed declared task is permitted')
     task = frozen['tasks'][0]; directory = Path(task['task_directory'])
+    require(frozen['thread_cap_export_audit']['path'] == str(output/'thread_cap_export_audit.json'),
+        'The worker-cap audit must remain outside this exact seventeen-file export')
     expected_id = ('fm' if material[4]['mode'] == 'financial_modeling' else 'dbg')+'-linear-'+material[-1]['sha256'][:16]
     require(directory == output/'SpreadsheetEval'/task['task_id']
         and task['task_id'] == expected_id and type(task.get('revision')) is int and task['revision'] == 0
         and task['source_id'] == material[3]['workbook']['sha256'] and task['source_kind'] == KIND
         and task['mode'] == material[4]['mode'] and task['revision_hash'] == material[-1]['sha256']
-        and task['harbor_export_binding'] == inspect_resource_export(directory)
+        and task.get(CAP_FIELD) == CAP_VALUE
+        and task['harbor_export_binding'] == inspect_resource_export(directory, audit_path=frozen['thread_cap_export_audit'])
         and task['local_controls'] == CONTROL_REWARDS
         and all(type(task['local_controls'][name]) is int for name in CONTROL_REWARDS),
         'The complete frozen resource task changed')
