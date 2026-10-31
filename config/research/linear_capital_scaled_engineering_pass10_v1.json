@@ -1,0 +1,103 @@
+{
+  "kind": "fixed_scaled_pass10_source_and_engineering_pair_batch",
+  "version": 1,
+  "profile_order": [
+    "L360-P01",
+    "L360-P02",
+    "L360-P07",
+    "L360-P09",
+    "L360-P10",
+    "L360-P14",
+    "L360-P16",
+    "L360-P17",
+    "L360-P18",
+    "L360-P20"
+  ],
+  "rejected_profiles_retained": [
+    "L360-P03",
+    "L360-P04",
+    "L360-P05",
+    "L360-P06",
+    "L360-P08",
+    "L360-P11",
+    "L360-P12",
+    "L360-P13",
+    "L360-P15",
+    "L360-P19"
+  ],
+  "reference_batch": {
+    "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_reference_actual_20261031T122900Z/terminal.json",
+    "sha256": "725a85107a0fe3339fc5fb669c21f59eb5515db1e3c7cef080d2d877d2a477dc",
+    "bytes": 63415
+  },
+  "reference_completed_audit": {
+    "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_completed_bounded_audit_preparation_20261031T165900Z/completed_handoff.json",
+    "sha256": "a1302eea44fd2a80f083a172fbd337b59b07e5d5245598249053068f921ac92f",
+    "bytes": 139887
+  },
+  "runtime_profile": {
+    "path": "/data/hzy/sheetsFactory/config/runtime_profiles/entity_group_large_v2.yaml",
+    "sha256": "4ecc79fe954b9e2965a15d2f0c8965a39394f621ae9808f02fcf88965f446b9b",
+    "bytes": 781
+  },
+  "max_parallel_profiles": 2,
+  "retries": 0,
+  "source_LO_calls_per_fresh_profile": 3,
+  "view_LO_calls_per_fresh_profile": {
+    "financial_modeling": 7,
+    "debugging": 11
+  },
+  "source_provider": "scaled360",
+  "reuse": {
+    "L360-P01": {
+      "source_manifest": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_P01_source_actual_revision2_20261031T142300Z/source_manifest.json",
+        "sha256": "6b64c6df44d3a8bfae760e2435a4eac8ac0a07efc34c7aea46ec560511156d04",
+        "bytes": 29384
+      },
+      "pair_terminal": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_P01_cached_view_pair_actual_20261031T150000Z/terminal.json",
+        "sha256": "1847b18cde80977e73533914bd637872d7f263a160fc05406575a4281de31c9a",
+        "bytes": 4638
+      },
+      "mode_terminals": {
+        "financial_modeling": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_P01_cached_view_pair_actual_20261031T150000Z/financial_modeling/actual_validation/terminal.json",
+          "sha256": "7349aaca55d4dc7a141777b7196d5d89e3a2e2b247cb8ce930bf1813dfd5198a",
+          "bytes": 33108
+        },
+        "debugging": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_P01_cached_view_pair_actual_20261031T150000Z/debugging/actual_validation/terminal.json",
+          "sha256": "7df615ab45f8213aa9e206e9c8b519b14109ecec49494f0e6ac0d84766842b17",
+          "bytes": 50214
+        }
+      }
+    },
+    "L360-P02": {
+      "source_manifest": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_P02_source_actual_20261031T130900Z/source_manifest.json",
+        "sha256": "5304f7c65d5425a96b3d824fe0155413f5f42398d37d3505fffb6cf4c037874b",
+        "bytes": 29064
+      },
+      "pair_terminal": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_P02_view_pair_actual_20261031T135300Z/terminal.json",
+        "sha256": "ef4225342df363c4673b772e73a16246bf2f6c6ac1c11c3e7b8fca3690caf492",
+        "bytes": 3128
+      },
+      "mode_terminals": {
+        "financial_modeling": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_P02_view_pair_actual_20261031T135300Z/financial_modeling/actual_validation/terminal.json",
+          "sha256": "bad0eb2c53984e37a69a1a82de3f1be22eca20a68a67f4523a96f3086cd8d2b1",
+          "bytes": 32762
+        },
+        "debugging": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_P02_view_pair_actual_20261031T135300Z/debugging/actual_validation/terminal.json",
+          "sha256": "422abdb7880ee84bf12936c5e769fd89ef331c2093c4960111b521f65b5a7425",
+          "bytes": 49696
+        }
+      }
+    }
+  },
+  "no_reference_finance_solver_or_model_execution": true,
+  "source_or_engineering_pass_is_not_normal_quality_or_difficulty": true
+}
