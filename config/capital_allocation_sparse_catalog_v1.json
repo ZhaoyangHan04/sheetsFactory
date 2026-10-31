@@ -1,0 +1,171 @@
+{
+  "kind": "prospective_sparse_capital_primitive_extension_catalog",
+  "version": 1,
+  "profile_order": [
+    "40-J01",
+    "48-J01",
+    "56-J01",
+    "40-C01",
+    "40-C02",
+    "40-C03",
+    "40-C04",
+    "40-C05",
+    "40-C06",
+    "40-C07",
+    "40-C08",
+    "40-C09",
+    "40-C10"
+  ],
+  "first_development_profile": "40-J01",
+  "candidate_order": [
+    "40-C01",
+    "40-C02",
+    "40-C03",
+    "40-C04",
+    "40-C05",
+    "40-C06",
+    "40-C07",
+    "40-C08",
+    "40-C09",
+    "40-C10"
+  ],
+  "parent_catalog": "config/capital_allocation_constrained_catalog_v1.json",
+  "parent_catalog_sha256": "6b0814db9b2a74daf5ca7ceeae533813fabb9fdf3df556113b91cf7c98146f31",
+  "extension_policy": "Preserve all thirty parent projects and scenario primitives; add complete economically typed projects in fixed cohort order. Scale only the four root cash/capacity amounts by N/30 at the declared pence quantum.",
+  "selection_uses_new_model_outcomes": false,
+  "confirmation_frozen": false,
+  "financial_feasibility_or_optimum_claimed": false,
+  "model_difficulty_claimed": false,
+  "profiles": [
+    {
+      "id": "40-J01",
+      "project_count": 40,
+      "parent_profile": "30-D02",
+      "extension_seed": 40261031,
+      "role": "first_development",
+      "root_money_scale_numerator": 40,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "48-J01",
+      "project_count": 48,
+      "parent_profile": "30-D02",
+      "extension_seed": 40268950,
+      "role": "engineering_only",
+      "root_money_scale_numerator": 48,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "56-J01",
+      "project_count": 56,
+      "parent_profile": "30-D02",
+      "extension_seed": 40276869,
+      "role": "engineering_only",
+      "root_money_scale_numerator": 56,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "40-C01",
+      "project_count": 40,
+      "parent_profile": "30-H01",
+      "extension_seed": 40284788,
+      "role": "unconfirmed_candidate",
+      "root_money_scale_numerator": 40,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "40-C02",
+      "project_count": 40,
+      "parent_profile": "30-H02",
+      "extension_seed": 40292707,
+      "role": "unconfirmed_candidate",
+      "root_money_scale_numerator": 40,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "40-C03",
+      "project_count": 40,
+      "parent_profile": "30-H03",
+      "extension_seed": 40300626,
+      "role": "unconfirmed_candidate",
+      "root_money_scale_numerator": 40,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "40-C04",
+      "project_count": 40,
+      "parent_profile": "30-H04",
+      "extension_seed": 40308545,
+      "role": "unconfirmed_candidate",
+      "root_money_scale_numerator": 40,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "40-C05",
+      "project_count": 40,
+      "parent_profile": "30-H05",
+      "extension_seed": 40316464,
+      "role": "unconfirmed_candidate",
+      "root_money_scale_numerator": 40,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "40-C06",
+      "project_count": 40,
+      "parent_profile": "30-H06",
+      "extension_seed": 40324383,
+      "role": "unconfirmed_candidate",
+      "root_money_scale_numerator": 40,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "40-C07",
+      "project_count": 40,
+      "parent_profile": "30-H07",
+      "extension_seed": 40332302,
+      "role": "unconfirmed_candidate",
+      "root_money_scale_numerator": 40,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "40-C08",
+      "project_count": 40,
+      "parent_profile": "30-H08",
+      "extension_seed": 40340221,
+      "role": "unconfirmed_candidate",
+      "root_money_scale_numerator": 40,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "40-C09",
+      "project_count": 40,
+      "parent_profile": "30-H09",
+      "extension_seed": 40348140,
+      "role": "unconfirmed_candidate",
+      "root_money_scale_numerator": 40,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    },
+    {
+      "id": "40-C10",
+      "project_count": 40,
+      "parent_profile": "30-H10",
+      "extension_seed": 40356059,
+      "role": "unconfirmed_candidate",
+      "root_money_scale_numerator": 40,
+      "root_money_scale_denominator": 30,
+      "money_quantum_pence": 1000000
+    }
+  ]
+}
