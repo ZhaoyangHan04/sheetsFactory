@@ -1,0 +1,21 @@
+{
+  "kind": "linear_capital_dimension_SCIP_private_reference_profile",
+  "version": 1,
+  "id": "linear_capital_dimension_scip3600_v1",
+  "candidate_order": ["L720-D01", "L1080-D01"],
+  "dimensions": [720, 1080],
+  "rows": [1121, 1301],
+  "image_id": "sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043",
+  "producer": {"cpus": 16, "memory_bytes": 34359738368, "pids_limit": 256, "threads": 16, "network": "none", "backend": "scip", "solver_seconds_per_attempt": 3600, "relative_gap": 0, "absolute_gap": 0, "feasibility_tolerance": 1e-9, "automatic_retries": 0},
+  "vendor": {"pyscipopt": "6.0.0", "numpy": "1.26.4", "P02_version_equivalence_claimed": false},
+  "objective": "original integer GBP pence; unscaled",
+  "solver_rows": "exact duplicates and zero tautologies omitted; P02 positive threshold row scaling; every original integer row rechecked",
+  "prior_incumbent_input": false,
+  "new_business_or_cardinality_constraints": false,
+  "maximum_native_searches_per_profile": 2,
+  "runner_requires_checked_OPTIMAL_best": true,
+  "runner_excludes_complete_winner": true,
+  "runner_requires_checked_OPTIMAL_positive_integer_gap": true,
+  "agent_tool_budget_seconds_unchanged": 1800,
+  "source_or_quality_or_difficulty_certified": false
+}
