@@ -55,6 +55,16 @@ not a formal global proof. The completed reference remains unqualified for task
 quality or final difficulty. Optional unseeded scaled-HiGHS engineering is a
 separate route and cannot replace these reference admission gates.
 
+`scripts/build_linear_capital_scaled_source.py` accepts only this completed new
+reference and its exact predeclared raw specification. Preparation freezes the
+same pinned runtime and starts no engine. An explicit `--run` performs three
+actual LibreOffice calculations, three complete independent A/B cache audits,
+all financial locators and physical formula geometry, and two full typed value
+stability comparisons. The private source density remains120–240 projects.
+The source is not admitted on a partial calculation, a reference incumbent or
+mocked test evidence. Its distinct source kind does not confer task quality,
+public recovery, Harbor controls or model difficulty.
+
 Offline verification:
 
 ```bash

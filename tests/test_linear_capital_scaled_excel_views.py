@@ -123,3 +123,16 @@ def test_original_and_scaled_binding_kinds_are_not_interchangeable(tmp_path):
     assert old_spec.load_spec(original)['version'] == 1
     with pytest.raises(ValueError,match='Unknown portfolio'): old_spec.load_spec(public)
     with pytest.raises(ValueError,match='Unknown portfolio'): spec.load_spec(original)
+
+
+def test_isolated_emitter_uses_exact_vendored_source_without_original_package_path(tmp_path):
+    adapter = tmp_path/'excel.py'; upstream = tmp_path/'frozen_excel.py'
+    adapter.write_bytes(Path(excel.__file__).read_bytes()); upstream.write_bytes(excel.UPSTREAM.read_bytes())
+    name = 'sheets_factory.workbook.linear_capital_scaled._portable_emitter'
+    standalone = module(name,adapter)
+    assert standalone.UPSTREAM == upstream
+    _,public = fixture()
+    bindings = standalone.emit_workbook(tmp_path/'portable.xlsx',public,plan={'P001':1,'P002':0})
+    assert bindings['kind'] == excel.BINDING_KIND and bindings['formula_count'] > 0
+    upstream.write_bytes(upstream.read_bytes()+b'\n')
+    with pytest.raises(ValueError,match='frozen'): module(name+'_drifted',adapter)

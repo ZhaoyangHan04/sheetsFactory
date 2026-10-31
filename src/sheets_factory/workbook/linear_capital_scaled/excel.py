@@ -10,9 +10,17 @@ import ast as _ast
 import hashlib as _hashlib
 from pathlib import Path as _Path
 
-UPSTREAM = _Path(__file__).resolve().parents[1]/'linear_capital_portfolio/excel.py'
 UPSTREAM_SHA256 = '3a0ec72daf5ac7c307bcea359c0a100fbaf1e36be890e2536260e50e9dac689d'
 BINDING_KIND = 'linear_capital_scaled_native_excel_bindings'
+
+
+def upstream_path():
+    """An isolated public replay may retain the same exact emitter sibling."""
+    local = _Path(__file__).with_name('frozen_excel.py')
+    return local if local.is_file() else _Path(__file__).resolve().parents[1]/'linear_capital_portfolio/excel.py'
+
+
+UPSTREAM = upstream_path()
 
 
 def adapted_ast():
