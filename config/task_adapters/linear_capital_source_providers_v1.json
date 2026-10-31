@@ -1,0 +1,36 @@
+{
+  "kind": "linear_capital_source_provider_registry",
+  "version": 1,
+  "providers": [
+    {
+      "id": "standard",
+      "module": {
+        "path": "scripts/build_linear_capital_source.py",
+        "sha256": "8a4d9a84908242faa807fd969707326e028afaa17a3f8a9b0fc82d597f54c90e",
+        "bytes": 45238
+      },
+      "source_kind": "independently_verified_linear_capital_native_source",
+      "api_version": 1,
+      "functions": {
+        "validate_source": "validate_source",
+        "validate_actual_call": "validate_actual_call",
+        "runtime": "runtime"
+      }
+    },
+    {
+      "id": "producer16",
+      "module": {
+        "path": "scripts/build_linear_capital_producer_source.py",
+        "sha256": "79099dcc2e0ba8ad7f7ded6fc6416452ed22f3f8e686e22f36de19d5d0621a52",
+        "bytes": 4151
+      },
+      "source_kind": "independently_verified_linear_capital_producer16_native_source",
+      "api_version": 1,
+      "functions": {
+        "validate_source": "validate_source",
+        "validate_actual_call": "validate_actual_call",
+        "runtime": "runtime"
+      }
+    }
+  ]
+}
