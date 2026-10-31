@@ -104,7 +104,7 @@ def recipes():
         ROOT / 'scripts/build_heterogeneous_source.py']
     files += [ROOT / 'src/sheets_factory/workbook/linear_capital_portfolio' / name for name in
         ('spec.py', 'candidate_a.py', 'ledger.py', 'finance_crosscheck.py', 'model_a.py', 'model_b.py',
-         'optimization_runtime.py', 'excel.py')]
+         'optimization_runtime.py', 'excel.py', 'formula_identity.py')]
     files += [ROOT / 'src/sheets_factory' / name for name in ('core/audit.py', 'dashboard/server.py', 'resume.py',
         'workbook/resource_engine.py', 'workbook/engine.py', 'workbook/uno_recalculate.py',
         'workbook/heterogeneous_contracts/validate.py', 'task_adapters/heterogeneous_formula_identity.py')]
@@ -305,7 +305,7 @@ def expected_values(public, result_a, result_b, bindings, plan):
 
 def audit_workbook(workbook, public, result_a, result_b, bindings, plan, raw_literals):
     import openpyxl
-    from sheets_factory.task_adapters.heterogeneous_formula_identity import formula_signature
+    from sheets_factory.workbook.linear_capital_portfolio.formula_identity import formula_signature
     expected = expected_values(public, result_a, result_b, bindings, plan)
     formula_book = openpyxl.load_workbook(workbook, read_only=True, data_only=False, keep_links=False)
     cache_book = openpyxl.load_workbook(workbook, read_only=True, data_only=True, keep_links=False)
