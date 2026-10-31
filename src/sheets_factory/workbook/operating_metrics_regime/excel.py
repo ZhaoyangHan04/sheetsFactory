@@ -99,6 +99,7 @@ def clear_formula_caches(source, destination):
 
 
 def _number_format(field):
+    if field == "distribution_eligible": return 'General'
     if field.endswith("percent"): return '0.00"%"'
     if field == "prior_year_multiple": return '0.00"x"'
     return '#,##0.00;[Red](#,##0.00)'
@@ -214,7 +215,7 @@ def emit_workbook(path, public, result):
             if field == "prior_year_index": return f"100*{ratio}" if ratio else None
             if field == "cagr_percent": return None if year==2025 else f"100*(({h('revenue')}/{at(identity,'FY2025','revenue')})^(1/{year-2025})-1)"
             if field == "distribution_eligible":
-                return "FALSE()" if year != 2027 else f"AND({h('net_income')}>0,{h('revenue')}*10000>={at(identity,'FY2025','revenue')}*(100+{distribution_cells['cagr_percent']})^2,{at(identity,'2027Q4','yoy_percent')}>={distribution_cells['q4_yoy_percent']})"
+                return f"AND({year}=2027)" if year != 2027 else f"AND({year}=2027,{h('net_income')}>0,{h('revenue')}*10000>={at(identity,'FY2025','revenue')}*(100+{distribution_cells['cagr_percent']})^2,{at(identity,'2027Q4','yoy_percent')}>={distribution_cells['q4_yoy_percent']})"
         index = (int(period[:4])-2025)*4+int(period[-1])-1
         prev = f"{2025+(index-1)//4}Q{(index-1)%4+1}"
         prior_year = f"{int(period[:4])-1}Q{period[-1]}"

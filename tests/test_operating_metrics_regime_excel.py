@@ -63,6 +63,22 @@ def test_complete_field_census_unique_cells_and_oracle_seeded_typed_values(built
     assert load(p["independent_crosscheck"])["passed"] is True
 
 
+def test_eligibility_uses_logical_formula_and_general_format_without_numeric_coercion(built):
+    _,p,_,lookup=built
+    formulas=openpyxl.load_workbook(p['goal']['path'],data_only=False)
+    values=openpyxl.load_workbook(p['goal']['path'],data_only=True)
+    eligibility=[b for b in lookup.values() if b['metric']=='distribution_eligible']
+    assert len(eligibility)==12
+    for b in eligibility:
+        cell=formulas[b['sheet']][b['cell']]
+        assert cell.number_format=='General'
+        assert cell.value.startswith('=AND('+b['period'][2:]+'=2027')
+        assert type(values[b['sheet']][b['cell']].value) is bool
+        assert b['expected_typed']['type']=='boolean'
+    assert typed(0)!=typed(False) and typed(1)!=typed(True)
+    formulas.close();values.close()
+
+
 def test_natural_layouts_and_correct_zero_historical_template(built):
     _, p, _, lookup = built; cells = grid(p["goal"]["path"])
     for entity in ("ALDER", "CEDAR"):
