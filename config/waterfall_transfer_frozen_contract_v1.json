@@ -1,0 +1,320 @@
+{
+  "kind": "hypothetical_multi_fund_waterfall_frozen_business_contract",
+  "version": 1,
+  "id": "waterfall24_y20_s3_v1",
+  "seed": 2026110101,
+  "frozen_at": "2026-10-31T23:38:45.941081+00:00",
+  "provenance": "New hypothetical fund contracts and raw cash assumptions. No official workbook, formulas, input data or answers are production seeds.",
+  "failure_research_reference": {
+    "path": "/data/hzy/sheetsFactory/outputs/research/official_DBG07_01_manual_forensics_20261031T232401Z/receipt.json",
+    "sha256": "fb18c71e22f90a7049dbd9a60e440c4cdf111b9a58f5d705c80838388da13ae3",
+    "bytes": 8096
+  },
+  "dimensions": {
+    "fund_count": 24,
+    "years": [
+      2025,
+      2026,
+      2027,
+      2028,
+      2029,
+      2030,
+      2031,
+      2032,
+      2033,
+      2034,
+      2035,
+      2036,
+      2037,
+      2038,
+      2039,
+      2040,
+      2041,
+      2042,
+      2043,
+      2044
+    ],
+    "historical_years": [
+      2025,
+      2026
+    ],
+    "forecast_years": [
+      2027,
+      2028,
+      2029,
+      2030,
+      2031,
+      2032,
+      2033,
+      2034,
+      2035,
+      2036,
+      2037,
+      2038,
+      2039,
+      2040,
+      2041,
+      2042,
+      2043,
+      2044
+    ],
+    "scenario_ids": [
+      "BASE",
+      "DOWN",
+      "UP"
+    ],
+    "lp_classes": 2,
+    "fund_types": [
+      "income_credit",
+      "real_assets",
+      "growth",
+      "mixed_vintage"
+    ],
+    "natural_layouts": [
+      "annual_columns",
+      "transaction_rows",
+      "scenario_panels",
+      "investor_bridge"
+    ],
+    "amount_units": "GBP pence for exact posting ledgers; GBP displayed reports are exact posting amounts divided by100",
+    "raw_units": "integer GBP pence and integer basis points",
+    "arithmetic": "Each cash/entitlement posting is rounded to the nearest whole penny, ties away from zero. All base quantities are nonnegative; investor net cashflows and source/use display rows may be signed. No intermediate posting is rounded a second time."
+  },
+  "identity_axes": {
+    "fund_ids": "F001 throughF024 in that order",
+    "type": "types[(fund_number-1)%4]",
+    "layout": "layouts[((fund_number-1)//4)%4]",
+    "fund_ledger_sign": "signed_cash_uses for odd numbered funds; positive_deduction_uses for even numbered funds",
+    "LP1_share_bp": "3500+500*((fund_number-1)%6); LP2 is the remaining10000bp",
+    "preferred_rate_bp": "600+50*((fund_number-1)%7), zero in both actual years and stated positive rate from2027",
+    "compound_unpaid_preference": "true exactly for even numbered funds; false otherwise",
+    "base_GP_carry_bp": "1000+500*((fund_number-1)%3)",
+    "promote_GP_bp": [
+      2000,
+      3000,
+      4000
+    ],
+    "LP_distribution_multiple_threshold_bp": [
+      12500,
+      17500
+    ],
+    "call_month": "[1,4,7,10][(fund_number-1)%4]; day1; applies to the year call",
+    "scenario_receipts_multiplier_bp": {
+      "BASE": 10000,
+      "DOWN": 7500,
+      "UP": 12500
+    }
+  },
+  "raw_generation": {
+    "method": "SHA256(seed|fund_id|field|year|scenario) modular draws. Only exogenous assumptions are generated; no financial ledger or oracle may be invoked to choose inputs. All24 funds and every scenario are retained, including rejected engineering cases.",
+    "commitment_pence": "100000000+1000000*(hashdraw inclusive0..1400)",
+    "opening_LP_paid_in_bp": "2000+100*((fund_number-1)%11)",
+    "opening_cash_bp_of_commitment": 200,
+    "opening_unreturned_capital": "equals opening cumulativeLP paid-in; opening investment book cost equals opening paid-in minus opening cash",
+    "opening_unpaid_preference": 0,
+    "opening_cumulative_LP_distributions": 0,
+    "opening_cumulative_LP_profit": 0,
+    "opening_cumulative_GP_profit": 0,
+    "year_call_bp_of_commitment": {
+      "2025": 1200,
+      "2026": 1000,
+      "2027": 600,
+      "2028": 400
+    },
+    "asset_investment_bp_of_year_call": 7000,
+    "annual_management_fee_bp_of_commitment": 25,
+    "annual_operating_cost_bp_of_commitment": "15+hashdraw inclusive0..5",
+    "annual_operating_receipt_bp_of_commitment": "80+hashdraw inclusive0..50, then multiply by scenario receipt multiplier",
+    "reserve_bp_of_commitment": 100,
+    "terminal_reserve_pence": 0,
+    "realization_schedule_bp_of_commitment": {
+      "income_credit": {
+        "start_year": 2027,
+        "end_year": 2044,
+        "each_year_bp": 600
+      },
+      "real_assets": {
+        "2030": 2000,
+        "2034": 2500,
+        "2039": 4500,
+        "2044": 8000
+      },
+      "growth": {
+        "2032": 2500,
+        "2036": 4000,
+        "2040": 6500,
+        "2044": 10000
+      },
+      "mixed_vintage": {
+        "2029": 1500,
+        "2033": 2000,
+        "2037": 3000,
+        "2041": 4500,
+        "2044": 6500
+      }
+    },
+    "realization_receipt_rule": "Apply stated realization schedule to commitment, then scenario multiplier; one final nearest-penny posting. Operating receipts similarly have one final posting. Calls, asset investments, management fee, operating costs and reserve each have their own one-time nearest-penny posting.",
+    "zero_or_absent_schedule": "zero; never draw replacement cash or invent a loan",
+    "input_generation_must_not_run_forward": true
+  },
+  "business_policies": [
+    "Every fund is legally and economically separate in this hypothetical reporting model. Fund cash, capital and preferred balances cannot be netted across funds. Aggregation is reporting only. There is no FX, debt financing, investor reinvestment or interfund support.",
+    "LPs provide all contributed capital; the GP has no principal commitment and receives only catch-up and promote. Both LP classes have the same economics and the stated fixed participation percentages.",
+    "The period starts at1January of its year and ends immediately before1January of the next year. The supplied capital call arrives on its stated day. Operating receipts, asset realizations, fees, costs and all distributions occur at the period end.",
+    "Current management fee is the stated annual basis-point fee on committed capital. Opening cash plus new LP calls plus operating and realization receipts minus asset investments, management fee and operating costs gives cash before distributions. Negative cash rejects the source. Retain the stated required reserve where affordable; distributable cash is max(0,cash before distributions minus required reserve).",
+    "Preferred return accrues Actual/365 over the half-open period. The opening unreturned LP capital accrues for all period days; new called capital accrues from its call date to the next1January. For compound-preference funds only, opening unpaid preference also accrues for all period days. Current-period accrued preference never accrues again within that period. Preference rate is zero for2025 and2026, then the stated fund rate.",
+    "The current preference accrual is one nearest-penny posting of rate_bp times the sum of capital-pence-days and, where applicable, opening-unpaid-preference-pence-days, divided by3650000. Prior unpaid preference plus this accrual is the current preference entitlement. Opening unreturned principal plus the new call is current capital entitlement.",
+    "Priority1 returns LP principal up to capital entitlement and available cash. Priority2 pays preference up to preference entitlement and the remaining cash. Unpaid capital and preference remain separate nonnegative balances; an entitlement is not automatically a cash payment.",
+    "Priority3 pays GP catch-up. Let cumulative LP profit include all previously paid LP preference and promote plus current preference, excluding all principal returned; let previous GP profit include all GP catch-up and promote previously paid. Target GP profit is the nearest penny to cumulative LP profit times base_carry_bp divided by(10000-base_carry_bp). Catch-up entitlement is max(0,target minus previous GP profit), paid up to remaining cash.",
+    "The remaining cash is distributed through three sequential promote tiers. Use cumulative LP cash distributions including returned principal, divided by cumulative LP capital contributed including opening capital and all calls. Tier1 continues until cumulative LP cash reaches the nearest-penny1.25x capital threshold, and pays20% to GP. Tier2 continues to the nearest-penny1.75x threshold and pays30% to GP. Tier3 has no cap and pays40% to GP. Equality enters the next tier; paid catch-up is GP profit but never LP cash or returned principal.",
+    "Within a promote tier round the LP cash share to the nearest penny and pay GP the balancing cash remainder. At a capped tier choose the largest whole-penny total cash amount whose rounded LP share does not exceed the remaining LP threshold, limited by remaining cash. Then advance to the next tier. This rule governs the possible one-penny endpoint; never allocate a rounded LP payment above the threshold.",
+    "LP total distributions comprise principal, preference and LP promote. GP total distributions comprise catch-up and GP promote. LP1 receives its rounded fixed share of LP calls and each aggregate LP period distribution; LP2 receives the balancing remainder. Net investor cashflow is its cash distribution minus its capital call; GP net cashflow equals its cash distribution.",
+    "Fund cash before distributions must equal all LP and GP cash paid plus closing retained cash. All investor receipts must equal the fund cash payment. Unreturned principal, unpaid preference and cumulative LP/GP balances roll forward exactly. Investor entitlements and receipts are positive; a signed fund cash-use ledger shows their payments as negative uses, whereas a positive-deduction ledger subtracts positive uses.",
+    "The terminal2044 reserve is zero. After final available cash is distributed, any remaining unreturned capital or unpaid preference is reported as unrecovered at termination. It does not create a cash payment or a new financing source. No subsequent period is assumed."
+  ],
+  "results_schema": {
+    "kind": "hypothetical_multi_fund_waterfall_independent_values",
+    "version": 1,
+    "row_key": "fund_id/scenario_id/year",
+    "row_monetary_fields_pence": [
+      "opening_cash",
+      "lp_call",
+      "asset_investment",
+      "operating_receipts",
+      "realization_receipts",
+      "management_fee",
+      "operating_cost",
+      "reserve",
+      "cash_before_distribution",
+      "available_cash",
+      "opening_unreturned_capital",
+      "opening_unpaid_preference",
+      "cumulative_lp_paid_in",
+      "preference_accrual",
+      "capital_entitlement",
+      "preference_entitlement",
+      "capital_paid",
+      "preference_paid",
+      "after_capital_cash",
+      "after_preference_cash",
+      "lp_profit_before_catchup",
+      "gp_profit_before_catchup",
+      "catchup_entitlement",
+      "catchup_paid",
+      "after_catchup_cash",
+      "tier1_cash",
+      "tier1_lp",
+      "tier1_gp",
+      "tier2_cash",
+      "tier2_lp",
+      "tier2_gp",
+      "tier3_cash",
+      "tier3_lp",
+      "tier3_gp",
+      "lp_promote_cash",
+      "gp_promote_cash",
+      "lp_total_distribution",
+      "gp_total_distribution",
+      "fund_total_distribution",
+      "closing_cash",
+      "closing_unreturned_capital",
+      "closing_unpaid_preference",
+      "cumulative_lp_distributions",
+      "cumulative_lp_profit",
+      "cumulative_gp_profit",
+      "lp1_call",
+      "lp2_call",
+      "lp1_distribution",
+      "lp2_distribution",
+      "lp1_net_cashflow",
+      "lp2_net_cashflow",
+      "gp_net_cashflow",
+      "fund_cash_residual",
+      "recipient_cash_residual",
+      "principal_residual",
+      "preference_residual"
+    ],
+    "row_extra_fields": {
+      "lp_distribution_multiple": "exact rational pair numerator cumulativeLPcash and denominator cumulativeLPpaidin",
+      "capital_and_pref_shortfall": "boolean; closingunreturnedcapital>0 orclosingunpaidpreference>0"
+    },
+    "aggregate_monetary_fields_pence": [
+      "lp_call",
+      "asset_investment",
+      "operating_receipts",
+      "realization_receipts",
+      "management_fee",
+      "operating_cost",
+      "capital_paid",
+      "preference_paid",
+      "catchup_paid",
+      "lp_promote_cash",
+      "gp_promote_cash",
+      "lp_total_distribution",
+      "gp_total_distribution",
+      "fund_total_distribution",
+      "closing_cash",
+      "closing_unreturned_capital",
+      "closing_unpaid_preference",
+      "lp1_net_cashflow",
+      "lp2_net_cashflow",
+      "gp_net_cashflow"
+    ],
+    "aggregate_key": "scenario_id/year",
+    "invariant_fields": [
+      "fund_cash_residual",
+      "recipient_cash_residual",
+      "principal_residual",
+      "preference_residual"
+    ],
+    "canonical_amount_type": "integer pence, not floats; arrays or typed results must retain all row identities and field coverage"
+  },
+  "task_views": {
+    "debugging_primary": true,
+    "FM_optional_future": true,
+    "actual_years_protected": [
+      2025,
+      2026
+    ],
+    "forecast_scope_years": [
+      2027,
+      2028,
+      2029,
+      2030,
+      2031,
+      2032,
+      2033,
+      2034,
+      2035,
+      2036,
+      2037,
+      2038,
+      2039,
+      2040,
+      2041,
+      2042,
+      2043,
+      2044
+    ],
+    "fixed_debug_root": "after_preference_cash",
+    "fixed_debug_fault": "In every forecast fund/scenario/year invert only the paid-preference cash-use sign in the residual-after-preference formula; all1296 definition locations are declared before numerical generation, zero immediate-impact locations are recorded separately. Downstream ledgers and investor distributions remain live.",
+    "fault_count_is_not_actual_D": true,
+    "public_brief": "Audit and repair the forecast fund and investor reports across all funds, periods and scenarios. Preserve the supplied assumptions, actual reports and existing layout. Save the completed workbook to /app/output.xlsx.",
+    "FM_scope": "All forecast derived posting ledger, investor and aggregate outputs and displayed currency reports; no active derived forecast helper may reveal the masked answer."
+  },
+  "construction_and_admission": {
+    "two_independent_implementations": "A Decimal chronological balances; B exact integer/Fraction allocations and independent tier endpoint solver. Share only schema/shape and raw contract, no financial arithmetic or formula engine.",
+    "required_before_native": [
+      "all1440 rows and60aggregates agree completely",
+      "all cash and principal/preference residuals zero",
+      "all posting/intermediate integer safety bounds proved",
+      "historical zero preference and future active preference/catchup/tier crossings counted",
+      "one immutable raw generation, no resampling after forwards"
+    ],
+    "native": "Cold formula caches absent, three actual source calculations and complete typed stabilities, then actual debug fullD/oracle/nop/equivalent/missedroot/extrachange controls with genuine resource and owned cleanup.",
+    "normal_all12_quality": "required later; not inherited",
+    "first_strong_attempt": "gpt-6.1-sol/xhigh; SUM tool<1800s excludes model response; one logical attempt,0outer retries",
+    "difficulty_claimed": false,
+    "qualified": false
+  }
+}
