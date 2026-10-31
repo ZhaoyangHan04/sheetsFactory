@@ -8,6 +8,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import sys
 import time
 
@@ -17,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'src'))
 from sheets_factory.pipelines import heterogeneous_native_quality as pipeline
 from sheets_factory.workbook.thread_capped_resource_engine import ThreadCappedResourceLibreOfficeEngine
-from sheets_factory.evaluation.resource_observer import ResourceObserver
+from sheets_factory.evaluation.resource_observer import ResourceObserver, validate_trial_observations
 from sheets_factory.resume import PROTECTED_BUDGETS
 
 KIND = 'prepared_scoped_native_business_normal_quality'
@@ -150,6 +151,86 @@ def validate_prepared(output):
     return deepcopy(frozen), deepcopy(config), admissions
 
 
+def validate_normal_resources(output, audit, observer_receipt):
+    """Withdraw preliminary quality acceptance when actual role proof is absent.
+
+    Raw Harbor results and their rewards remain immutable. Missing resource
+    evidence is an infrastructure state, never a financial/model zero.
+    """
+    from sheets_factory.evaluation.harbor import inspect_export
+    from dirhash import dirhash
+    out = Path(output).absolute(); reports = []; failures = []
+    for task in audit.snapshot()['tasks']:
+        if task.get('status') != 'qualified':
+            continue
+        rows = []; error = None
+        try:
+            require(observer_receipt is not None, 'The stopped actual resource observer receipt is missing')
+            task_id = task['id']; binding = task['harbor_export_binding']; name = binding['task_name']
+            summary_path = Path(task['harbor_summary_path']).absolute()
+            require(summary_path.name == 'control_summary.json'
+                and summary_path.parent.parent == out/'harbor_jobs', 'The task control summary escaped its exact jobs root')
+            batch_id = summary_path.parent.name
+            batch_path = out/'harbor_batches'/batch_id/'batch_manifest.json'
+            batch = json.loads(batch_path.read_text()); summary = json.loads(summary_path.read_text())
+            staging = out/'harbor_batches'/batch_id/'SpreadsheetEval'
+            require(batch['jobs_dir'] == str(summary_path.parent) and batch['staging'] == str(staging)
+                and task_id in batch['task_ids'] and batch['export_bindings'][name] == binding,
+                'The actual control batch differs from the selected immutable export')
+            staged = staging/task_id; original = out/'SpreadsheetEval'/task_id
+            require(staged.parent == staging and original.parent == out/'SpreadsheetEval'
+                and inspect_export(staged) == binding == inspect_export(original),
+                'The original or actual staged export changed')
+            for agent, reward in (('oracle', 1), ('nop', 0)):
+                entry = task['harbor_controls'][agent]
+                require(summary['per_task'][name][agent] == entry, 'The current actual control differs from its persisted summary')
+                result_path = Path(entry['result_file']).absolute(); config_path = result_path.with_name('config.json')
+                require(result_path.is_relative_to(summary_path.parent), 'The actual control result escaped its fixed batch')
+                result_ref, config_ref = reference(result_path), reference(config_path)
+                result, config = json.loads(result_path.read_text()), json.loads(config_path.read_text())
+                require(config['task']['path'] == str(staged) == result['config']['task']['path']
+                    and result['task_name'] == name and result.get('exception_info') is None
+                    and result['agent_info']['name'] == config['agent']['name'] == agent
+                    and result['verifier_result']['rewards']['reward'] == reward
+                    and result['task_checksum'] == dirhash(staged, 'sha256'),
+                    'The resource-evidenced trial has another task, agent, reward or checksum')
+                observed = validate_trial_observations(config_ref, result_ref, receipts=[observer_receipt],
+                    expected_profile=pipeline.PROFILE, expected_task_directory=staged)
+                rows.append({'agent': agent, 'result': result_ref, 'config': config_ref, 'observation': observed})
+                require(observed.get('passed') is True and observed.get('complete') is True,
+                    'Actual '+agent+' role resource or image ancestry evidence is incomplete')
+            report = {'task_id': task_id, 'passed': True, 'trials': rows, 'observer': observer_receipt,
+                'batch_manifest': reference(batch_path), 'control_summary': reference(summary_path),
+                'raw_rewards_modified': False, 'source_of_evidence': 'same_actual_oracle_and_nop_controls'}
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+            error = str(exc)
+            report = {'task_id': task['id'], 'passed': False, 'error': error, 'trials': rows,
+                'observer': observer_receipt, 'raw_rewards_modified': False, 'missing_evidence_is_not_model_zero': True}
+        receipt = write(out/'private/actual_control_resources'/(task['id']+'.json'), report)
+        reports.append(receipt)
+        if error is None:
+            audit.task(task['id'], actual_control_resource_validation=receipt,
+                control_observation_receipts={agent: [observer_receipt] for agent in ('oracle', 'nop')})
+        else:
+            failures.append(task['id'])
+            original = out/'SpreadsheetEval'/task['id']
+            audit.task(task['id'], status='infrastructure_failed', node='actual_control_resources', error=error,
+                historical_harbor_controls=task.get('harbor_controls'),
+                historical_harbor_export_binding=task.get('harbor_export_binding'),
+                harbor_controls=None, harbor_export_binding=None,
+                actual_control_resource_validation=receipt, missing_resources_are_not_model_zero=True)
+            if original.is_dir() and original.parent == out/'SpreadsheetEval':
+                destination = out/'quarantined_exports'/(task['id']+'-resource-observation')
+                require(not destination.exists(), 'Preserve the first quarantined resource-scoped export')
+                destination.parent.mkdir(parents=True, exist_ok=True); shutil.move(str(original), destination)
+            audit.emit('task.resource_qualification_withdrawn', task_id=task['id'], evidence=receipt)
+    result = {'kind': 'normal_native_actual_Harbor_resource_gate', 'version': 1, 'passed': not failures,
+        'qualified_tasks_checked': len(reports), 'task_validations': reports, 'infrastructure_task_ids': failures,
+        'observer': observer_receipt, 'raw_rewards_modified': False, 'missing_evidence_is_not_model_zero': True}
+    write(out/'normal_actual_control_resource_gate.json', result); audit.export()
+    return result
+
+
 def execute_prepared(output, *, port=0):
     out = Path(output).absolute(); frozen, config, admissions = validate_prepared(out)
     cohort = runtime.cohort; settings, legacy = cohort.prepared_host_runtime(out)
@@ -172,6 +253,9 @@ def execute_prepared(output, *, port=0):
                 status = 0 if pipeline.NativeQualityFactory(config, audit, llm, engine, admissions=admissions).run() else 2
             if observer.receipt:
                 write(out/'normal_Harbor_resource_observation.json', {'receipt': observer.receipt})
+            resource_gate = validate_normal_resources(out, audit, observer.receipt)
+            if not resource_gate['passed']:
+                status = 2
             for value in admissions:
                 pipeline.admission(value)
             runtime.guard_recipes(frozen['recipe_sha256'])

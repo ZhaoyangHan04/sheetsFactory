@@ -55,6 +55,7 @@ def scoped_native_evidence(value, proof, goal, required_labels, revision):
     return {'version': 1, 'state': 'independently_validated_task_values', 'blocking': False,
         'classification': 'complete_independent_financial_task_scope', 'revision': revision,
         'source_sha256': proof['workbook']['sha256'], 'goal': reference(goal),
+        'goal_sha256': reference(goal)['sha256'],
         'actual_validation': proof['actual_validation'], 'independent_scope': proof['independent_scope'],
         'required_delta': sorted(required_labels), 'independent_fields_checked': len(known),
         'retained_offscope_errors': errors, 'candidates': [], 'probes': [],

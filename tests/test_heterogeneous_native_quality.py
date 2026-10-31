@@ -1,5 +1,6 @@
 """Scoped truth, public policy and normal-factory boundary regressions."""
 import json
+import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -9,6 +10,8 @@ import yaml
 
 from sheets_factory.pipelines import heterogeneous_native_quality as pipeline
 from sheets_factory.task_adapters import heterogeneous_native_quality as nodes
+from test_reference_evidence_policy import context as reference_context, diagnose as rediagnose
+from test_reference_review_reporting import reviewed_run
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -99,6 +102,7 @@ def test_offscope_error_does_not_invalidate_independently_correct_task_values(sc
     assert receipt['blocking'] is False and receipt['independent_fields_checked'] == 2
     assert receipt['retained_offscope_errors'] == [['Provided Context', 'A1', '#DIV/0!']]
     assert receipt['revision'] == 3 and receipt['goal'] == pipeline.reference(goal)
+    assert receipt['goal_sha256'] == pipeline.reference(goal)['sha256']
     assert receipt['whole_source_business_correctness_certified'] is False
     assert receipt['complete_syntactic_dependency_exclusion_claimed'] is False
 
@@ -151,3 +155,113 @@ def test_export_cannot_inherit_a_stale_review(monkeypatch):
         'reference_review': {'passed': True, 'binding': {'current': 1}}}})
     with pytest.raises(ValueError, match='current supported'):
         nodes.NativeExportNode().execute(ctx)
+
+
+def test_native_scoped_receipt_passes_the_real_immutable_reporting_boundary(reviewed_run, tmp_path):
+    from sheets_factory.workbook import heterogeneous_review_tasks as task
+    from sheets_factory.reporting import generate_report
+    root, run, _, ctx = reviewed_run
+    snapshot = task.helper().snapshot(ctx.data['goal'])
+    scope = tmp_path/'reporting_scope.json'
+    scope.write_text(json.dumps({'expected_typed_values': [{'sheet': 'Sheet', 'cell': 'A1',
+        'expected': snapshot['cells']['Sheet']['A1']['primary']}]}))
+    proof = {'mode': 'financial_modeling', 'workbook': pipeline.reference(ctx.source),
+        'independent_scope': pipeline.reference(scope), 'actual_validation': {'offline_fixture': True}}
+    value = SimpleNamespace(helper=SimpleNamespace(validation_driver=lambda: SimpleNamespace(task=task)),
+        evidence={'delta': {'expected_fixed_errors': []}})
+    receipt = nodes.scoped_native_evidence(value, proof, ctx.data['goal'], ctx.data['delta']['expected_changes'], ctx.revision)
+    ctx.save('native_error_probe.json', receipt)
+    rediagnose(ctx)
+    report = generate_report(run, project_root=root)
+    assert report['yield']['verified_qualified'] == 1
+    assert report['tasks'][0]['reference_validation']['verified'] is True
+    assert report['consistency_warnings'] == []
+
+
+@pytest.fixture
+def resource_run(tmp_path, monkeypatch):
+    """Wrapper fixtures only; existing observer tests certify its own checker."""
+    import shutil
+    from dirhash import dirhash
+    from sheets_factory.core.audit import AuditStore
+    from sheets_factory.evaluation.resource_harbor import export_resource_harbor
+    from sheets_factory.evaluation.harbor import inspect_export
+    spec = importlib.util.spec_from_file_location('_normal_native_resource_boundary_test',
+        ROOT/'scripts/run_heterogeneous_native_quality.py')
+    runner = importlib.util.module_from_spec(spec); spec.loader.exec_module(runner)
+    revision = tmp_path/'revision'
+    for folder, value in [('public', 1), ('private', 2)]:
+        (revision/folder).mkdir(parents=True)
+        book = Workbook(); book.active['A1'] = value
+        book.save(revision/folder/('input.xlsx' if folder == 'public' else 'goal.xlsx')); book.close()
+    (revision/'public/instruction.md').write_text('Offline gate fixture.')
+    out = tmp_path/'run'; original = out/'SpreadsheetEval/unit-task'
+    export_resource_harbor(revision, original, {'task_id': 'unit-task'}, runtime_profile=pipeline.PROFILE)
+    staging = out/'harbor_batches/fixed-batch/SpreadsheetEval'
+    staged = staging/'unit-task'; shutil.copytree(original, staged)
+    binding = inspect_export(original); name = binding['task_name']
+    jobs = out/'harbor_jobs/fixed-batch'; controls = {}; results = []
+    def write(path, value):
+        path.parent.mkdir(parents=True, exist_ok=True); path.write_text(json.dumps(value)+'\n')
+    for agent, reward in [('oracle', 1), ('nop', 0)]:
+        directory = jobs/(agent+'__Fixture')
+        config = {'trial_name': directory.name, 'task': {'path': str(staged)}, 'agent': {'name': agent}}
+        result = {'trial_name': directory.name, 'task_name': name, 'config': config,
+            'agent_info': {'name': agent}, 'verifier_result': {'rewards': {'reward': reward}},
+            'exception_info': None, 'task_checksum': dirhash(staged, 'sha256')}
+        write(directory/'config.json', config); write(directory/'result.json', result)
+        results.append(directory/'result.json')
+        controls[agent] = {'task_name': name, 'reward': reward, 'expected': reward, 'matched': True,
+            'result_file': str(directory/'result.json'), 'exception_info': None}
+    summary = jobs/'control_summary.json'; write(summary, {'per_task': {name: controls}})
+    batch = staging.parent/'batch_manifest.json'
+    write(batch, {'jobs_dir': str(jobs), 'staging': str(staging), 'task_ids': ['unit-task'],
+        'export_bindings': {name: binding}})
+    audit = AuditStore(out, {'id': 'offline-resource-gate'})
+    audit.task('unit-task', mode='financial_modeling', source_id='offline-resource-source', status='qualified',
+        harbor_controls=controls, harbor_export_binding=binding, harbor_summary_path=str(summary))
+    observation = tmp_path/'offline_observation.json'; write(observation, {'fixture': True})
+    calls = []
+    def check(config, result, **options):
+        calls.append((config, result, options))
+        assert options['expected_task_directory'] == staged
+        assert options['expected_profile'] == pipeline.PROFILE
+        return {'passed': True, 'complete': True}
+    monkeypatch.setattr(runner, 'validate_trial_observations', check)
+    return SimpleNamespace(runner=runner, out=out, audit=audit, original=original,
+        staged=staged, batch=batch, results=results, observer=pipeline.reference(observation), calls=calls)
+
+
+def test_actual_resource_wrapper_binds_both_roles_to_the_fixed_staged_export(resource_run):
+    r = resource_run
+    result = r.runner.validate_normal_resources(r.out, r.audit, r.observer)
+    assert result['passed'] is True and result['qualified_tasks_checked'] == 1
+    assert len(r.calls) == 2 and r.original.exists()
+    current = r.audit.snapshot()['tasks'][0]
+    assert current['status'] == 'qualified'
+    assert current['control_observation_receipts'] == {'oracle': [r.observer], 'nop': [r.observer]}
+
+
+@pytest.mark.parametrize('change', ['missing_observer', 'actual_role_mismatch', 'wrong_stage', 'wrong_agent', 'wrong_reward'])
+def test_resource_gap_withdraws_acceptance_and_preserves_raw_rewards(resource_run, monkeypatch, change):
+    r = resource_run; receipt = r.observer
+    if change == 'missing_observer': receipt = None
+    elif change == 'actual_role_mismatch':
+        monkeypatch.setattr(r.runner, 'validate_trial_observations', lambda *a, **k: {'passed': False, 'complete': False})
+    elif change == 'wrong_stage':
+        data = json.loads(r.batch.read_text()); data['staging'] = str(r.out/'another_stage')
+        r.batch.write_text(json.dumps(data))
+    else:
+        path = r.results[0]; data = json.loads(path.read_text())
+        if change == 'wrong_agent': data['agent_info']['name'] = 'another-agent'
+        else: data['verifier_result']['rewards']['reward'] = 0
+        path.write_text(json.dumps(data))
+    before = {str(path): path.read_bytes() for path in r.results}
+    result = r.runner.validate_normal_resources(r.out, r.audit, receipt)
+    assert result['passed'] is False and result['infrastructure_task_ids'] == ['unit-task']
+    assert before == {str(path): path.read_bytes() for path in r.results}
+    current = r.audit.snapshot()['tasks'][0]
+    assert current['status'] == 'infrastructure_failed' and current['harbor_controls'] is None
+    assert current['harbor_export_binding'] is None and current['historical_harbor_controls']
+    assert not r.original.exists() and (r.out/'quarantined_exports/unit-task-resource-observation').exists()
+    assert result['missing_evidence_is_not_model_zero'] is True
