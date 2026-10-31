@@ -1,0 +1,13 @@
+version: 1
+nodes:
+  normalize: sheets_factory.task_adapters.heterogeneous_native_quality:NativeNormalizeNode
+  profile: sheets_factory.task_adapters.heterogeneous_native_quality:NativeProfileNode
+  plan: sheets_factory.task_adapters.heterogeneous_native_quality:NativePlanNode
+  construct: sheets_factory.task_adapters.heterogeneous_native_quality:NativeConstructNode
+  instruction: sheets_factory.task_adapters.heterogeneous_native_quality:NativeInstructionNode
+  precheck: sheets_factory.task_adapters.heterogeneous_native_quality:NativeControlsNode
+  independent_recovery: sheets_factory.nodes.quality:RecoveryNode
+  trajectory: sheets_factory.nodes.quality:TrajectoryNode
+  diagnose: sheets_factory.nodes.quality:DiagnoseNode
+  repair: sheets_factory.task_adapters.heterogeneous_native_quality:NativeRepairNode
+  export: sheets_factory.task_adapters.heterogeneous_native_quality:NativeExportNode
