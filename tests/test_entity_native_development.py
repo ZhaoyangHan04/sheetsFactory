@@ -109,7 +109,7 @@ def transform_fixture():
     actual={'path':'new-goal','sha256':'3'*64,'bytes':3};impl={'path':'adapter','sha256':entry.ADAPTER_SHA,'bytes':4}
     call={'kind':'pinned_native_presentation_transform','role':'goal','status':'passed','timeout_seconds':900,
           'network':'none','calls_LO':0,'calls_model':0,'source':source,'output':output,'implementation':impl,
-          'image_id':'pinned-image','preservation_audit':'proof','container_before':'before','container_after':'after','worker_runtime':'worker'}
+          'image_id':entry.PINNED_IMAGE_ID,'preservation_audit':'proof','container_before':'before','container_after':'after','worker_runtime':'worker'}
     allowed={'xl/worksheets/sheet2.xml','xl/worksheets/sheet3.xml','xl/worksheets/sheet4.xml','xl/worksheets/sheet5.xml','xl/worksheets/sheet6.xml','xl/sharedStrings.xml'}
     proof={'kind':'entity_group_native_business_presentation_static_audit','mode':'native_business_tables',
            'native_public_leaf_count':10620,'explicit_boolean_as_integer_count':24,'source':source,'destination':output,
@@ -121,7 +121,7 @@ def transform_fixture():
     for key in ('all_native_primitive_values_preserved','all_original_phases_and_rules_preserved',
                 'complete_shared_string_usage_inventory_checked','uneditable_cells_and_formulas_and_cached_values_and_styles_preserved'):proof[key]=True
     resources={'Memory':32*1024**3,'NanoCpus':2*10**9,'PidsLimit':256,'NetworkMode':'none','CapAdd':['DAC_OVERRIDE'],'CapDrop':['ALL']}
-    before={'container_id':'f'*64,'image_id':'pinned-image','user':'0','resources':resources}
+    before={'container_id':'f'*64,'image_id':entry.PINNED_IMAGE_ID,'user':'0','resources':resources}
     after={**deepcopy(before),'state':{'ExitCode':0,'OOMKilled':False,'Running':False}}
     compare={'kind':'exact_non_presentation_typed_cached_value_comparison','passed':True,'mismatch_count':0,'mismatches':[],
              'cent_quantization_applied':False,'financial_audit_transfer_claimed':False,'source':source,'output':actual,
@@ -141,6 +141,7 @@ def test_presentation_receipt_validation_is_not_financial_admission():
 
 @pytest.mark.parametrize('damage',[
     lambda c,r:c.update(calls_LO=False),
+    lambda c,r:(c.update(image_id='sha256:'+'a'*64),r['before'].update(image_id='sha256:'+'a'*64),r['after'].update(image_id='sha256:'+'a'*64)),
     lambda c,r:r['proof'].update(all_original_phases_and_rules_preserved=False),
     lambda c,r:r['proof']['static_reference_proof'].update(changed_text_is_unreferenced=False),
     lambda c,r:r['proof']['package_members']['xl/worksheets/sheet1.xml'].update(after_sha256='changed'),

@@ -38,6 +38,7 @@ ADAPTER_SHA='76f933fba5e5dc0ac7111eba8ed93bb96c09dc99c2c41bbb19467ca434e2c549'
 POLICY_SHA='f98ae807d392bcfe79ef9ae7d9df12e226eb55ddc53fd0e5b4579835715fa509'
 ORIGINAL_MANIFEST_SHA='f6933fed38237201bcca52f3103021af3f2ae5a79b1f0562ba8adf8a0cead356'
 PROFILE=ROOT/'config/runtime_profiles/entity_group_large_v2.yaml'
+PINNED_IMAGE_ID='sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043'
 BUDGET={'version':1,'elapsed_policy':'operational_guard','elapsed_guard_seconds':14400,'tool_budget_seconds':1800}
 PENDING=('new_source_admission','new_joint_construction','new_input_stability',
          'five_local_controls','native_public_source_recovery','all_12_quality_checks',
@@ -149,6 +150,7 @@ def validate_instruction_patch(graph,path,instruction,old_inventory):
 def validate_transform(graph,role,call,old_inventory,new_book):
     require(call.get('kind')=='pinned_native_presentation_transform' and call.get('role')==role
             and call.get('status')=='passed' and call.get('timeout_seconds')==900
+            and call.get('image_id')==PINNED_IMAGE_ID
             and call.get('network')=='none' and type(call.get('calls_LO')) is int and call['calls_LO']==0
             and type(call.get('calls_model')) is int and call['calls_model']==0,
             'A presentation transform is not a completed isolated operation')
@@ -221,7 +223,8 @@ def validate_prototype(path):
     require(set(inventory)==set(TASK_FILES) and len(inventory)==17,'The original resource inventory differs')
     for record in inventory.values():graph.expected(record)
     profile=load_runtime_profile(PROFILE)
-    require(profile['id']=='entity_group_large_v2','The prospective runtime profile differs')
+    require(profile['id']=='entity_group_large_v2' and profile['image']['id']==PINNED_IMAGE_ID,
+            'The prospective pinned runtime profile differs')
     calls=prototype['calls'];require(len(calls)==4,'Exactly two transforms and two actual LO comparisons are required')
     transforms={call['role']:call for call in calls[:2]};calculations={call['role']:call for call in calls[2:]}
     require(set(transforms)==set(calculations)=={'input','goal'},'Both sides of the presentation must be complete')
