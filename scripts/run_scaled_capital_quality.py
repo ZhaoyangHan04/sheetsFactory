@@ -45,9 +45,10 @@ def reference(path):
     return {'path': str(path), 'sha256': digest.hexdigest(), 'bytes': path.stat().st_size}
 
 
-def verify_files(mapping):
+def verify_files(mapping, *, session=None):
     for path, digest in mapping.items():
-        require(reference(path)['sha256'] == digest, 'A frozen scaled-quality dependency changed: ' + path)
+        actual = reference(path) if session is None else session.ref(path)
+        require(actual['sha256'] == digest, 'A frozen scaled-quality dependency changed: ' + path)
 
 
 def support(name, filename):
@@ -142,7 +143,8 @@ def prepare(source_manifest, catalog_manifest, base_run, output, *, public_kerne
     output, base_run = Path(output).absolute(), Path(base_run).absolute()
     require(output == output.resolve() and not output.exists(), 'Use a fresh real quality directory')
     source_ref = reference(source_manifest)
-    proof = admission.validate_source(source_ref)
+    session = admission.ReferenceSession()
+    proof = admission.validate_source(source_ref, session=session)
     profile_ref = reference(runtime_profile)
     require(profile_ref == proof['runtime_profile'], 'The task must bind the actually audited source resource profile')
     kernel_ref = public_kernel_preparation if isinstance(public_kernel_preparation, dict) else reference(public_kernel_preparation)
@@ -203,7 +205,7 @@ def prepare(source_manifest, catalog_manifest, base_run, output, *, public_kerne
         'selected': [seed], 'independently_emitted_source_workbooks': 1, 'qualified': False, 'task_count': 0})
     artifacts = deepcopy(proof['artifact_sha256'])
     artifacts.update(admission.verify_references([source_ref, proof, catalog_ref, read(catalog_ref), kernel_ref, kernel,
-        proof_ref, scope, seeds, base_ref, base_config_ref]))
+        proof_ref, scope, seeds, base_ref, base_config_ref], session=session))
     recipes = deepcopy(original['recipe_sha256'])
     recipes.update(read(source_ref)['source_recipe_sha256'])
     for record in config[adapter.SETTING].values():
@@ -215,7 +217,7 @@ def prepare(source_manifest, catalog_manifest, base_run, output, *, public_kerne
     config['host_runtime'] = cohort.host_runtime_settings(output)
     with cohort.host_temporary_environment(output, config['host_runtime']) as host:
         (output / 'resolved_config.yaml').write_text(yaml.safe_dump(config, sort_keys=False))
-        verify_files(recipes); verify_files(artifacts)
+        verify_files(recipes, session=session); verify_files(artifacts, session=session)
         return write_new(output / 'preflight_manifest.json', {'kind': KIND, 'version': 1,
             'development_only': True, 'profile_id': PROFILE_ID, 'targets': TARGETS, 'count': 1,
             'delivery_targets': {'financial_modeling': 10, 'debugging': 10},
@@ -231,17 +233,19 @@ def prepare(source_manifest, catalog_manifest, base_run, output, *, public_kerne
             'qualified': False, 'task_count': 0, 'quality_or_difficulty_certified': False})
 
 
-def validate_prepared(output):
+def validate_prepared(output, *, admission_session=None):
     output = Path(output).absolute()
     frozen = read(reference(output / 'preflight_manifest.json'))
     require(frozen.get('kind') == KIND and type(frozen.get('version')) is int and frozen['version'] == 1
             and frozen.get('development_only') is True and frozen.get('profile_id') == PROFILE_ID
             and frozen.get('targets') == TARGETS and type(frozen.get('count')) is int and frozen['count'] == 1,
             'Only the prospectively declared first 30-D01 financial development run is supported')
-    verify_files(frozen['recipe_sha256']); verify_files(frozen['source_artifacts_sha256'])
+    session = admission_session or admission.ReferenceSession()
+    verify_files(frozen['recipe_sha256'], session=session)
     config = yaml.safe_load(Path(frozen['resolved_config']['path']).read_text())
     require(reference(frozen['resolved_config']['path']) == frozen['resolved_config'], 'Resolved configuration changed')
-    proof = admission.verify_admitted_proof(read(frozen['source_admission']))
+    proof = admission.verify_admitted_proof(read(frozen['source_admission']), session=session)
+    verify_files(frozen['source_artifacts_sha256'], session=session)
     seeds = read(frozen['prepared_seed_manifest'])['selected']
     require(len(seeds) == 1 and seeds[0]['source_manifest'] == frozen['source_manifest']
             and config['run']['seed_manifest'] == str(output / 'seed_manifest.json')
@@ -259,7 +263,8 @@ def validate_prepared(output):
 
 def execute_prepared(output, *, port=0):
     output = Path(output).absolute()
-    frozen, config, proof = validate_prepared(output)
+    session = admission.ReferenceSession()
+    frozen, config, proof = validate_prepared(output, admission_session=session)
     settings, legacy = cohort.prepared_host_runtime(output)
     with cohort.host_temporary_environment(output, settings, legacy_preparation=legacy) as host:
         require(not (output / 'run.sqlite').exists(), 'This producer already started; use a reviewed continuation')
@@ -286,8 +291,10 @@ def execute_prepared(output, *, port=0):
             llm = cohort.CohortCodex(ROOT, output, audit, config['agents'])
             llm._credentials()
             print(json.dumps({'run_dir': str(output), 'dashboard_url': url, 'development_only': True}), flush=True)
-            status = 0 if admission.ScaledCapitalFactory(config, audit, llm, engine, admitted_proof=proof).run() else 2
-            verify_files(frozen['recipe_sha256']); verify_files(frozen['source_artifacts_sha256'])
+            status = 0 if admission.ScaledCapitalFactory(config, audit, llm, engine,
+                admitted_proof=proof, admission_session=session).run() else 2
+            verify_files(frozen['recipe_sha256'], session=session)
+            verify_files(frozen['source_artifacts_sha256'], session=session)
             return status
         finally:
             try:

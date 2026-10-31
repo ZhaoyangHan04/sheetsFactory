@@ -50,8 +50,8 @@ def case(tmp_path, monkeypatch):
     public_ref = next(row['spec'] for row in rows if row['profile_id'] == '30-D01')
     proof = {'workbook': entry.reference(book), 'source_manifest': source, 'public_specification': public_ref,
         'runtime_profile': entry.reference(entry.PROFILE), 'artifact_sha256': {str(book): entry.reference(book)['sha256']}}
-    monkeypatch.setattr(entry.admission, 'validate_source', lambda value: deepcopy(proof))
-    monkeypatch.setattr(entry.admission, 'verify_admitted_proof', lambda value: value if value == proof else pytest.fail('Proof changed'))
+    monkeypatch.setattr(entry.admission, 'validate_source', lambda value, **kwargs: deepcopy(proof))
+    monkeypatch.setattr(entry.admission, 'verify_admitted_proof', lambda value, **kwargs: value if value == proof else pytest.fail('Proof changed'))
     kernel = write(tmp_path / 'kernel.json', {'kind': 'explicit_fixture_not_an_actual_compilation'})
     monkeypatch.setattr(entry.public_recovery, 'validate_kernel_preparation', lambda value: entry.read(value))
     base = tmp_path / 'base'
@@ -111,7 +111,7 @@ def test_confirmation_source_cannot_be_relabelled_as_first_development(case):
 def test_compilation_receipt_tampering_invalidates_prepared_run(case):
     prepare(case)
     Path(case.kernel['path']).write_text('{"changed":"compile identity"}')
-    with pytest.raises(ValueError, match='dependency changed'):
+    with pytest.raises(ValueError, match='changed'):
         entry.validate_prepared(case.output)
 
 
@@ -136,7 +136,7 @@ def test_new_digests_do_not_allow_source_identity_or_mode_drift(case):
 
 def test_existing_run_prevents_any_new_service(tmp_path, monkeypatch):
     (tmp_path / 'run.sqlite').write_bytes(b'previous audit')
-    monkeypatch.setattr(entry, 'validate_prepared', lambda value: ({}, {}, {}))
+    monkeypatch.setattr(entry, 'validate_prepared', lambda value, **kwargs: ({}, {}, {}))
     monkeypatch.setattr(entry.cohort, 'prepared_host_runtime', lambda value: ({}, False))
     from contextlib import nullcontext
     monkeypatch.setattr(entry.cohort, 'host_temporary_environment', lambda *a, **kw: nullcontext({}))
@@ -185,8 +185,9 @@ def test_owned_run_finalizes_audit_lease_panel_and_temporary_environment(case, m
         def _credentials(self):
             pass
     class Factory:
-        def __init__(self, config, audit, llm, engine, *, admitted_proof):
+        def __init__(self, config, audit, llm, engine, *, admitted_proof, admission_session):
             assert admitted_proof == case.proof
+            assert isinstance(admission_session, entry.admission.ReferenceSession)
         def run(self):
             events.append('run_boundary_only')
             return False
