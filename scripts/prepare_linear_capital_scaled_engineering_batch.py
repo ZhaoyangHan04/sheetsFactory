@@ -116,11 +116,13 @@ def worker(output, pid):
     folder = output/'profiles'/pid; claim(folder/'worker_started.json', {'pid': os.getpid(), 'at': now()})
     records = {}; stages = []; clock = time.monotonic(); error = None
     def stage(name, operation):
-        tick = time.monotonic(); write(folder/'phase.json', {'stage': name, 'started_at': now()})
+        tick = time.monotonic(); prefix = folder/'stages'/f'{len(stages):02d}_{name}'
+        started = write(str(prefix)+'_started.json', {'stage': name, 'started_at': now()})
         try: return operation()
         finally:
-            stages.append({'stage': name, 'passed': sys.exc_info()[0] is None, 'elapsed_seconds': time.monotonic()-tick, 'finished_at': now()})
-            write(folder/'stages.json', stages)
+            value = {'stage': name, 'started': started, 'passed': sys.exc_info()[0] is None,
+                'elapsed_seconds': time.monotonic()-tick, 'finished_at': now()}
+            stages.append({**value, 'terminal': write(str(prefix)+'_terminal.json', value)})
     try:
         source, pair = apis(); reused = row['reuse']
         records['source_manifest'] = reused['source_manifest'] if reused else stage('source_3LO_and_full_audits', lambda: source.execute_prepared(row['source_directory']))
@@ -170,8 +172,8 @@ def execute(output):
                 audit.record('nodes', {'node': pid, 'status': 'completed' if done[pid]['passed'] else 'failed', 'receipt': terminal}); del active[pid]
             live = {}
             for pid in active:
-                try: live[pid] = read(output/'profiles'/pid/'phase.json')
-                except (OSError, ValueError): live[pid] = {'stage': 'starting'}
+                try: live[pid] = read(sorted((output/'profiles'/pid/'stages').glob('*_started.json'))[-1])
+                except (OSError, ValueError, IndexError): live[pid] = {'stage': 'starting'}
                 for nested in (output/'profiles'/pid).glob('*/**/audit/summary.json'):
                     try: live[pid][str(nested.relative_to(output/'profiles'/pid))] = read(nested)['run']
                     except (OSError, ValueError, KeyError): pass

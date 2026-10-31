@@ -31,6 +31,10 @@ def batch(tmp_path, monkeypatch):
     def write(path, value):
         path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(value)); return reference(path)
+    def exclusive_write(path, value):
+        path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open('x') as stream: json.dump(value, stream)
+        return reference(path)
     runtime = write(tmp_path/'profile.yaml', {'pinned': '2CPU32'}); rows = []; reuse = {}
     for i in range(1, 21):
         pid = f'L360-P{i:02d}'; passed = pid in module.ORDER
@@ -80,7 +84,7 @@ def batch(tmp_path, monkeypatch):
     def pair_execute(output, *, session):
         events.append(('pair_18LO', str(output)))
         return write(Path(output)/'terminal.json', {'passed': True, 'source_manifest': session.source})
-    source = SimpleNamespace(reference=reference, read=read, write=write, recipes=lambda: {str(script): reference(script)['sha256']},
+    source = SimpleNamespace(reference=reference, read=read, write=exclusive_write, recipes=lambda: {str(script): reference(script)['sha256']},
         prepare=source_prepare, execute_prepared=source_execute)
     pair = SimpleNamespace(__file__=str(script), POOL=script, quality=SimpleNamespace(DEFAULT_PROVIDERS=Path(provider['path'])),
         frozen_dependencies=lambda: None, _module=lambda path: SimpleNamespace(recipes=lambda: {}),
@@ -156,6 +160,21 @@ def test_fresh_profile_uses_one_session_and_unchanged_source_then_pair_calls(bat
     assert [e[0] for e in batch.events] == ['source_3LO', 'cold_source', 'pair_prepare', 'pair_18LO']
     terminal = batch.read(batch.output/'profiles/L360-P07/worker_terminal.json')
     assert len(terminal['stages']) == 4 and all(s['passed'] and s['elapsed_seconds'] >= 0 for s in terminal['stages'])
+
+
+def test_multiple_stages_use_real_exclusive_upstream_writer_and_immutable_receipts(batch, monkeypatch):
+    real_source = entry().apis()[0]
+    monkeypatch.setattr(batch.source, 'write', real_source.write)
+    prepare(batch); batch.write(batch.output/'started.json', {'dashboard_url': 'mock'})
+    assert batch.module.worker(batch.output, 'L360-P07') == 0
+    folder = batch.output/'profiles/L360-P07'; terminal = batch.read(folder/'worker_terminal.json')
+    assert len(terminal['stages']) == 4
+    assert len(list((folder/'stages').glob('*_started.json'))) == 4
+    assert len(list((folder/'stages').glob('*_terminal.json'))) == 4
+    assert not (folder/'phase.json').exists() and not (folder/'stages.json').exists()
+    for stage in terminal['stages']:
+        assert batch.read(stage['terminal'])['started'] == stage['started'] and stage['passed']
+    assert terminal['passed'] and terminal['model_calls'] == terminal['solver_calls'] == 0
 
 
 def test_failed_source_stops_only_case_and_retains_no_retry(batch):
