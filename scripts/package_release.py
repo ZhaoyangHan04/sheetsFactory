@@ -159,13 +159,14 @@ def select_diverse(tasks, per_mode):
     return selected
 
 
-def _check_payload(export, within, tracked, secret_values=()):
+def _check_payload(export, within, tracked, secret_values=(), *, backend=None):
     _require(not export.is_symlink() and export.is_dir(), 'Missing Harbor export')
     entries = list(export.rglob('*'))
     _require(not any(path.is_symlink() for path in entries), 'Symlink in Harbor export')
     files = {str(path.relative_to(export)) for path in entries if path.is_file()}
     directories = {str(path.relative_to(export)) for path in entries if path.is_dir()}
-    _require(files == EXPORT_FILES and directories == {'environment', 'solution', 'tests'},
+    inventory = EXPORT_FILES if backend is None else backend.export_files
+    _require(files == inventory and directories == {'environment', 'solution', 'tests'},
              'Unexpected or missing Harbor release files')
     for relative in sorted(files):
         raw = _file(export / relative, within, tracked)
@@ -175,13 +176,13 @@ def _check_payload(export, within, tracked, secret_values=()):
                 for member in workbook.infolist():
                     _require(not any(secret in workbook.read(member) for secret in secret_values),
                              'Credential found in workbook payload')
-    return inspect_export(export)
+    return inspect_export(export) if backend is None else backend.inspect_export(export)
 
 
-def _copy_payload(source, target):
+def _copy_payload(source, target, *, backend=None):
     """Copy only the fixed export contract, never newly appeared siblings."""
     target.mkdir(parents=True)
-    for relative in sorted(EXPORT_FILES):
+    for relative in sorted(EXPORT_FILES if backend is None else backend.export_files):
         destination = target / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source / relative, destination)
@@ -219,8 +220,10 @@ def _runtime_copy_sources(dockerfile):
     return sources
 
 
-def _prepare_runtime(root, run_dir, tasks, tracked, secret_values):
+def _prepare_runtime(root, run_dir, tasks, tracked, secret_values, *, backend=None):
     """Read a minimal recipe and original run engine evidence, without Docker."""
+    if backend is not None:
+        return backend.prepare_runtime(root, run_dir, tasks, tracked, secret_values)
     recipe_dir = root / 'src/sheets_factory/workbook'
     recipe_files = {name: _file(recipe_dir / name, recipe_dir, tracked) for name in sorted(RUNTIME_FILES)}
     _runtime_copy_sources(recipe_files['Dockerfile'])
@@ -386,7 +389,7 @@ def _validate_reference_review(base, task_id, revision, diagnosis, recovery, ori
 
 def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, registry_path=None,
                    reference_policy='independent_public_recovery', private_evidence_root=None,
-                   private_evidence_tracked=None):
+                   private_evidence_tracked=None, backend=None):
     if private_evidence_root is None:
         private_evidence_root = Path(project_root) / 'outputs/diagnostic_private_evidence'
     if private_evidence_tracked is None:
@@ -398,11 +401,15 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
     _require(type(revision) is int and revision >= 0, 'Invalid task revision')
     base = run_dir / 'tasks' / task_id / 'revisions' / f'{revision:03d}'
     export = run_dir / 'SpreadsheetEval' / task_id
-    binding = _check_payload(export, run_dir, tracked, secret_values)
+    if backend is not None:
+        backend.validate_task(run_dir, task, tracked)
+    binding = _check_payload(export, run_dir, tracked, secret_values, backend=backend)
     metadata = _json(export / 'export_manifest.json', run_dir, tracked)['metadata']
     _require(metadata.get('mode') == task.get('mode') and metadata.get('source_id') == task.get('source_id'),
              f'{task_id}: export mode or source differs from audit')
-    _require(binding == task.get('harbor_export_binding'), f'{task_id}: Harbor proof binding differs')
+    _require((binding == task.get('harbor_export_binding') if backend is None else
+              backend.audit_binding_matches(binding, task.get('harbor_export_binding'))),
+             f'{task_id}: Harbor proof binding differs')
     _require(binding['task_id'] == task_id and binding['revision'] == revision
              and bool(binding['revision_hash']), f'{task_id}: Harbor revision does not match current task')
     proof = task.get('harbor_controls')
@@ -428,7 +435,7 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
         staged = Path(staged_path)
         _require((actual.get('task_id') or {}).get('path') == staged_path,
                  f'{task_id}: actual control task identity differs')
-        _require(_check_payload(staged, run_dir, tracked, secret_values) == binding,
+        _require(_check_payload(staged, run_dir, tracked, secret_values, backend=backend) == binding,
                  f'{task_id}: actual control used a different exported revision')
         # Harbor's persisted task_checksum is its SHA256 dirhash. With our exact
         # file allowlist no .harborignore filtering applies. Bind the historical
@@ -450,7 +457,9 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
                 # final. Do not freeze a receipt that the runner still updates.
                 _require(bool(batch.get('finished_at')),
                          f'{task_id}: batch manifest is not finalized')
-                _require((batch.get('export_bindings') or {}).get(binding['task_name']) == binding,
+                recorded_binding = (batch.get('export_bindings') or {}).get(binding['task_name'])
+                _require((recorded_binding == binding if backend is None else
+                          backend.audit_binding_matches(binding, recorded_binding)),
                          f'{task_id}: batch manifest binding differs')
                 batch_receipts.append(_receipt(batch_path, tracked))
         controls[agent] = {**_receipt(result_path, tracked), 'reward': reward,
@@ -536,7 +545,8 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
         for key, path in (('replay_output_sha256', replay_output), ('recovered_sha256', recovered_path)):
             if recovery.get(key):
                 _require(recovery[key] == tracked[str(path.absolute())], f'{task_id}: recorded recovery output hash differs')
-        comparison = compare_workbooks(public_input, export / 'tests/reference.xlsx', recovered_path)
+        compare = compare_workbooks if backend is None else backend.compare_workbooks
+        comparison = compare(public_input, export / 'tests/reference.xlsx', recovered_path)
         _require(comparison.get('reward') == 1, f'{task_id}: current recovery workbook does not match goal')
     elif reference_policy == 'reference_review':
         review_receipt, comparison = _validate_reference_review(
@@ -632,7 +642,9 @@ def _validate_task(run_dir, task, tracked, secret_values=(), *, project_root, re
             'replay_output': _receipt(replay_output, tracked),
             'execution_evidence': 'Persisted successful replay record and artifacts; release does not rerun code.',
             'current_value_comparison_reward': comparison['reward']}),
-        'payload_files': {relative: tracked[str((export / relative).absolute())] for relative in sorted(EXPORT_FILES)},
+        'payload_files': {relative: tracked[str((export / relative).absolute())]
+                          for relative in sorted(EXPORT_FILES if backend is None else backend.export_files)},
+        **({} if backend is None else backend.task_metadata(run_dir, task)),
     }
 
 

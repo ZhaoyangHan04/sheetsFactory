@@ -76,14 +76,14 @@ def _check_credentials(raw, secret_values):
     _require(not re.search(rb'\bsk-[A-Za-z0-9_-]{20,}', raw), 'Credential-shaped token found in publishable files')
 
 
-def _task_contract(export, within, tracked, secret_values):
-    binding = release._check_payload(export, within, tracked, secret_values)
+def _task_contract(export, within, tracked, secret_values, *, backend=None):
+    binding = release._check_payload(export, within, tracked, secret_values, backend=backend)
     config = tomllib.loads((export / 'task.toml').read_text())
     _require(config.get('schema_version') == '1.3'
              and config.get('verifier', {}).get('environment_mode') == 'separate',
              'Publication requires Harbor schema 1.3 and a separate verifier')
     _require(config.get('artifacts') == ['/app/output.xlsx'], 'Unexpected task output artifact contract')
-    for relative in release.EXPORT_FILES:
+    for relative in release.EXPORT_FILES if backend is None else backend.export_files:
         raw = (export / relative).read_bytes()
         _check_credentials(raw, secret_values)
         if relative.endswith('.xlsx'):
@@ -99,8 +99,8 @@ def _task_contract(export, within, tracked, secret_values):
     return binding
 
 
-def _prepare_runtime(root, run_dir, validated, tracked, secrets):
-    payload, metadata = release._prepare_runtime(root, run_dir, validated, tracked, secrets)
+def _prepare_runtime(root, run_dir, validated, tracked, secrets, *, backend=None):
+    payload, metadata = release._prepare_runtime(root, run_dir, validated, tracked, secrets, backend=backend)
     # Do not copy the old release README: its deferred-difficulty statement is
     # not true of a confirmation-gated publication. Root README is maintained
     # separately. Runtime material sits outside Harbor's task enumeration.
@@ -152,8 +152,12 @@ def _prepare_runtime(root, run_dir, validated, tracked, secrets):
         'command_working_directory': 'repository root'}
 
 
-def _load_selection(root, run_dir, release_dir, selection_path, tracked, secrets):
+def _load_selection(root, run_dir, release_dir, selection_path, tracked, secrets, *,
+                    backend=None, private_evidence_scopes=None):
     """Validate the selected immutable revisions, not a new post-hoc ranking."""
+    if backend is not None:
+        return backend.load_selection(root, run_dir, release_dir, selection_path, tracked,
+                                      secrets, private_evidence_scopes)
     frozen_path = Path(selection_path).absolute() if selection_path else release_dir / 'release_manifest.json'
     frozen = _json_file(frozen_path, tracked)
     if release_dir is not None:
@@ -182,12 +186,27 @@ def _load_selection(root, run_dir, release_dir, selection_path, tracked, secrets
     config = yaml.safe_load(release._file(config_path, run_dir, tracked)) if config_path.is_file() else {}
     registry_path = ((config or {}).get('native_risks') or {}).get('registry_path')
     validated, sources = [], {}
+    # Complete compact evidence can live outside the run. Retain its separate
+    # permitted-root table through the final staging check, as package_release does.
+    private_root = (((config or {}).get('diagnosis') or {}).get('execution') or {}).get(
+        'private_evidence_directory', root / 'outputs/diagnostic_private_evidence')
+    _require(isinstance(private_root, (str, Path)) and bool(str(private_root)),
+             'Invalid declared private evidence directory')
+    private_root = Path(private_root)
+    if not private_root.is_absolute():
+        private_root = root / private_root
+    private_root = private_root.absolute()
+    _require(private_root != Path(private_root.anchor), 'Private evidence directory cannot be filesystem root')
+    private_scopes = {} if private_evidence_scopes is None else private_evidence_scopes
+    private_tracked = private_scopes.setdefault(str(private_root), {})
     for task_id in ids:
         task = current.get(task_id)
         _require(task is not None and task.get('status') == 'qualified',
                  f'{task_id}: current audited task is not qualified')
         item = release._validate_task(run_dir, task, tracked, secrets,
-                                     project_root=root, registry_path=registry_path)
+                                     project_root=root, registry_path=registry_path,
+                                     private_evidence_root=private_root,
+                                     private_evidence_tracked=private_tracked)
         binding = item['harbor_export_binding']
         record = records[task_id]
         _require(record.get('revision') == item['revision']
@@ -317,9 +336,12 @@ def _execution_budget_source(frozen, frozen_path, budget, tracked):
     return source_ref['sha256']
 
 
-def _validate_confirmation_history(evidence, directory, frozen, tracked):
+def _validate_confirmation_history(evidence, directory, frozen, tracked, *, backend=None):
     """Replay retry authorization without counting failed infrastructure as zero."""
     from sheets_factory.evaluation.frontier import collect_attempts, assess_infrastructure_retry
+    if backend is not None:
+        collect_attempts = backend.runner.collect_attempts
+        assess_infrastructure_retry = backend.runner.assess_infrastructure_retry
 
     directory = Path(directory)
     try:
@@ -400,13 +422,17 @@ def _validate_confirmation_history(evidence, directory, frozen, tracked):
             'scored_attempts_per_task': 1, 'maximum_infrastructure_retries_per_task': 2}
 
 
-def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
+def _validate_confirmation(path, frozen_path, frozen, validated, tracked, *, backend=None):
     """Check actual first attempts from the predeclared confirmation cohort."""
     from dirhash import dirhash
     from sheets_factory.evaluation.frontier import apply_tool_time_policy
+    if backend is not None:
+        apply_tool_time_policy = backend.runner.apply_tool_time_policy
 
     path = Path(path).absolute()
     evidence = _json_file(path, tracked)
+    if backend is not None:
+        backend.validate_confirmation_source(frozen_path, frozen, evidence, tracked)
     selection_sha = tracked[str(frozen_path)]
     _require(evidence.get('phase') == 'confirmation' and evidence.get('status') == 'completed',
              'Only a completed confirmation evaluation can be published')
@@ -457,7 +483,7 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
         task_directory = Path(declared.get('task_directory', ''))
         if not task_directory.is_absolute():
             task_directory = frozen_path.parent / task_directory
-        _require(release._check_payload(task_directory, task_directory, tracked) == binding,
+        _require(release._check_payload(task_directory, task_directory, tracked, backend=backend) == binding,
                  'Frozen confirmation task payload changed')
         checksum = dirhash(task_directory, 'sha256')
         _require(declared.get('task_checksum') == checksum and entry.get('task_checksum') == checksum,
@@ -477,7 +503,8 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
                  and actual_task.get('path') == str(task_directory)
                  and (actual.get('task_id') or {}).get('path') == str(task_directory)
                  and actual_agent.get('model_name') == MODEL
-                 and actual_agent.get('import_path') == 'sheets_factory.evaluation.frontier:LocalCodex'
+                 and actual_agent.get('import_path') == ('sheets_factory.evaluation.frontier:LocalCodex'
+                     if backend is None else backend.agent_import_path)
                  and (actual_agent.get('kwargs') or {}).get('reasoning_effort') == EFFORT
                  and actual_agent.get('override_timeout_sec') == frozen.get('timeout_seconds')
                  and (agent_info.get('model_info') or {}).get('name') == MODEL,
@@ -486,6 +513,8 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
         guard_stop = False
         if actual.get('exception_info'):
             from sheets_factory.evaluation.frontier import review_agent_timeout
+            if backend is not None:
+                review_agent_timeout = backend.runner.review_agent_timeout
             _require(actual['exception_info'].get('exception_type') == 'AgentTimeoutError',
                      'Actual confirmation trial has an unresolved exception')
             resolution = review_agent_timeout(actual, declared, result_file=result_path)
@@ -567,7 +596,7 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
                  and declared.get('successes') == computed['passed']
                  and declared.get('pass_at_1') == computed['pass_at_1'],
                  'Reported mode scores differ from actual confirmation results')
-    history = _validate_confirmation_history(evidence, path.parent, frozen, tracked)
+    history = _validate_confirmation_history(evidence, path.parent, frozen, tracked, backend=backend)
     result = {'phase': 'confirmation', 'status': 'completed', 'model': MODEL,
         'reasoning_effort': EFFORT, 'selection_manifest_sha256': selection_sha,
         'evaluation_manifest_sha256': tracked[str(path)], 'frozen_at': frozen_at.isoformat(),
@@ -582,7 +611,7 @@ def _validate_confirmation(path, frozen_path, frozen, validated, tracked):
 
 
 def publish_dataset(*, release_dir=None, run_dir=None, selection_manifest=None,
-                    evaluation_manifest, project_root=None, dry_run=False):
+                    evaluation_manifest, project_root=None, dry_run=False, backend=None):
     root = Path(project_root or ROOT).resolve()
     _require((release_dir is None) != (run_dir is None), 'Choose exactly one --release or --run')
     _require(release_dir is not None or selection_manifest is not None,
@@ -592,7 +621,7 @@ def publish_dataset(*, release_dir=None, run_dir=None, selection_manifest=None,
     destinations = [root / 'SpreadsheetEval', root / RUNTIME_DIRECTORY, root / 'prepare_runtime.sh']
     _require(not any(path.exists() or path.is_symlink() for path in destinations),
              'Publication destination already exists; existing final data is never overwritten')
-    tracked, secrets = {}, _credential_values(root)
+    tracked, secrets, private_evidence_scopes = {}, _credential_values(root), {}
     if release_dir is not None and selection_manifest is None:
         evaluation_path = Path(evaluation_manifest).absolute()
         evaluation = _json_file(evaluation_path, tracked)
@@ -603,9 +632,10 @@ def publish_dataset(*, release_dir=None, run_dir=None, selection_manifest=None,
         if not selection_manifest.is_absolute():
             selection_manifest = evaluation_path.parent / selection_manifest
     run_dir, frozen_path, frozen, validated, sources, snapshot = _load_selection(
-        root, run_dir, release_dir, selection_manifest, tracked, secrets)
-    evaluation = _validate_confirmation(evaluation_manifest, frozen_path, frozen, validated, tracked)
-    runtime_files, runtime = _prepare_runtime(root, run_dir, validated, tracked, secrets)
+        root, run_dir, release_dir, selection_manifest, tracked, secrets,
+        backend=backend, private_evidence_scopes=private_evidence_scopes)
+    evaluation = _validate_confirmation(evaluation_manifest, frozen_path, frozen, validated, tracked, backend=backend)
+    runtime_files, runtime = _prepare_runtime(root, run_dir, validated, tracked, secrets, backend=backend)
     manifest = {'schema_version': 1, 'dataset_name': 'SpreadsheetEval',
         'source_run_id': snapshot['run'].get('id'),
         'frozen_selection_sha256': tracked[str(frozen_path)],
@@ -622,6 +652,8 @@ def publish_dataset(*, release_dir=None, run_dir=None, selection_manifest=None,
         manifest['execution_budget'] = dict(evaluation['execution_budget'])
         for task in manifest['tasks']:
             task['execution_budget'] = dict(evaluation['execution_budget'])
+    if backend is not None:
+        manifest['resource_publication'] = backend.publication_metadata()
     raw_manifest = (json.dumps(manifest, ensure_ascii=False, indent=2) + '\n').encode()
     _check_credentials(raw_manifest, secrets)
     for raw in runtime_files.values():
@@ -637,8 +669,11 @@ def publish_dataset(*, release_dir=None, run_dir=None, selection_manifest=None,
     try:
         for item in validated:
             target = stage / 'SpreadsheetEval' / item['task_id']
-            release._copy_payload(sources[item['task_id']], target)
-            _require(_task_contract(target, stage, {}, secrets) == item['harbor_export_binding'],
+            if backend is None:
+                release._copy_payload(sources[item['task_id']], target)
+            else:
+                release._copy_payload(sources[item['task_id']], target, backend=backend)
+            _require(_task_contract(target, stage, {}, secrets, backend=backend) == item['harbor_export_binding'],
                      'Copied task differs from its frozen confirmation binding')
         for relative, raw in runtime_files.items():
             target = stage / relative
@@ -646,15 +681,25 @@ def publish_dataset(*, release_dir=None, run_dir=None, selection_manifest=None,
             target.write_bytes(raw)
         (stage / 'prepare_runtime.sh').chmod(0o755)
         (stage / 'SpreadsheetEval/dataset_manifest.json').write_bytes(raw_manifest)
-        for path, digest in tracked.items():
-            _require(_sha(Path(path).read_bytes()) == digest, 'Publication evidence changed during staging')
+        if backend is None:
+            for path, digest in tracked.items():
+                _require(_sha(Path(path).read_bytes()) == digest, 'Publication evidence changed during staging')
+        else:
+            backend.recheck_tracked(tracked)
+        for scope, files in private_evidence_scopes.items():
+            for path, digest in files.items():
+                _require(_sha(release._file(path, scope, {})) == digest,
+                         'Scoped complete private evidence changed during staging')
+        if backend is not None:
+            backend.final_recheck()
         for item in validated:
             native = item['native_risk_check']
             registry = Path(native['registry_path'])
             current_hash = _sha(registry.read_bytes()) if registry.is_file() else None
             _require(current_hash == native['registry_sha256'],
                      'Native-risk evidence changed during staging')
-        latest = {task['id']: task for task in read_run(run_dir)['tasks']}
+        latest = {task['id']: task for task in (read_run(run_dir)['tasks'] if backend is None
+                                               else backend.current_tasks())}
         previous = {task['id']: task for task in snapshot['tasks']}
         _require(all(latest.get(item['task_id']) == previous[item['task_id']] for item in validated),
                  'Selected task audit changed during staging')
