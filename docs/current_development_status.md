@@ -55,3 +55,11 @@ harbor run -p SpreadsheetEval -a oracle
 ```
 
 该命令必须对全部20题返回oracle=1；最终nop也须全0，资源、完整文件绑定及README同步通过。现有两阶段发布入口及纯测试不是实际执行证据，具体边界见[前瞻发布流程](linear_capital_scaled_v4_release.md)。
+
+## 19:56 UTC 执行增量
+
+历史模板与增长率组合来源的9表工作簿已经生成，含2,052个完整映射字段、1,967个公式、1,368个预测补全位置和4个调试根；64项纯检查通过。集团净利润通过独立财务路径汇总，能暴露实体符号错误；增长率错误会影响分配资格、现金和留存收益。纯准备清单为 `outputs/research/operating_metrics_regime_first_candidate_revision2_pure_20261031T195249Z/preparation.json`，仍未取得实际表格引擎证据。
+
+N720受限参考已由root实际启动，主面板为 <http://127.0.0.1:37805/>，best实际运行面板为 <http://127.0.0.1:38417/>；600秒best尚未终结，未记为参考通过。来源工作簿、原生财务重算和难度资格仍未取得。
+
+Q04回执节点与新正常入口已分别提交55181ac/ef88b64，20项节点检查及29项接入纯检查通过；新registry只替换诊断节点。新的P01两类正常准备已在 `outputs/research/linear_scaled_P01_reference_receipt_normal_prepared_20261031T195500Z/prepared/` 启动原始冷校验，尚未调用正常QA、LibreOffice或Harbor，也不继承旧正常质量通过。旧P01/P02继续按原预算结束，其他八个未派发来源全部保留。
