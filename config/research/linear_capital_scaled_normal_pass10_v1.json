@@ -1,0 +1,66 @@
+{
+  "kind": "fixed_scaled_pass10_normal_reference_review_batch",
+  "version": 1,
+  "engineering_prospective": {
+    "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_pass10_engineering_revision2_prepared_20261031T175200Z/prospective.json",
+    "sha256": "154d6916d88c3429a14e6fa2105fca3862ce21ceba1295cd985d8bc323c57235",
+    "bytes": 3017
+  },
+  "profile_order": [
+    "L360-P01",
+    "L360-P02",
+    "L360-P07",
+    "L360-P09",
+    "L360-P10",
+    "L360-P14",
+    "L360-P16",
+    "L360-P17",
+    "L360-P18",
+    "L360-P20"
+  ],
+  "mode_order": [
+    "financial_modeling",
+    "debugging"
+  ],
+  "source_provider": "scaled360",
+  "normal_entry": {
+    "path": "/data/hzy/sheetsFactory/scripts/run_linear_capital_scaled_reference_quality.py",
+    "sha256": "4df6616a67a491fa6824bd16a87744a7e5ddec64f5a8e8fd3d491714e232c516",
+    "bytes": 9443
+  },
+  "normal_configuration": {
+    "path": "/data/hzy/sheetsFactory/config/pipelines/linear_capital_scaled_reference_quality_v1.yaml",
+    "sha256": "19eeb38123ae0fa381e202ce96ac30e4f5bae87e1a63a17a820e52437ff24f07",
+    "bytes": 1494
+  },
+  "max_parallel_profiles": 2,
+  "outer_retries": 0,
+  "external_P01": {
+    "profile_id": "L360-P01",
+    "prepared_directory": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_P01_reference_review_normal_prepare_revision2_20261031T174933Z/prepared",
+    "preflight": {
+      "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_P01_reference_review_normal_prepare_revision2_20261031T174933Z/prepared/preflight_manifest.json",
+      "sha256": "d85144d7d4379c3a1122ad8d7d6473a61c2d01819baf3239de5049e763ca089a",
+      "bytes": 16083
+    },
+    "pid": 4175884,
+    "process_start_ticks": "359392911",
+    "monitor_only": true
+  },
+  "all_twelve_checks_required": [
+    "Q01",
+    "Q02",
+    "Q03",
+    "Q04",
+    "Q05",
+    "Q06",
+    "Q07",
+    "Q08",
+    "Q09",
+    "Q10",
+    "Q11",
+    "Q12"
+  ],
+  "reference_evidence_policy": "reference_review",
+  "engineering_or_prior_quality_inherited": false
+}
