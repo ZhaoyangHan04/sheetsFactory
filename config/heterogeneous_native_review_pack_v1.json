@@ -1,0 +1,510 @@
+{
+  "actual_services_authorized_by_this_recipe": false,
+  "donors": [
+    {
+      "id": "statements",
+      "prefix": "FS",
+      "risk_lineage": [],
+      "scoped_audits": [
+        {
+          "expected_delta": {
+            "bytes": 2421,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68/revisions/000/private/expected_delta.json",
+            "sha256": "a00ee52908f204b89eeb55ecb2a10ccdb89cf2bc65201dfe88364ea5528c2128"
+          },
+          "goal": {
+            "bytes": 19809,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68/revisions/000/private/goal.xlsx",
+            "sha256": "498f8d6975fd2b91afed80cba8e7d60f008a4f23b45e21271e13f16cc46dfd71"
+          },
+          "instruction": {
+            "bytes": 2574,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68/revisions/000/public/instruction.md",
+            "sha256": "ffa8706116caa271e5e65840d004e3bf84fea143e15dece588c47ae328612d4a"
+          },
+          "plan": {
+            "bytes": 7147,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68/revisions/000/private/plan.json",
+            "sha256": "b792314ce5c3970842dbf11a9b36cf8015945c80a4afc3bb36503064680f337d"
+          },
+          "scope": "Historical task-specific full-D review only; not a whole-source certificate.",
+          "task_id": "fm-793d67468c68"
+        },
+        {
+          "expected_delta": {
+            "bytes": 3257,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68-v1/revisions/000/private/expected_delta.json",
+            "sha256": "ceca1c54b983195dda5f76825198f3d70fed84887676cbf9eba964b744f2678b"
+          },
+          "goal": {
+            "bytes": 19809,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68-v1/revisions/000/private/goal.xlsx",
+            "sha256": "498f8d6975fd2b91afed80cba8e7d60f008a4f23b45e21271e13f16cc46dfd71"
+          },
+          "instruction": {
+            "bytes": 2394,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68-v1/revisions/000/public/instruction.md",
+            "sha256": "a279446a9bfe5085e28165c9de44932e5aa5f4c7e6fd0ac198d7c185bc41a47b"
+          },
+          "plan": {
+            "bytes": 6062,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68-v1/revisions/000/private/plan.json",
+            "sha256": "47c8b0bb0a97265290d3963132629e43920d4f691637ad82c5ac18e5a22cce31"
+          },
+          "scope": "Historical task-specific full-D review only; not a whole-source certificate.",
+          "task_id": "fm-793d67468c68-v1"
+        }
+      ],
+      "source_file": "793d67468c_FinStmtEx.xls",
+      "source_sha256": "793d67468c68f625f6d51d84cb559ee2011b040eebf75355b0e8bb66a4167554",
+      "workbook": {
+        "bytes": 19809,
+        "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-793d67468c68/revisions/000/private/goal.xlsx",
+        "sha256": "498f8d6975fd2b91afed80cba8e7d60f008a4f23b45e21271e13f16cc46dfd71"
+      }
+    },
+    {
+      "id": "estate",
+      "prefix": "Agent",
+      "risk_lineage": [
+        {
+          "reference_name": "2cd5472c57_agent_goal-setting_tool_3.0.xls",
+          "risks": [
+            {
+              "certainty": "confirmed",
+              "claim": "New buyer appointments divides listing closings by buyer appointment conversion, instead of required buyer contracts.",
+              "evidence": [
+                {
+                  "cell": "Entry!A28",
+                  "label": "New Buyer Appointments"
+                },
+                {
+                  "cell": "Entry!A12",
+                  "label": "% of new buyer appointments who go to contract"
+                },
+                {
+                  "cell": "Entry!B12",
+                  "value": 0.5
+                },
+                {
+                  "cell": "Entry!A25",
+                  "label": "Buyer Contracts I Must Write"
+                },
+                {
+                  "cached_value": 36,
+                  "cell": "Entry!B25"
+                },
+                {
+                  "cell": "Entry!A24",
+                  "label": "Listings I Must Close"
+                },
+                {
+                  "cached_value": 36,
+                  "cell": "Entry!B28",
+                  "formula": "=B24/B12",
+                  "independent_expected": 72
+                },
+                {
+                  "cached_value": 3,
+                  "cell": "Entry!C28",
+                  "formula": "=B28/12",
+                  "independent_expected": 6
+                }
+              ],
+              "risk_id": "buyer-appointments-reference-listing-closings",
+              "unsafe_regions": [
+                {
+                  "range": "B28:C28",
+                  "sheet": "Entry"
+                }
+              ]
+            }
+          ],
+          "source_sha256": "2cd5472c57c82aec2fd4a6df0de5cf5dee2cd05b5fef86ed785e9226ae8a9d17"
+        }
+      ],
+      "scoped_audits": [
+        {
+          "expected_delta": {
+            "bytes": 1524,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-2cd5472c57c8/revisions/000/private/expected_delta.json",
+            "sha256": "1609b5f768c38f798b6c94a54f5d3884759ac46bab070ca61ac975e95d85b7a2"
+          },
+          "goal": {
+            "bytes": 18201,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-2cd5472c57c8/revisions/000/private/goal.xlsx",
+            "sha256": "01a26404ee9923309a63b8628fa169db9d680e346d69f8a6970a2d1d3890db88"
+          },
+          "instruction": {
+            "bytes": 1388,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-2cd5472c57c8/revisions/000/public/instruction.md",
+            "sha256": "20ddcb60a108edb732091e40ff22eeab3d9f8aae2240a9201674228214d4df30"
+          },
+          "plan": {
+            "bytes": 4805,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-2cd5472c57c8/revisions/000/private/plan.json",
+            "sha256": "dd36e45f5ca6fb86c013e8a16307034585b7b215ec9fd1ca07f79836fcc1babc"
+          },
+          "scope": "Historical task-specific full-D review only; not a whole-source certificate.",
+          "task_id": "fm-2cd5472c57c8"
+        },
+        {
+          "expected_delta": {
+            "bytes": 6556,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-2cd5472c57c8-v1/revisions/000/private/expected_delta.json",
+            "sha256": "34af1a416bf7390c8410db7373785b89a08daa5a1a56b80221c8e387d2f844ce"
+          },
+          "goal": {
+            "bytes": 18201,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-2cd5472c57c8-v1/revisions/000/private/goal.xlsx",
+            "sha256": "01a26404ee9923309a63b8628fa169db9d680e346d69f8a6970a2d1d3890db88"
+          },
+          "instruction": {
+            "bytes": 2209,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-2cd5472c57c8-v1/revisions/000/public/instruction.md",
+            "sha256": "72fef5ffdc655cff3d4474cf9b8ac3b1bf65027bf2e78ea08e3a7908545dca70"
+          },
+          "plan": {
+            "bytes": 5952,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-2cd5472c57c8-v1/revisions/000/private/plan.json",
+            "sha256": "cb69e7362deebf929414fc8a2042873c617cb62134c6f5d447dc3f1a464c3388"
+          },
+          "scope": "Historical task-specific full-D review only; not a whole-source certificate.",
+          "task_id": "fm-2cd5472c57c8-v1"
+        }
+      ],
+      "source_file": "2cd5472c57_agent_goal-setting_tool_3.0.xls",
+      "source_sha256": "2cd5472c57c82aec2fd4a6df0de5cf5dee2cd05b5fef86ed785e9226ae8a9d17",
+      "workbook": {
+        "bytes": 18201,
+        "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-2cd5472c57c8/revisions/000/private/goal.xlsx",
+        "sha256": "01a26404ee9923309a63b8628fa169db9d680e346d69f8a6970a2d1d3890db88"
+      }
+    },
+    {
+      "id": "social",
+      "prefix": "Social",
+      "risk_lineage": [],
+      "scoped_audits": [
+        {
+          "expected_delta": {
+            "bytes": 2175,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e/revisions/001/private/expected_delta.json",
+            "sha256": "f4826989ac05f9958cec6e7dfd1859817a699d38891b0556b16531d9f5e58fc9"
+          },
+          "goal": {
+            "bytes": 26235,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e/revisions/001/private/goal.xlsx",
+            "sha256": "4ba2a6019ceec551106f924580cedce47dddd305c9f498cea002fe0e8a6ba14f"
+          },
+          "instruction": {
+            "bytes": 2420,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e/revisions/001/public/instruction.md",
+            "sha256": "8d5c02943cb4b24d0e2db3522b8ce3675fceac28bd4e00d83661efb42377952f"
+          },
+          "plan": {
+            "bytes": 6071,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e/revisions/001/private/plan.json",
+            "sha256": "778a3ed95f5763fd7f8ed1527d9408870f9c3063575a72d0a632f46f220bcc8e"
+          },
+          "scope": "Historical task-specific full-D review only; not a whole-source certificate.",
+          "task_id": "fm-952d9d045a1e"
+        },
+        {
+          "expected_delta": {
+            "bytes": 2367,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e-v1/revisions/000/private/expected_delta.json",
+            "sha256": "06f95998ea2718216a0a481345c6180a1442523f27bec866bd840463e4bd9452"
+          },
+          "goal": {
+            "bytes": 26235,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e-v1/revisions/000/private/goal.xlsx",
+            "sha256": "4ba2a6019ceec551106f924580cedce47dddd305c9f498cea002fe0e8a6ba14f"
+          },
+          "instruction": {
+            "bytes": 2279,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e-v1/revisions/000/public/instruction.md",
+            "sha256": "753dfa323f396d85109ee05bf5f852356c4235ac126dd1a3f464eaadd615f5c6"
+          },
+          "plan": {
+            "bytes": 6996,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e-v1/revisions/000/private/plan.json",
+            "sha256": "5e488cc3b29c28220efbb27af10028e9024fe9335f4296577faa0effa54ec4e5"
+          },
+          "scope": "Historical task-specific full-D review only; not a whole-source certificate.",
+          "task_id": "fm-952d9d045a1e-v1"
+        }
+      ],
+      "source_file": "952d9d045a_breakevenanalysis.xls",
+      "source_sha256": "952d9d045a1efad6722e0003fc3cd6c708bbce3444e33747bf9caad6a1a7980f",
+      "workbook": {
+        "bytes": 26235,
+        "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-952d9d045a1e/revisions/001/private/goal.xlsx",
+        "sha256": "4ba2a6019ceec551106f924580cedce47dddd305c9f498cea002fe0e8a6ba14f"
+      }
+    },
+    {
+      "id": "registry",
+      "prefix": "Registry",
+      "risk_lineage": [],
+      "scoped_audits": [
+        {
+          "expected_delta": {
+            "bytes": 2934,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-88748614820e-v1/revisions/000/private/expected_delta.json",
+            "sha256": "3ff2f85c6b8923f0e6d91ea2a70db0f668fc8231302292f8ae8a5f229f2ef51e"
+          },
+          "goal": {
+            "bytes": 17427,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-88748614820e-v1/revisions/000/private/goal.xlsx",
+            "sha256": "a109e01f9b7932bcf520fc4702365a74e5851be022a8d83d16adc612b38ca2d6"
+          },
+          "instruction": {
+            "bytes": 1824,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-88748614820e-v1/revisions/000/public/instruction.md",
+            "sha256": "bc726e5004c821ba29e2b862476e6ac1e656f6f34288641b3970a7f8419ea53a"
+          },
+          "plan": {
+            "bytes": 4630,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-88748614820e-v1/revisions/000/private/plan.json",
+            "sha256": "b3c394f6fc0ea4e90ab9e5645779694d74bd29a047d6babaf5cd36f57fe3550c"
+          },
+          "scope": "Historical task-specific full-D review only; not a whole-source certificate.",
+          "task_id": "fm-88748614820e-v1"
+        }
+      ],
+      "source_file": "8874861482_Attachment_7_Financia_A7EB8.xls",
+      "source_sha256": "88748614820e176bcdbccd7d424d6df1c5e6efb186e70291c5269a179ef12279",
+      "workbook": {
+        "bytes": 17427,
+        "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-88748614820e-v1/revisions/000/private/goal.xlsx",
+        "sha256": "a109e01f9b7932bcf520fc4702365a74e5851be022a8d83d16adc612b38ca2d6"
+      }
+    },
+    {
+      "id": "wind",
+      "prefix": "Wind",
+      "risk_lineage": [],
+      "scoped_audits": [
+        {
+          "expected_delta": {
+            "bytes": 1011,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-b9b31bc1839b-v1/revisions/000/private/expected_delta.json",
+            "sha256": "0131540389864ff028a7b7962e7b6c990f7bf57217cab8c3b200ab1861ce1648"
+          },
+          "goal": {
+            "bytes": 56721,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-b9b31bc1839b-v1/revisions/000/private/goal.xlsx",
+            "sha256": "755a98d1a4bf16037a244149e6a49be35d2016b7b542398897ee273d81d54721"
+          },
+          "instruction": {
+            "bytes": 2799,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-b9b31bc1839b-v1/revisions/000/public/instruction.md",
+            "sha256": "14e280653f68d6ec396152cb8641aa23871d94b7ad06d14e06f585a371e04f0d"
+          },
+          "plan": {
+            "bytes": 7250,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-b9b31bc1839b-v1/revisions/000/private/plan.json",
+            "sha256": "fd7290aa044b39db472a36e62e74ab1a4274cac3b62f259816173ed93094358c"
+          },
+          "scope": "Historical task-specific full-D review only; not a whole-source certificate.",
+          "task_id": "fm-b9b31bc1839b-v1"
+        }
+      ],
+      "source_file": "b9b31bc183_Appendix2_model.xls",
+      "source_sha256": "b9b31bc1839bd30ba44fff346a252a12297b7b5d0e884d20d5bb44e6c8c2a44b",
+      "workbook": {
+        "bytes": 56721,
+        "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-b9b31bc1839b-v1/revisions/000/private/goal.xlsx",
+        "sha256": "755a98d1a4bf16037a244149e6a49be35d2016b7b542398897ee273d81d54721"
+      }
+    },
+    {
+      "date_conversion": {
+        "cells": [
+          {
+            "cell": "B3",
+            "original_cached_text": "44592",
+            "sheet": "Input sheet"
+          },
+          {
+            "cell": "G1",
+            "original_cached_text": "44592",
+            "sheet": "Stories to Numbers"
+          },
+          {
+            "cell": "O3",
+            "original_cached_text": "44592",
+            "sheet": "Valuation as picture"
+          }
+        ],
+        "reason": "Retain 2026-02-01 under the shared1900epoch; two direct-linked formula caches follow the input. Native value/date equivalence remains pending.",
+        "serial_delta": 1462,
+        "source_date1904": true,
+        "target_date1904": false
+      },
+      "id": "nyu_simple",
+      "prefix": "DCF",
+      "risk_lineage": [],
+      "scoped_audits": [
+        {
+          "report": {
+            "bytes": 82255,
+            "path": "/data/hzy/sheetsFactory/outputs/research/hardness_iteration/external_sources/nyu_dcf_module_business_review.json",
+            "sha256": "1337199356c6e8863877cfdd8a86c3f9fa9eae9fe1b736c07d4202a765e9e324"
+          },
+          "scope": "Separate 112 main-module identities; excluded from the legacy742 unique-address count; not a whole-source certificate."
+        }
+      ],
+      "source_file": "nyu_fcffsimpleginzu.xlsx",
+      "source_sha256": "d6ffb67d965dc22463e4d013636befab3da431e7fc608936a82612fa73198e72",
+      "workbook": {
+        "bytes": 239315,
+        "path": "/data/hzy/sheetsFactory/outputs/research/hardness_iteration/external_sources/normalized/nyu_fcffsimpleginzu.xlsx",
+        "sha256": "3efc53bc23c002d4ab994c0add4b4991da4d7c6c072bbc0af465ce428c9ecfcf"
+      }
+    },
+    {
+      "id": "budget",
+      "prefix": "Budget",
+      "risk_lineage": [],
+      "scoped_audits": [
+        {
+          "expected_delta": {
+            "bytes": 888,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-9125187923cc/revisions/000/private/expected_delta.json",
+            "sha256": "077199382ee025b893d01bb2cca9c8de5a6485d79e5c1e508bef44899335b3fa"
+          },
+          "goal": {
+            "bytes": 22804,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-9125187923cc/revisions/000/private/goal.xlsx",
+            "sha256": "ab3431d0decafe4bd29c831f35552543614000e9817a9ca1a1b6a071249f21bb"
+          },
+          "instruction": {
+            "bytes": 2105,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-9125187923cc/revisions/000/public/instruction.md",
+            "sha256": "0a9537b8bc21e3956671840b0b209c4d03dd63aa1e6310241e75ef40d78c5e4d"
+          },
+          "plan": {
+            "bytes": 5925,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-9125187923cc/revisions/000/private/plan.json",
+            "sha256": "5ebbb327a3e006a1336cfe1418423297614a3d5cdff096b5a5b993df2300f82c"
+          },
+          "scope": "Historical task-specific full-D review only; not a whole-source certificate.",
+          "task_id": "fm-9125187923cc"
+        },
+        {
+          "expected_delta": {
+            "bytes": 808,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-9125187923cc-v1/revisions/000/private/expected_delta.json",
+            "sha256": "7badf33abe135ec54910120037571b3dd9e4fb8829a2f44ccc3904266a2a68fa"
+          },
+          "goal": {
+            "bytes": 22804,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-9125187923cc-v1/revisions/000/private/goal.xlsx",
+            "sha256": "ab3431d0decafe4bd29c831f35552543614000e9817a9ca1a1b6a071249f21bb"
+          },
+          "instruction": {
+            "bytes": 1992,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-9125187923cc-v1/revisions/000/public/instruction.md",
+            "sha256": "894057222336f9119ffe242141357fc9e1a3a906ea763cd1936700a1c9bc98d1"
+          },
+          "plan": {
+            "bytes": 4880,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-9125187923cc-v1/revisions/000/private/plan.json",
+            "sha256": "423350e0a4636f2a1802030898b037b14266ef25a905bdcd1cfe9ea457387913"
+          },
+          "scope": "Historical task-specific full-D review only; not a whole-source certificate.",
+          "task_id": "fm-9125187923cc-v1"
+        }
+      ],
+      "source_file": "9125187923_SA_20Comptroller-final.xls",
+      "source_sha256": "9125187923cc2afabec6d3f696383a2807f71221c2277320095f74f29c16b147",
+      "workbook": {
+        "bytes": 22804,
+        "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-9125187923cc/revisions/000/private/goal.xlsx",
+        "sha256": "ab3431d0decafe4bd29c831f35552543614000e9817a9ca1a1b6a071249f21bb"
+      }
+    },
+    {
+      "id": "meeting",
+      "prefix": "Meeting",
+      "risk_lineage": [],
+      "scoped_audits": [
+        {
+          "expected_delta": {
+            "bytes": 2804,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-f174b4d30ead-v1/revisions/000/private/expected_delta.json",
+            "sha256": "664517d964b440bbbfd4a165e8ed05fced934d393459bc3a4d41ba84cbaa460d"
+          },
+          "goal": {
+            "bytes": 20335,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-f174b4d30ead-v1/revisions/000/private/goal.xlsx",
+            "sha256": "fd39c7ca9819598b85e62b4d7194cf8b41b1c70ec16d6755a83998be7558fa7e"
+          },
+          "instruction": {
+            "bytes": 3225,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-f174b4d30ead-v1/revisions/000/public/instruction.md",
+            "sha256": "039a3eb1d7cf529a7abcb5b380868a27e70b75af58972e007bf23547b60be185"
+          },
+          "plan": {
+            "bytes": 8270,
+            "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-f174b4d30ead-v1/revisions/000/private/plan.json",
+            "sha256": "e7893bbe9b039f31c097e32543f427f2ac0959d342a1cd2a5bcbc7d1bf1ce868"
+          },
+          "scope": "Historical task-specific full-D review only; not a whole-source certificate.",
+          "task_id": "fm-f174b4d30ead-v1"
+        }
+      ],
+      "source_file": "f174b4d30e_Financial_Schedules_A_A7BE2.xls",
+      "source_sha256": "f174b4d30eadf195af7c87fea9343de18a9b8b4a051621e0c176d59cb0e55f34",
+      "workbook": {
+        "bytes": 20335,
+        "path": "/data/hzy/sheetsFactory/outputs/runs/20261029T121133Z-7bf764/tasks/fm-f174b4d30ead-v1/revisions/000/private/goal.xlsx",
+        "sha256": "fd39c7ca9819598b85e62b4d7194cf8b41b1c70ec16d6755a83998be7558fa7e"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "bytes": 64213,
+      "path": "/data/hzy/sheetsFactory/outputs/research/legacy_qualified_FM_donor_copy_census_20261031T132709Z/receipt.json",
+      "sha256": "18bff6939a63b7b76e98313a4691f630a6c8ef893ed3c87f2d36015d71a6de3d"
+    },
+    {
+      "bytes": 12751,
+      "path": "/data/hzy/sheetsFactory/outputs/research/heterogeneous_legacy_finance_feasibility_20261031T131000Z/memo.md",
+      "sha256": "ada4579dc1c074b1b45d9213d12431e77706fde4bd7fdc57bc3e0cf8737f16f0"
+    },
+    {
+      "bytes": 39471,
+      "path": "/data/hzy/sheetsFactory/outputs/research/heterogeneous_legacy_finance_feasibility_20261031T131000Z/evidence.json",
+      "sha256": "9fd30785858e871b0bf27192338e7846fb5a20ef6a561e38fb970ea70919734e"
+    },
+    {
+      "bytes": 21562,
+      "path": "/data/hzy/sheetsFactory/data/manifests/native_risks.json",
+      "sha256": "a231085f096c4660333bfc74a8433abc3fd4fc65fb2139fa6f08918bd665cd58"
+    },
+    {
+      "bytes": 85536,
+      "path": "/data/hzy/sheetsFactory/data/manifests/hard_financial_sources.json",
+      "sha256": "73a20ffa16872dbf197d7158dfcd92b9976dcdb85c8ab4e7faf853a5dfe7ca80"
+    },
+    {
+      "bytes": 238763,
+      "path": "/data/hzy/sheetsFactory/outputs/validation/final_financial_business_audit_index_20261029T174729Z.json",
+      "sha256": "f0e4160533cb55cbbac5f12ad8a0c7d172d830407f5b15e634e10446ee3472c5"
+    }
+  ],
+  "historical_scope": {
+    "NYU_independent_identity_count": 112,
+    "legacy_audit_scope": "All14legacyFM sources; the selected seven are a subset. NYU112 is separate.",
+    "legacy_audit_unique_source_address_count": 742,
+    "whole_source_financial_certified": false
+  },
+  "kind": "fixed_eight_heterogeneous_native_review_pack_recipe",
+  "native_equivalence_status": "not_executed",
+  "presentation": "Readable prefixed sheets retain all business text/data/units/periods; no cross-business financial sums. Original theme/indexed business colors resolved toRGB; common presentation typography may normalize.",
+  "version": 1
+}
