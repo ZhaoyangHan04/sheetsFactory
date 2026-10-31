@@ -1,0 +1,46 @@
+{
+  "kind": "scaled_producer16_fixed_twenty_reference_batch",
+  "version": 2,
+  "profile_order": ["L360-P01", "L360-P02", "L360-P03", "L360-P04", "L360-P05", "L360-P06", "L360-P07", "L360-P08", "L360-P09", "L360-P10", "L360-P11", "L360-P12", "L360-P13", "L360-P14", "L360-P15", "L360-P16", "L360-P17", "L360-P18", "L360-P19", "L360-P20"],
+  "declaration": {
+    "kind": "prospective_scaled_linear_raw_pool",
+    "version": 2,
+    "count": 20,
+    "first_development_profile": "L360-P01",
+    "profiles": [
+      {"id": "L360-P01", "seed": 202701361, "revenue_jitter_pence": 150000},
+      {"id": "L360-P02", "seed": 202701362, "revenue_jitter_pence": 150000},
+      {"id": "L360-P03", "seed": 202701363, "revenue_jitter_pence": 150000},
+      {"id": "L360-P04", "seed": 202701364, "revenue_jitter_pence": 150000},
+      {"id": "L360-P05", "seed": 202701365, "revenue_jitter_pence": 150000},
+      {"id": "L360-P06", "seed": 202701366, "revenue_jitter_pence": 150000},
+      {"id": "L360-P07", "seed": 202701367, "revenue_jitter_pence": 150000},
+      {"id": "L360-P08", "seed": 202701368, "revenue_jitter_pence": 150000},
+      {"id": "L360-P09", "seed": 202701369, "revenue_jitter_pence": 150000},
+      {"id": "L360-P10", "seed": 202701370, "revenue_jitter_pence": 150000},
+      {"id": "L360-P11", "seed": 202701371, "revenue_jitter_pence": 150000},
+      {"id": "L360-P12", "seed": 202701372, "revenue_jitter_pence": 150000},
+      {"id": "L360-P13", "seed": 202701373, "revenue_jitter_pence": 150000},
+      {"id": "L360-P14", "seed": 202701374, "revenue_jitter_pence": 150000},
+      {"id": "L360-P15", "seed": 202701375, "revenue_jitter_pence": 150000},
+      {"id": "L360-P16", "seed": 202701376, "revenue_jitter_pence": 150000},
+      {"id": "L360-P17", "seed": 202701377, "revenue_jitter_pence": 150000},
+      {"id": "L360-P18", "seed": 202701378, "revenue_jitter_pence": 150000},
+      {"id": "L360-P19", "seed": 202701379, "revenue_jitter_pence": 150000},
+      {"id": "L360-P20", "seed": 202701380, "revenue_jitter_pence": 150000}
+    ]
+  },
+  "original_supervisor_sha256": "fab59b0ac58c71232d98d2f52a11f0cb04b020f0889398c6c36b51624158a79b",
+  "reference_api_sha256": "203c40ba1b7c3ec446388cb6a93ada284c0a0c62d334e1c2b09132bed2c1e268",
+  "raw_api_sha256": "b5752aedbdda92b2ff5cd2ab6afd6db14ed25fac03be0880b308f6163c7dd8e6",
+  "finance_api_sha256": "31b9c6a0edce8642493414298c125dc12251285448faf27dc9f7fdeefa6fbcd0",
+  "max_parallel": 4,
+  "retries": 0,
+  "reference_policy": "version2_best_and_complete_winner_excluded_runner_OPTIMAL",
+  "complete_business_rows": 941,
+  "resources": {
+    "cpus": 16, "threads": 16, "memory_bytes": 34359738368,
+    "pids_limit": 256, "network": "none", "seconds_per_phase": 3600,
+    "image_id": "sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043"
+  }
+}
