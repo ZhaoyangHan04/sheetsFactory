@@ -121,6 +121,24 @@ def test_existing_output_is_preserved_without_writing_failure_receipt(case, tmp_
     assert sorted(path.name for path in directory.iterdir()) == ['original']
 
 
+def test_final_metadata_io_is_inside_budget_and_incomplete_bytes_are_retained(case, tmp_path, monkeypatch):
+    clock = [0]
+    original = streamed._write
+    monkeypatch.setattr(streamed.time, 'monotonic_ns', lambda: clock[0])
+    def slow_write(path, value):
+        result = original(path, value)
+        if path.name == 'projection.pending.json':
+            clock[0] = 121 * 10**9
+        return result
+    monkeypatch.setattr(streamed, '_write', slow_write)
+    with pytest.raises(streamed.StreamVerificationError, match='time limit'):
+        project(case, tmp_path)
+    assert not (tmp_path / 'projection/projection.json').exists()
+    assert (tmp_path / 'projection/projection.incomplete.json').exists()
+    failure = json.loads((tmp_path / 'projection/failure.json').read_text())
+    assert failure['complete'] is False and failure['unique_optimum_certified'] is False
+
+
 def test_false_non_rank_financial_value_is_only_a_claim_pending_opposite_core(case, tmp_path):
     # The projection can verify prunes and geometry without trusting its NPV.
     # The later complete opposite-core stream must expose this altered leaf.

@@ -227,10 +227,19 @@ def project_partition(public, partition_path, directory, *, branch_order, best, 
                   'all_financial_leaves_independently_checked': False, 'unique_optimum_certified': False,
                   'source_quality_or_difficulty_certified': False}
         budget()
-        _write(directory / 'projection.json', result)
+        # Keep the final metadata write/hash inside the independent budget.
+        # A failed finalization preserves its bytes under an incomplete name.
+        _write(directory / 'projection.pending.json', result)
+        budget()
+        (directory / 'projection.pending.json').rename(directory / 'projection.json')
+        budget()
         return result
     except Exception as error:
         partial = progress(str(error))
+        if owns_directory:
+            for name in ('projection.pending.json', 'projection.json'):
+                if (directory / name).exists():
+                    (directory / name).rename(directory / 'projection.incomplete.json')
         if owns_directory and not (directory / 'failure.json').exists():
             _write(directory / 'failure.json', partial)
         raise StreamVerificationError(str(error), partial) from error
