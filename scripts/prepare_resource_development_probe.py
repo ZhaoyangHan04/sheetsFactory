@@ -36,6 +36,7 @@ CONTROL_REWARDS={'oracle':1,'nop':0,'equivalent':1,'missed_root':0,'extra_change
 BUDGET={'version':1,'elapsed_policy':'operational_guard','elapsed_guard_seconds':14400,'tool_budget_seconds':1800}
 FAMILIES={'entity':('run_entity_group_quality.py','debugging','entity_group_policy_inventory.json'),
           'scaled_capital':('run_scaled_capital_quality.py','financial_modeling','scaled_capital_plan_binding.json')}
+STANDARD_EXPORT_FIELDS=('task_id','task_name','revision','revision_hash','export_manifest_sha256')
 
 
 def read(path):return json.loads(Path(path).read_bytes())
@@ -57,6 +58,46 @@ def stream_reference(path):
 def verify_files(mapping):
     for path,digest in mapping.items():
         require(stream_reference(path)['sha256']==digest,'A frozen resource-probe artifact changed: '+path)
+
+
+def validate_normal_export(task,task_id,revision,revision_hash,source,goal,instruction):
+    """Recheck an existing normal export without comparing snapshot metadata.
+
+    Factory's ordinary inspector records five exact identity fields. The
+    resource inspector adds two fields. Only either complete dictionary is
+    accepted; the current physical resource export is always inspected first.
+    Before normal Export runs, both absent fields mean pending, not clearance.
+    """
+    directory,binding=task.get('export_dir'),task.get('harbor_export_binding')
+    if directory is None and binding is None:return None
+    require(directory is not None and binding is not None,
+            'A saved normal export requires both its directory and complete audit binding')
+    require(isinstance(directory,str) and bool(directory),'A saved normal export directory is invalid')
+    path=Path(directory).absolute()
+    require(path==path.resolve() and path.is_dir(),'The saved normal export must be a real current directory')
+    complete=inspect_resource_export(path)
+    required=set(STANDARD_EXPORT_FIELDS)|{'required_controls','resource_runtime'}
+    require(set(complete)==required and complete['required_controls']==['oracle','nop'],
+            'The normal resource inspector lacks its complete seven-field binding')
+    standard={key:complete[key] for key in STANDARD_EXPORT_FIELDS}
+    require(isinstance(binding,dict) and type(binding.get('revision')) is int
+            and (binding==complete or (set(binding)==set(STANDARD_EXPORT_FIELDS)
+            and binding==standard)),
+            'The saved normal export binding is neither complete resource evidence nor its exact standard five-field projection')
+    require(complete['task_id']==task_id and type(complete['revision']) is int and complete['revision']==revision
+            and complete['revision_hash']==revision_hash,'The saved normal export identity or revision differs')
+    require((path/'instruction.md').read_bytes()==Path(instruction).read_bytes()
+            and stream_reference(path/'environment/input.xlsx')['sha256']==stream_reference(source)['sha256']
+            and stream_reference(path/'tests/reference.xlsx')['sha256']==stream_reference(goal)['sha256'],
+            'The saved normal export differs from current task input, goal or instruction bytes')
+    inventory={file.relative_to(path).as_posix():stream_reference(file) for file in path.rglob('*') if file.is_file()}
+    require(set(inventory)==set(TASK_FILES) and len(inventory)==17,
+            'The saved normal resource export lacks the complete seventeen-file inventory')
+    return {'status':'verified_current_normal_export','directory':str(path),'audit_binding':deepcopy(binding),
+        'audit_binding_format':'complete_resource_binding' if binding==complete else 'exact_standard_five_field_projection',
+        'complete_resource_binding':complete,'inventory':inventory,
+        'snapshot_and_normal_manifest_metadata_are_not_required_equal':True,
+        'qualification_or_actual_controls_inferred':False}
 
 
 def bind_receipt_references(value,mapping,visited=None):
@@ -224,6 +265,7 @@ def _freeze_probe(run,task_id,revision,output,*,family,history_roots=()):
                 'The full-D input cache audit is bound to another revision')
     revision_hash=hashlib.sha256(source.read_bytes()+instruction.encode()).hexdigest()
     require(tasks[0].get('revision_hash',revision_hash)==revision_hash,'The saved task revision binding changed')
+    normal_export=validate_normal_export(tasks[0],task_id,revision,revision_hash,source,goal,public/'instruction.md')
     history=model_selection_history(revision_hash,task_id,revision,[ROOT/'outputs/difficulty',*history_roots])
     stored=read(private/'local_controls.json')
     require(set(stored)==set(CONTROL_REWARDS),'All five actual normal local controls are required')
@@ -265,6 +307,8 @@ def _freeze_probe(run,task_id,revision,output,*,family,history_roots=()):
         bind_receipt_references([read(private/'joint_control_selection.json'),read(private/'joint_repair_certificate.json')],bindings)
     for row in actual_resources:
         for ref in row['actual_calculation_receipts']:bindings[ref['path']]=ref['sha256']
+    if normal_export is not None:
+        for ref in normal_export['inventory'].values():bindings[ref['path']]=ref['sha256']
     output.mkdir(parents=True)
     normal=write_new(output/'normal_node_receipts.json',{'as_of':datetime.now(timezone.utc).isoformat(),
         'family':family,'task_id':task_id,'revision':revision,'run_status':snapshot['run']['status'],'nodes':nodes,
@@ -295,6 +339,8 @@ def _freeze_probe(run,task_id,revision,output,*,family,history_roots=()):
     require(current_task['revision']==revision and current_task['source_id']==seed['sha256']
             and current_task['mode']==mode,'The normal task identity or revision advanced during snapshot')
     require_completed_nodes(current,task_id,revision)
+    require(validate_normal_export(current_task,task_id,revision,revision_hash,source,goal,public/'instruction.md')==normal_export,
+            'The saved normal export or its audit binding advanced during snapshot')
     history=model_selection_history(revision_hash,task_id,revision,[ROOT/'outputs/difficulty',*history_roots])
     budget=validate_execution_budget(BUDGET)
     task={'task_id':task_id,'mode':mode,'source_id':seed['sha256'],'revision':revision,'revision_hash':revision_hash,
@@ -308,6 +354,8 @@ def _freeze_probe(run,task_id,revision,output,*,family,history_roots=()):
         'tool_time_policy':dict(POLICY_V2),'tool_time_policy_version':2,'source_artifacts_sha256':bindings,
         'main_quality_run':str(run),'normal_node_receipts':normal,'complete_source_admission':proof,
         'normal_InstructionNode_replay_exact':True,'normal_ExportNode_called_on_actual_task':False,
+        'existing_normal_export':normal_export,
+        'normal_export_status_at_snapshot':'verified_existing_export' if normal_export is not None else 'pending',
         'same_frozen_resource_export_helper_called':True,'resource_task_inventory':inventory,
         'complete_changed_value_set_count':delta['expected_change_count'],'physical_formula_edit_count':len(plan['edits']),
         'prior_model_selection_inventory':history,'public_recovery_status_at_snapshot':nodes.get('independent_recovery',{}).get('status','pending'),

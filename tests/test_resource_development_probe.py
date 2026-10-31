@@ -268,3 +268,115 @@ def test_family_plan_scope_revalidated_before_any_export(tmp_path,monkeypatch,fa
         assert result==({'Arithmetic!B1'} if family=='scaled_capital' else set())
     else:
         with pytest.raises(ValueError):probe.validate_family_plan(family,phase,plan,application,scope,proof,tmp_path/'goal.fixture',private)
+
+
+@pytest.fixture
+def actual_normal_export(tmp_path):
+    """Real 17-file exporter/inspector; no daemon or financial execution."""
+    from openpyxl import Workbook
+    from sheets_factory.evaluation.resource_harbor import export_resource_harbor,inspect_resource_export
+    revision=tmp_path/'actual_revision'
+    for folder in ('public','private'):(revision/folder).mkdir(parents=True)
+    for folder,name,value in (('public','input.xlsx',10),('private','goal.xlsx',20)):
+        book=Workbook();book.active.title='Finance';book.active['B1']=value
+        book.save(revision/folder/name);book.close()
+    instruction=revision/'public/instruction.md'
+    instruction.write_text('Restore Finance!B1 to 20. Preserve existing worksheets. Save /app/output.xlsx.\n')
+    source,goal=revision/'public/input.xlsx',revision/'private/goal.xlsx'
+    revision_hash=__import__('hashlib').sha256(source.read_bytes()+instruction.read_bytes()).hexdigest()
+    path=export_resource_harbor(revision,tmp_path/'actual_export',{'task_id':'actual-task','revision':0,
+        'revision_hash':revision_hash,'difficulty_status':'normal_quality_pending'},
+        runtime_profile=ROOT/'config/runtime_profiles/entity_group_large_v2.yaml')
+    full=inspect_resource_export(path)
+    standard={k:full[k] for k in probe.STANDARD_EXPORT_FIELDS}
+    return SimpleNamespace(path=path,full=full,standard=standard,source=source,goal=goal,instruction=instruction,
+        revision_hash=revision_hash,task={'export_dir':str(path),'harbor_export_binding':standard})
+
+
+def normal_check(c,task=None):
+    return probe.validate_normal_export(c.task if task is None else task,'actual-task',0,c.revision_hash,
+        c.source,c.goal,c.instruction)
+
+
+@pytest.mark.parametrize('full_binding',[False,True])
+def test_real_normal_resource_export_accepts_only_complete_or_exact_legacy_projection(actual_normal_export,full_binding):
+    c=actual_normal_export
+    if full_binding:c.task['harbor_export_binding']=deepcopy(c.full)
+    original=deepcopy(c.task)
+    result=normal_check(c)
+    assert c.task==original
+    assert result['complete_resource_binding']==c.full and len(result['inventory'])==17
+    assert result['audit_binding_format']==('complete_resource_binding' if full_binding else 'exact_standard_five_field_projection')
+    assert result['snapshot_and_normal_manifest_metadata_are_not_required_equal'] is True
+    assert result['qualification_or_actual_controls_inferred'] is False
+
+
+@pytest.mark.parametrize('change',['subset','superset','manifest','revision','bool_revision','task_name','one_resource_extra',
+                                   'binding_without_directory','directory_without_binding'])
+def test_normal_export_projection_rejects_partial_or_wrong_identity(actual_normal_export,change):
+    c=actual_normal_export;task=deepcopy(c.task);binding=task['harbor_export_binding']
+    if change=='subset':binding.pop('task_name')
+    if change=='superset':binding['ignored_extra']=True
+    if change=='manifest':binding['export_manifest_sha256']='0'*64
+    if change=='revision':binding['revision']=1
+    if change=='bool_revision':binding['revision']=False
+    if change=='task_name':binding['task_name']='sheetsfactory/other'
+    if change=='one_resource_extra':binding['required_controls']=['oracle','nop']
+    if change=='binding_without_directory':task.pop('export_dir')
+    if change=='directory_without_binding':task.pop('harbor_export_binding')
+    with pytest.raises(ValueError):normal_check(c,task)
+
+
+@pytest.mark.parametrize('change',['missing_file','extra_file','resource_profile','manifest_tamper'])
+def test_normal_export_always_rechecks_full_resource_manifest_even_with_exact_old_binding(actual_normal_export,change):
+    c=actual_normal_export
+    if change=='missing_file':(c.path/'environment/resource_runner.py').unlink()
+    elif change=='extra_file':(c.path/'unexpected.txt').write_text('unrecorded')
+    elif change=='resource_profile':
+        for relative in ('environment/runtime_profile.json','tests/runtime_profile.json'):
+            profile=probe.read(c.path/relative);profile['docker_resources']['agent']['memory_bytes']=8*1024**3
+            dump(c.path/relative,profile)
+        manifest=probe.read(c.path/'export_manifest.json')
+        for relative in ('environment/runtime_profile.json','tests/runtime_profile.json'):
+            manifest['files'][relative]=probe.stream_reference(c.path/relative)['sha256']
+        dump(c.path/'export_manifest.json',manifest)
+        # A matching basic manifest SHA does not waive the resource semantics.
+        c.task['harbor_export_binding']['export_manifest_sha256']=probe.stream_reference(c.path/'export_manifest.json')['sha256']
+    else:
+        manifest=probe.read(c.path/'export_manifest.json');manifest['metadata']['revision_hash']='other'
+        dump(c.path/'export_manifest.json',manifest)
+    with pytest.raises(ValueError):normal_check(c)
+
+
+def test_normal_export_cannot_bind_another_current_public_revision(actual_normal_export):
+    c=actual_normal_export;c.instruction.write_text(c.instruction.read_text()+'A different current instruction.\n')
+    with pytest.raises(ValueError,match='current task'):normal_check(c)
+
+
+def test_no_normal_export_is_pending_and_does_not_inspect_or_claim_quality(monkeypatch):
+    monkeypatch.setattr(probe,'inspect_resource_export',lambda *args:pytest.fail('normal Export is not yet present'))
+    assert probe.validate_normal_export({},'task',0,'hash','unused','unused','unused') is None
+
+
+def test_probe_binds_existing_export_without_equating_its_metadata_to_new_snapshot(snapshot,monkeypatch):
+    c=snapshot
+    c.state['tasks'][0].update(export_dir='/explicit/mock/normal',harbor_export_binding={'explicit':'normal inspector boundary'})
+    checked={'status':'verified_current_normal_export','inventory':{},'complete_resource_binding':{'normal_metadata':'different'}}
+    seen=[]
+    def normal(*args):seen.append(deepcopy(args[0]));return deepcopy(checked)
+    monkeypatch.setattr(probe,'validate_normal_export',normal)
+    manifest=probe.read_ref(probe.freeze_probe(c.run,c.task_id,0,c.output,family=c.family))
+    assert len(seen)==2 and seen[0]==seen[1]
+    assert manifest['existing_normal_export']==checked and manifest['normal_export_status_at_snapshot']=='verified_existing_export'
+    assert manifest['normal_ExportNode_called_on_actual_task'] is False and manifest['qualified'] is False
+
+
+def test_normal_export_binding_advancement_preserves_failed_snapshot(snapshot,monkeypatch):
+    c=snapshot;calls=[]
+    def normal(*args):
+        calls.append(True)
+        return None if len(calls)==1 else {'status':'newly_advanced'}
+    monkeypatch.setattr(probe,'validate_normal_export',normal)
+    with pytest.raises(ValueError,match='advanced during snapshot'):
+        probe.freeze_probe(c.run,c.task_id,0,c.output,family=c.family)
+    assert (c.output/'snapshot_failure.json').is_file() and not (c.output/'probe_manifest.json').exists()
