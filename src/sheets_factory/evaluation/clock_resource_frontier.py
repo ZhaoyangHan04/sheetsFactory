@@ -16,6 +16,7 @@ from .tool_time_clock_bounds import METHOD as _CLOCK_METHOD, account_complete_cl
 
 RESOURCE_ADAPTER_SHA256 = 'b6743fa3ee364ca90d5cd961ce1900ee1b84cb50b9797072b27c0376fb40f991'
 CLOCK_PARSER_SHA256 = 'cd43938b7c9cdf3f7f6ee6dd38cc9b0cf4b62c50f28c598da9ebcbfd5bf9bb44'
+FROZEN_FRONTIER_SHA256 = 'f507f738726347f61c27c3cf866d701e722690a87951b38d349b7d046d34df36'
 POLICY_V3 = {**_BASE_POLICY, 'version': 3,
     'measurement': 'native_exact_or_static_pending_stop_or_complete_clock_envelope_v3',
     'complete_clock_measurement': _CLOCK_METHOD,
@@ -36,7 +37,9 @@ def _v3_provenance():
     refs = {'clock_bound_parser': _bound_ref(_Path(__file__).with_name('tool_time_clock_bounds.py')),
             'resource_ast_adapter': _bound_ref(_Path(__file__).with_name('resource_frontier.py')),
             'frozen_frontier': _bound_ref(_Path(__file__).with_name('frontier.py'))}
-    if refs['clock_bound_parser']['sha256'] != CLOCK_PARSER_SHA256 or refs['resource_ast_adapter']['sha256'] != RESOURCE_ADAPTER_SHA256:
+    if (refs['clock_bound_parser']['sha256'] != CLOCK_PARSER_SHA256
+            or refs['resource_ast_adapter']['sha256'] != RESOURCE_ADAPTER_SHA256
+            or refs['frozen_frontier']['sha256'] != FROZEN_FRONTIER_SHA256):
         raise ValueError('The version-three runner dependency changed')
     return refs
 

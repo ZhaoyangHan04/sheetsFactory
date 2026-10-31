@@ -120,6 +120,20 @@ def test_dependency_drift_rejects_before_running(monkeypatch):
         v3.adapted_ast()
 
 
+def test_upstream_drift_after_import_rejects_on_every_provenance_check(monkeypatch):
+    original = v3._bound_ref
+    def drift(path):
+        reference = original(path)
+        if Path(path).name == 'frontier.py':
+            reference['sha256'] = '0'*64
+        return reference
+    monkeypatch.setattr(v3, '_bound_ref', drift)
+    with pytest.raises(ValueError, match='dependency changed'):
+        v3._v3_provenance()
+    with pytest.raises(ValueError, match='dependency changed'):
+        v3.adapted_ast()
+
+
 def fake_receipt(state, passed, **more):
     return {'state': state, 'passed': passed, 'cumulative_tool_seconds': None, **more}
 
