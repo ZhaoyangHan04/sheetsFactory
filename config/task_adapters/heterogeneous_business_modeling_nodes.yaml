@@ -1,0 +1,13 @@
+version: 1
+nodes:
+  normalize: sheets_factory.task_adapters.heterogeneous_business_modeling:HeterogeneousBusinessNormalizeNode
+  profile: sheets_factory.task_adapters.heterogeneous_business_modeling:HeterogeneousBusinessProfileNode
+  plan: sheets_factory.task_adapters.heterogeneous_business_modeling:HeterogeneousBusinessPlanNode
+  construct: sheets_factory.task_adapters.heterogeneous_business_modeling:HeterogeneousBusinessConstructNode
+  instruction: sheets_factory.task_adapters.heterogeneous_business_modeling:HeterogeneousBusinessInstructionNode
+  precheck: sheets_factory.task_adapters.heterogeneous_business_modeling:HeterogeneousBusinessControlsNode
+  independent_recovery: sheets_factory.workbook.heterogeneous_business_view_replay:HeterogeneousBusinessRecoveryNode
+  trajectory: sheets_factory.nodes.quality:TrajectoryNode
+  diagnose: sheets_factory.task_adapters.heterogeneous_business_modeling:HeterogeneousBusinessDiagnoseNode
+  repair: sheets_factory.nodes.quality:RepairNode
+  export: sheets_factory.task_adapters.heterogeneous_business_modeling:HeterogeneousBusinessExportNode
