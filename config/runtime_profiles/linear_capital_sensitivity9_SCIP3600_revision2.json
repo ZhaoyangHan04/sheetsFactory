@@ -1,0 +1,39 @@
+{
+  "kind": "fixed_sensitivity9_ninth_case_SCIP_reference_profile",
+  "version": 2,
+  "id": "linear_capital_sensitivity9_SCIP3600_revision2",
+  "image_id": "sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043",
+  "producer": {
+    "cpus": 16,
+    "memory_bytes": 34359738368,
+    "pids_limit": 256,
+    "threads": 16,
+    "network": "none",
+    "backend": "scip",
+    "solver_seconds_per_attempt": 3600,
+    "operational_timeout_seconds": 3720,
+    "relative_gap": 0,
+    "absolute_gap": 0,
+    "feasibility_tolerance": 1e-09,
+    "automatic_retries": 0
+  },
+  "vendor": {
+    "pyscipopt": "6.0.0",
+    "numpy": "1.26.4"
+  },
+  "projects": 360,
+  "complete_business_rows": 941,
+  "fixed_case": "B110_C110",
+  "maximum_new_native_searches": 2,
+  "max_parallel_new_cases": 1,
+  "prior_incumbent_or_warm_hint": false,
+  "objective_scaled": false,
+  "row_representation": "exact duplicate/zero-tautology omission; positive P02 threshold scaling",
+  "strict_native_primal_objective_dual_and_all_original_integer_rows": true,
+  "runner_excludes_complete_winner": true,
+  "minimum_gap_pence": 1,
+  "cardinality_admission": false,
+  "maximum_historical_searches": 19,
+  "admitted_proofs_required": 18,
+  "reference_is_not_source_or_quality_or_difficulty": true
+}
