@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "adapter": "heterogeneous_business_financial_view_v1",
+  "enabled_by_default": false,
+  "input_sheets": ["Contract Notes", "Calendar", "Entity Policies", "Opening Balances", "Facilities", "Facility Terms", "Asset Register", "Operating Forecast", "Scenario Assumptions", "Portfolio Funding", "Allocation Priorities", "Opening Tax Attributes"],
+  "source_reports": ["Entity Close", "Loan Close", "Asset Close", "Interest FIFO", "Loss FIFO", "Group Close"],
+  "forecast_views": ["Statements", "Debt", "Tax", "Covenants", "Assets", "Interest Carry", "Loss Carry", "Group"],
+  "target_kinds": ["money_pence", "flag", "nullable_flag", "nullable_ratio_micro", "integer", "rate_p12"],
+  "omitted_metadata_kinds": ["date", "text"],
+  "future_derived_term_ids_displayed": false,
+  "reference_representation": "audited_source_business_values_as_literals",
+  "input_forecasts": "all_declared_business_slots_blank_including_zero_results",
+  "nullable_policy": "notest_ratio_and_pass_blank; applicable_zero_service_ratio_blank_pass_from_nonnegative_cfads",
+  "queue_total_aliases": {
+    "interest_vintages": {"opening": "interest_carry_open", "expired": "interest_expired", "used": "interest_old_used", "created": "interest_denied_created", "closing": "interest_carry_close"},
+    "loss_vintages": {"opening": "loss_open", "expired": "loss_expired", "used": "loss_used", "created": "loss_created", "closing": "loss_close"}
+  },
+  "offline_prototype_census_not_source_certificate": {
+    "primary_D_aliases": 103824,
+    "date_metadata": 1800,
+    "text_metadata": 1728,
+    "declared_numeric_business_slots": 100296,
+    "B_only_queue_total_aliases": 4320
+  }
+}
