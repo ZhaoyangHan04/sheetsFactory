@@ -120,7 +120,7 @@ def transform_fixture():
     proof['package_members'].update({name:{'before_sha256':'old','after_sha256':'new','allowed_text_member_change':True} for name in allowed})
     for key in ('all_native_primitive_values_preserved','all_original_phases_and_rules_preserved',
                 'complete_shared_string_usage_inventory_checked','uneditable_cells_and_formulas_and_cached_values_and_styles_preserved'):proof[key]=True
-    resources={'Memory':32*1024**3,'NanoCpus':2*10**9,'PidsLimit':256,'NetworkMode':'none','CapAdd':['DAC_OVERRIDE'],'CapDrop':['ALL']}
+    resources={'Memory':32*1024**3,'NanoCpus':2*10**9,'PidsLimit':256,'NetworkMode':'none','CapAdd':['CAP_DAC_OVERRIDE'],'CapDrop':['ALL']}
     before={'container_id':'f'*64,'image_id':entry.PINNED_IMAGE_ID,'user':'0','resources':resources}
     after={**deepcopy(before),'state':{'ExitCode':0,'OOMKilled':False,'Running':False}}
     compare={'kind':'exact_non_presentation_typed_cached_value_comparison','passed':True,'mismatch_count':0,'mismatches':[],
@@ -139,6 +139,13 @@ def test_presentation_receipt_validation_is_not_financial_admission():
     assert 'financial_admission' not in records['proof']
 
 
+@pytest.mark.parametrize('capability',['DAC_OVERRIDE','CAP_DAC_OVERRIDE'])
+def test_exact_single_capability_accepts_only_docker_canonical_aliases(capability):
+    graph,call,inventory,new,records=transform_fixture()
+    for key in ('before','after'):records[key]['resources']['CapAdd']=[capability]
+    assert entry.validate_transform(graph,'goal',call,inventory,new)==records['proof']
+
+
 @pytest.mark.parametrize('damage',[
     lambda c,r:c.update(calls_LO=False),
     lambda c,r:(c.update(image_id='sha256:'+'a'*64),r['before'].update(image_id='sha256:'+'a'*64),r['after'].update(image_id='sha256:'+'a'*64)),
@@ -149,6 +156,7 @@ def test_presentation_receipt_validation_is_not_financial_admission():
     lambda c,r:r['after']['state'].update(OOMKilled=True),
     lambda c,r:r['after']['state'].update(ExitCode=False),
     lambda c,r:r['before']['resources'].update(Memory=8*1024**3),
+    lambda c,r:r['before']['resources'].update(CapAdd=['CAP_DAC_OVERRIDE','CAP_SYS_ADMIN']),
     lambda c,r:r['comparison'].update(excluded_presentation_text_cells=1110985),
     lambda c,r:r['comparison'].update(cent_quantization_applied=True),
     lambda c,r:r['comparison'].update(financial_audit_transfer_claimed=True),

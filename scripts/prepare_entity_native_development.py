@@ -188,7 +188,7 @@ def validate_transform(graph,role,call,old_inventory,new_book):
     resources=before['resources']
     require(resources['Memory']==32*1024**3 and resources['NanoCpus']==2*10**9
             and resources['PidsLimit']==256 and resources['NetworkMode']=='none'
-            and resources['CapAdd']==['DAC_OVERRIDE'] and resources['CapDrop']==['ALL'],
+            and resources['CapAdd'] in (['DAC_OVERRIDE'],['CAP_DAC_OVERRIDE']) and resources['CapDrop']==['ALL'],
             'The actual transform resources/capabilities differ')
     worker=graph.read(call['worker_runtime'])
     require(worker.get('status')=='passed' and 0<worker['duration_seconds']<=900
