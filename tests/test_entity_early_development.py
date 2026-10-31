@@ -138,7 +138,7 @@ def case(tmp_path,monkeypatch):
         'goal_sha256':goal['sha256'],'plan_sha256':probe.canonical(plan),'revision':0,
         'required_delta':delta['expected_changes'],'required_delta_sha256':probe.canonical(delta['expected_changes'])})
     mutant_receipt=dump(run/'resource_receipts/mutant.terminal.json',execution_record(raw,source,profile))
-    state={'run':{'status':'running'},'tasks':[{'id':probe.TASK,'revision':0,'source_id':goal['sha256'],'mode':'debugging',
+    state={'run':{'status':'constructing'},'tasks':[{'id':probe.TASK,'revision':0,'source_id':goal['sha256'],'mode':'debugging',
             'status':'running','revision_hash':None}],
         'nodes':[{'task_id':probe.TASK,'revision':0,'node':name,'status':'running' if name=='construct' else 'completed'}
             for name in ('normalize','profile','plan','construct')]}
@@ -167,6 +167,20 @@ def test_compact_original_source_chain_and_yaml_registry_without_binding_parse(c
     graph=probe.FrozenFiles();_,_,proof,_=probe.validate_source_receipts(case.run,graph)
     assert proof['logical_fields_checked']==1030770 and str(case.bindings) in graph.files
     assert case.calls==[]
+
+
+@pytest.mark.parametrize('status',['constructing','harbor_validation','running'])
+def test_normal_factory_active_run_states_allow_exact_running_revision(case,status):
+    # The main fixture is the real observed G01 shape: constructing run,
+    # running task, null revision hash, first three nodes complete.
+    state=deepcopy(case.state);state['run']['status']=status
+    assert probe.current_task(state)==case.state['tasks'][0]
+
+
+@pytest.mark.parametrize('status',['cancelling','cancelled','completed','shortfall','failed','infrastructure_failed','preflight','initializing',None])
+def test_terminal_cancelled_and_not_yet_active_runs_cannot_freeze(case,status):
+    state=deepcopy(case.state);state['run']['status']=status
+    with pytest.raises(ValueError):probe.current_task(state)
 
 
 @pytest.mark.parametrize('change',['chain','audit','audit_workbook','partial_scope','stability','missing_pass','goal','recipe'])

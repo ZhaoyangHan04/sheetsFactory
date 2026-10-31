@@ -35,6 +35,9 @@ SOURCE_SHA='6b213aa79237185676a60ca0f6b0099a75cdecc78100589c5a4d4148d48b4e48'
 MUTATIONS=60480
 D_COUNT=261457
 PREPARATION_KIND='prepared_first_fixed_plan_entity_group_G01_debugging_normal_quality'
+# FactoryPipeline writes constructing during generation and harbor_validation
+# during its final control phase. Neither is a terminal or cancellation state.
+ACTIVE_RUN_STATUSES=frozenset(('running','constructing','harbor_validation'))
 BUDGET={'version':1,'elapsed_policy':'operational_guard','elapsed_guard_seconds':14400,'tool_budget_seconds':1800}
 PENDING=['normal_instruction','joint_repair_certificate','five_local_controls','public_recovery','all_12_quality_checks','normal_export','real_Harbor_controls','fresh_20_task_confirmation']
 
@@ -95,7 +98,8 @@ def current_task(state):
     tasks=[t for t in state['tasks'] if t.get('id')==TASK]
     require(len(tasks)==1 and type(tasks[0].get('revision')) is int and tasks[0]['revision']==0
         and tasks[0].get('source_id')==SOURCE_SHA and tasks[0].get('mode')=='debugging'
-        and tasks[0].get('status') in ('running','ready','qualified') and state['run'].get('status')=='running',
+        and tasks[0].get('status') in ('running','ready','qualified')
+        and state['run'].get('status') in ACTIVE_RUN_STATUSES,
         'Only the exact original G01 debugging revision zero is allowed')
     latest={n.get('node'):n for n in state['nodes'] if n.get('task_id')==TASK and n.get('revision')==0}
     require(all(latest.get(name,{}).get('status')=='completed' for name in ('normalize','profile','plan')),
