@@ -1,13 +1,16 @@
 """N360 ordinary quality using supported reference review, not public solving.
 
-The existing opaque source/view admissions remain authoritative. Only the
-configuration guard and ordinary factory's explicit setting are rebound in a
-fresh namespace. The frozen original modules are never mutated.
+The existing source admission remains authoritative. The complete original view
+protocol runs in a new opaque namespace with its one required upstream recipe
+binding. Normal configuration and factory settings are isolated as well. Frozen
+original modules are never mutated.
 """
 from __future__ import annotations
 import ast
 import hashlib
 from pathlib import Path
+from types import FunctionType
+import weakref
 
 from . import linear_capital_scaled_quality as source
 from .factory import FactoryPipeline
@@ -16,10 +19,62 @@ UPSTREAM_SHA256 = '805598136866e52763ac168c18df7491cada54f329c6814aa47ea66643dee
 SETTING = 'linear_capital_scaled_reference_review'
 PROFILE = source.ROOT/'config/runtime_profiles/entity_group_large_v2.yaml'
 ROOT, References, reference, require = source.ROOT, source.References, source.reference, source.require
-LinearSourceAdmission, LinearViewAdmission = source.LinearSourceAdmission, source.LinearViewAdmission
-require_source_admission, require_view_admission = source.require_source_admission, source.require_view_admission
+LinearSourceAdmission = source.LinearSourceAdmission
+require_source_admission = source.require_source_admission
 DEFAULT_PROVIDERS, NORMAL_SOURCE_KIND, REWARDS = source.DEFAULT_PROVIDERS, source.NORMAL_SOURCE_KIND, source.REWARDS
-validate_seed = source.validate_seed
+REQUIRED_VIEW_UPSTREAM = {'path':str(ROOT/'scripts/validate_linear_capital_task_view.py'),
+    'sha256':'24decf5b019f1183ef6c7538c4947e9757cd160d1f11c54d9e3fce36582ae974',
+    'bytes':25755}
+_ACTIVE_REFERENCE_VIEWS = weakref.WeakSet()
+
+
+def current_view_recipe(helper):
+    """The actual N360 validator binds its one frozen upstream implementation."""
+    require(reference(REQUIRED_VIEW_UPSTREAM['path']) == REQUIRED_VIEW_UPSTREAM,
+        'The exact required upstream actual-view protocol changed')
+    original = source._current_view_recipe(helper)
+    require(REQUIRED_VIEW_UPSTREAM['path'] not in original,
+        'The original view recipe acquired an unreviewed upstream-binding change')
+    return {**original, REQUIRED_VIEW_UPSTREAM['path']:REQUIRED_VIEW_UPSTREAM['sha256']}
+
+
+def require_view_admission(value):
+    require(type(value) is ReferenceViewAdmission and value in _ACTIVE_REFERENCE_VIEWS,
+        'A live reference-review view admission is required; JSON or another opaque type is not evidence')
+    return value.guard()
+
+
+class ReferenceViewAdmission:
+    """Complete original validation in an isolated, strictly typed namespace.
+
+    Only the known extra upstream recipe binding differs. Actual kind/version,
+    source, raw inputs, seven/eleven calls, complete D, controls, financial and
+    typed-value checks remain the original protocol bytecode.
+    """
+    def __init__(self, *args, **kwargs):
+        _view_namespace['_original_view_init'](self, *args, **kwargs)
+        self.proof.update(kind='admitted_complete_native_linear_capital_scaled_reference_review_view',
+            upstream_actual_view_protocol=REQUIRED_VIEW_UPSTREAM.copy(),
+            prior_normal_quality_inherited=False, prior_public_solver_success_inherited=False)
+
+
+LinearViewAdmission = ReferenceViewAdmission
+_view_namespace = dict(vars(source))
+_view_namespace.update(__name__=__name__+'._complete_view_protocol',
+    LinearViewAdmission=ReferenceViewAdmission, _ACTIVE_VIEWS=_ACTIVE_REFERENCE_VIEWS,
+    _current_view_recipe=current_view_recipe, require_view_admission=require_view_admission)
+for _name in ('__init__', 'guard', '_recheck_values'):
+    _original = getattr(source.LinearViewAdmission, _name)
+    require(_original.__closure__ is None, 'The original complete-view protocol acquired an unhandled closure')
+    _copy = FunctionType(_original.__code__, _view_namespace, _name,
+        _original.__defaults__, _original.__closure__)
+    _copy.__kwdefaults__ = _original.__kwdefaults__
+    if _name == '__init__':
+        _view_namespace['_original_view_init'] = _copy
+    else:
+        setattr(ReferenceViewAdmission, _name, _copy)
+validate_seed = FunctionType(source.validate_seed.__code__, _view_namespace, 'validate_seed',
+    source.validate_seed.__defaults__, source.validate_seed.__closure__)
 
 
 def adapted_ast():

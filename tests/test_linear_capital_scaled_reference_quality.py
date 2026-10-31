@@ -2,6 +2,7 @@
 from copy import deepcopy
 import hashlib
 import importlib.util
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -13,11 +14,24 @@ from sheets_factory.pipelines import linear_capital_scaled_reference_review as p
 from sheets_factory.pipelines import linear_capital_scaled_quality as original_pipeline
 from sheets_factory.task_adapters import linear_capital_scaled_reference_review as adapter
 from sheets_factory.checkers import DiagnosisRunner
-from test_linear_capital_scaled_quality import provider, completed_view
+from test_linear_capital_scaled_quality import provider, completed_view as legacy_completed_view
 from test_reference_evidence_policy import context as reference_context, diagnose, workbook
 from test_heterogeneous_native_quality import resource_run
 
 ROOT=Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture
+def completed_view(legacy_completed_view):
+    # The tiny original fixture intentionally uses the old exact recipe. Bind
+    # the one real, required upstream file in this NEW test fixture only.
+    root,source,terminal,result,checked=legacy_completed_view
+    path=Path(result['preparation']['path']);frozen=json.loads(path.read_text())
+    required=pipeline.REQUIRED_VIEW_UPSTREAM
+    frozen['recipe'][required['path']]=required['sha256'];path.write_text(json.dumps(frozen))
+    result['preparation']=original_pipeline.reference(path)
+    Path(terminal['path']).write_text(json.dumps(result))
+    return root,source,original_pipeline.reference(terminal['path']),result,checked
 
 
 def entry():
@@ -37,7 +51,8 @@ def configuration():
 
 def test_new_route_preserves_opaque_admissions_and_all_twelve_normal_checks(configuration):
     assert pipeline.LinearSourceAdmission is original_pipeline.LinearSourceAdmission
-    assert pipeline.LinearViewAdmission is original_pipeline.LinearViewAdmission
+    assert pipeline.LinearViewAdmission is pipeline.ReferenceViewAdmission
+    assert pipeline.LinearViewAdmission is not original_pipeline.LinearViewAdmission
     assert hashlib.sha256(Path(original_pipeline.__file__).read_bytes()).hexdigest()==pipeline.UPSTREAM_SHA256
     pipeline.adapted_ast();adapter.adapted_ast()
     assert pipeline.validate_configuration(configuration)['id']=='entity_group_large_v2'
@@ -49,6 +64,50 @@ def test_new_route_preserves_opaque_admissions_and_all_twelve_normal_checks(conf
     assert len(nodes)==11 and nodes['independent_recovery']=='sheets_factory.nodes.quality:RecoveryNode'
     assert nodes['trajectory']=='sheets_factory.nodes.quality:TrajectoryNode'
     assert nodes['export'].endswith('linear_capital_scaled_reference_review:LinearExportNode')
+
+
+def test_new_opaque_view_retains_original_checks_and_only_required_extra_recipe(completed_view):
+    _,source,terminal,_,checked=completed_view
+    original=original_pipeline._current_view_recipe(source.helper)
+    required=pipeline.REQUIRED_VIEW_UPSTREAM
+    assert pipeline.current_view_recipe(source.helper)=={**original,required['path']:required['sha256']}
+    assert original_pipeline.reference(required['path'])==required
+    live=pipeline.ReferenceViewAdmission(source,terminal,provider_id='fixture')
+    proof=pipeline.require_view_admission(live)
+    assert len(checked)==7 and source.cold_source_validation_count==source.helper.calls==1
+    assert proof['kind']=='admitted_complete_native_linear_capital_scaled_reference_review_view' and proof['version']==2
+    assert proof['upstream_actual_view_protocol']==required
+    assert all(proof[k] is False for k in ('prior_normal_quality_inherited','prior_public_solver_success_inherited',
+        'qualified','all_twelve_quality_checks_passed','Harbor_certified','difficulty_certified'))
+    for name in ('guard','_recheck_values'):
+        method=getattr(pipeline.ReferenceViewAdmission,name);old=getattr(original_pipeline.LinearViewAdmission,name)
+        assert method.__code__ is old.__code__ and method.__globals__ is pipeline._view_namespace
+        assert method.__globals__ is not old.__globals__
+    assert pipeline._view_namespace['_original_view_init'].__code__ is original_pipeline.LinearViewAdmission.__init__.__code__
+    with pytest.raises(ValueError):original_pipeline.require_view_admission(live)
+
+
+@pytest.mark.parametrize('attack',['missing','extra','wrong_sha'])
+def test_view_recipe_is_exact_without_missing_extra_or_wrong_upstream(completed_view,attack):
+    root,source,terminal,result,_=completed_view
+    path=Path(result['preparation']['path']);frozen=json.loads(path.read_text());required=pipeline.REQUIRED_VIEW_UPSTREAM
+    if attack=='missing':frozen['recipe'].pop(required['path'])
+    elif attack=='wrong_sha':frozen['recipe'][required['path']]='0'*64
+    else:
+        extra=root/'unreviewed_protocol.py';extra.write_text('unreviewed=1')
+        record=original_pipeline.reference(extra);frozen['recipe'][record['path']]=record['sha256']
+    path.write_text(json.dumps(frozen));result['preparation']=original_pipeline.reference(path)
+    Path(terminal['path']).write_text(json.dumps(result));terminal=original_pipeline.reference(terminal['path'])
+    with pytest.raises(ValueError,match='preparation, limits or recipe'):
+        pipeline.ReferenceViewAdmission(source,terminal,provider_id='fixture')
+
+
+def test_json_fabricated_and_old_namespace_opaque_views_cannot_transfer(legacy_completed_view):
+    _,source,terminal,_,_=legacy_completed_view
+    old=original_pipeline.LinearViewAdmission(source,terminal,provider_id='fixture')
+    for candidate in ({'passed':True,'qualified':True},object.__new__(pipeline.ReferenceViewAdmission),old):
+        with pytest.raises(ValueError,match='live reference-review'):
+            pipeline.require_view_admission(candidate)
 
 
 @pytest.mark.parametrize('change',['skip_Q04','wrong_policy','public_solver','weaker_model','weaker_effort','wrong_cpus','skip_Harbor'])
