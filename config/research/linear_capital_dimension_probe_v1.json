@@ -1,0 +1,20 @@
+{
+  "kind": "fixed_linear_capital_dimension_pure_probe",
+  "version": 1,
+  "profiles": [
+    {"id": "L720-D01", "projects": 720, "seed": 202710720, "revenue_jitter_pence": 150000},
+    {"id": "L1080-D01", "projects": 1080, "seed": 202711080, "revenue_jitter_pence": 150000}
+  ],
+  "diagnostic_plans_per_profile": 18,
+  "all_contracts_and_plans_frozen_before_any_financial_forward": true,
+  "retain_all_results_without_replacement": true,
+  "optimizer_calls": 0,
+  "LO_calls": 0,
+  "model_calls": 0,
+  "Harbor_calls": 0,
+  "network_calls": 0,
+  "workbook_emission_calls": 0,
+  "container_resource_claimed": false,
+  "geometry_risk_study_sha256": "9663c3273b17e2ef1bb9a85b20a06f029ae583ff84420e45ff9add6640cf8746",
+  "source_or_quality_or_difficulty_certified": false
+}
