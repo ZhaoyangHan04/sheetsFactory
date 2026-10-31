@@ -173,7 +173,8 @@ def validate_cohort(path):
     for row in cohort['tasks']:
         run=Path(row['source_run']);task=next(t for t in read_run(run)['tasks'] if t['id']==row['task_id'])
         state=backend._run(run,row['family'],tracked);config=state['config']
-        private=Path(config['diagnosis']['execution']['private_evidence_directory'])
+        private=Path(config.get('diagnosis',{}).get('execution',{}).get(
+            'private_evidence_directory','outputs/diagnostic_private_evidence'))
         if not private.is_absolute():private=backend.root/private
         backend.release._validate_task(run,task,tracked,backend.publisher._credential_values(backend.root),
             project_root=backend.root,registry_path=config.get('native_risks',{}).get('registry_path'),reference_policy='reference_review',

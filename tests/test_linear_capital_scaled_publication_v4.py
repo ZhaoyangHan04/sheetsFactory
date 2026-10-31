@@ -12,6 +12,7 @@ from types import SimpleNamespace
 
 import openpyxl
 import pytest
+import yaml
 from test_resource_publication import offline as legacy_offline
 
 from sheets_factory.evaluation import linear_capital_scaled_publication_v4 as pub
@@ -104,6 +105,43 @@ def test_all_declared_normal_tasks_are_required_even_if_one_failed(tmp_path,monk
     assert cli._complete_declaration(sources)==[run]
     monkeypatch.setattr(cli,'read_run',lambda _: {'tasks':[{'id':'a','status':'qualified'},{'id':'b','status':'rejected'}]})
     with pytest.raises(ValueError,match='do not filter'):cli._complete_declaration(sources)
+
+
+@pytest.mark.parametrize('private_setting',['actual_config_default','relative','absolute'])
+def test_cohort_validation_resolves_optional_private_root_from_actual_normal_config(tmp_path,monkeypatch,private_setting):
+    """Exercise the frontdoor with the real config's absent optional key; other gates are explicit mocks."""
+    config=yaml.safe_load((ROOT/'config/pipelines/linear_capital_scaled_reference_quality_v1.yaml').read_text())
+    assert 'private_evidence_directory' not in config['diagnosis']['execution']
+    expected=tmp_path/'outputs/diagnostic_private_evidence'
+    if private_setting=='relative':
+        config['diagnosis']['execution']['private_evidence_directory']='private/custom-evidence'
+        expected=tmp_path/'private/custom-evidence'
+    elif private_setting=='absolute':
+        expected=tmp_path.parent/'absolute-evidence'
+        config['diagnosis']['execution']['private_evidence_directory']=str(expected)
+    run=tmp_path/'normal';binding={'complete_export':'fixture'};identity={'sha256':'a'*64}
+    task={'task_id':'one','source_run':str(run),'family':'linear_capital_scaled_FM',
+        'task_directory':str(tmp_path/'cohort/SpreadsheetEval/one'),'mode':'financial_modeling',
+        'harbor_export_binding':binding,'material_task_version':identity}
+    cohort={'tasks':[task],'tool_time_policy':runner.POLICY_V4,'native_transport_profile':runner.transport_profile(),
+        'reference_evidence_policy':'reference_review','effective_infrastructure_retries':0,'execution_concurrency':4,
+        'final20_qualified':False,'declared_normal_directories':[str(run)],
+        'confirmation_cohort_identity':cli.canonical([identity['sha256']]),
+        'history_roots':[str(tmp_path/'outputs/difficulty')],'prior_selection_inventory':[]}
+    calls=[];rechecks=[]
+    backend=SimpleNamespace(root=tmp_path,cohort=cohort,_run=lambda *a:{'config':config},
+        release=SimpleNamespace(_validate_task=lambda *a,**kw:calls.append(kw)),
+        publisher=SimpleNamespace(_credential_values=lambda _:[]),inspect_export=lambda _:binding,
+        recheck_tracked=lambda _:rechecks.append('tracked'),recheck_payloads=lambda:rechecks.append('payloads'))
+    monkeypatch.setattr(cli.publication,'ResourcePublicationBackend',lambda _:backend)
+    monkeypatch.setattr(cli,'read_run',lambda _: {'tasks':[{'id':'one'}]})
+    monkeypatch.setattr(cli,'_complete_declaration',lambda _:[str(run)])
+    monkeypatch.setattr(cli,'material_identity',lambda *a:identity)
+    monkeypatch.setattr(cli,'selection_history',lambda *a:[])
+    assert cli.validate_cohort(tmp_path/'cohort.json') is backend
+    assert len(calls)==1 and calls[0]['private_evidence_root']==expected
+    assert calls[0]['project_root']==tmp_path and calls[0]['reference_policy']=='reference_review'
+    assert calls[0]['private_evidence_tracked']=={} and rechecks==['tracked','payloads']
 
 
 def test_development_history_is_retained_but_does_not_spend_confirmation(tmp_path):
