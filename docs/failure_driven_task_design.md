@@ -91,9 +91,11 @@ H01 两份任务视图的正常实际控制已经补齐。补全七次、调试�
 
 C03 的工作簿来源也已独立完成实际验收：三次重算约 40.230、39.738、37.049 秒，每次全部 832,668 个公式与 1,184,646 个值通过完整核对；两次全量类型稳定性无差异。来源为 `outputs/research/linear_capital_C03_producer_source_actual_20261031T075845Z/source_manifest.json`，尚未构造其任务。原 C01 的 16 CPU CP-SAT 同样在 3600 秒限制结束而未证明最优，所有可行结果保留，不启动次佳、不作模型失败。另一独立研究求解仍按其单次限时合同进行，不继承来源或任务资格。
 
-H01 两份冻结开发导出已另行通过真实 Harbor oracle=1、nop=0，四个实际 trial 的 agent/verifier 两角色资源与镜像祖源均完整核验，八个容器的 `MAX_CONCURRENCY=2` 也经实际白名单环境检查。两次 oracle 分别完整匹配 1,015,908 和 297,064 处变化，三次 I/G/O 重算均正常。原生 nop 无输出，因此原样工作簿的值对照仍单独保留；不将前者冒充后者。独立只读复核及八个所属容器的移除证据位于 `outputs/research/linear_H01_first_pair_actual_harbor_controls_20261031T091200Z/completed_readonly_validation_revision2.json`。两次最强模型原尝试暂遇模型服务连接超时，保留原 CLI 自动重连，不修改任务、不另采样，不把连接等待算为工具时间或解题失败。十二项质量、公开恢复和最终难度仍未认证。
+H01 两份冻结开发导出已另行通过真实 Harbor oracle=1、nop=0，四个实际 trial 的 agent/verifier 两角色资源与镜像祖源均完整核验，八个容器的 `MAX_CONCURRENCY=2` 也经实际白名单环境检查。两次 oracle 分别完整匹配 1,015,908 和 297,064 处变化，三次 I/G/O 重算均正常。原生 nop 无输出，因此原样工作簿的值对照仍单独保留；不将前者冒充后者。独立只读复核及八个所属容器的移除证据位于 `outputs/research/linear_H01_first_pair_actual_harbor_controls_20261031T091200Z/completed_readonly_validation_revision2.json`。两次最强模型原尝试随后均因模型服务连接超时自然结束，原 CLI 五次连接恢复耗尽，终态均为 `NetworkConnectionError`、reward=null、计分题数 0；未修改任务、未启动新重试，不把连接等待算为工具时间或解题失败。独立逐响应去重核对保留 1,323,275 tokens 的已知下界，失败请求尾部及账单未知；调试 native 聚合中的最后一条响应重复计入现象单独保留，不使用该重复合计。收据为 `outputs/research/linear_H01_first_pair_infrastructure_terminal_20261031T091900Z/receipt.json`。十二项质量、公开恢复和最终难度仍未认证。
 
 另三份 M01/M02/M03 的原始收入差异在任何新财务计算前共同固定，独立完整财务、18 个诊断方案和全部矩阵系数均通过。M02 一个 16 CPU CP-SAT 的最佳与完整赢家排除后次佳分别用时 668.377、541.448 秒，均为 OPTIMAL；唯一最佳选 94 项、目标 826,417,506 便士，次佳 826,414,950，领先 2,556。双矩阵逐行、完整独立财务、实际资源和清理均通过，冷复核没有新求解。它比此前版本的参考搜索更费时，但不是模型困难度证明。记录位于 `outputs/research/linear_intermediate_competitive_reference_triple_actual_20261031T084500Z/M02/terminal.json`；正常来源验收另起新流程，未构造任务。
+
+M02 正常来源现已完整通过：三次实际重算 37.4059、35.9169、35.6177 秒，三次各 832,668 个公式、1,015,667 个财务定位、1,184,646 个值与 351,978 个字面输入全部无差异；两次完整类型稳定性也为零差异。来源与冷复核为 `outputs/research/linear_capital_M02_producer_source_actual_20261031T091800Z/`。新的两类视图和正常验证在任何任务模型调用前共同预声明，补全完整遮蔽 1,015,908 处，调试注入 57,600 个定义；后者含 7,200 个利息、36,720 个 FIFO 到期及 13,680 个情景增长定义，物理编辑数不自动等同于独立活跃根因。两个原始验证流程仍在进行，未继承 H01 的任务控制或成绩。C01 的 Gurobi 研究则在原 3600 秒结束且未证明最优，完整可行性、独立财务和资源证据单独保存，未启动次佳，不作参考或模型失败。
 
 ## 参考验证与反馈成本
 
