@@ -81,6 +81,21 @@ def test_independent_hand_arithmetic_and_full_typed_matrix_scope():
  for model in (ma,mb):assert model['objective_pence']==[394]
 
 
+def test_full_historical_vintage_census_after_five_years_and_expired_loss_arithmetic():
+ b=k.bundle(720);s=old_toy(years=7);s.update(kind=b.spec.SPEC_KIND,version=3)
+ a=b.A.simulate_universe(s);c=b.B.simulate_universe(s)
+ report=cli.checked_financial_comparison(b,s,a,c)
+ # The comparison covers all historical origins, including implicit zeroes
+ # absent from sparse events. The physical workbook has a last-five grid.
+ assert report['passed'] and report['counts']['vintage_fields']==28*5
+ assert report['counts']['vintage_fields']!=(1+2+3+4+5+5+5)*5
+ for u in (a,c):
+  r=u['projects']['P001']['scenarios']['S01']
+  assert len(r['tax_vintages'])==9 and r['annual'][5]['loss_expired']==75
+  assert r['annual'][5]['current_tax']==50 and r['annual'][6]['current_tax']==300
+  assert r['npv_pence']==975
+
+
 def test_supplied_universe_cannot_bypass_each_compilers_own_financial_forward():
  b,s=toy()
  for forward,model in ((b.A,b.model_A),(b.B,b.model_B)):

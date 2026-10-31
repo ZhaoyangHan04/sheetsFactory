@@ -107,7 +107,7 @@ def checked_financial_comparison(b,public,a,c):
  value=b.comparison.compare_universes(public,a,c);n=len(public['project_ids']);s=len(public['scenario_ids']);y=len(public['years'])
  expected={'project_scenarios':n*s,'t0_fields':n*s*len(b.spec.T0_FIELDS),
   'annual_fields':n*s*y*(len(b.spec.ANNUAL_FIELDS)+2),
-  'vintage_fields':n*s*sum(min(i,5) for i in range(1,y+1))*len(b.spec.VINTAGE_FIELDS),'posted_NPV':n*s}
+  'vintage_fields':n*s*sum(range(1,y+1))*len(b.spec.VINTAGE_FIELDS),'posted_NPV':n*s}
  complete=value['counts']==expected
  return {**value,'expected_complete_field_counts':expected,'complete_typed_field_census_passed':complete,
   'passed':value['passed'] and complete}
