@@ -26,6 +26,9 @@ from sheets_factory.evaluation.resource_observer import ResourceObserver
 
 KIND = 'prepared_first_heterogeneous_v3_business_FM_normal_quality'
 reference, require = adapter.reference, adapter.require
+BUSINESS_PROMPT = ROOT / 'prompts/diagnosis_business.md'
+APPROVED_PROMPT_OLD_SHA = '094145b533e9d59e178d0565d5457272d85d93e7deaba1f5dd11a2616d250a45'
+APPROVED_PROMPT_CURRENT_SHA = 'c8dd6123a6fc3847037fdc6e070867d9174ca9ee01f89bfcf61521c938a96e48'
 
 
 def support(filename):
@@ -46,13 +49,43 @@ def verify_files(mapping):
         require(reference(path)['sha256'] == digest, 'A frozen quality dependency changed: ' + path)
 
 
+def checked_base_configuration(base_run):
+    """Admit the frozen configuration with one explicit approved prompt rebase.
+
+    This does not transfer any old source or task quality. Every other recipe
+    dependency retains its original exact-SHA requirement.
+    """
+    base_run = Path(base_run).absolute()
+    preflight = reference(base_run/'preflight_manifest.json')
+    original = adapter.base._read(preflight['path'])
+    require(reference(BUSINESS_PROMPT)['sha256'] == APPROVED_PROMPT_CURRENT_SHA,
+        'The explicitly approved current business diagnosis prompt changed')
+    rebases = []
+    for path, expected in original['recipe_sha256'].items():
+        actual = reference(path)
+        if actual['sha256'] == expected: continue
+        require(path == str(BUSINESS_PROMPT) and expected == APPROVED_PROMPT_OLD_SHA
+            and actual['sha256'] == APPROVED_PROMPT_CURRENT_SHA,
+            'A nonapproved frozen base recipe dependency changed: '+path)
+        rebases.append({'path':path,'old_expected_sha256':expected,
+            'new_actual_sha256':actual['sha256'],'current_artifact':actual,
+            'scope':'configuration_and_normal_recipe_only',
+            'historical_source_or_task_quality_transferred':False})
+    config_ref = reference(base_run/'resolved_config.yaml')
+    config = yaml.safe_load(Path(config_ref['path']).read_text())
+    require(config['agents']['model'] == 'gpt-6-sol' and config['agents']['reasoning_effort'] == 'high'
+        and config['diagnosis']['selection'] == {'include':'all','exclude':[]}
+        and config['harbor']['execute_controls'] is True,
+        'The original normal configuration, full checks and actual Harbor controls are required')
+    return preflight,original,config_ref,config,rebases
+
+
 def prepare(projection_manifest, base_run, output, *, runtime_profile=adapter.PROFILE):
     out = Path(output).absolute()
     require(out == out.resolve() and not out.exists(), 'Use a fresh private quality output directory')
     admission = ProjectionAdmission(projection_manifest); proof = admission.guard()
     require(reference(runtime_profile) == proof['runtime_profile'], 'Source, projection and task resource profiles must match')
-    legacy = support('run_entity_group_quality.py')
-    base_ref, original, base_config_ref, config = legacy._checked_base(Path(base_run))
+    base_ref, original, base_config_ref, config, rebases = checked_base_configuration(base_run)
     protected = {key: config['run'].get(key) for key in PROTECTED_BUDGETS}
     for key in ('continuation_id','resume_existing_task_ids','external_repair_manifest','additional_seed_manifests','seed_path','source_filter'):
         config['run'].pop(key, None)
@@ -97,7 +130,7 @@ def prepare(projection_manifest, base_run, output, *, runtime_profile=adapter.PR
         ROOT/'src/sheets_factory/pipelines/heterogeneous_business_quality.py',
         ROOT/'src/sheets_factory/workbook/heterogeneous_business_view_replay.py',
         ROOT/'src/sheets_factory/evaluation/resource_observer.py', ROOT/'scripts/run_adapted_debug_quality.py',
-        ROOT/'prompts/diagnosis_business.md',
+        BUSINESS_PROMPT,
         ROOT/'scripts/run_composite_quality_cohort.py', ROOT/'scripts/run_entity_group_quality.py']})
     recipes.update({value['path']:value['sha256'] for value in config[adapter.SETTING].values()
         if isinstance(value,dict) and {'path','sha256'} <= set(value)})
@@ -108,7 +141,8 @@ def prepare(projection_manifest, base_run, output, *, runtime_profile=adapter.PR
             'projection_manifest':reference(projection_manifest),'source_admission':proof_ref,'prepared_seed_manifest':seeds,
             'resolved_config':reference(out/'resolved_config.yaml'),'protected_task_budgets':protected,
             'base_configuration_provenance':{'preflight':base_ref,'resolved_config':base_config_ref,
-                'scope':'configuration_and_normal_recipe_only','prior_source_or_task_quality_transferred':False},
+                'scope':'configuration_and_normal_recipe_only','prior_source_or_task_quality_transferred':False,
+                'explicit_approved_recipe_rebases':rebases},
             'targets':TARGETS,'delivery_targets':{'financial_modeling':10,'debugging':10},'count':1,
             'recipe_sha256':recipes,'host_runtime':config['host_runtime'],'preparation_host_runtime':host,
             'runtime_profile':proof['runtime_profile'],'existing_development_score_transferred':False,
@@ -122,6 +156,12 @@ def validate_prepared(output):
         and frozen.get('targets') == TARGETS and type(frozen.get('count')) is int and frozen['count'] == 1,
         'The fixed first normal business quality preparation is required')
     verify_files(frozen['recipe_sha256'])
+    provenance = frozen['base_configuration_provenance']
+    for key in ('preflight','resolved_config'):
+        require(reference(provenance[key]['path']) == provenance[key], 'The frozen base configuration provenance changed')
+    base_result = checked_base_configuration(Path(provenance['preflight']['path']).parent)
+    require(base_result[4] == provenance['explicit_approved_recipe_rebases'],
+        'The explicitly approved configuration-only recipe rebase changed')
     for key in ('resolved_config','source_admission','prepared_seed_manifest','projection_manifest'):
         require(reference(frozen[key]['path']) == frozen[key], 'A frozen preparation artifact changed')
     config = yaml.safe_load(Path(frozen['resolved_config']['path']).read_text())

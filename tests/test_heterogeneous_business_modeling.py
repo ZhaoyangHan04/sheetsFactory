@@ -270,7 +270,10 @@ def test_prepare_validate_and_real_factory_loader_with_explicit_fake_admission(t
     entry=importlib.util.module_from_spec(definition);definition.loader.exec_module(entry)
     source=tmp_path/'projection.fixture.json';source.write_text('{"fake_admission_boundary":true}')
     base=tmp_path/'base';base.mkdir()
-    (base/'preflight_manifest.json').write_text('{"recipe_sha256":{}}')
+    dependency=tmp_path/'frozen_backend.py';dependency.write_text('# exact fixture code dependency\n')
+    (base/'preflight_manifest.json').write_text(json.dumps({'recipe_sha256':{
+        str(family.ROOT/'prompts/diagnosis_business.md'):entry.APPROVED_PROMPT_OLD_SHA,
+        str(dependency):writer.reference(dependency)['sha256']}}))
     from test_entity_group_quality_entry import base_configuration
     original=base_configuration()
     (base/'resolved_config.yaml').write_text(yaml.safe_dump(original))
@@ -288,6 +291,11 @@ def test_prepare_validate_and_real_factory_loader_with_explicit_fake_admission(t
         assert config['prompt_overrides']['diagnosis.md']=='diagnosis_business.md'
         business_prompt=family.ROOT/'prompts/diagnosis_business.md'
         assert frozen['recipe_sha256'][str(business_prompt)]==writer.reference(business_prompt)['sha256']
+        rebases=frozen['base_configuration_provenance']['explicit_approved_recipe_rebases']
+        assert len(rebases)==1 and rebases[0]['path']==str(business_prompt)
+        assert rebases[0]['old_expected_sha256']==entry.APPROVED_PROMPT_OLD_SHA
+        assert rebases[0]['new_actual_sha256']==entry.APPROVED_PROMPT_CURRENT_SHA
+        assert rebases[0]['historical_source_or_task_quality_transferred'] is False
         factory=pipeline.HeterogeneousBusinessFactory(config,SimpleNamespace(update_run=lambda **kwargs:None),None,None,admission=admission)
         seeds=factory.load_seeds()
         assert seeds[0]['sha256']==hand.proof['native_source']['sha256']
@@ -298,4 +306,32 @@ def test_prepare_validate_and_real_factory_loader_with_explicit_fake_admission(t
         # Config Boolean counters do not satisfy frozen integer budgets.
         changed=deepcopy(config);changed['run']['max_sources']=True
         with pytest.raises(writer.ViewError):pipeline.validate_configuration(changed)
+        dependency.write_text('# changed backend, not an approved prompt migration\n')
+        with pytest.raises(writer.ViewError,match='dependency changed'):
+            entry.validate_prepared(output)
     finally:audit.db.close()
+
+
+@pytest.mark.parametrize('change',['unknown_old_prompt','other_recipe','unapproved_current_prompt'])
+def test_configuration_rebase_rejects_any_other_recipe_change(tmp_path,monkeypatch,change):
+    path=family.ROOT/'scripts/run_heterogeneous_business_quality.py'
+    definition=importlib.util.spec_from_file_location('business_base_rebase_unit',path)
+    entry=importlib.util.module_from_spec(definition);definition.loader.exec_module(entry)
+    base=tmp_path/'base';base.mkdir()
+    from test_entity_group_quality_entry import base_configuration
+    (base/'resolved_config.yaml').write_text(yaml.safe_dump(base_configuration()))
+    recipe={str(entry.BUSINESS_PROMPT):entry.APPROVED_PROMPT_OLD_SHA}
+    if change=='unknown_old_prompt':recipe[str(entry.BUSINESS_PROMPT)]='0'*64
+    elif change=='other_recipe':
+        backend=tmp_path/'backend.py';backend.write_text('actual code')
+        recipe[str(backend)]='0'*64
+    else:
+        original=entry.reference
+        def changed_reference(value):
+            result=original(value)
+            if Path(value)==entry.BUSINESS_PROMPT:result={**result,'sha256':'1'*64}
+            return result
+        monkeypatch.setattr(entry,'reference',changed_reference)
+    (base/'preflight_manifest.json').write_text(json.dumps({'recipe_sha256':recipe}))
+    with pytest.raises(writer.ViewError,match='changed'):
+        entry.checked_base_configuration(base)
