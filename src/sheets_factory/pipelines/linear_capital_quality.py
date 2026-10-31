@@ -53,6 +53,8 @@ class References:
         self.fingerprints = {}
         self._json_seen = set()
         self.large_json_leaves = []
+        self.container_artifact_bindings = []
+        self._container_json_contexts = {}
 
     def check(self, record):
         require(type(record) is dict and set(record) == {'path', 'sha256', 'bytes'}
@@ -105,17 +107,104 @@ class References:
             self.large_json_leaves.append(deepcopy(record))
             return
         value = self.read(record)
-        def descend(item):
+        def descend(item, aliases=None):
             if isinstance(item, dict):
                 if set(item) == {'path', 'sha256', 'bytes'}:
-                    self.discover(item)
+                    if str(item['path']).startswith('/app/'):
+                        key = (item['path'], item['sha256'], item['bytes'])
+                        require(aliases is not None and key in aliases,
+                            'An unmapped container-local artifact is not a host reference')
+                        self.check(aliases[key])
+                    else:
+                        self.discover(item)
                 else:
+                    local = self._solver_artifact_aliases(item)
+                    context = local if local is not None else aliases
                     for nested in item.values():
-                        descend(nested)
+                        descend(nested, context)
             elif isinstance(item, (tuple, list)):
                 for nested in item:
-                    descend(nested)
-        descend(value)
+                    descend(nested, aliases)
+        descend(value, self._container_json_contexts.get(str(path)))
+
+    def _solver_artifact_aliases(self, value):
+        """Map only the frozen native-result descriptor schema to actual files.
+
+        Source validation already checked the complete native execution. This
+        repeats the exact host/mount/file identities needed for recursive file
+        guards; it does not accept arbitrary missing paths or self-reported flags.
+        """
+        fields = {'preparation','terminal','host_before','host_after','cleanup',
+            'solver_result','runtime_result','checked_optimal','solver','matrix_result_check'}
+        if set(value) != fields:
+            return None
+        require(value['checked_optimal'] is True, 'A container artifact map requires a completed checked native result')
+        preparation, terminal = self.read(value['preparation']), self.read(value['terminal'])
+        kinds = {'prepared_private_linear_capital_integer_solver':
+            ('private_linear_capital_integer_solver_execution',2),
+            'prepared_private_linear_capital_producer16_solver':
+            ('private_linear_capital_producer16_solver_execution',16)}
+        require(preparation.get('kind') in kinds, 'Unknown native solver preparation for container artifacts')
+        terminal_kind, cpus = kinds[preparation['kind']]
+        require(type(preparation.get('version')) is int and preparation['version']==1
+            and terminal.get('kind')==terminal_kind and type(terminal.get('version')) is int and terminal['version']==1
+            and terminal.get('status')=='reference_optimal_checked'
+            and terminal.get('preparation')==value['preparation'] and terminal.get('solver_result')==value['solver_result']
+            and terminal.get('runtime_result')==value['runtime_result'] and terminal.get('cleanup')==value['cleanup'],
+            'The complete native host preparation/execution chain changed')
+        bundle = Path(preparation['bundle'])
+        require(bundle.is_absolute() and bundle==bundle.resolve()
+            and bundle==Path(value['preparation']['path']).parent/'job_bundle',
+            'The container artifact bundle is not the exact prepared host directory')
+        before, after = self.read(value['host_before']), self.read(value['host_after'])
+        identifier = terminal['container_id']
+        require(type(identifier) is str and re.fullmatch('[0-9a-f]{64}',identifier)
+            and before.get('Id')==after.get('Id')==identifier
+            and terminal.get('actual_resources_verified') is True
+            and preparation['image_id']==before.get('Image')==after.get('Image')==terminal.get('image_id')
+                =='sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043'
+            and preparation.get('resources')=={'cpus':cpus,'memory_bytes':32*1024**3,'pids_limit':256},
+            'The actual container identity/resources differ from its prepared host bundle')
+        for actual, state in ((before,'created'),(after,'exited')):
+            mounts=actual.get('Mounts',[]);status=actual.get('State',{})
+            require(actual.get('NanoCpus')==cpus*10**9 and actual.get('Memory')==32*1024**3
+                and actual.get('PidsLimit')==256 and actual.get('NetworkMode')=='none'
+                and len(mounts)==1 and mounts[0].get('Type')=='bind' and mounts[0].get('RW') is True
+                and mounts[0].get('Source')==str(bundle) and mounts[0].get('Destination')=='/app'
+                and status.get('Status')==state and status.get('Running') is False
+                and status.get('OOMKilled') is False and type(status.get('ExitCode')) is int and status['ExitCode']==0,
+                'The actual container mount or normal lifecycle does not justify a host artifact map')
+        solver = self.read(value['solver_result'])
+        require(solver==value['solver'], 'An inline native result differs from its exact host JSON')
+        backend=preparation['request']['backend']
+        require(solver.get('checked_optimal') is True
+            and ((backend=='scip' and solver.get('kind')=='independent_A_SCIP_single_attempt'
+                and type(solver.get('version')) is int and solver['version']==1 and solver.get('completed') is True)
+                or (backend=='cp_sat' and solver.get('backend')=='ortools_cp_sat'
+                    and solver.get('solver_version')=='9.14.6206')),
+            'Unknown native result descriptor schema')
+        names=({'log_artifact':'solver.log','model_artifact':'native_model.cip'} if backend=='scip' else
+            {'log_reference':'solver.log','model_reference':'native_model.pbtxt',
+             'parameters_reference':'native_model.pbtxt.parameters.pbtxt'} if backend=='cp_sat' else None)
+        require(names is not None, 'Unknown native solver artifact names')
+        inventory=terminal['retained_job_inventory']
+        require(inventory==terminal['complete_job_inventory']
+            and inventory.get('solver_result.json')==value['solver_result'], 'The actual native host output inventory changed')
+        aliases={}
+        for field, name in names.items():
+            local=solver[field];host=inventory[name]
+            require(type(local) is dict and set(local)=={'path','sha256','bytes'}
+                and local['path']=='/app/'+name and host['path']==str(bundle/name)
+                and local['sha256']==host['sha256'] and type(local['bytes']) is int and local['bytes']==host['bytes'],
+                'A container-local solver descriptor differs from the exact host artifact')
+            self.check(host);aliases[local['path'],local['sha256'],local['bytes']]=host
+            self.container_artifact_bindings.append({'container':deepcopy(local),'host':deepcopy(host),
+                'preparation':deepcopy(value['preparation']),'terminal':deepcopy(value['terminal'])})
+        owner=str(Path(value['solver_result']['path']))
+        prior=self._container_json_contexts.get(owner)
+        require(prior is None or prior==aliases, 'Conflicting container artifact contexts name one native result')
+        self._container_json_contexts[owner]=aliases
+        return aliases
 
     def read(self, value):
         record = value if isinstance(value, dict) else reference(value)

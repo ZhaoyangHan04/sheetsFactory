@@ -162,3 +162,88 @@ def test_small_code_guard_rehashes_even_when_all_stat_fields_repeat(tmp_path,mon
     monkeypatch.setattr(q,'_fingerprint',lambda unused:original)
     refs=q.References();refs.check(record);path.write_text('x=2\n')
     with pytest.raises(ValueError,match='changed'):refs.guard()
+
+
+def solver_container_record(root,*,backend='cp_sat',producer=False):
+    root.mkdir();bundle=root/'job_bundle';bundle.mkdir()
+    names=({'log_artifact':'solver.log','model_artifact':'native_model.cip'} if backend=='scip' else
+        {'log_reference':'solver.log','model_reference':'native_model.pbtxt','parameters_reference':'native_model.pbtxt.parameters.pbtxt'})
+    solver=({'kind':'independent_A_SCIP_single_attempt','version':1,'completed':True} if backend=='scip' else
+        {'backend':'ortools_cp_sat','solver_version':'9.14.6206'})
+    solver['checked_optimal']=True;inventory={}
+    for field,name in names.items():
+        p=bundle/name;p.write_text(root.name+' generic artifact '+name)
+        host=q.reference(p);inventory[name]=host;solver[field]={**host,'path':'/app/'+name}
+    result=write(bundle/'solver_result.json',solver);inventory['solver_result.json']=result
+    prepared=write(root/'preparation.json',{'kind':'prepared_private_linear_capital_producer16_solver' if producer else
+        'prepared_private_linear_capital_integer_solver','version':1,'bundle':str(bundle),'request':{'backend':backend},
+        'image_id':'sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043',
+        'resources':{'cpus':16 if producer else 2,'memory_bytes':32*1024**3,'pids_limit':256}})
+    def host(before):
+        return {'Id':'f'*64,'Image':'sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043',
+            'NanoCpus':(16 if producer else 2)*10**9,'Memory':32*1024**3,'PidsLimit':256,'NetworkMode':'none',
+            'Mounts':[{'Type':'bind','Source':str(bundle),'Destination':'/app','RW':True}],
+            'State':{'Status':'created' if before else 'exited','Running':False,'OOMKilled':False,'ExitCode':0}}
+    before=write(root/'before.json',host(True));after=write(root/'after.json',host(False))
+    cleanup=write(root/'cleanup.json',{'fixture':'owned cleanup already checked by source helper'})
+    runtime=write(bundle/'runtime_result.json',{'fixture':'source helper checked complete run'})
+    terminal=write(root/'terminal.json',{'kind':'private_linear_capital_producer16_solver_execution' if producer else
+        'private_linear_capital_integer_solver_execution','version':1,'status':'reference_optimal_checked',
+        'preparation':prepared,'solver_result':result,'runtime_result':runtime,'cleanup':cleanup,'container_id':'f'*64,
+        'actual_resources_verified':True,'image_id':'sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043',
+        'retained_job_inventory':inventory,'complete_job_inventory':inventory})
+    record={'preparation':prepared,'terminal':terminal,'host_before':before,'host_after':after,'cleanup':cleanup,
+        'solver_result':result,'runtime_result':runtime,'checked_optimal':True,'solver':solver,'matrix_result_check':{'checked_optimal':True}}
+    return write(root/'validation.json',record),record
+
+
+@pytest.mark.parametrize('backend,producer',[('scip',False),('cp_sat',False),('cp_sat',True)])
+def test_exact_known_container_solver_descriptors_resolve_to_existing_bound_host_artifacts(tmp_path,backend,producer):
+    record,payload=solver_container_record(tmp_path/'solver',backend=backend,producer=producer)
+    refs=q.References();refs.discover(record);refs.guard()
+    names={'solver.log','native_model.cip'} if backend=='scip' else {'solver.log','native_model.pbtxt','native_model.pbtxt.parameters.pbtxt'}
+    mappings=refs.container_artifact_bindings
+    assert {Path(r['host']['path']).name for r in mappings}==names
+    assert all(Path(r['host']['path']).is_file() and r['container']['path']=='/app/'+Path(r['host']['path']).name for r in mappings)
+    assert not any(path.startswith('/app/') for path in refs.files)
+
+
+def test_multiple_jobs_reuse_app_names_only_with_separate_exact_host_contexts(tmp_path):
+    a,_=solver_container_record(tmp_path/'first');b,_=solver_container_record(tmp_path/'second')
+    root=write(tmp_path/'both.json',{'first':a,'second':b})
+    refs=q.References();refs.discover(root)
+    logs=[r for r in refs.container_artifact_bindings if r['container']['path']=='/app/solver.log']
+    assert len(logs)==2 and logs[0]['host']['sha256']!=logs[1]['host']['sha256']
+
+
+@pytest.mark.parametrize('attack',['wrong_hash','wrong_app_path','wrong_host_path','wrong_mount','running_after','inline_diff','missing_host'])
+def test_solver_container_mapping_rejects_wrong_or_missing_actual_host_chain(tmp_path,attack):
+    record,payload=solver_container_record(tmp_path/'solver')
+    if attack=='missing_host':Path(payload['solver_result']['path']).with_name('solver.log').unlink()
+    elif attack in ('wrong_hash','wrong_app_path','inline_diff'):
+        if attack=='wrong_hash':payload['solver']['log_reference']['sha256']='0'*64
+        elif attack=='wrong_app_path':payload['solver']['log_reference']['path']='/app/../solver.log'
+        else:payload['solver']['backend']='unknown_solver'
+        payload['solver_result']=write(Path(payload['solver_result']['path']),payload['solver'])
+        t=json.loads(Path(payload['terminal']['path']).read_text());t['solver_result']=payload['solver_result']
+        t['retained_job_inventory']['solver_result.json']=payload['solver_result'];t['complete_job_inventory']=deepcopy(t['retained_job_inventory'])
+        payload['terminal']=write(Path(payload['terminal']['path']),t)
+    elif attack=='wrong_host_path':
+        t=json.loads(Path(payload['terminal']['path']).read_text());other=tmp_path/'outside.log';other.write_text('copy')
+        t['retained_job_inventory']['solver.log']=q.reference(other);t['complete_job_inventory']=deepcopy(t['retained_job_inventory'])
+        payload['terminal']=write(Path(payload['terminal']['path']),t)
+    else:
+        h=json.loads(Path(payload['host_after']['path']).read_text())
+        if attack=='wrong_mount':h['Mounts'][0]['Source']=str(tmp_path)
+        else:h['State']['Status']='running';h['State']['Running']=True
+        payload['host_after']=write(Path(payload['host_after']['path']),h)
+    record=write(Path(record['path']),payload)
+    with pytest.raises((ValueError,FileNotFoundError)):q.References().discover(record)
+
+
+def test_arbitrary_missing_app_or_real_host_references_are_never_ignored(tmp_path):
+    missing={'path':'/app/solver.log','sha256':'0'*64,'bytes':1}
+    record=write(tmp_path/'unknown_container.json',{'unknown':missing})
+    with pytest.raises(ValueError,match='unmapped container'):q.References().discover(record)
+    real=write(tmp_path/'missing_host.json',{'known_host':{'path':str(tmp_path/'missing.log'),'sha256':'0'*64,'bytes':1}})
+    with pytest.raises(FileNotFoundError):q.References().discover(real)
