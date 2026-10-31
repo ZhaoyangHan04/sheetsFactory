@@ -1,0 +1,24 @@
+{
+  "version": 3,
+  "adapter": "heterogeneous_business_financial_view_v3",
+  "enabled_by_default": false,
+  "parent_adapter": "heterogeneous_business_financial_view_v2",
+  "excluded_display_fields": ["cash_before_financing", "trap_operative"],
+  "removal_scope": "all_entity_months_all_scenarios_complete_account_rows",
+  "row_reflow": "subtract_number_of_removed_rows_strictly_above_each_retained_row",
+  "retained_values_and_source_bindings": "exact_version_two_subset",
+  "public_notes_and_instruction": "byte_identical_version_two_text",
+  "cash_delta_CFO_CFI_CFF_and_reconciliations_preserved": true,
+  "native_inputs_and_all_other_financial_accounts_preserved": true,
+  "selection_consults_values_or_model_scores": false,
+  "new_actual_full_delta_required": true,
+  "no_prior_task_quality_or_difficulty_transfer": true,
+  "offline_prototype_census_not_source_certificate": {
+    "parent_business_slots": 99432,
+    "excluded_intermediate_display_slots": 864,
+    "removed_account_rows": 36,
+    "retained_business_slots": 98568,
+    "prospective_changed_value_count_from_parent_delta": 98107,
+    "new_actual_changed_value_set_count": null
+  }
+}
