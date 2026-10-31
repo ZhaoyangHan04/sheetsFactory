@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sheets-factory:offline-spreadsheet-failure-analysis:1",
+  "title": "Evidence-only spreadsheet case analysis",
+  "oneOf": [
+    {"$ref": "#/$defs/case"},
+    {"$ref": "#/$defs/report"},
+    {"$ref": "#/$defs/diagnosis"}
+  ],
+  "$defs": {
+    "ref": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "bytes": {"type": "integer", "minimum": 0}}
+    },
+    "label": {"enum": ["location", "scope", "period", "unit", "finance_reasoning", "incomplete", "protocol", "scoring_ambiguity", "infrastructure", "cache", "evaluator_formula", "evaluator_font", "external_answer_retrieval", "unknown"]},
+    "case": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "version", "case_id", "mode", "source", "reference"],
+      "properties": {
+        "kind": {"const": "spreadsheet_failure_analysis_case"}, "version": {"const": 1},
+        "case_id": {"type": "string", "minLength": 1}, "task_id": {"type": "string"},
+        "mode": {"enum": ["financial_modeling", "debugging", "FM", "DBG"]}, "category": {"type": "string"},
+        "source": {"$ref": "#/$defs/ref"}, "reference": {"$ref": "#/$defs/ref"}, "output": {"$ref": "#/$defs/ref"},
+        "instruction": {"$ref": "#/$defs/ref"}, "public_instruction": {"type": "string"},
+        "trajectory": {"$ref": "#/$defs/ref"}, "result": {"$ref": "#/$defs/ref"}, "official_score": {"$ref": "#/$defs/ref"},
+        "baseline_cache": {"$ref": "#/$defs/ref"}, "inventory": {"$ref": "#/$defs/ref"}, "official_evaluator": {"$ref": "#/$defs/ref"},
+        "case_terminal": {"$ref": "#/$defs/ref"}, "reviewed_findings": {"$ref": "#/$defs/ref"}, "verified_tool_time": {"$ref": "#/$defs/ref"},
+        "official_input_path": {"type": "string"}, "answer_position": {"type": ["string", "null"]},
+        "reported_official_scores": {"type": "object"}, "evidence_stage": {"type": "string"},
+        "analysis_numeric_quantum": {"type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)?$"}
+      }
+    },
+    "report": {
+      "type": "object", "required": ["kind", "version", "case_id", "evidence", "analysis_recipe", "evaluator_contract", "terminal_layers", "cause_findings", "observed_business_error_established", "official_score_recomputed", "new_model_LO_solver_network_calls"],
+      "properties": {
+        "kind": {"const": "offline_spreadsheet_case_failure_analysis"}, "version": {"const": 1},
+        "case_id": {"type": "string"}, "evidence": {"type": "object", "additionalProperties": {"$ref": "#/$defs/ref"}},
+        "analysis_recipe": {"type": "object", "additionalProperties": {"$ref": "#/$defs/ref"}},
+        "evaluator_contract": {"type": "object", "required": ["group", "official_rules_known"]},
+        "terminal_layers": {"type": "object"}, "cause_findings": {"type": "array", "items": {"type": "object", "required": ["label", "status", "business_error_established", "required_check"], "properties": {"label": {"$ref": "#/$defs/label"}, "business_error_established": {"const": false}}}},
+        "observed_business_error_established": {"const": false}, "automatic_cause_attribution": {"const": false},
+        "official_score_recomputed": {"const": false}, "new_model_LO_solver_network_calls": {"const": 0}
+      }
+    },
+    "witness": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sheet", "cell", "input", "reference", "output", "trace_step_ids", "public_policy_quote", "independent_check", "evidence"],
+      "properties": {
+        "sheet": {"type": "string"}, "cell": {"type": "string", "pattern": "^[A-Z]+[1-9][0-9]*$"},
+        "input": {"type": "object"}, "reference": {"type": "object"}, "output": {"type": "object"},
+        "trace_step_ids": {"type": "array", "minItems": 1, "items": {"type": ["integer", "string"]}},
+        "public_policy_quote": {"type": "string", "minLength": 1}, "independent_check": {"type": "string", "minLength": 1},
+        "evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/ref"}}
+      }
+    },
+    "diagnosis": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "version", "case_id", "analysis_receipt", "case_disposition", "actual_strategy", "findings", "counterfactuals", "transfer_proposals", "unresolved", "new_model_LO_solver_network_calls"],
+      "properties": {
+        "kind": {"const": "reviewed_offline_spreadsheet_failure_diagnosis"}, "version": {"const": 1},
+        "case_id": {"type": "string"}, "analysis_receipt": {"$ref": "#/$defs/ref"},
+        "case_disposition": {"enum": ["success", "supported_business_error", "evaluator_only_difference", "policy_or_scope_ambiguity", "infrastructure_or_protocol_hold", "unknown", "mixed"]},
+        "actual_strategy": {"type": "array", "items": {"type": "object", "required": ["claim", "trace_step_ids"], "properties": {"claim": {"type": "string"}, "trace_step_ids": {"type": "array"}}}},
+        "findings": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["label", "status", "claim", "witnesses", "alternatives"], "properties": {"label": {"$ref": "#/$defs/label"}, "status": {"enum": ["observed", "supported_inference", "hypothesis", "unknown", "rejected"]}, "claim": {"type": "string"}, "witnesses": {"type": "array", "items": {"$ref": "#/$defs/witness"}}, "alternatives": {"type": "array", "items": {"type": "string"}}}}},
+        "counterfactuals": {"type": "array", "items": {"type": "object", "required": ["check", "status"], "properties": {"check": {"type": "string"}, "status": {"enum": ["not_executed", "executed_existing_evidence", "offline_identity_only"]}, "evidence": {"$ref": "#/$defs/ref"}, "result": {"type": "string"}}}},
+        "transfer_proposals": {"type": "array", "maxItems": 3, "items": {"type": "object", "required": ["source_witness", "dimension", "amplification_hypothesis", "financial_policy_invariants", "independent_validation", "disconfirming_control"], "properties": {"source_witness": {"type": "string"}, "dimension": {"type": "string"}, "amplification_hypothesis": {"type": "string"}, "financial_policy_invariants": {"type": "string"}, "independent_validation": {"type": "string"}, "disconfirming_control": {"type": "string"}}}},
+        "unresolved": {"type": "array", "items": {"type": "string"}}, "new_model_LO_solver_network_calls": {"const": 0}
+      }
+    }
+  }
+}
