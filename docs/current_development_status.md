@@ -1,6 +1,6 @@
 # 当前开发状态
 
-更新于 2026-10-31 13:14 UTC。正式难度交付为 **0 Financial Modeling + 0 Debugging**；旧质量批次的 20+20 原样保留。根目录 `SpreadsheetEval/` 尚未发布。下面的开发材料不能代替最终冻结集成绩或全目录 oracle 结果。此前实验的详细记录另见[历史开发记录](development_history.md)。
+更新于 2026-10-31 13:57 UTC。正式难度交付为 **0 Financial Modeling + 0 Debugging**；旧质量批次的 20+20 原样保留。根目录 `SpreadsheetEval/` 尚未发布。下面的开发材料不能代替最终冻结集成绩或全目录 oracle 结果。此前实验的详细记录另见[历史开发记录](development_history.md)。
 
 ## 证据分层
 
@@ -8,8 +8,8 @@
 | --- | --- | --- |
 | H01 两类任务视图 | 来源完整财务验算；补全七次、调试十一次实际计算；五项本地对照；真实 Harbor 两类均 oracle=1、nop=0；两类实际公开恢复完整通过 | 十二项正常质量诊断、有效最强模型成绩、最终确认；目前停止继续投入此容易来源 |
 | M02 两类任务视图 | 来源和两类实际视图完整验算；两份首次最强模型尝试均已结束；补全原始 verifier=1、完整目标正确 | 两次 CLI 断流均导致正式分数为空；补全不是困难度失败，不重采样；公开恢复、十二项质量、真实 Harbor、最终确认未完成 |
-| P01–P20 原 240 项池 | 二十份原始合同共同固定；20/20 完整独立财务与矩阵交叉核对；已知 P01/P02/P04/P05/P06/P07/P08/P09/P10 九份完整参考通过 | P03/P11/P12/P14 原 best 达限时仅 FEASIBLE，P13 runner 达限时仅 FEASIBLE；五份拒绝且不重试，其余仍运行；没有来源工作簿或任务资格 |
-| L360-P01–P20 新 360 项池 | 全部原始合同先固定；20/20 实际独立财务与 941×360 矩阵核对通过；P02 最佳及排除完整赢家后的次佳参考通过 | 其余参考仍运行；P02 来源工作簿正在实际构建和验收，尚未来源通过；任务视图、模型难度与正常质量均未执行 |
+| P01–P20 原 240 项池 | 二十份原始合同共同固定；20/20 完整独立财务与矩阵交叉核对；已知 P01/P02/P04/P05/P06/P07/P08/P09/P10 九份完整参考通过 | P03/P11/P12/P14/P15/P16/P18 原 best 达限时仅 FEASIBLE，P13 runner 达限时仅 FEASIBLE；八份拒绝且不重试；P17/P19/P20 仍运行；没有来源工作簿或任务资格 |
+| L360-P01–P20 新 360 项池 | 全部原始合同先固定；20/20 实际独立财务与 941×360 矩阵核对通过；P02 完整参考、三轮实际来源财务审计、两次全表类型稳定性及冷复核通过 | P04 best 达原限时仅 FEASIBLE，已拒绝且不重试；其余参考仍运行；P02 两类任务视图验收已启动；模型难度与正常质量均未执行 |
 | M01 参考研究 | best 原生 OPTIMAL，双矩阵、财务和实际资源通过 | 排除完整赢家后的 runner 在原 3600 秒终态仅 FEASIBLE，不能证明唯一性；停止该轮，不构造来源 |
 
 H01 的两次首次最强模型尝试均因服务连接中断自然结束，`NetworkConnectionError`、reward=null、计分题数 0。10:50 UTC 服务重新返回正常的未授权鉴权响应，只说明服务可响应鉴权，不证明推理连接稳定。M02 调试于 11:08 UTC 因原生 CLI 连接恢复耗尽而终止，`NonZeroAgentExitCodeError`、reward=null、计分题数 0，原始 verifier=0 来自没有提交文件。M02 补全随后也因原生断流结束，但其已经提交的工作簿得到原始 verifier=1，全部 1,015,908 处目标匹配。原始零重试终态、无正式分数状态与用量全部保留；不将补全当成难题失败或重新采样。工具时钟的原始不一致状态仍为 UNKNOWN，原生日志中的约 1661 秒时长合计只是诊断信息，不能冒充预算证书。
@@ -36,17 +36,23 @@ P01–P20 参考批处理入口是 `scripts/run_linear_capital_reference_batch.p
 
 M02 原生补全轨迹解释了默认工程探针的盲区：模型缩放目标和约束、移除重复行后使用 HiGHS，其原生日志在 75.5 秒即显示最终正确目标，800 秒结束时仍未证明最优；随后尝试两种 SCIP 方式并提交正确工作簿。因此，不能以默认 CP-SAT/SCIP 未找到正确值推断模型困难。追加只读核对绑定了实际执行代码、完整赢家向量和提交文件，见 `outputs/research/linear_M02_FM_strategy_tooltime_readonly_20261031T114802Z/receipt.json`。
 
-下一版在独立的 `linear_capital_scaled` 命名空间实现 360 项共同决策、60 组站点、120 条前置关系，保留全局共享容量与原财务规则，旧代码及运行记录不改。几何投影为 370 张表、1,247,328 个公式、1,522,187 个目标；这是结构估计，尚无实际来源工作簿。
+下一版在独立的 `linear_capital_scaled` 命名空间实现 360 项共同决策、60 组站点、120 条前置关系，保留全局共享容量与原财务规则，旧代码及运行记录不改。P02 实际来源已确认 370 张表、1,247,328 个公式、1,522,187 个财务与选择目标，公式没有截断。规模仍不构成难度证据。
 
 该版完整二十份原始合同先于实际财务计算共同固定，全部财务核对已通过：每份 1,080 条项目情景路径、年度金额、FIFO 税损、NPV、18 个预声明组合与完整优化矩阵。实现级全场景计算为八十次，共 86,400 条项目情景路径；全部 6,775,200 对整数系数一致。360 个诊断方案中 95 个集团可行、265 个集团不可行，均原样保留。批次耗时 207.123 秒，工作进程累计 CPU 约 648.95 秒；这些不是模型工具时间。没有模型、优化、LibreOffice 或 Harbor 调用。交接清单为 `outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/handoff.json`。
 
 新参考批次 `scripts/run_linear_capital_scaled_reference_batch.py` 的二十份有序准备均已完成，prospective 为 `outputs/research/linear_scaled_N360_reference_actual_20261031T122900Z/prospective.json`。实际生产仍需最佳与完整排除赢家后的次佳均为 OPTIMAL、全部整数行与独立财务核验、实际资源与所属容器清理。先行小型实际传输修订版已通过；原首次小型夹具的行标识错误保留，未修改原数学或运行程序。
 
-该批参考生产已实际启动，面板为 `http://127.0.0.1:35949/`。P02 第一份完整参考通过，选中 145 项，最佳与次佳差 32,151 便士，两个完整 941 行整数验算、独立财务、实际资源和清理均通过；总耗时 511.164 秒。这不构成模型难度证据。P02 已另起原有三次 LibreOffice 来源验收，运行目录为 `outputs/research/linear_scaled_N360_P02_source_actual_20261031T130900Z/`；P01 仍为预声明的首个开发候选，未替换或启动模型。
+该批参考生产已实际启动，面板为 `http://127.0.0.1:35949/`。P02 第一份完整参考通过，选中 145 项，最佳与次佳差 32,151 便士，两个完整 941 行整数验算、独立财务、实际资源和清理均通过；总耗时 511.164 秒。这不构成模型难度证据。P02 实际来源验收和冷复核均通过，清单为 `outputs/research/linear_scaled_N360_P02_source_actual_20261031T130900Z/source_manifest.json`，SHA `5304f7c65d5425a96b3d824fe0155413f5f42398d37d3505fffb6cf4c037874b`。三次实际计算约为 108.41、98.60、103.21 秒，三轮全量财务审计零差异；两次比较各完整覆盖 1,773,566 个非空单元格，类型和值均稳定，所属容器清理通过。来源资格只属于该文件，不代替任务、公开恢复、质量或难度资格。
 
-新来源、实际视图、开发测试和正常质量入口均已接通并增量提交。`scripts/validate_linear_capital_scaled_task_view.py` 保留完整七次/十一次计算及五项控制；`scripts/prepare_linear_capital_scaled_development.py` 在第一次尝试前固定原生连接恢复配置、累计工具时限与完整历史，防止同题重复启动。`scripts/run_linear_capital_scaled_quality.py` 保留默认全部十二项诊断、编号修复路由、公开恢复及真实 Harbor 对照。相关功能测试通过，只说明代码接通；除上述 P02 实际来源流程外，尚未启动该版任务验收、质量服务或模型。另已实现不输入答案的缩放 HiGHS 工程筛选，实际小型兼容检查与 P01 搜索分开记录。
+P02 两类视图的单次实际配对验收已固定并启动，目录为 `outputs/research/linear_scaled_N360_P02_view_pair_actual_20261031T135300Z/`，prospective SHA `d95c9290fe8798c91740d53a140288b1cc57adc405656dfad9d35547f5e74ef7`。新池通用入口 `scripts/prepare_linear_capital_scaled_pool_view_pair.py` 只扩展固定成员身份核验，保留先冻结两类视图及两份验证准备、再执行补全七次和调试十一次原有计算的顺序与完整检查。P01 仍为预声明的首个模型开发候选，未替换或启动模型。
 
-HiGHS 首次小型实际检查发现 Python 接口兼容错误：便捷方法 `setMaximize()` 没有状态返回，原适配器错误地拒绝了 `None`。该尝试只创建一个原生实例并配置接口，未到达 `native.run()`；P01 搜索未启动，资源与所属容器清理通过。原文件和失败收据保留。新的 API-v2 只改用返回状态的 `changeObjectiveSense`，保留全部数学、参数、限制和整数验算；十一项针对性测试及全新小型/P01 准备通过，后续实际执行仍须先满足小型成功门禁。此错误不作为题目或模型失败。
+新来源、实际视图、开发测试和正常质量入口均已接通并增量提交。`scripts/validate_linear_capital_scaled_task_view.py` 保留完整七次/十一次计算及五项控制；`scripts/prepare_linear_capital_scaled_development.py` 在第一次尝试前固定原生连接恢复配置、累计工具时限与完整历史，防止同题重复启动。`scripts/run_linear_capital_scaled_quality.py` 保留默认全部十二项诊断、编号修复路由、公开恢复及真实 Harbor 对照。相关功能测试通过，只说明代码接通；该版任务验收已如上启动，质量服务和模型尚未启动。另已实现不输入答案的缩放 HiGHS 工程筛选，实际小型兼容检查与 P01 搜索分开记录。
+
+HiGHS 两次先行小型实际检查均在搜索前因接口适配被拒绝：首次便捷方法 `setMaximize()` 不返回状态；API-v2 的诊断 LP 导出未通过旧的单状态检查。原文件、失败与零搜索边界保留。新 API-v3 使用明确返回状态的目标接口，诊断导出仅允许成功或警告并同时要求新鲜非空文件，记录精确状态，不改数学或求解配置。十二项针对性测试及新小型实际计算均通过；后者确认该 LP 导出确实返回警告。随后只执行一次原定 P01 搜索。
+
+该 P01 工程搜索在 2 CPU/32 GiB、800 秒、无答案输入和零重试下正常达到时间限制，得到选中 137 项的方案，全部原始 941 条约束的精确整数核验通过，目标 1,180,875,081 便士。它未证明最优。搜索结束后才对照已完成 CP best，后者为 1,180,912,348 便士，两方案相差 16 个选择，目标差 37,267 便士；没有额外优化或模型调用。完整 best/runner 参考仍需另行通过，工程结果不构成最强模型难度证据。收据分别位于 `outputs/research/linear_scaled_P01_highs_completed_readonly_20261031T134100Z/` 与 `outputs/research/linear_scaled_P01_completed_plan_comparison_20261031T135702Z/`。
+
+另一条路线正在实现八类业务来源的原生工作簿合并，保留各自的布局、期间、单位、政策、图表、注释和数据验证，不把无关币种或期间相加。旧任务的专业审计只认证各自完整变化集合，不自动认证合并后的全部公式。合并、日期系统规范化和计算选项的纯程序检查，与未来实际重算、完整新变化集合审计和模型难度分别记录；当前尚无该路线的新来源或任务资格。
 
 ## 用量与审计位置
 
@@ -70,9 +76,11 @@ P01–P20 财务实际成功为 20/20，但来源和题目转化率尚无完整�
 - `outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/`：新二十份实际财务、矩阵、资源计量与完整工件清单。
 - `outputs/research/linear_scaled_N360_tiny_transport_revision2_actual_20261031T122700Z/`：小型实际原生传输、整数行与清理通过。
 - `outputs/research/linear_scaled_N360_reference_actual_20261031T122900Z/`：全二十份参考准备、固定清单与后续实际参考。
-- `outputs/research/linear_scaled_N360_P02_source_execution_20261031T130900Z/`：P02 实际来源构建的单次声明与进程交接。
+- `outputs/research/linear_scaled_N360_P02_source_execution_20261031T130900Z/`：P02 实际来源构建的单次声明、通过交接与清理证据。
+- `outputs/research/linear_scaled_N360_P02_view_pair_execution_20261031T135300Z/`：P02 两类视图的原单次声明与后续阶段计时。
 - `outputs/research/linear_scaled_P01_highs_screen_prepared_20261031T125838Z/`：原小型接口失败、零搜索边界及所属清理。
-- `outputs/research/linear_scaled_P01_highs_screen_api_v2_prepared_20261031T131042Z/`：新的 API-v2 小型检查与 P01 工程筛选声明，不是模型成绩。
+- `outputs/research/linear_scaled_P01_highs_screen_api_v2_prepared_20261031T131042Z/`：第二次搜索前接口拒绝，原文件未改。
+- `outputs/research/linear_scaled_P01_highs_screen_api_v3_prepared_20261031T132301Z/`：小型实际计算和单次 P01 工程搜索的完整实际终态。
 - `outputs/research/linear_M01_completed_nonoptimal_readonly_20261031T102700Z/`：未满足唯一参考门禁的原终态复核。
 
 最终发布仍必须另行冻结合格任务清单，执行新的最强模型确认，并在真实根目录运行 `harbor run -p SpreadsheetEval -a oracle`，逐题全部得到 1。
