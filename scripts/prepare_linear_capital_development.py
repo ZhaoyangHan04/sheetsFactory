@@ -198,6 +198,62 @@ def _historical_identity(selection, task):
     return None
 
 
+def _historical_reference(value):
+    require(isinstance(value, dict) and set(value) in ({'path','sha256'}, {'path','sha256','bytes'})
+        and type(value.get('sha256')) is str and re.fullmatch('[0-9a-f]{64}',value['sha256']),
+        'A historical preparation reference is malformed')
+    actual = reference(value['path'])
+    require(actual['sha256'] == value['sha256'] and ('bytes' not in value
+        or type(value['bytes']) is int and actual['bytes'] == value['bytes']),
+        'A historical preparation artifact changed')
+
+
+def _history_tasks(selection):
+    """Distinguish the exact old raw-preparation schema from model attempts."""
+    if selection.get('kind') != 'composite_preparation_selection':
+        tasks = selection.get('tasks')
+        require(isinstance(tasks,list) and all(isinstance(task,dict)
+            and type(task.get('task_checksum')) is str
+            and re.fullmatch('[0-9a-f]{64}',task['task_checksum']) for task in tasks),
+            'A historical selection is malformed or lacks a model task checksum')
+        return True,tasks
+    require(type(selection.get('schema_version')) is int and selection['schema_version'] == 1
+        and 'tasks' not in selection and selection.get('mode') in ('financial_modeling','debugging')
+        and selection.get('model_results_consulted') is False and selection.get('qualified') is False
+        and all(type(selection.get(k)) is int and selection[k] == 0 for k in ('task_count','llm_calls')),
+        'The known nonmodel preparation schema or zero-call boundary changed')
+    sources = selection.get('sources')
+    require(isinstance(sources,list) and bool(sources) and all(isinstance(row,dict) for row in sources),
+        'The complete historical preparation source mapping is required')
+    require(selection.get('source_selected_order') == [r.get('profile_id') for r in sources]
+        and selection.get('selected_task_ids') == [r.get('task_id') for r in sources]
+        and len(set(selection['source_selected_order'])) == len(sources)
+        and len(set(selection['selected_task_ids'])) == len(sources),
+        'The historical preparation source order, identifiers or count changed')
+    _historical_reference(selection.get('source_batch_manifest'))
+    for index,row in enumerate(sources):
+        require(set(row) == {'index','profile_id','source_id','task_id','source_manifest','workbook','verification'}
+            and type(row['index']) is int and row['index'] == index
+            and type(row['profile_id']) is str and bool(row['profile_id'])
+            and type(row['source_id']) is str and re.fullmatch('[0-9a-f]{64}',row['source_id'])
+            and row['task_id'] == ('fm-' if selection['mode'] == 'financial_modeling' else 'dbg-')+row['source_id'][:12]
+            and isinstance(row['verification'],dict) and bool(row['verification']),
+            'A complete historical preparation entry is malformed')
+        _historical_reference(row['source_manifest']); _historical_reference(row['workbook'])
+        require(row['source_id'] == row['workbook']['sha256'], 'A historical preparation source identity differs')
+    # Preserve every mapping entry, but do not manufacture model checksums,
+    # task directories, revisions or model attempts for a zero-call selection.
+    return False,[{**row,'mode':selection['mode']} for row in sources]
+
+
+def history_partition(records):
+    models = []; preparations = []
+    for record in records:
+        model,_ = _history_tasks(read(record))
+        (models if model else preparations).append(record)
+    return {'model_selections':models,'nonmodel_preparations':preparations}
+
+
 def selection_history(identity, roots=None):
     records = []; seen = set()
     for root in HISTORY_ROOTS if roots is None else roots:
@@ -209,8 +265,8 @@ def selection_history(identity, roots=None):
             if str(path) in seen:
                 continue
             seen.add(str(path)); selection = read(path)
-            require(isinstance(selection.get('tasks'), list), 'A historical selection is malformed')
-            for task in selection['tasks']:
+            model,tasks = _history_tasks(selection)
+            for task in tasks if model else ():
                 require(isinstance(task, dict), 'A historical selected task is malformed')
                 if task.get('mode') != identity['mode']:
                     continue
@@ -271,8 +327,9 @@ def _prepare(source_manifest, view_manifest, validation_manifest, output):
     require(output == output.resolve() and not output.exists(), 'Use a fresh real development directory')
     (source_ref, view_ref, actual_ref, source, view, plan, actual, delta,
         profile_ref, profile, identity) = checked_material(source_manifest, view_manifest, validation_manifest)
-    history = selection_history(identity)
+    history = selection_history(identity); partition = history_partition(history)
     bindings = recipes(); bind_references([source_ref, view_ref, actual_ref, source, view, actual, plan], bindings)
+    bind_references(history,bindings)
     output.mkdir(parents=True)
     task_id = ('fm' if view['mode'] == 'financial_modeling' else 'dbg')+'-linear-'+identity['sha256'][:16]
     task = output/'task'; (task/'public').mkdir(parents=True); (task/'private').mkdir()
@@ -322,7 +379,9 @@ def _prepare(source_manifest, view_manifest, validation_manifest, output):
         'history_roots': [str(p.resolve()) for p in HISTORY_ROOTS],
         'history_exclusion': {'path': str((ROOT/'outputs/tmp').resolve()),
             'reason': 'Offline test fixtures; no claim to search the entire filesystem'},
-        'prior_model_selection_inventory': history, 'quality_gates_pending': list(PENDING),
+        'selection_history_inventory': history,
+        'prior_model_selection_inventory': partition['model_selections'],
+        'nonmodel_preparation_inventory': partition['nonmodel_preparations'], 'quality_gates_pending': list(PENDING),
         'normal_six_nodes_executed_or_inherited': False, 'normal_ExportNode_executed': False,
         'effective_infrastructure_retries': 0, 'unchanged_upstream_resume_allowance_does_not_authorize_resume': True,
         'raw_zero_is_provisional_until_full_quality': True, 'raw_one_stops_unchanged_version_expansion': True,
@@ -352,6 +411,11 @@ def validate_prepared(output):
         and type(frozen['schema_version']) is int and frozen['recipe_sha256'] == recipes(),
         'The frozen development preparation or implementation changed')
     verify_mapping(frozen['source_artifacts_sha256'])
+    partition = history_partition(frozen['selection_history_inventory'])
+    require(frozen['prior_model_selection_inventory'] == partition['model_selections']
+        and frozen['nonmodel_preparation_inventory'] == partition['nonmodel_preparations']
+        and all(frozen['source_artifacts_sha256'].get(r['path']) == r['sha256']
+            for r in frozen['selection_history_inventory']), 'The complete model/nonmodel history evidence changed')
     material = checked_material(frozen['source_admission'], frozen['materialized_view'], frozen['actual_task_validation'])
     require(frozen['material_task_version'] == material[-1], 'The material task version changed')
     require(frozen['model'] == MODEL and frozen['reasoning_effort'] == EFFORT

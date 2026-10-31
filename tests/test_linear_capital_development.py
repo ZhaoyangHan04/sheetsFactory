@@ -160,7 +160,7 @@ def history(case, identity, *, mode=None, source=True):
     folder = case.root/'history/research/old'
     source_ref = dump(folder/'probe_manifest.json', {'material_task_version': identity}) if source else None
     selection = {'phase': 'development', 'tasks': [{'task_id': 'renamed-anything',
-        'mode': mode or case.mode, 'revision_hash': 'different'}]}
+        'mode': mode or case.mode, 'revision_hash': 'different', 'task_checksum': 'c'*64}]}
     if source_ref is not None: selection['source_manifest'] = source_ref
     return dump(folder/'selection_manifest.json', selection)
 
@@ -187,7 +187,7 @@ def test_same_source_other_mode_or_substantive_revision_not_blocked(case):
 def test_legacy_matching_task_without_new_identity_still_rejected(case):
     frozen = probe.read(prepare(case)); task = frozen['tasks'][0]
     dump(case.root/'history/research/legacy/selection_manifest.json', {'phase': 'development',
-        'tasks': [{'mode': case.mode, 'task_id': 'legacy-name', 'task_directory': task['task_directory']}]})
+        'tasks': [{'mode': case.mode, 'task_id': 'legacy-name', 'task_directory': task['task_directory'], 'task_checksum': 'c'*64}]})
     with pytest.raises(ValueError, match='historical selection'):
         probe.selection_history(frozen['material_task_version'])
 
@@ -280,6 +280,12 @@ def model_boundary(case, monkeypatch):
         def __enter__(self): return self
         def __exit__(self, *error): pass
     def run(source, directory, **kwargs):
+        # Exercise the exact historical shape consumed by frontier.freeze_selection:
+        # nonmodel preparations must not reach previous['tasks']/task_checksum.
+        for location in kwargs['prior_selections']:
+            previous=probe.read(location)
+            {task['task_checksum'] for task in previous['tasks']}
+            assert previous.get('kind')!='composite_preparation_selection'
         calls.append({'source': source, 'directory': directory, **kwargs})
         directory.mkdir()
         dump(directory/'selection_manifest.json', {'tasks': [], 'explicit_fake_model_boundary': True})
@@ -329,3 +335,76 @@ def test_concurrent_launcher_lock_precedes_model_boundary(case, model_boundary):
         with pytest.raises(ValueError, match='active launcher'):
             probe.run_development(case.output, case.root/'evaluation')
     assert model_boundary.calls == []
+
+
+def preparation_history(case):
+    folder=case.root/'history/research/raw_preparation';rows=[]
+    for index in range(2):
+        book=workbook(folder/(str(index)+'.xlsx'),index+1)
+        source=dump(folder/(str(index)+'.source.json'),{'explicit_offline_source':True,'workbook':book})
+        rows.append({'index':index,'profile_id':'old-'+str(index),'source_id':book['sha256'],
+            'task_id':('fm-' if case.mode=='financial_modeling' else 'dbg-')+book['sha256'][:12],
+            'source_manifest':{k:v for k,v in source.items() if k!='bytes'},
+            'workbook':{k:v for k,v in book.items() if k!='bytes'},'verification':{'workbook':book}})
+    batch=dump(folder/'source_batch.json',{'explicit_offline_batch':True})
+    value={'kind':'composite_preparation_selection','schema_version':1,'frozen_at':'2026-10-30T15:23:06Z',
+        'source_batch_manifest':{k:v for k,v in batch.items() if k!='bytes'},
+        'source_selected_order':[r['profile_id'] for r in rows],'selected_task_ids':[r['task_id'] for r in rows],
+        'sources':rows,'mode':case.mode,'model_results_consulted':False,'qualified':False,'task_count':0,'llm_calls':0,
+        'construction':{'root_impact_validation':'strict','composite_activity':True},'selection_policy':'All fixed sources'}
+    return dump(folder/'selection_manifest.json',value)
+
+
+def test_known_nonmodel_preparation_preserves_every_source_and_sha_without_inventing_attempts(case):
+    record=preparation_history(case);selection=probe.read(record)
+    model,tasks=probe._history_tasks(selection)
+    assert model is False and len(tasks)==len(selection['sources'])==2
+    assert [t['task_id'] for t in tasks]==selection['selected_task_ids']
+    assert all('task_checksum' not in t and 'task_directory' not in t for t in tasks)
+    frozen=probe.read(prepare(case))
+    assert frozen['selection_history_inventory']==frozen['nonmodel_preparation_inventory']==[record]
+    assert frozen['prior_model_selection_inventory']==[]
+    assert frozen['source_artifacts_sha256'][record['path']]==record['sha256']
+    assert probe.validate_prepared(case.output)==frozen
+
+
+def test_downstream_frontier_receives_only_original_complete_model_selections(case,model_boundary):
+    nonmodel=preparation_history(case)
+    identity={'sha256':'x','mode':case.mode,'instruction_sha256':'f'*64}
+    identity['sha256']=probe.canonical({k:v for k,v in identity.items() if k!='sha256'})
+    model=history(case,identity)
+    frozen=probe.read(prepare(case))
+    assert set(r['path'] for r in frozen['selection_history_inventory'])=={model['path'],nonmodel['path']}
+    probe.run_development(case.output,case.root/'evaluation')
+    assert model_boundary.calls[0]['prior_selections']==[model['path']]
+
+
+@pytest.mark.parametrize('fault',['unknown_kind','bool_version','model_consulted','llm_call','source_order','omitted_source','duplicate_index','wrong_source_sha','extra_tasks','changed_reference'])
+def test_unknown_or_corrupt_nonmodel_preparation_is_never_silently_ignored(case,fault):
+    record=preparation_history(case);value=probe.read(record)
+    if fault=='unknown_kind':value['kind']='unknown_preparation'
+    elif fault=='bool_version':value['schema_version']=True
+    elif fault=='model_consulted':value['model_results_consulted']=True
+    elif fault=='llm_call':value['llm_calls']=1
+    elif fault=='source_order':value['source_selected_order'].reverse()
+    elif fault=='omitted_source':value['sources'].pop()
+    elif fault=='duplicate_index':value['sources'][1]['index']=0
+    elif fault=='wrong_source_sha':value['sources'][0]['source_id']='f'*64
+    elif fault=='extra_tasks':value['tasks']=[]
+    else:value['sources'][0]['workbook']['sha256']='0'*64
+    dump(Path(record['path']),value)
+    with pytest.raises(ValueError):prepare(case)
+
+
+@pytest.mark.parametrize('checksum',[None,True,'not-a-checksum'])
+def test_actual_model_selection_without_complete_checksum_fails_before_dispatch(case,checksum):
+    record=history(case,{'mode':case.mode,'sha256':'x'})
+    value=probe.read(record);value.pop('source_manifest')
+    value['tasks'][0]['task_checksum']=checksum;dump(Path(record['path']),value)
+    with pytest.raises(ValueError,match='model task checksum'):prepare(case)
+
+
+def test_cold_history_partition_cannot_lose_or_reclassify_preparation_evidence(case):
+    preparation_history(case);record=prepare(case);frozen=probe.read(record)
+    frozen['nonmodel_preparation_inventory']=[];dump(Path(record['path']),frozen)
+    with pytest.raises(ValueError,match='model/nonmodel history'):probe.validate_prepared(case.output)
