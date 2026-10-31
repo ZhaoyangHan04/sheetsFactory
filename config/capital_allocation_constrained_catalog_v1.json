@@ -1,0 +1,620 @@
+{
+  "kind": "predeclared_constrained_scaled_capital_allocation_catalog",
+  "version": 1,
+  "currency": "GBP",
+  "monetary_unit": "pence",
+  "rate_denominator": 1000000000000,
+  "years": [
+    2024,
+    2043
+  ],
+  "profile_order": [
+    "30-D02",
+    "30-H01",
+    "30-H02",
+    "30-H03",
+    "30-H04",
+    "30-H05",
+    "30-H06",
+    "30-H07",
+    "30-H08",
+    "30-H09",
+    "30-H10"
+  ],
+  "confirmation_profile_order": [
+    "30-H01",
+    "30-H02",
+    "30-H03",
+    "30-H04",
+    "30-H05",
+    "30-H06",
+    "30-H07",
+    "30-H08",
+    "30-H09",
+    "30-H10"
+  ],
+  "prospective_first_strong_profile": "30-D02",
+  "raw_ancestors": {
+    "NYU": "df8f9e91cc53afe2bdb33cf39b8f2719206ac03b6a5031f1858f82235ea944c9",
+    "Ofgem": "2f02bfdf2c4c85449129add05038fb1cbc10ad4ea716e9571a7dba0ea3642ce8"
+  },
+  "provenance": "All forecasts and financing policies are hypothetical. The two original hashes identify ancestry only, not a new company, audited forecast or qualified question.",
+  "selection_uses_model_outcomes": false,
+  "cohorts": [
+    {
+      "id": "contracted_long_life",
+      "count": 5,
+      "cost_range_pence": [
+        300000000,
+        520000000
+      ],
+      "commission_years_by_ordinal": [
+        2024,
+        2024,
+        2024,
+        2025,
+        2026
+      ],
+      "hold_years_range": [
+        10,
+        15
+      ],
+      "depreciation_years_range": [
+        12,
+        18
+      ],
+      "revenue_bp_of_cost_range": [
+        3200,
+        3800
+      ],
+      "opex_bp_of_cost_range": [
+        800,
+        1200
+      ],
+      "sale_bp_of_cost_range": [
+        5000,
+        6500
+      ],
+      "revenue_growth_bp_range": [
+        40,
+        140
+      ]
+    },
+    {
+      "id": "collateral_carry",
+      "count": 5,
+      "cost_range_pence": [
+        360000000,
+        620000000
+      ],
+      "commission_years_by_ordinal": [
+        2024,
+        2024,
+        2025,
+        2026,
+        2027
+      ],
+      "hold_years_range": [
+        12,
+        17
+      ],
+      "depreciation_years_range": [
+        18,
+        20
+      ],
+      "revenue_bp_of_cost_range": [
+        2100,
+        2500
+      ],
+      "opex_bp_of_cost_range": [
+        1000,
+        1300
+      ],
+      "sale_bp_of_cost_range": [
+        8500,
+        10500
+      ],
+      "revenue_growth_bp_range": [
+        20,
+        80
+      ]
+    },
+    {
+      "id": "early_loss_rebuild",
+      "count": 5,
+      "cost_range_pence": [
+        280000000,
+        480000000
+      ],
+      "commission_years_by_ordinal": [
+        2024,
+        2024,
+        2025,
+        2026,
+        2027
+      ],
+      "hold_years_range": [
+        10,
+        13
+      ],
+      "depreciation_years_range": [
+        6,
+        10
+      ],
+      "revenue_bp_of_cost_range": [
+        4200,
+        4700
+      ],
+      "opex_bp_of_cost_range": [
+        1400,
+        1800
+      ],
+      "sale_bp_of_cost_range": [
+        4000,
+        6500
+      ],
+      "revenue_growth_bp_range": [
+        40,
+        130
+      ]
+    },
+    {
+      "id": "merchant_cycle",
+      "count": 5,
+      "cost_range_pence": [
+        300000000,
+        520000000
+      ],
+      "commission_years_by_ordinal": [
+        2024,
+        2024,
+        2025,
+        2027,
+        2028
+      ],
+      "hold_years_range": [
+        7,
+        10
+      ],
+      "depreciation_years_range": [
+        6,
+        10
+      ],
+      "revenue_bp_of_cost_range": [
+        3600,
+        4200
+      ],
+      "opex_bp_of_cost_range": [
+        1300,
+        1900
+      ],
+      "sale_bp_of_cost_range": [
+        4500,
+        7500
+      ],
+      "revenue_growth_bp_range": [
+        20,
+        110
+      ]
+    },
+    {
+      "id": "short_refurbishment",
+      "count": 5,
+      "cost_range_pence": [
+        180000000,
+        360000000
+      ],
+      "commission_years_by_ordinal": [
+        2025,
+        2027,
+        2028,
+        2029,
+        2031
+      ],
+      "hold_years_range": [
+        4,
+        6
+      ],
+      "depreciation_years_range": [
+        4,
+        6
+      ],
+      "revenue_bp_of_cost_range": [
+        4500,
+        5500
+      ],
+      "opex_bp_of_cost_range": [
+        1200,
+        1800
+      ],
+      "sale_bp_of_cost_range": [
+        3000,
+        4500
+      ],
+      "revenue_growth_bp_range": [
+        0,
+        70
+      ]
+    },
+    {
+      "id": "delayed_delivery",
+      "count": 5,
+      "cost_range_pence": [
+        320000000,
+        580000000
+      ],
+      "commission_years_by_ordinal": [
+        2028,
+        2029,
+        2030,
+        2031,
+        2032
+      ],
+      "hold_years_range": [
+        9,
+        11
+      ],
+      "depreciation_years_range": [
+        10,
+        12
+      ],
+      "revenue_bp_of_cost_range": [
+        4700,
+        5500
+      ],
+      "opex_bp_of_cost_range": [
+        1600,
+        2000
+      ],
+      "sale_bp_of_cost_range": [
+        6000,
+        9000
+      ],
+      "revenue_growth_bp_range": [
+        40,
+        130
+      ]
+    }
+  ],
+  "paired_capex_cohorts": [
+    "contracted_long_life",
+    "merchant_cycle"
+  ],
+  "early_loss_recovery_delays_by_ordinal": [
+    2,
+    2,
+    2,
+    2,
+    5
+  ],
+  "scenario_stress_policy": {
+    "early_duration_years": 3,
+    "late_duration_years": 4,
+    "early": {
+      "revenue_bp": 7500,
+      "opex_bp": 10500,
+      "nav_bp": 7200,
+      "sale_bp": 8000,
+      "bank_rate_bp": 1050,
+      "haircut_bp": 4500
+    },
+    "late": {
+      "revenue_bp": 8200,
+      "opex_bp": 12500,
+      "nav_bp": 7000,
+      "sale_bp": 7200,
+      "bank_rate_bp": 1250,
+      "haircut_bp": 5000
+    }
+  },
+  "engineering_criteria": [
+    {
+      "id": "public_primitive_completeness",
+      "threshold": "All30 projects/all3 scenarios/all20FY and complete field contract; GBP integer pence/P12; no answer fields or truncation."
+    },
+    {
+      "id": "positive_reachable_nonempty_portfolio",
+      "threshold": "At least one predeclared nonempty fixed plan has all3 scenarios feasible, all journal residuals zero, and objective above the empty plan. No best-plan/cardinality claim."
+    },
+    {
+      "id": "real_funding_violation",
+      "threshold": "At least one fixed plan records a positive funding gap with the exact FY/scenario/priorNAV/base/draw/cappedLPcall path; no financing plug."
+    },
+    {
+      "id": "dated_financing_activation",
+      "threshold": "Across the fixed inventory, dated positive actual bank draw, mandatory margin, a binding borrowing base and a cumulative LP commitment exhaustion witness. No inferred activity from declared limits."
+    },
+    {
+      "id": "dated_FIFO_activation",
+      "threshold": "Dated positive tax-loss creation, FIFO use and expiry after the provided carry window; vintage conservation and tax postings reconcile."
+    },
+    {
+      "id": "cross_scenario_ordering_reversal",
+      "threshold": "A predeclared pair of competing fixed plans changes objective ranking between scenarios; identify positive pence differences in both directions. Worst-scenario identity across fixed alternatives is reported."
+    },
+    {
+      "id": "candidate_economic_scale",
+      "threshold": "Report all30 separable pre-tax asset PVs and cohort cash timing; show positive operating-surplus amounts in at least4 cohorts. Asset PVs are not safe portfolio-pruning bounds and no optimal-project-count threshold is permitted."
+    }
+  ],
+  "engineering_criteria_status": "predeclared_not_evaluated",
+  "optimal_project_count_is_acceptance_criterion": false,
+  "unique_optimum_or_financial_correctness_claimed": false,
+  "profiles": [
+    {
+      "id": "30-D02",
+      "seed": 300210,
+      "opening_cash_pence": 300000000,
+      "minimum_cash_pence": 90000000,
+      "lp_commitment_pence": 1800000000,
+      "facility_limit_pence": 1400000000,
+      "advance_rate_bp": 6500,
+      "tax_rate_bp": 2500,
+      "discount_rate_bp": 850,
+      "loss_carry_years": 3,
+      "calendar_shift_years": 0,
+      "early_stress_start": 2026,
+      "late_stress_start": 2034,
+      "stress_adjustment_bp": 0,
+      "project_count": 30,
+      "cohort_counts": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    {
+      "id": "30-H01",
+      "seed": 310101,
+      "opening_cash_pence": 280000000,
+      "minimum_cash_pence": 80000000,
+      "lp_commitment_pence": 1700000000,
+      "facility_limit_pence": 1300000000,
+      "advance_rate_bp": 6400,
+      "tax_rate_bp": 2500,
+      "discount_rate_bp": 825,
+      "loss_carry_years": 3,
+      "calendar_shift_years": 0,
+      "early_stress_start": 2025,
+      "late_stress_start": 2034,
+      "stress_adjustment_bp": -100,
+      "project_count": 30,
+      "cohort_counts": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    {
+      "id": "30-H02",
+      "seed": 310203,
+      "opening_cash_pence": 320000000,
+      "minimum_cash_pence": 100000000,
+      "lp_commitment_pence": 1900000000,
+      "facility_limit_pence": 1500000000,
+      "advance_rate_bp": 6700,
+      "tax_rate_bp": 2400,
+      "discount_rate_bp": 875,
+      "loss_carry_years": 4,
+      "calendar_shift_years": 1,
+      "early_stress_start": 2027,
+      "late_stress_start": 2035,
+      "stress_adjustment_bp": 100,
+      "project_count": 30,
+      "cohort_counts": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    {
+      "id": "30-H03",
+      "seed": 310307,
+      "opening_cash_pence": 300000000,
+      "minimum_cash_pence": 70000000,
+      "lp_commitment_pence": 1600000000,
+      "facility_limit_pence": 1600000000,
+      "advance_rate_bp": 7000,
+      "tax_rate_bp": 2600,
+      "discount_rate_bp": 850,
+      "loss_carry_years": 2,
+      "calendar_shift_years": 0,
+      "early_stress_start": 2026,
+      "late_stress_start": 2033,
+      "stress_adjustment_bp": 200,
+      "project_count": 30,
+      "cohort_counts": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    {
+      "id": "30-H04",
+      "seed": 310409,
+      "opening_cash_pence": 340000000,
+      "minimum_cash_pence": 110000000,
+      "lp_commitment_pence": 2100000000,
+      "facility_limit_pence": 1200000000,
+      "advance_rate_bp": 6200,
+      "tax_rate_bp": 2700,
+      "discount_rate_bp": 900,
+      "loss_carry_years": 3,
+      "calendar_shift_years": 1,
+      "early_stress_start": 2027,
+      "late_stress_start": 2034,
+      "stress_adjustment_bp": -200,
+      "project_count": 30,
+      "cohort_counts": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    {
+      "id": "30-H05",
+      "seed": 310511,
+      "opening_cash_pence": 290000000,
+      "minimum_cash_pence": 90000000,
+      "lp_commitment_pence": 1750000000,
+      "facility_limit_pence": 1450000000,
+      "advance_rate_bp": 6600,
+      "tax_rate_bp": 2500,
+      "discount_rate_bp": 800,
+      "loss_carry_years": 4,
+      "calendar_shift_years": 0,
+      "early_stress_start": 2025,
+      "late_stress_start": 2035,
+      "stress_adjustment_bp": 150,
+      "project_count": 30,
+      "cohort_counts": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    {
+      "id": "30-H06",
+      "seed": 310613,
+      "opening_cash_pence": 310000000,
+      "minimum_cash_pence": 80000000,
+      "lp_commitment_pence": 1850000000,
+      "facility_limit_pence": 1350000000,
+      "advance_rate_bp": 6300,
+      "tax_rate_bp": 2400,
+      "discount_rate_bp": 875,
+      "loss_carry_years": 2,
+      "calendar_shift_years": 1,
+      "early_stress_start": 2026,
+      "late_stress_start": 2033,
+      "stress_adjustment_bp": -150,
+      "project_count": 30,
+      "cohort_counts": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    {
+      "id": "30-H07",
+      "seed": 310717,
+      "opening_cash_pence": 330000000,
+      "minimum_cash_pence": 100000000,
+      "lp_commitment_pence": 2000000000,
+      "facility_limit_pence": 1550000000,
+      "advance_rate_bp": 6800,
+      "tax_rate_bp": 2600,
+      "discount_rate_bp": 850,
+      "loss_carry_years": 3,
+      "calendar_shift_years": 0,
+      "early_stress_start": 2027,
+      "late_stress_start": 2034,
+      "stress_adjustment_bp": 250,
+      "project_count": 30,
+      "cohort_counts": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    {
+      "id": "30-H08",
+      "seed": 310819,
+      "opening_cash_pence": 280000000,
+      "minimum_cash_pence": 70000000,
+      "lp_commitment_pence": 1650000000,
+      "facility_limit_pence": 1250000000,
+      "advance_rate_bp": 6100,
+      "tax_rate_bp": 2500,
+      "discount_rate_bp": 825,
+      "loss_carry_years": 4,
+      "calendar_shift_years": 1,
+      "early_stress_start": 2026,
+      "late_stress_start": 2035,
+      "stress_adjustment_bp": -250,
+      "project_count": 30,
+      "cohort_counts": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    {
+      "id": "30-H09",
+      "seed": 310921,
+      "opening_cash_pence": 320000000,
+      "minimum_cash_pence": 110000000,
+      "lp_commitment_pence": 1950000000,
+      "facility_limit_pence": 1500000000,
+      "advance_rate_bp": 6900,
+      "tax_rate_bp": 2700,
+      "discount_rate_bp": 900,
+      "loss_carry_years": 2,
+      "calendar_shift_years": 0,
+      "early_stress_start": 2025,
+      "late_stress_start": 2033,
+      "stress_adjustment_bp": 50,
+      "project_count": 30,
+      "cohort_counts": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    {
+      "id": "30-H10",
+      "seed": 311023,
+      "opening_cash_pence": 300000000,
+      "minimum_cash_pence": 90000000,
+      "lp_commitment_pence": 1800000000,
+      "facility_limit_pence": 1400000000,
+      "advance_rate_bp": 6500,
+      "tax_rate_bp": 2400,
+      "discount_rate_bp": 800,
+      "loss_carry_years": 3,
+      "calendar_shift_years": 1,
+      "early_stress_start": 2027,
+      "late_stress_start": 2035,
+      "stress_adjustment_bp": -50,
+      "project_count": 30,
+      "cohort_counts": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    }
+  ]
+}
