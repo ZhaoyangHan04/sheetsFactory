@@ -23,7 +23,6 @@ from sheets_factory.resume import ProducerLease
 from sheets_factory.evaluation.streaming_delta import compare_workbooks
 from sheets_factory.evaluation.streaming_verifier import compare_files, _sparse_cells
 from sheets_factory.workbook.heterogeneous_contracts.validate import compare_typed_caches
-from sheets_factory.workbook.resource_engine import ResourceLibreOfficeEngine
 
 KIND = 'linear_capital_task_view_actual_validation'
 REWARDS = {'oracle': 1, 'nop': 0, 'equivalent': 1, 'missed_root': 0, 'extra_change': 0}
@@ -198,7 +197,7 @@ def execute_prepared(output):
                     actual_LO_calls_started=len(calls), actual_LO_calls_completed=sum(c['completed'] for c in calls)); audit.export()
         thread = threading.Thread(target=heartbeat, daemon=True); thread.start()
         with helper._resource_support().data_temporary(output):
-            engine = ResourceLibreOfficeEngine(ROOT, source['runtime_profile']['path'], role='source', receipt_directory=output/'engine_resources')
+            engine = helper.ResourceLibreOfficeEngine(ROOT, source['runtime_profile']['path'], role='source', receipt_directory=output/'engine_resources')
             engine.ensure_image()
             def recalc(record, role):
                 nonlocal stage
@@ -210,7 +209,7 @@ def execute_prepared(output):
                     call.update(completed=True, output=helper.reference(path), elapsed_seconds=time.monotonic()-start)
                     history = engine.metadata()['actual_resource_receipts']
                     helper.require(len(history) == len(calls), 'An unrecorded actual calculation occurred')
-                    call['actual_resource_evidence'] = helper._resource_support().validate_actual_call(call, history[-1], frozen)
+                    call['actual_resource_evidence'] = helper.validate_actual_call(call, history[-1], frozen)
                 finally:
                     call['finished_at'] = utcnow(); call['terminal_receipt'] = helper.write(output/(role+'_terminal.json'), dict(call))
                     audit.record('nodes', {'node': role, 'status': 'completed' if call['completed'] else 'failed',
@@ -318,7 +317,7 @@ def validate_completed(value):
     for call in calls:
         helper.require(call['completed'] is True and helper.read(call['terminal_receipt']) == {k:v for k,v in call.items() if k != 'terminal_receipt'}, 'An actual call did not complete or its receipt changed')
         helper.checked(call['input']); helper.checked(call['output'])
-        evidence = helper._resource_support().validate_actual_call(call, call['actual_resource_evidence']['terminal'], frozen)
+        evidence = helper.validate_actual_call(call, call['actual_resource_evidence']['terminal'], frozen)
         helper.require(evidence == call['actual_resource_evidence'], 'Actual task resource evidence changed')
         byrole[call['role']] = call
     helper.require(byrole['goal_reference']['input'] == view['goal'] and byrole['goal_reference']['output'] == result['goal']

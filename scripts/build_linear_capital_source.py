@@ -30,7 +30,8 @@ from sheets_factory.core.audit import AuditStore, utcnow
 from sheets_factory.dashboard import DashboardServer
 from sheets_factory.resume import ProducerLease
 from sheets_factory.workbook.linear_capital_portfolio import spec
-from sheets_factory.workbook.resource_engine import ResourceLibreOfficeEngine, load_runtime_profile, validate_workload_counts
+from sheets_factory.workbook.resource_engine import load_runtime_profile, validate_workload_counts
+from sheets_factory.workbook.thread_capped_resource_engine import ThreadCappedResourceLibreOfficeEngine as ResourceLibreOfficeEngine, validate_capped_call
 
 PREPARED_KIND = 'prepared_linear_capital_native_source'
 SOURCE_KIND = 'independently_verified_linear_capital_native_source'
@@ -99,6 +100,11 @@ def _resource_support():
     return _module(ROOT / 'scripts/build_heterogeneous_source.py', '_linear_source_generic_resource_support')
 
 
+def validate_actual_call(call, runtime_record, frozen):
+    return validate_capped_call(call, runtime_record, frozen,
+        resource_validator=_resource_support().validate_actual_call)
+
+
 def recipes():
     files = [Path(__file__), ROOT / 'scripts/run_linear_capital_reference.py',
         ROOT / 'scripts/build_heterogeneous_source.py']
@@ -106,7 +112,7 @@ def recipes():
         ('spec.py', 'candidate_a.py', 'ledger.py', 'finance_crosscheck.py', 'model_a.py', 'model_b.py',
          'optimization_runtime.py', 'excel.py', 'formula_identity.py')]
     files += [ROOT / 'src/sheets_factory' / name for name in ('core/audit.py', 'dashboard/server.py', 'resume.py',
-        'workbook/resource_engine.py', 'workbook/engine.py', 'workbook/uno_recalculate.py',
+        'workbook/resource_engine.py', 'workbook/thread_capped_resource_engine.py', 'workbook/engine.py', 'workbook/uno_recalculate.py',
         'workbook/heterogeneous_contracts/validate.py', 'task_adapters/heterogeneous_formula_identity.py')]
     return {str(path.resolve()): reference(path)['sha256'] for path in files}
 
@@ -498,7 +504,7 @@ def execute_prepared(output, *, port=0):
                     try:
                         current = Path(engine.recalculate(current, destination)); call.update(completed=True, output=reference(current), elapsed_seconds=time.monotonic()-tick)
                         history = engine.metadata()['actual_resource_receipts']; require(len(history) == index, 'An extra or missing LO call occurred')
-                        call['actual_resource_evidence'] = _resource_support().validate_actual_call(call, history[-1], frozen)
+                        call['actual_resource_evidence'] = validate_actual_call(call, history[-1], frozen)
                     finally:
                         call['finished_at'] = utcnow(); call['terminal_receipt'] = write(attempt / ('LO' + str(index) + '_terminal.json'), dict(call))
                         audit.update_run(actual_LO_calls_started=len(calls), actual_LO_calls_completed=sum(c['completed'] for c in calls))
@@ -595,7 +601,7 @@ def validate_source(value):
         require(call['completed'] is True and read(call['terminal_receipt']) == {k:v for k,v in call.items() if k!='terminal_receipt'},
             'An actual source call terminal changed')
         if index: require(call['input'] == calls[index-1]['output'], 'The three actual source calls are not chained')
-        evidence = _resource_support().validate_actual_call(call, call['actual_resource_evidence']['terminal'], frozen)
+        evidence = validate_actual_call(call, call['actual_resource_evidence']['terminal'], frozen)
         require(evidence == call['actual_resource_evidence'], 'Actual source resource evidence differs')
         validate_audit(read(audit_ref), checked(call['output']), public, a, b, bindings, literal_census)
     copied = manifest['source_copy']

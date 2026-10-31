@@ -95,7 +95,8 @@ def tiny_run(tmp_path,monkeypatch):
                 {'kind':'TEST_MOCK_NO_ACTUAL_LO','input':before,'output':ref(destination)})
             self.history.append(record);return Path(destination)
         def metadata(self):return {'actual_resource_receipts':self.history}
-    monkeypatch.setattr(entry,'ResourceLibreOfficeEngine',Engine)
+    support.ResourceLibreOfficeEngine=Engine
+    support.validate_actual_call=actual
     # Actual AuditStore writes only the tiny mock-run evidence. The panel remains
     # mocked, so tests open no service and execute no Docker or model.
     class Dashboard:

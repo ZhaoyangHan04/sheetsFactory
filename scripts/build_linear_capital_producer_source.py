@@ -9,7 +9,7 @@ import ast as _ast
 import hashlib as _hashlib
 from pathlib import Path as _Path
 
-UPSTREAM_SHA256 = '43b934bc84136ab96fa5b82239ad494ff7e03d7a8b0f9c57936c9b95c8ac659a'
+UPSTREAM_SHA256 = '8a4d9a84908242faa807fd969707326e028afaa17a3f8a9b0fc82d597f54c90e'
 
 
 def adapted_ast():
