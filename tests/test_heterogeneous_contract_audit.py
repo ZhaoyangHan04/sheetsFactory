@@ -3,6 +3,7 @@ from copy import deepcopy
 from datetime import datetime
 from fractions import Fraction
 from pathlib import Path
+from shutil import copyfile
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
@@ -212,3 +213,15 @@ def test_unsupported_expression_and_large_posting_fail_closed(case):
         audit._evaluate(['unapproved',1,2],{})
     with pytest.raises(audit.ValidationError,match='integer envelope'):
         audit._projection(2**53,{'kind':'money_pence','worksheet_scale':100})
+
+
+@pytest.mark.parametrize('overrides,count', [({},0),({'b1':'2.00000000001'},1),
+    ({'extra':'42'},1),({'b1':'1','btype':'b'},1)])
+def test_complete_typed_stability_does_not_round_money_or_trust_dimensions(case,overrides,count):
+    path,_,_,_=case
+    first=path.with_name('UNIT_left_cached.xlsx')
+    copyfile(cached_fixture(path),first)
+    second=cached_fixture(path,**overrides)
+    report=audit.compare_typed_caches(first,second)
+    assert report['passed']==(count==0) and report['typed_value_mismatches']==count
+    assert report['entire_value_union_checked'] and not report['money_quantization_applied']

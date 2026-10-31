@@ -347,3 +347,50 @@ def audit_workbook(path, specification, result, bindings):
         'audited_file': {'path':str(path), 'sha256':digest.hexdigest(), 'bytes':after.st_size},
         'bindings_sha256':canonical_sha(bindings), 'independent_result_sha256':canonical_sha(result),
         'recalculation_performed': False, 'source_admission_claimed': False, 'qualified': False}
+
+
+def compare_typed_caches(left, right):
+    """Compare the entire physical value union, without money quantization."""
+    books = []
+    checked = mismatches = 0
+    examples = []
+    def typed(cell):
+        if cell is None or cell['value'] is None or cell['value'] == '': return ('empty', None)
+        value = cell['value']
+        if cell['data_type'] == 'e': return ('error', str(value))
+        if type(value) is bool: return ('boolean', value)
+        if isinstance(value, (date, datetime)): return ('date', value.isoformat())
+        if isinstance(value, (int, float, Decimal)): return ('number', _number(value))
+        require(type(value) is str, 'An unsupported cache type was encountered')
+        return ('text', value)
+    try:
+        books = [openpyxl.load_workbook(path, data_only=True, read_only=True, keep_links=False)
+            for path in (left, right)]
+        require(books[0].sheetnames == books[1].sheetnames and books[0].epoch == books[1].epoch,
+            'Typed stability requires identical worksheet order and epoch')
+        for title in books[0].sheetnames:
+            streams = [iter(_sparse_cells(book[title])) for book in books]
+            try:
+                heads = [next(stream, None) for stream in streams]
+                while any(head is not None for head in heads):
+                    key = min(head[0] for head in heads if head is not None)
+                    pair = []
+                    for index, stream in enumerate(streams):
+                        if heads[index] is not None and heads[index][0] == key:
+                            pair.append(typed(heads[index][1])); heads[index] = next(stream, None)
+                        else: pair.append(typed(None))
+                    checked += 1
+                    if pair[0] != pair[1]:
+                        mismatches += 1
+                        if len(examples) < 25:
+                            examples.append({'sheet':title, 'cell':get_column_letter(key[1])+str(key[0])})
+            finally:
+                for stream in streams:
+                    close = getattr(stream, 'close', None)
+                    if close: close()
+    finally:
+        for book in books: book.close()
+    return {'passed':mismatches == 0, 'union_cells_checked':checked,
+        'typed_value_mismatches':mismatches, 'mismatch_examples':examples,
+        'money_quantization_applied':False, 'entire_value_union_checked':True,
+        'recalculation_performed':False, 'qualified':False}
