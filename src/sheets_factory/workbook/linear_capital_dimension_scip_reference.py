@@ -73,7 +73,10 @@ def _runtime(n,modules):
  class Adapt(ast.NodeTransformer):
   def visit_Assign(self,node):
    names=[getattr(x,'id',None) for x in node.targets]
-   if names==['BACKENDS']:node.value=ast.parse("{'scip':('model_a','solve_scip','native_model.cip')}",mode='eval').body;hits['backend']+=1
+   if names==['ROOT']:
+    require(ast.unparse(node.value)=='Path(__file__).resolve().parents[4]','Frozen repository-root assignment changed')
+    node.value=ast.Name(id='_DIMENSION_REPO_ROOT',ctx=ast.Load());hits['root']+=1
+   elif names==['BACKENDS']:node.value=ast.parse("{'scip':('model_a','solve_scip','native_model.cip')}",mode='eval').body;hits['backend']+=1
    elif names==['CODE_FILES']:node.value=ast.parse(repr(SOURCE_NAMES),mode='eval').body;hits['sources']+=1
    elif names==['RUNNER']:
     worker=ast.parse(node.value.value);found=0
@@ -105,11 +108,11 @@ def _runtime(n,modules):
      node.value=node.value.replace('declared 600-second','declared 3600-second')
    return node
  tree=Adapt().visit(prior_runtime.adapted_ast())
- require(hits==Counter({'backend':1,'sources':1,'worker':1,'model_kind':1,'identity':2,'name':2,'scip_settings':1,'tolerance_guard':1,'len(ids) == 720':1,'time_limit_seconds == 600':1,"request['time_limit_seconds'] == 600":1}),'Exact SCIP resource adapter sites changed: '+str(hits))
+ require(hits==Counter({'root':1,'backend':1,'sources':1,'worker':1,'model_kind':1,'identity':2,'name':2,'scip_settings':1,'tolerance_guard':1,'len(ids) == 720':1,'time_limit_seconds == 600':1,"request['time_limit_seconds'] == 600":1}),'Exact SCIP resource adapter sites changed: '+str(hits))
  def complete(model):
   require(len(model['project_ids'])==n and len(model['rows'])==rows,'Complete declared production matrix required')
   return modules['model_a'].validate_model(model)
- ns.update(__file__=__file__,PROFILE=PROFILE,SOURCE_NAMES=SOURCE_NAMES,profile_reference=profile_reference,_producer_source_files=source_files,_complete_scaled_dimension=complete)
+ ns.update(__file__=__file__,_DIMENSION_REPO_ROOT=ROOT,PROFILE=PROFILE,SOURCE_NAMES=SOURCE_NAMES,profile_reference=profile_reference,_producer_source_files=source_files,_complete_scaled_dimension=complete)
  _compile(tree,ns);return module
 
 

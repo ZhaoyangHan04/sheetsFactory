@@ -40,6 +40,9 @@ def test_private_factories_preserve_old_cp600_and_financial_free_native_surface(
   e=entry.experiment(n);m=backend.modules(n)
   assert e.prepare.__globals__ is vars(e) and e.runtime.prepare.__globals__ is vars(e.runtime)
   assert e.runtime.BACKENDS=={'scip':('model_a','solve_scip','native_model.cip')}
+  assert e.runtime.ROOT==entry.ROOT==Path(__file__).resolve().parents[1]
+  assert e.runtime.VENDOR_SITE_PACKAGES==cp600.VENDOR_SITE_PACKAGES==entry.ROOT/'outputs/tmp/linear-solver-914-py312/lib/python3.12/site-packages'
+  assert e.runtime.PROFILE==entry.PROFILE
   assert len(m['spec'].PROJECT_IDS)==n and m['spec'].PRODUCTION_ROW_COUNT==761+n//2
   assert not hasattr(m['model_a'],'build_model') and not hasattr(m['model_b'],'build_model')
   assert not hasattr(m['model_b'],'solve_cp_sat')
