@@ -1,0 +1,18 @@
+{
+  "kind": "linear_capital_dimension_private_reference_producer_profile",
+  "version": 1,
+  "id": "linear_capital_n720_reference600_v1",
+  "image_id": "sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043",
+  "producer": {"cpus": 16, "memory_bytes": 34359738368, "pids_limit": 256, "threads": 16, "network": "none", "backend": "cp_sat", "solver_seconds_per_attempt": 600, "relative_gap": 0, "absolute_gap": 0, "automatic_retries": 0},
+  "fixed_profile": "L720-D01",
+  "projects": 720,
+  "complete_business_rows": 1121,
+  "best_requires_OPTIMAL_before_runner": true,
+  "runner_excludes_complete_winner": true,
+  "runner_requires_OPTIMAL_and_positive_integer_gap": true,
+  "maximum_native_searches": 2,
+  "agent_and_verifier_resources_unchanged": {"cpus": 2, "memory_bytes": 34359738368, "strict_tool_budget_seconds": 1800, "model_response_time_excluded": true, "parallel_tool_executions": "sum"},
+  "independent_second_global_search_claimed": false,
+  "solver_status_is_not_formal_certificate": true,
+  "source_or_quality_or_difficulty_certified": false
+}
