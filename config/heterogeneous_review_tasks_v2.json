@@ -1,0 +1,212 @@
+{
+  "NYU_scope_audit": {
+    "bytes": 214115,
+    "path": "/data/hzy/sheetsFactory/outputs/research/nyu_dcf_scope_343_independent_readonly_actual_20261031T144303Z/existing_actual_native_pass1.json",
+    "sha256": "38cdab15cf56c70d8ef19c7c568a613f961e2bd82646eea84fe8e13c6f5f49cd"
+  },
+  "NYU_scope_audit_receipt": {
+    "bytes": 1786,
+    "path": "/data/hzy/sheetsFactory/outputs/research/nyu_dcf_scope_343_independent_readonly_actual_20261031T144303Z/receipt.json",
+    "sha256": "710739a396708d0e14626e5ae8e35901f2651e9ade9720826ddf6acc7ef1600e"
+  },
+  "closure": {
+    "bytes": 136352,
+    "path": "/data/hzy/sheetsFactory/outputs/research/heterogeneous_first_pair_scope_readonly_20261031T142400Z/reverse_closure.json",
+    "sha256": "1b24294266d2f27d9d152a1c05c20fd3f11c7acda905e1653aacbc6d536bf594"
+  },
+  "donor_context_disclosure": [
+    "The agency workbook retains 24 monthly GCI values in independently calculated alternative royalty scenarios as supplied business context. This ordinary scenario context may make reconstruction easier.",
+    "Other registry confidence scenarios remain supplied context.",
+    "Historical, R&D, lease and industry input modules and the 12 fixed source errors remain outside the scoped financial claim.",
+    "All 7 retained charts reference Wind Data/Zafarana context, with no exact intersection with the 766 targets; their 572 cached numeric points remain. The NYU image contains only calculation settings and the 76 comments retain source policies. No broad economic-equivalence or hidden-answer-absence claim is made."
+  ],
+  "donor_preflight": {
+    "bytes": 80588,
+    "path": "/data/hzy/sheetsFactory/outputs/research/heterogeneous_native_review_pack_prepared_20261031T140500Z/donor_preflight.json",
+    "sha256": "e8a5c0d410dce63acd2be5e4ce339293bce0b6356c679a3a94402b8edee8ecc0"
+  },
+  "faults": [
+    {
+      "cell": "E26",
+      "donor": "statements",
+      "existing_scope": "103originalforecastoutputs;E26/E31 are covered.",
+      "id": "statement_operating_profit_basis",
+      "mechanism": "Use earnings margin in the EBIT/Sales operating-margin position; own labeled basis matters.",
+      "prospective_effect": "Operating margin and DuPont ROE change.",
+      "replacement": "'FS - IS'!E17/'FS - IS'!E7",
+      "sheet": "FS - Ratios"
+    },
+    {
+      "cell": "H8",
+      "donor": "estate",
+      "existing_scope": "AuditedH8/H16 are in165;sourceR8=0,P8=810,H8=11700.",
+      "id": "agent_annual_cap_timing",
+      "mechanism": "Charge uncapped monthly royalty after the annual royalty cap has already been reached.",
+      "prospective_effect": "Monthly agent net and annual total change; buyerappointmentB28:C28 stays untouched.",
+      "replacement": "G8-P8-X8",
+      "sheet": "Agent - Financial"
+    },
+    {
+      "cell": "B24",
+      "donor": "social",
+      "existing_scope": "AuditedB24 in62.",
+      "id": "social_return_method",
+      "mechanism": "Replace periodic IRR with a simple undiscounted cash-flow return; preserve scenario-specific horizons and intentional blanks.",
+      "prospective_effect": "Scenario1return changes.",
+      "replacement": "SUM(B8:B22)/ABS(B8)",
+      "sheet": "Social - SROI 3-29-99"
+    },
+    {
+      "cell": "D12",
+      "donor": "registry",
+      "existing_scope": "Audited36selected10%scenariooutputs.",
+      "id": "registry_year_alignment",
+      "mechanism": "Charge 2003 registrations to the2002 cost column, while retaining the2002fee.",
+      "prospective_effect": "2002cost/margin/surplus dependents change. Fee-onlyyearshift rejected becauseallfeesare2.5.",
+      "replacement": "'Registry - Assumptions for IS'!D23*'Registry - Assumptions for IS'!C26",
+      "sheet": "Registry - Income Statement 10%"
+    },
+    {
+      "cell": "J29",
+      "donor": "wind",
+      "existing_scope": "AuditedJ29/J30 in12.",
+      "id": "wind_carbon_units",
+      "mechanism": "Omit kilogram-to-tonne factor1000 in signed additional carbon benefit.",
+      "prospective_effect": "Additional and further benefit change; preserve negative results.",
+      "replacement": "-J25/J26",
+      "sheet": "Wind - Presentation"
+    },
+    {
+      "cell": "H14",
+      "donor": "nyu_simple",
+      "existing_scope": "H14 is in original112; reverse343 includes its derived valuations and diagnostics.",
+      "id": "DCF_varying_discount_timing",
+      "mechanism": "Use the year6costofcapital as a flat rate for all six periods instead of successive annual discount factors.",
+      "prospective_effect": "PVcashflow, enterprise/equity/per-share values and aliases change; exactactualDmustbechecked.",
+      "replacement": "H9/(1+H12)^6",
+      "sheet": "DCF - Valuation output"
+    },
+    {
+      "cell": "F12",
+      "donor": "budget",
+      "existing_scope": "F12 is a new blankroot outsideFM766, independentlyspecifiedblank by historicalinstruction;F15iscovered.",
+      "id": "budget_intentional_blank",
+      "mechanism": "Fill a deliberately unused committee-allocation row with the requested total; the existing consolidation then double-counts it.",
+      "prospective_effect": "F12andcommitteegrandtotalchange; properrepair deleteswrongformula rather than fills every blank.",
+      "replacement": "D15",
+      "sheet": "Budget - Summary"
+    },
+    {
+      "cell": "B9",
+      "donor": "meeting",
+      "existing_scope": "Originalcorrected27coversreimbursement/cash total/variance.",
+      "id": "meeting_double_advance",
+      "mechanism": "Subtract the host advance a second time from the reimbursement already net of that advance.",
+      "prospective_effect": "Budget reimbursement, cash receipts and surplus/variance change;actual/other contribution bases preserved.",
+      "replacement": "'Meeting - Financial Sche~863eb2'!B25+'Meeting - Financial Sche~863eb2'!B23",
+      "sheet": "Meeting - Financial Sche~f23491"
+    }
+  ],
+  "historical_scope": {
+    "FMfinancial_scope766": 766,
+    "FSextra2": 2,
+    "NYUalias134": 134,
+    "NYUextra97": 97,
+    "NYUoriginal112": 112,
+    "legacy421": 421,
+    "whole4430financialcertified": false
+  },
+  "kind": "fixed_scoped_heterogeneous_review_tasks_recipe",
+  "maximum_external_LO_calls": 14,
+  "native_source_terminal": {
+    "bytes": 19981,
+    "path": "/data/hzy/sheetsFactory/outputs/research/heterogeneous_native_review_pack_native_validation_prepared_20261031T142000Z/private/attempts/95aece0496bb4eab936555becd9015ff/terminal.json",
+    "sha256": "2eecd5f3bde01b63c7479182c51cf1741735e45b5d31c1d008def5d9920e5334"
+  },
+  "original_donor_config": {
+    "bytes": 24321,
+    "path": "/data/hzy/sheetsFactory/config/heterogeneous_native_review_pack_v1.json",
+    "sha256": "a6007194e4fd3c78535a7af8b014614586404d28096046da5155c5bc8b68d372"
+  },
+  "per_mode_calls": 7,
+  "presentation_revision_reason": "Six approved literal clarifications also feed exactly two direct text display aliases. Update only those cached text values while preserving their formulas; retain the prior three-call HOLD.",
+  "prior_failure_lineage": [
+    {
+      "pair_preparation": {
+        "bytes": 6030,
+        "path": "/data/hzy/sheetsFactory/outputs/research/heterogeneous_review_first_pair_prepared_20261031T150720Z/pair_preparation.json",
+        "sha256": "dc8b0421b1f6ef8d82c08583890694554a86443e15c70bb6858a4a1b17b9d879"
+      },
+      "readonly_diagnostic": {
+        "bytes": 2920,
+        "path": "/data/hzy/sheetsFactory/outputs/research/heterogeneous_review_first_pair_prepared_20261031T150720Z/post_terminal_readonly_failure_diagnostic.json",
+        "sha256": "a873b1aaa96e759d65ce5bb6c4e70ed996c83dee16f997110e1529e16892e38a"
+      },
+      "terminal": {
+        "bytes": 19557,
+        "path": "/data/hzy/sheetsFactory/outputs/research/heterogeneous_review_first_pair_prepared_20261031T150720Z/FM/private/attempts/ce97a62aceac489f92d2a222f4389ec2/terminal.json",
+        "sha256": "1746d8bd22a7128ad79f296fb381e6f2bd64a4de3a60889b48e375a42e86945d"
+      }
+    }
+  ],
+  "public_object_context_reports": [
+    {
+      "bytes": 61866,
+      "path": "/data/hzy/sheetsFactory/outputs/research/heterogeneous_chart_target_overlap_readonly_20261031T145200Z/receipt.json",
+      "sha256": "ecfaf98f606d2594de357e777862de5887528ad4e08629e0c93e0b0aa1756b40"
+    },
+    {
+      "bytes": 25713,
+      "path": "/data/hzy/sheetsFactory/outputs/research/heterogeneous_NYU_public_image_readonly_20261031T143800Z/receipt.json",
+      "sha256": "2cb5d99df277b3760f9b117e9036ca59a143645c6bd434dacd991738c5aed21e"
+    }
+  ],
+  "public_policy_basis": {
+    "necessary_custom_scope": [
+      "Agency planning heuristic and excluded buyer-appointment branch",
+      "Authoritative numeric regional-meeting attendee grid and alternative standalone-statement scope",
+      "Explicit DCF incremental-return horizon and annual ROIC definition",
+      "Current numeric assumptions and declared periods govern legacy example commentary"
+    ],
+    "ordinary_financial_relationships": "Provided by retained source labels, notes and schedules; no per-fault repair recipe is supplied."
+  },
+  "public_policy_brief": "The review covers the statement forecasts and ratios, agency Financial schedule, social-venture return outcomes, selected registry 10% income statement, wind Presentation, DCF valuation and diagnostic displays, Budget Summary, and regional-meeting financial schedules. Other scenarios and supporting schedules are supplied context; the businesses retain their separate units and periods. Preserve supplied inputs, context and unaffected values.\n\nThe agency GCI-to-net-income calculation is the supplied planning heuristic; its buyer-appointment branch is outside this review. Use the numeric attendee grid for the regional meeting; its standalone conference statement is an alternative, not an additional component. The DCF incremental-return diagnostic uses the change in annual NOPAT through year 10 per total capital added in years 1-10; annual ROIC uses beginning-of-year capital.",
+  "qualified": false,
+  "runtime_profile": {
+    "bytes": 781,
+    "path": "/data/hzy/sheetsFactory/config/runtime_profiles/entity_group_large_v2.yaml",
+    "sha256": "4ecc79fe954b9e2965a15d2f0c8965a39394f621ae9808f02fcf88965f446b9b"
+  },
+  "source": {
+    "bytes": 386683,
+    "path": "/data/hzy/sheetsFactory/outputs/research/heterogeneous_native_review_pack_native_validation_prepared_20261031T142000Z/private/attempts/95aece0496bb4eab936555becd9015ff/pass1.xlsx",
+    "sha256": "3ddf168c5ce160a7fcb2e8b052450fe4ad3d348bb55e1a4a57466b36816e9f05"
+  },
+  "text_alias_cache_transfers": [
+    {
+      "cell": "H6",
+      "sheet": "DCF - Valuation as picture",
+      "source_cell": "G10",
+      "source_sheet": "DCF - Stories to Numbers"
+    },
+    {
+      "cell": "K6",
+      "sheet": "DCF - Valuation as picture",
+      "source_cell": "G12",
+      "source_sheet": "DCF - Stories to Numbers"
+    }
+  ],
+  "text_patch_allowlists": [
+    {
+      "bytes": 3082,
+      "path": "/data/hzy/sheetsFactory/outputs/research/nyu_scope_audit_97_prospective_20261031T143300Z/proposed_text_patches.json",
+      "sha256": "5eb57a8463fe8103cb57ad18bb9f4eed1bbae3f7fe7f0e06f57c88e9f0c0790f"
+    },
+    {
+      "bytes": 1555,
+      "path": "/data/hzy/sheetsFactory/outputs/research/nyu_scope_audit_97_prospective_20261031T143300Z/proposed_text_patch6_addendum.json",
+      "sha256": "31fb2b8f427cecdb465e01a57fdeb231fa7a6f1b04f3c60d1f8f1dc640033df0"
+    }
+  ],
+  "version": 2
+}
