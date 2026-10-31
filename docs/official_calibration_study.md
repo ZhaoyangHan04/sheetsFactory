@@ -2,7 +2,7 @@
 
 这项研究用于发现当前最强配置的实际失败机制，不作为生产种子或正式交付题目。此前只完成官方 FM `03_04` 和 Debugging `04_01` 两次尝试，不能据此推断整个数据集的通过率。
 
-截至 2026-10-31 20:26 UTC，固定批次已有 81/200 道终态，其中 79 道新增首次尝试、2 道按原顺序复用既有首次成绩。FM 41 道官方原始评分通过 12 道、未通过 29 道；Debugging 40 道原始评分均未通过。FM有2道、Debugging有5道协议状态UNKNOWN，不按有效模型失败计数。这是执行顺序中的部分结果，不能外推整个数据集通过率。十九道已经完成实际轨迹和完整官方目标区域分析，完整200题结果与逐题归因尚未完成。此前快照保留于 `outputs/research/goal_checkpoint_20261031T190300Z/checkpoint.json` 和 `outputs/research/goal_checkpoint_20261031T191714Z/checkpoint.json`。
+截至 2026-10-31 20:40 UTC，固定批次已有 86/200 道终态，其中 84 道新增首次尝试、2 道按原顺序复用既有首次成绩。FM 44 道官方原始评分通过 12 道、未通过 32 道；Debugging 42 道原始评分均未通过。FM有3道、Debugging有6道协议状态UNKNOWN，不按有效模型失败计数。这是执行顺序中的部分结果，不能外推整个数据集通过率。十九道已经完成实际轨迹和完整官方目标区域分析，完整200题结果与逐题归因尚未完成。此前快照保留于 `outputs/research/goal_checkpoint_20261031T190300Z/checkpoint.json` 和 `outputs/research/goal_checkpoint_20261031T191714Z/checkpoint.json`。
 
 运行目录为 `outputs/research/spreadsheetbench2_all200_first_attempt_cohort_20261031T161800Z/`，实际启动时间记录在 `started.json`，面板为 `http://127.0.0.1:38947/`。事前准备文件 SHA256 为 `68320b130f7e324992ec3f8ff008525270d2df3edb4f35a4cde75d6c4cfeba49`。
 
@@ -102,7 +102,7 @@
 
 下一份独立 `operating_metrics_regime` 来源把历史有效的费用正号报告与相邻预测的收益正号报告分开，保留历史零联营结果掩盖符号模式的条件；同时跨两种自然布局、GBP/GBP000单位、同比百分数与环比倍数，并让增长资格联动现金、投资和留存收益。四实体十二季度的两套独立有理数实现核对全部2,052个字段。第一份实际来源因12个逻辑值被货币格式重算为数字而拒绝，失败、原源码和清理证据保留；仅修改逻辑值格式的新版本完成三次实际LibreOffice源计算，全部2,052值、1,967公式、199项已知事实及重复稳定性通过，源清单SHA256为 `802c6c21c579ea353e22dd85b73cb7f5bc8acd70525f32e2c1110d254f4cc2d2`。
 
-2026-10-31 20:22 UTC起，继续执行八次真实任务计算。补全完整D1,368、调试完整D491，两类的oracle/nop/等价公式/漏修根/额外修改五项对照均为1/0/1/0/0；类型稳定性、实际资源和全部八个所属容器清理通过。终态为 `outputs/research/operating_metrics_regime_task8_prepared_20261031T201800Z/terminal.json`，SHA256 `c6db66ea04846e4829904d3e22776ac81ba6cbf9f96a9b5765e0a8aa342f08be`。这份新来源已完成工程检查，尚无最强模型、正常全部质量或真实Harbor成绩；三加八次工程计算不等于已获得难度或发布资格。
+2026-10-31 20:22 UTC起，继续执行八次真实任务计算。补全完整D1,368、调试完整D491，两类的oracle/nop/等价公式/漏修根/额外修改五项对照均为1/0/1/0/0；类型稳定性、实际资源和全部八个所属容器清理通过。终态为 `outputs/research/operating_metrics_regime_task8_prepared_20261031T201800Z/terminal.json`，SHA256 `c6db66ea04846e4829904d3e22776ac81ba6cbf9f96a9b5765e0a8aa342f08be`。其后两份首次原生v5模型尝试完整结束：FM原始/有效0、精确工具4.063039439秒，DBG原始/有效1、6.277393239秒，计时和资源完整。但FM全部1,368个目标值正确，仅在 `Annual reporting!AB14:AB16` 多填非适用文字；公开材料没有明确要求三格保持空白。这一零分保留为修改集合结果，不能认定已复现符号或增长率金融错误；两类均不作难度准出，正常全部质量和最终确认仍未执行。只读终态收据为 `outputs/research/operating_metrics_regime_first_pair_terminal_readonly_20261031T203959Z/receipt.json`，SHA256 `0068221fe1321002d188c2a23ee8f56458766207d5b4633db9c24b5a1f402ae2`。
 
 ### 另一组组合规模实验
 
