@@ -1,0 +1,368 @@
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "const": "hypothetical_200_entity_operating_report_values"
+    },
+    "version": {
+      "const": 1
+    },
+    "specification_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "economic_exact_values": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "rational"
+              },
+              "value": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "boolean"
+              },
+              "value": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "text"
+              },
+              "value": {
+                "enum": [
+                  "n/a (no comparative)",
+                  "n/a (entity-level distribution policy)"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "cagr"
+              },
+              "endpoint_ratio": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+              },
+              "years": {
+                "enum": [
+                  1,
+                  2
+                ]
+              },
+              "percent_units_per_raw_unit": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+              }
+            },
+            "required": [
+              "kind",
+              "endpoint_ratio",
+              "years",
+              "percent_units_per_raw_unit"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "raw_cell_exact_values": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "rational"
+              },
+              "value": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "boolean"
+              },
+              "value": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "text"
+              },
+              "value": {
+                "enum": [
+                  "n/a (no comparative)",
+                  "n/a (entity-level distribution policy)"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "cagr"
+              },
+              "endpoint_ratio": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+              },
+              "years": {
+                "enum": [
+                  1,
+                  2
+                ]
+              },
+              "percent_units_per_raw_unit": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+              }
+            },
+            "required": [
+              "kind",
+              "endpoint_ratio",
+              "years",
+              "percent_units_per_raw_unit"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "typed_2dp_values": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "number"
+              },
+              "value": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)\\.[0-9]{2}$"
+              }
+            },
+            "required": [
+              "type",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "boolean"
+              },
+              "value": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "text"
+              },
+              "value": {
+                "enum": [
+                  "n/a (no comparative)",
+                  "n/a (entity-level distribution policy)"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "value"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "cagr_proofs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "endpoint_ratio": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+          },
+          "years": {
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "percent_units_per_raw_unit": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+          },
+          "lower_raw": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+          },
+          "upper_raw": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+          },
+          "rounded": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint_ratio",
+          "years",
+          "percent_units_per_raw_unit",
+          "lower_raw",
+          "upper_raw",
+          "rounded"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "reconciliation_checks": {
+      "type": "object",
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "opening_balance_residuals": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+          }
+        },
+        "quarter_balance_residuals": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+          }
+        },
+        "cash_bridge_residuals": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+          }
+        },
+        "investment_bridge_residuals": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+          }
+        },
+        "retained_earnings_bridge_residuals": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:/[1-9][0-9]*)?$"
+          }
+        },
+        "group_membership": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "required": [
+        "passed",
+        "opening_balance_residuals",
+        "quarter_balance_residuals",
+        "cash_bridge_residuals",
+        "investment_bridge_residuals",
+        "retained_earnings_bridge_residuals",
+        "group_membership"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "kind",
+    "version",
+    "specification_sha256",
+    "economic_exact_values",
+    "raw_cell_exact_values",
+    "typed_2dp_values",
+    "cagr_proofs",
+    "reconciliation_checks"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sheets-factory:operating-reports-200:oracle-result:v1"
+}

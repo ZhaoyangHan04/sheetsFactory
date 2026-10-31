@@ -1,0 +1,494 @@
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "const": "hypothetical_200_entity_operating_report_specification"
+    },
+    "version": {
+      "const": 1
+    },
+    "dimension_mode": {
+      "enum": [
+        "production",
+        "toy"
+      ]
+    },
+    "seed": {
+      "const": 202711200
+    },
+    "years": {
+      "const": [
+        2025,
+        2026,
+        2027
+      ]
+    },
+    "base_currency": {
+      "const": "GBP"
+    },
+    "provenance": {
+      "const": "new hypothetical service businesses; no official workbook seed"
+    },
+    "public_policy": {
+      "const": "These are hypothetical service businesses, not audited real companies. FY2025 is actual; FY2026 and FY2027 are forecasts. Each report states its currency scale, rate units, statement sign basis and calendar periods. Supplied facts and historical reports remain provided context.\n\nForecast sales assumptions name their comparison period and whether the supplied figure is a change, a level multiple, a base-100 index or a monetary change. Monetary scales are GBP, GBP thousands or GBP millions. Rates are identified as fractions, percentage units or basis points. Multiples and indices retain their printed bases.\n\nFixed debt bears the stated annual cash-interest rate evenly across four calendar quarters. Current parent tax applies only to positive earnings before associate income; there is no loss credit or carryforward. Existing associate investments produce no income in FY2025. Subsequent signed associate results are after investee tax, exempt from this parent current-tax calculation, noncash, and retained in the investment. There are no acquisitions or associate cash dividends.\n\nSales are collected and operating costs, interest and current tax are paid within their quarter. There is no working-capital movement, capital expenditure or depreciation. Debt and contributed capital remain fixed. Owner distributions reduce cash and retained earnings. Opening balances and subsequent statements must reconcile.\n\nOnly FY2027 Q4 may distribute 20% of positive FY2027 net income, and only when unrounded FY2025-to-FY2027 annual sales CAGR is at least 8% and unrounded Q4 year-on-year sales change is at least 5%. Equality qualifies. Other periods distribute zero. CAGR spans two annual intervals. Comparative metrics use the calendar periods and bases stated in their labels.\n\nEach entity enters its named management division once; each division enters the master portfolio once. Aggregate monetary reports use GBP. There is no FX conversion, intercompany elimination or ownership weighting. Aggregate ratios use aggregate financial amounts. Aggregate owner distributions are sums of entity distributions; aggregate eligibility fields are explicitly not applicable. This is management reporting, not statutory consolidation.\n\nUse full precision for calculations. Final numeric answers follow the task's common two-decimal comparison rule; booleans and text retain their types. Every labelled nonapplicable field is already a nonempty n/a literal and remains supplied context. Empty spacing cells are not report fields.\n"
+    },
+    "distribution": {
+      "const": {
+        "year": 2027,
+        "profit_percent": "20",
+        "cagr_percent": "8",
+        "q4_yoy_percent": "5"
+      }
+    },
+    "divisions": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "Advisory",
+          "Analytics",
+          "Cloud",
+          "Creative",
+          "Engineering",
+          "Facilities",
+          "Logistics",
+          "Software"
+        ]
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "maxItems": 8
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^E[0-9]{3}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "division": {
+            "enum": [
+              "Advisory",
+              "Analytics",
+              "Cloud",
+              "Creative",
+              "Engineering",
+              "Facilities",
+              "Logistics",
+              "Software"
+            ]
+          },
+          "layout": {
+            "enum": [
+              "quarter_columns",
+              "quarter_rows",
+              "year_panels",
+              "quarter_cards",
+              "split_reporting_sections",
+              "reverse_chronology_dashboard"
+            ]
+          },
+          "line_order": {
+            "enum": [
+              "statement_first",
+              "cash_first",
+              "performance_first"
+            ]
+          },
+          "money_unit": {
+            "enum": [
+              "GBP",
+              "GBP_thousands",
+              "GBP_millions"
+            ]
+          },
+          "rate_unit": {
+            "enum": [
+              "fraction",
+              "percent_units",
+              "basis_points"
+            ]
+          },
+          "statement_sign": {
+            "enum": [
+              "positive_deductions",
+              "signed_contributions"
+            ]
+          },
+          "forecast_reference": {
+            "enum": [
+              "same_quarter_last_year",
+              "previous_calendar_quarter"
+            ]
+          },
+          "driver_form_by_year": {
+            "type": "object",
+            "properties": {
+              "2026": {
+                "enum": [
+                  "change_rate",
+                  "level_multiple",
+                  "base100_index",
+                  "money_delta"
+                ]
+              },
+              "2027": {
+                "enum": [
+                  "change_rate",
+                  "level_multiple",
+                  "base100_index",
+                  "money_delta"
+                ]
+              }
+            },
+            "required": [
+              "2026",
+              "2027"
+            ],
+            "additionalProperties": false
+          },
+          "opening": {
+            "type": "object",
+            "properties": {
+              "cash": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "investment": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "debt": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "capital": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "retained_earnings": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              }
+            },
+            "required": [
+              "cash",
+              "investment",
+              "debt",
+              "capital",
+              "retained_earnings"
+            ],
+            "additionalProperties": false
+          },
+          "actual_sales": {
+            "type": "object",
+            "properties": {
+              "2025Q1": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2025Q2": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2025Q3": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2025Q4": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              }
+            },
+            "required": [
+              "2025Q1",
+              "2025Q2",
+              "2025Q3",
+              "2025Q4"
+            ],
+            "additionalProperties": false
+          },
+          "forecast_sales": {
+            "type": "object",
+            "properties": {
+              "2026Q1": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2026Q2": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2026Q3": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2026Q4": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q1": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q2": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q3": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q4": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              }
+            },
+            "required": [
+              "2026Q1",
+              "2026Q2",
+              "2026Q3",
+              "2026Q4",
+              "2027Q1",
+              "2027Q2",
+              "2027Q3",
+              "2027Q4"
+            ],
+            "additionalProperties": false
+          },
+          "direct_cost_rate": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+          },
+          "cash_opex": {
+            "type": "object",
+            "properties": {
+              "2025Q1": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2025Q2": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2025Q3": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2025Q4": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2026Q1": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2026Q2": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2026Q3": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2026Q4": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q1": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q2": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q3": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q4": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              }
+            },
+            "required": [
+              "2025Q1",
+              "2025Q2",
+              "2025Q3",
+              "2025Q4",
+              "2026Q1",
+              "2026Q2",
+              "2026Q3",
+              "2026Q4",
+              "2027Q1",
+              "2027Q2",
+              "2027Q3",
+              "2027Q4"
+            ],
+            "additionalProperties": false
+          },
+          "annual_interest_rate": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+          },
+          "parent_tax_rate": {
+            "type": "string",
+            "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+          },
+          "associate_results": {
+            "type": "object",
+            "properties": {
+              "2025Q1": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2025Q2": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2025Q3": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2025Q4": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2026Q1": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2026Q2": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2026Q3": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2026Q4": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q1": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q2": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q3": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              },
+              "2027Q4": {
+                "type": "string",
+                "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+              }
+            },
+            "required": [
+              "2025Q1",
+              "2025Q2",
+              "2025Q3",
+              "2025Q4",
+              "2026Q1",
+              "2026Q2",
+              "2026Q3",
+              "2026Q4",
+              "2027Q1",
+              "2027Q2",
+              "2027Q3",
+              "2027Q4"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "division",
+          "layout",
+          "line_order",
+          "money_unit",
+          "rate_unit",
+          "statement_sign",
+          "forecast_reference",
+          "driver_form_by_year",
+          "opening",
+          "actual_sales",
+          "forecast_sales",
+          "direct_cost_rate",
+          "cash_opex",
+          "annual_interest_rate",
+          "parent_tax_rate",
+          "associate_results"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 200
+    }
+  },
+  "required": [
+    "kind",
+    "version",
+    "dimension_mode",
+    "seed",
+    "years",
+    "base_currency",
+    "provenance",
+    "public_policy",
+    "distribution",
+    "divisions",
+    "entities"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sheets-factory:operating-reports-200:public-spec:v1",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "dimension_mode": {
+            "const": "production"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "entities": {
+            "minItems": 200,
+            "maxItems": 200
+          },
+          "divisions": {
+            "const": [
+              "Advisory",
+              "Analytics",
+              "Cloud",
+              "Creative",
+              "Engineering",
+              "Facilities",
+              "Logistics",
+              "Software"
+            ]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "entities": {
+            "minItems": 1,
+            "maxItems": 4
+          }
+        }
+      }
+    }
+  ]
+}
