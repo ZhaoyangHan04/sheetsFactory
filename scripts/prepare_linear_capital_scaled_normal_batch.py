@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import sqlite3
 import subprocess
 import sys
 import time
@@ -44,6 +45,7 @@ def entry(configuration):
     return _ENTRY
 
 def recipe(cfg, setup):
+    from sheets_factory.dashboard import read_only
     normal = entry(cfg); config = normal.yaml.safe_load(Path(cfg['normal_configuration']['path']).read_text())
     require(config['diagnosis']['selection'] == {'include': cfg['all_twelve_checks_required'], 'exclude': []}
         and config['diagnosis']['reference_evidence_policy'] == 'reference_review'
@@ -51,7 +53,7 @@ def recipe(cfg, setup):
         'The full frozen normal reference-review policy is required')
     return {**setup['recipe'], **normal.recipes(config, []),
         **{str(p.resolve()): ref(p)['sha256'] for p in (Path(__file__), DEFAULT, Path(cfg['normal_entry']['path']),
-            Path(cfg['normal_configuration']['path']), normal.pipeline.DEFAULT_PROVIDERS)}}
+            Path(cfg['normal_configuration']['path']), normal.pipeline.DEFAULT_PROVIDERS, Path(read_only.__file__))}}
 
 def inventory(config, output):
     cfg = read(config); require(cfg == read(DEFAULT) and cfg['kind'] == KIND and cfg['version'] == 1
@@ -163,6 +165,61 @@ def external_state(cfg):
         'normal_summary': ref(summary) if complete else None, 'monitor_only': True,
         'error': None if complete else 'Original P01 process ended without a final normal audit', 'qualified': False}, None
 
+def aggregate_snapshot(base, cfg, rows):
+    """Project real child audits; never open a writer or persist child state."""
+    from sheets_factory.dashboard.read_only import ReadOnlyAuditView
+    tasks = {}; calls = {}; attempts = []; children = []
+    for row in rows:
+        pid = row['profile_id']
+        directory = Path(cfg['external_P01']['prepared_directory'] if pid == ORDER[0] else row['normal_directory']).resolve()
+        record = {'profile_id': pid, 'directory': str(directory), 'scope': 'normal_quality_only'}
+        if not (directory/'run.sqlite').is_file():
+            children.append({**record, 'audit_status': 'not_created'}); continue
+        try: child = ReadOnlyAuditView(directory).snapshot()
+        except (OSError, ValueError, sqlite3.Error) as error:
+            children.append({**record, 'audit_status': 'unavailable', 'error_type': type(error).__name__}); continue
+        children.append({**record, 'audit_status': 'read_only', 'run': child['run']})
+        for index, task in enumerate(child['tasks']):
+            identity = str(directory)+':'+str(task.get('id') or ('row-'+str(index)))
+            tasks[identity] = {**task, 'id': identity, 'source_task_id': task.get('id'), 'normal_profile': pid, 'normal_run': str(directory)}
+        for index, call in enumerate(child['llm_calls']):
+            identity = str(directory)+':'+str(call.get('call_id') or ('row-'+str(index)))
+            calls[identity] = {**call, 'call_id': identity, 'source_call_id': call.get('call_id'),
+                'normal_profile': pid, 'normal_run': str(directory), 'stage': pid+'/'+str(call.get('stage') or 'unassigned_llm')}
+        for index, node in enumerate(child.get('node_attempts', child['nodes'])):
+            name = node.get('node_id', node.get('node', 'unknown'))
+            attempts.append({**node, 'node_id': pid+'/'+name, 'node': pid+'/'+name,
+                'normal_profile': pid, 'normal_run': str(directory), 'source_node_index': index})
+    tasks, calls = list(tasks.values()), list(calls.values())
+    qualified = [task for task in tasks if task.get('status') == 'qualified']
+    sources = {task['source_id'] for task in tasks if task.get('source_id')}
+    productive = {task['source_id'] for task in qualified if task.get('source_id')}
+    inputs = sum(c.get('input_tokens') or 0 for c in calls); outputs = sum(c.get('output_tokens') or 0 for c in calls)
+    unknown = sum(c.get('input_tokens') is None or c.get('output_tokens') is None for c in calls)
+    unavailable = sum(c['audit_status'] == 'unavailable' for c in children)
+    metrics = {**base['metrics'], 'input_tokens': inputs, 'output_tokens': outputs, 'total_tokens': inputs+outputs,
+        'cached_input_tokens': sum(c.get('cached_input_tokens') or 0 for c in calls), 'llm_calls': len(calls),
+        'unknown_usage_calls': unknown, 'active_llm_calls': sum(c.get('status') == 'running' for c in calls),
+        'unfinished_llm_calls': sum(bool(c.get('completion_missing')) for c in calls), 'unavailable_child_audits': unavailable,
+        'usage_completeness': 'known_lower_bound_with_unknowns' if unknown or unavailable else 'current_recorded_census',
+        'usage_scope': 'Recorded input plus output; cached input and reasoning are subsets. Normal quality only.',
+        'candidates': len(tasks), 'qualified': len(qualified), 'unique_seeds': len(sources), 'productive_seeds': len(productive),
+        'ready': sum(t.get('status') == 'ready' for t in tasks), 'rejected': sum(t.get('status') == 'rejected' for t in tasks),
+        'candidate_conversion': len(qualified)/len(tasks) if tasks else None,
+        'source_conversion': len(productive)/len(sources) if sources else None,
+        'tasks_per_seed': len(qualified)/len(sources) if sources else None,
+        'cumulative_node_seconds': sum(n.get('duration_ms') or 0 for n in attempts)/1000}
+    metrics.update(known_recorded_input_tokens=inputs, known_recorded_output_tokens=outputs,
+        known_recorded_total_tokens=inputs+outputs, known_recorded_llm_calls=len(calls))
+    if unavailable:
+        metrics.update(input_tokens=None, output_tokens=None, total_tokens=None)
+    run = {**base['run'], 'name': 'N360 normal quality — formal release pending'+(' — usage census incomplete' if unavailable else ''), 'target_count': 20,
+        'qualified': len(qualified), 'child_normal_runs': children, 'formal_release_inferred': False,
+        **{mode: sum(t.get('mode') == mode for t in qualified) for mode in MODES}}
+    return {**base, 'run': run, 'metrics': metrics, 'tasks': tasks, 'llm_calls': calls,
+        'nodes': ReadOnlyAuditView._stages(attempts, calls), 'node_attempts': attempts,
+        'viewer': {'read_only_children': True, 'counts_scope': 'normal_quality_only', 'formal_release_inferred': False}}
+
 def execute(output):
     from sheets_factory.core.audit import AuditStore
     from sheets_factory.dashboard import DashboardServer
@@ -171,7 +228,9 @@ def execute(output):
     require(not (output/'started.json').exists(), 'Preserve the first execution; outer retries are disabled')
     lease = ProducerLease(output).acquire(); audit = server = None; active = {}; done = {}; pending = rows[1:]; clock = time.monotonic()
     try:
-        audit = AuditStore(output/'audit', {'id': output.name, 'status': 'waiting_engineering', 'target_count': 20})
+        class TotalAudit(AuditStore):
+            def snapshot(self): return aggregate_snapshot(super().snapshot(), cfg, rows)
+        audit = TotalAudit(output/'audit', {'id': output.name, 'status': 'waiting_engineering', 'target_count': 20})
         server = DashboardServer(audit.snapshot, audit.events, host='127.0.0.1', port=0); url = server.start()
         write(output/'started.json', {'dashboard_url': url, 'pid': os.getpid(), 'prospective': ref(output/'prospective.json'), 'at': now()})
         print(json.dumps({'dashboard_url': url, 'pid': os.getpid(), 'output': str(output)}), flush=True)

@@ -198,3 +198,58 @@ def test_parent_dashboard_precedes_waiting_and_external_P01_occupies_one_slot(mo
     assert calls == [m.ORDER[1]]
     assert m.read(output/'orchestration_failure.json')['active_owned_pids'] == {m.ORDER[1]: 12345}
     assert not (Path(cfg['external_P01']['prepared_directory'])/'run.sqlite').exists()
+
+
+def test_total_snapshot_reads_real_databases_deduplicates_calls_and_retains_unknowns(module, contract, tmp_path):
+    from sheets_factory.core.audit import AuditStore
+    m = module; cfg, config, _, _, _ = contract; output = tmp_path/'batch'; m.prepare(output, config)
+    rows = m.validate(output)[1]; runs = [Path(cfg['external_P01']['prepared_directory']), Path(rows[1]['normal_directory'])]
+    children = []
+    for directory in runs:
+        child = AuditStore(directory, {'id': directory.name, 'status': 'running', 'producer_active': True})
+        child.task('same-task', mode='financial_modeling', status='qualified', source_id=str(directory))
+        # Identical call ID in two runs must count twice; duplicate records within one run once.
+        for _ in range(2): child.record('calls', {'call_id': 'same-call', 'stage': 'Diagnose',
+            'input_tokens': 100, 'output_tokens': 20, 'cached_input_tokens': 80, 'reasoning_tokens': 15, 'status': 'completed'})
+        child.emit('llm.started', call_id='pending', stage='Trajectory', started_at='2026-10-31T18:00:00+00:00')
+        child.record('nodes', {'node': 'Diagnose', 'status': 'completed', 'duration_ms': 1500})
+        children.append(child)
+    parent = AuditStore(output/'audit', {'id': 'parent', 'target_count': 20})
+    before = {directory: (directory/'run.sqlite').read_bytes() for directory in runs}
+    try:
+        for _ in range(2):
+            result = m.aggregate_snapshot(parent.snapshot(), cfg, rows)
+            assert result['metrics']['input_tokens'] == 200
+            assert result['metrics']['output_tokens'] == 40
+            assert result['metrics']['total_tokens'] == 240  # Cached/reasoning subsets are never added.
+            assert result['metrics']['cached_input_tokens'] == 160
+            assert result['metrics']['llm_calls'] == 4
+            assert result['metrics']['unknown_usage_calls'] == result['metrics']['active_llm_calls'] == 2
+            assert len(result['tasks']) == result['metrics']['qualified'] == 2
+            assert len(result['node_attempts']) == 2
+            assert result['metrics']['cumulative_node_seconds'] == 3
+            assert result['run']['target_count'] == 20
+            assert result['run']['formal_release_inferred'] is False
+            assert result['viewer']['counts_scope'] == 'normal_quality_only'
+            assert len({c['call_id'] for c in result['llm_calls']}) == 4
+        assert {directory: (directory/'run.sqlite').read_bytes() for directory in runs} == before
+    finally:
+        parent.db.close()
+        for child in children: child.db.close()
+
+
+def test_unavailable_child_audit_is_unknown_not_a_zero_usage_claim(module, contract, tmp_path):
+    from sheets_factory.core.audit import AuditStore
+    m = module; cfg, config, _, _, _ = contract; output = tmp_path/'batch'; m.prepare(output, config)
+    rows = m.validate(output)[1]
+    # A new or damaged database can exist before its schema is readable.
+    (Path(cfg['external_P01']['prepared_directory'])/'run.sqlite').write_bytes(b'incomplete database')
+    parent = AuditStore(output/'audit', {'id': 'parent'})
+    try:
+        result = m.aggregate_snapshot(parent.snapshot(), cfg, rows)
+        assert result['metrics']['total_tokens'] is None
+        assert result['metrics']['input_tokens'] is None and result['metrics']['output_tokens'] is None
+        assert result['metrics']['unavailable_child_audits'] == 1
+        assert result['metrics']['usage_completeness'] == 'known_lower_bound_with_unknowns'
+        assert 'usage census incomplete' in result['run']['name']
+    finally: parent.db.close()
