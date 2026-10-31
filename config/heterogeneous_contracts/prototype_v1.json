@@ -1,0 +1,1769 @@
+{
+  "schema_version": 1,
+  "kind": "hypothetical_heterogeneous_contracts_private_construction_spec",
+  "status": "unexecuted_design_not_source_or_task",
+  "dimension_mode": "prototype_6_24_3",
+  "start_month": "2027-01-01",
+  "months": [
+    "2027-01-01",
+    "2027-02-01",
+    "2027-03-01",
+    "2027-04-01",
+    "2027-05-01",
+    "2027-06-01",
+    "2027-07-01",
+    "2027-08-01",
+    "2027-09-01",
+    "2027-10-01",
+    "2027-11-01",
+    "2027-12-01",
+    "2028-01-01",
+    "2028-02-01",
+    "2028-03-01",
+    "2028-04-01",
+    "2028-05-01",
+    "2028-06-01",
+    "2028-07-01",
+    "2028-08-01",
+    "2028-09-01",
+    "2028-10-01",
+    "2028-11-01",
+    "2028-12-01"
+  ],
+  "scenario_ids": [
+    "S01",
+    "S02",
+    "S03"
+  ],
+  "currency": "GBP",
+  "amount_unit": "integer GBP pence",
+  "rate_scale": 1000000000000,
+  "group": {
+    "name": "Quayside Infrastructure Portfolio",
+    "bank_funding_priority": [
+      "E03",
+      "E04",
+      "E01",
+      "E02",
+      "E05",
+      "E06"
+    ],
+    "shared_margin_priority": [
+      "E06",
+      "E05",
+      "E02",
+      "E01",
+      "E04",
+      "E03"
+    ],
+    "lp_funding_priority": [
+      "E01",
+      "E02",
+      "E03",
+      "E04",
+      "E05",
+      "E06"
+    ],
+    "additional_lp_commitment_pence": 600000000,
+    "shared_bank_limit_schedule": [
+      {
+        "effective_month": "2027-01-01",
+        "limit_pence": 360000000
+      },
+      {
+        "effective_month": "2028-01-01",
+        "limit_pence": 180000000
+      },
+      {
+        "effective_month": "2028-07-01",
+        "limit_pence": 220000000
+      }
+    ]
+  },
+  "entities": [
+    {
+      "id": "E01",
+      "name": "North Quay Services",
+      "functional_currency": "GBP",
+      "opening_cash_pence": 3500000,
+      "opening_restricted_cash_pence": 0,
+      "opening_paid_in_capital_pence": 46500000,
+      "opening_retained_earnings_pence": 0,
+      "opening_tax_payable_pence": 0,
+      "opening_interest_carry": [],
+      "opening_tax_losses": [],
+      "minimum_cash_pence": 1500000,
+      "reserve_target_pence": 2500000,
+      "additional_lp_commitment_pence": 150000000,
+      "tax_policy": "ACCRUAL_MONTHLY",
+      "tax_rate_p12": 250000000000,
+      "interest_cap_fraction_p12": 300000000000,
+      "interest_carry_months": 6,
+      "loss_carry_months": 12,
+      "dscr_policy": "MONTHLY_CURRENT",
+      "dscr_threshold_p12": 1150000000000,
+      "opening_trap": false,
+      "opening_cure_count": 0
+    },
+    {
+      "id": "E02",
+      "name": "Eastfield Storage",
+      "functional_currency": "GBP",
+      "opening_cash_pence": 4000000,
+      "opening_restricted_cash_pence": 500000,
+      "opening_paid_in_capital_pence": 50500000,
+      "opening_retained_earnings_pence": 0,
+      "opening_tax_payable_pence": 0,
+      "opening_interest_carry": [],
+      "opening_tax_losses": [],
+      "minimum_cash_pence": 1500000,
+      "reserve_target_pence": 2500000,
+      "additional_lp_commitment_pence": 150000000,
+      "tax_policy": "CASH_COUPON_QUARTERLY",
+      "tax_rate_p12": 220000000000,
+      "interest_cap_fraction_p12": 300000000000,
+      "interest_carry_months": 12,
+      "loss_carry_months": 18,
+      "dscr_policy": "QUARTERLY_LAGGED",
+      "dscr_threshold_p12": 1200000000000,
+      "opening_trap": true,
+      "opening_cure_count": 0
+    },
+    {
+      "id": "E03",
+      "name": "Brookside Logistics",
+      "functional_currency": "GBP",
+      "opening_cash_pence": 4500000,
+      "opening_restricted_cash_pence": 0,
+      "opening_paid_in_capital_pence": 53500000,
+      "opening_retained_earnings_pence": 0,
+      "opening_tax_payable_pence": 0,
+      "opening_interest_carry": [],
+      "opening_tax_losses": [],
+      "minimum_cash_pence": 1500000,
+      "reserve_target_pence": 2500000,
+      "additional_lp_commitment_pence": 150000000,
+      "tax_policy": "ACCRUAL_MONTHLY",
+      "tax_rate_p12": 250000000000,
+      "interest_cap_fraction_p12": 300000000000,
+      "interest_carry_months": 6,
+      "loss_carry_months": 12,
+      "dscr_policy": "QUARTERLY_LAGGED",
+      "dscr_threshold_p12": 1200000000000,
+      "opening_trap": false,
+      "opening_cure_count": 0
+    },
+    {
+      "id": "E04",
+      "name": "West Vale Utilities",
+      "functional_currency": "GBP",
+      "opening_cash_pence": 5000000,
+      "opening_restricted_cash_pence": 0,
+      "opening_paid_in_capital_pence": 57000000,
+      "opening_retained_earnings_pence": 0,
+      "opening_tax_payable_pence": 0,
+      "opening_interest_carry": [],
+      "opening_tax_losses": [],
+      "minimum_cash_pence": 1500000,
+      "reserve_target_pence": 2500000,
+      "additional_lp_commitment_pence": 150000000,
+      "tax_policy": "CASH_COUPON_QUARTERLY",
+      "tax_rate_p12": 220000000000,
+      "interest_cap_fraction_p12": 300000000000,
+      "interest_carry_months": 12,
+      "loss_carry_months": 18,
+      "dscr_policy": "MONTHLY_CURRENT",
+      "dscr_threshold_p12": 1150000000000,
+      "opening_trap": false,
+      "opening_cure_count": 0
+    },
+    {
+      "id": "E05",
+      "name": "Harbour Estates",
+      "functional_currency": "GBP",
+      "opening_cash_pence": 5500000,
+      "opening_restricted_cash_pence": 500000,
+      "opening_paid_in_capital_pence": 61000000,
+      "opening_retained_earnings_pence": 0,
+      "opening_tax_payable_pence": 0,
+      "opening_interest_carry": [],
+      "opening_tax_losses": [],
+      "minimum_cash_pence": 1500000,
+      "reserve_target_pence": 2500000,
+      "additional_lp_commitment_pence": 150000000,
+      "tax_policy": "ACCRUAL_MONTHLY",
+      "tax_rate_p12": 250000000000,
+      "interest_cap_fraction_p12": 300000000000,
+      "interest_carry_months": 6,
+      "loss_carry_months": 12,
+      "dscr_policy": "MONTHLY_CURRENT",
+      "dscr_threshold_p12": 1150000000000,
+      "opening_trap": true,
+      "opening_cure_count": 0
+    },
+    {
+      "id": "E06",
+      "name": "Southgate Operations",
+      "functional_currency": "GBP",
+      "opening_cash_pence": 6000000,
+      "opening_restricted_cash_pence": 0,
+      "opening_paid_in_capital_pence": 64000000,
+      "opening_retained_earnings_pence": 0,
+      "opening_tax_payable_pence": 0,
+      "opening_interest_carry": [],
+      "opening_tax_losses": [],
+      "minimum_cash_pence": 1500000,
+      "reserve_target_pence": 2500000,
+      "additional_lp_commitment_pence": 150000000,
+      "tax_policy": "CASH_COUPON_QUARTERLY",
+      "tax_rate_p12": 220000000000,
+      "interest_cap_fraction_p12": 300000000000,
+      "interest_carry_months": 12,
+      "loss_carry_months": 18,
+      "dscr_policy": "QUARTERLY_LAGGED",
+      "dscr_threshold_p12": 1200000000000,
+      "opening_trap": false,
+      "opening_cure_count": 0
+    }
+  ],
+  "loans": [
+    {
+      "id": "L01",
+      "entity_id": "E01",
+      "type": "BULLET_MONTHLY",
+      "opening_principal_pence": 36000000,
+      "opening_accrued_interest_pence": 0,
+      "terms": [
+        {
+          "effective_month": "2027-01-01",
+          "annual_rate_p12": 58500000000,
+          "day_count": "ACT_365F",
+          "local_limit_pence": 61000000,
+          "maturity_date": "2028-06-30",
+          "draw_cutoff_month": "2028-03-01",
+          "optional_repayment_fraction_p12": 0,
+          "next_coupon_month": null,
+          "id": "L01@2027-01-01"
+        },
+        {
+          "effective_month": "2027-10-01",
+          "annual_rate_p12": 66000000000,
+          "day_count": "ACT_365F",
+          "local_limit_pence": 61000000,
+          "maturity_date": "2028-06-30",
+          "draw_cutoff_month": "2028-03-01",
+          "optional_repayment_fraction_p12": 0,
+          "next_coupon_month": null,
+          "id": "L01@2027-10-01"
+        }
+      ]
+    },
+    {
+      "id": "L02",
+      "entity_id": "E02",
+      "type": "BULLET_MONTHLY",
+      "opening_principal_pence": 42000000,
+      "opening_accrued_interest_pence": 0,
+      "terms": [
+        {
+          "effective_month": "2027-01-01",
+          "annual_rate_p12": 62000000000,
+          "day_count": "ACT_360",
+          "local_limit_pence": 67000000,
+          "maturity_date": "2028-12-31",
+          "draw_cutoff_month": "2028-03-01",
+          "optional_repayment_fraction_p12": 0,
+          "next_coupon_month": null,
+          "id": "L02@2027-01-01"
+        },
+        {
+          "effective_month": "2028-01-01",
+          "annual_rate_p12": 69500000000,
+          "day_count": "ACT_360",
+          "local_limit_pence": 67000000,
+          "maturity_date": "2028-12-31",
+          "draw_cutoff_month": "2028-03-01",
+          "optional_repayment_fraction_p12": 0,
+          "next_coupon_month": null,
+          "id": "L02@2028-01-01"
+        }
+      ]
+    },
+    {
+      "id": "L03",
+      "entity_id": "E03",
+      "type": "LEVEL_PRINCIPAL_MONTHLY",
+      "opening_principal_pence": 48000000,
+      "opening_accrued_interest_pence": 0,
+      "terms": [
+        {
+          "effective_month": "2027-01-01",
+          "annual_rate_p12": 65500000000,
+          "day_count": "ACT_365F",
+          "local_limit_pence": 48000000,
+          "maturity_date": "2028-12-31",
+          "draw_cutoff_month": null,
+          "optional_repayment_fraction_p12": 500000000000,
+          "next_coupon_month": null,
+          "id": "L03@2027-01-01"
+        },
+        {
+          "effective_month": "2027-10-01",
+          "annual_rate_p12": 73000000000,
+          "day_count": "ACT_365F",
+          "local_limit_pence": 48000000,
+          "maturity_date": "2028-12-31",
+          "draw_cutoff_month": null,
+          "optional_repayment_fraction_p12": 500000000000,
+          "next_coupon_month": null,
+          "id": "L03@2027-10-01"
+        }
+      ]
+    },
+    {
+      "id": "L04",
+      "entity_id": "E04",
+      "type": "LEVEL_PRINCIPAL_MONTHLY",
+      "opening_principal_pence": 54000000,
+      "opening_accrued_interest_pence": 0,
+      "terms": [
+        {
+          "effective_month": "2027-01-01",
+          "annual_rate_p12": 69000000000,
+          "day_count": "ACT_360",
+          "local_limit_pence": 54000000,
+          "maturity_date": "2028-10-31",
+          "draw_cutoff_month": null,
+          "optional_repayment_fraction_p12": 500000000000,
+          "next_coupon_month": null,
+          "id": "L04@2027-01-01"
+        },
+        {
+          "effective_month": "2028-01-01",
+          "annual_rate_p12": 76500000000,
+          "day_count": "ACT_360",
+          "local_limit_pence": 54000000,
+          "maturity_date": "2028-12-31",
+          "draw_cutoff_month": null,
+          "optional_repayment_fraction_p12": 500000000000,
+          "next_coupon_month": null,
+          "id": "L04@2028-01-01"
+        }
+      ]
+    },
+    {
+      "id": "L05",
+      "entity_id": "E05",
+      "type": "BULLET_QUARTERLY_ACCRUAL",
+      "opening_principal_pence": 60000000,
+      "opening_accrued_interest_pence": 0,
+      "terms": [
+        {
+          "effective_month": "2027-01-01",
+          "annual_rate_p12": 72500000000,
+          "day_count": "ACT_365F",
+          "local_limit_pence": 85000000,
+          "maturity_date": "2028-05-31",
+          "draw_cutoff_month": "2028-03-01",
+          "optional_repayment_fraction_p12": 500000000000,
+          "next_coupon_month": "2027-03-01",
+          "id": "L05@2027-01-01"
+        },
+        {
+          "effective_month": "2027-10-01",
+          "annual_rate_p12": 80000000000,
+          "day_count": "ACT_365F",
+          "local_limit_pence": 85000000,
+          "maturity_date": "2028-05-31",
+          "draw_cutoff_month": "2028-03-01",
+          "optional_repayment_fraction_p12": 500000000000,
+          "next_coupon_month": "2027-11-01",
+          "id": "L05@2027-10-01"
+        }
+      ]
+    },
+    {
+      "id": "L06",
+      "entity_id": "E06",
+      "type": "BULLET_QUARTERLY_ACCRUAL",
+      "opening_principal_pence": 66000000,
+      "opening_accrued_interest_pence": 0,
+      "terms": [
+        {
+          "effective_month": "2027-01-01",
+          "annual_rate_p12": 76000000000,
+          "day_count": "ACT_360",
+          "local_limit_pence": 91000000,
+          "maturity_date": "2028-12-31",
+          "draw_cutoff_month": "2028-03-01",
+          "optional_repayment_fraction_p12": 500000000000,
+          "next_coupon_month": "2027-03-01",
+          "id": "L06@2027-01-01"
+        },
+        {
+          "effective_month": "2028-01-01",
+          "annual_rate_p12": 83500000000,
+          "day_count": "ACT_360",
+          "local_limit_pence": 91000000,
+          "maturity_date": "2028-12-31",
+          "draw_cutoff_month": "2028-03-01",
+          "optional_repayment_fraction_p12": 500000000000,
+          "next_coupon_month": "2028-02-01",
+          "id": "L06@2028-01-01"
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "A01O",
+      "entity_id": "E01",
+      "description": "Existing operating property and equipment",
+      "commission_month": "2025-01-01",
+      "original_cost_pence": 90000000,
+      "opening_accumulated_depreciation_pence": 11000000,
+      "useful_life_months": 120,
+      "capex_category": "GROWTH"
+    },
+    {
+      "id": "A01N",
+      "entity_id": "E01",
+      "description": "Approved equipment renewal",
+      "commission_month": "2027-06-01",
+      "original_cost_pence": 6500000,
+      "opening_accumulated_depreciation_pence": 0,
+      "useful_life_months": 48,
+      "capex_category": "MAINTENANCE"
+    },
+    {
+      "id": "A02O",
+      "entity_id": "E02",
+      "description": "Existing operating property and equipment",
+      "commission_month": "2025-01-01",
+      "original_cost_pence": 100000000,
+      "opening_accumulated_depreciation_pence": 12000000,
+      "useful_life_months": 120,
+      "capex_category": "GROWTH"
+    },
+    {
+      "id": "A02N",
+      "entity_id": "E02",
+      "description": "Approved equipment renewal",
+      "commission_month": "2027-07-01",
+      "original_cost_pence": 7000000,
+      "opening_accumulated_depreciation_pence": 0,
+      "useful_life_months": 48,
+      "capex_category": "GROWTH"
+    },
+    {
+      "id": "A03O",
+      "entity_id": "E03",
+      "description": "Existing operating property and equipment",
+      "commission_month": "2025-01-01",
+      "original_cost_pence": 110000000,
+      "opening_accumulated_depreciation_pence": 13000000,
+      "useful_life_months": 120,
+      "capex_category": "GROWTH"
+    },
+    {
+      "id": "A03N",
+      "entity_id": "E03",
+      "description": "Approved equipment renewal",
+      "commission_month": "2027-08-01",
+      "original_cost_pence": 7500000,
+      "opening_accumulated_depreciation_pence": 0,
+      "useful_life_months": 48,
+      "capex_category": "MAINTENANCE"
+    },
+    {
+      "id": "A04O",
+      "entity_id": "E04",
+      "description": "Existing operating property and equipment",
+      "commission_month": "2025-01-01",
+      "original_cost_pence": 120000000,
+      "opening_accumulated_depreciation_pence": 14000000,
+      "useful_life_months": 120,
+      "capex_category": "GROWTH"
+    },
+    {
+      "id": "A04N",
+      "entity_id": "E04",
+      "description": "Approved equipment renewal",
+      "commission_month": "2027-09-01",
+      "original_cost_pence": 8000000,
+      "opening_accumulated_depreciation_pence": 0,
+      "useful_life_months": 48,
+      "capex_category": "GROWTH"
+    },
+    {
+      "id": "A05O",
+      "entity_id": "E05",
+      "description": "Existing operating property and equipment",
+      "commission_month": "2025-01-01",
+      "original_cost_pence": 130000000,
+      "opening_accumulated_depreciation_pence": 15000000,
+      "useful_life_months": 120,
+      "capex_category": "GROWTH"
+    },
+    {
+      "id": "A05N",
+      "entity_id": "E05",
+      "description": "Approved equipment renewal",
+      "commission_month": "2027-10-01",
+      "original_cost_pence": 8500000,
+      "opening_accumulated_depreciation_pence": 0,
+      "useful_life_months": 48,
+      "capex_category": "MAINTENANCE"
+    },
+    {
+      "id": "A06O",
+      "entity_id": "E06",
+      "description": "Existing operating property and equipment",
+      "commission_month": "2025-01-01",
+      "original_cost_pence": 140000000,
+      "opening_accumulated_depreciation_pence": 16000000,
+      "useful_life_months": 120,
+      "capex_category": "GROWTH"
+    },
+    {
+      "id": "A06N",
+      "entity_id": "E06",
+      "description": "Approved equipment renewal",
+      "commission_month": "2027-11-01",
+      "original_cost_pence": 9000000,
+      "opening_accumulated_depreciation_pence": 0,
+      "useful_life_months": 48,
+      "capex_category": "GROWTH"
+    }
+  ],
+  "operating_inputs": {
+    "E01": [
+      {
+        "month": "2027-01-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2027-02-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2027-03-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2027-04-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2027-05-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2027-06-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2027-07-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2027-08-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2027-09-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2027-10-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2027-11-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2027-12-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-01-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2028-02-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2028-03-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2028-04-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2028-05-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2028-06-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2028-07-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2028-08-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2028-09-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2028-10-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2028-11-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 6800000
+      },
+      {
+        "month": "2028-12-01",
+        "base_cash_revenue_pence": 10700000,
+        "base_cash_opex_pence": 7600000
+      }
+    ],
+    "E02": [
+      {
+        "month": "2027-01-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2027-02-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2027-03-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2027-04-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2027-05-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2027-06-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2027-07-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2027-08-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2027-09-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2027-10-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2027-11-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2027-12-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-01-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-02-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-03-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-04-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-05-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-06-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-07-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-08-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-09-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-10-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-11-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 7600000
+      },
+      {
+        "month": "2028-12-01",
+        "base_cash_revenue_pence": 11900000,
+        "base_cash_opex_pence": 8400000
+      }
+    ],
+    "E03": [
+      {
+        "month": "2027-01-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2027-02-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2027-03-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2027-04-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2027-05-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2027-06-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2027-07-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2027-08-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2027-09-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2027-10-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2027-11-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2027-12-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-01-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-02-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-03-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-04-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-05-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-06-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-07-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-08-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-09-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-10-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-11-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 8400000
+      },
+      {
+        "month": "2028-12-01",
+        "base_cash_revenue_pence": 13100000,
+        "base_cash_opex_pence": 9200000
+      }
+    ],
+    "E04": [
+      {
+        "month": "2027-01-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2027-02-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2027-03-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2027-04-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2027-05-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2027-06-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2027-07-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2027-08-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2027-09-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2027-10-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2027-11-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2027-12-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-01-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-02-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-03-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-04-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-05-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-06-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-07-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-08-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-09-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-10-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-11-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 9200000
+      },
+      {
+        "month": "2028-12-01",
+        "base_cash_revenue_pence": 14300000,
+        "base_cash_opex_pence": 10000000
+      }
+    ],
+    "E05": [
+      {
+        "month": "2027-01-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2027-02-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2027-03-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2027-04-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2027-05-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2027-06-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2027-07-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2027-08-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2027-09-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2027-10-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2027-11-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2027-12-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-01-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-02-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-03-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-04-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-05-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-06-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-07-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-08-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-09-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-10-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-11-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10000000
+      },
+      {
+        "month": "2028-12-01",
+        "base_cash_revenue_pence": 15500000,
+        "base_cash_opex_pence": 10800000
+      }
+    ],
+    "E06": [
+      {
+        "month": "2027-01-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2027-02-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2027-03-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2027-04-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2027-05-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2027-06-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2027-07-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2027-08-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2027-09-01",
+        "base_cash_revenue_pence": 17900000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2027-10-01",
+        "base_cash_revenue_pence": 17900000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2027-11-01",
+        "base_cash_revenue_pence": 17900000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2027-12-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 11600000
+      },
+      {
+        "month": "2028-01-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-02-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-03-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-04-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-05-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-06-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-07-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-08-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-09-01",
+        "base_cash_revenue_pence": 17900000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-10-01",
+        "base_cash_revenue_pence": 17900000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-11-01",
+        "base_cash_revenue_pence": 17900000,
+        "base_cash_opex_pence": 10800000
+      },
+      {
+        "month": "2028-12-01",
+        "base_cash_revenue_pence": 16700000,
+        "base_cash_opex_pence": 11600000
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "S01",
+      "name": "Base trading",
+      "monthly_schedule": [
+        {
+          "month": "2027-01-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-02-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-03-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-04-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-05-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-06-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-07-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-08-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-09-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-10-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-11-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-12-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-01-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-02-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-03-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-04-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-05-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-06-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-07-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-08-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-09-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-10-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-11-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-12-01",
+          "revenue_factor_p12": 1000000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        }
+      ]
+    },
+    {
+      "id": "S02",
+      "name": "Demand and recovery",
+      "monthly_schedule": [
+        {
+          "month": "2027-01-01",
+          "revenue_factor_p12": 450000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-02-01",
+          "revenue_factor_p12": 450000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-03-01",
+          "revenue_factor_p12": 450000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-04-01",
+          "revenue_factor_p12": 450000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-05-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-06-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-07-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-08-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-09-01",
+          "revenue_factor_p12": 450000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-10-01",
+          "revenue_factor_p12": 450000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-11-01",
+          "revenue_factor_p12": 450000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2027-12-01",
+          "revenue_factor_p12": 450000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-01-01",
+          "revenue_factor_p12": 450000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-02-01",
+          "revenue_factor_p12": 450000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-03-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-04-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-05-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-06-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-07-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-08-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-09-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-10-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-11-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        },
+        {
+          "month": "2028-12-01",
+          "revenue_factor_p12": 1200000000000,
+          "opex_factor_p12": 1000000000000,
+          "annual_rate_spread_p12": 0
+        }
+      ]
+    },
+    {
+      "id": "S03",
+      "name": "Rates and capacity",
+      "monthly_schedule": [
+        {
+          "month": "2027-01-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2027-02-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2027-03-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2027-04-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2027-05-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2027-06-01",
+          "revenue_factor_p12": 850000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2027-07-01",
+          "revenue_factor_p12": 850000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2027-08-01",
+          "revenue_factor_p12": 850000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2027-09-01",
+          "revenue_factor_p12": 850000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2027-10-01",
+          "revenue_factor_p12": 850000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2027-11-01",
+          "revenue_factor_p12": 850000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2027-12-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-01-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-02-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-03-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-04-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-05-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-06-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-07-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-08-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-09-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-10-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-11-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        },
+        {
+          "month": "2028-12-01",
+          "revenue_factor_p12": 1050000000000,
+          "opex_factor_p12": 1120000000000,
+          "annual_rate_spread_p12": 25000000000
+        }
+      ]
+    }
+  ],
+  "opening_equity_is_explicit_input_and_must_balance": true,
+  "terminal_policy": "Continue reporting closing cash, assets, liabilities and equity; no deemed disposal or acceleration except the explicit loan maturity dates.",
+  "public_presentation": {
+    "format": "native business tables and concise contract notes",
+    "publish_complete_json_copy": false,
+    "publish_recovery_reader_or_join_map": false,
+    "business_ids_and_effective_dates_visible": true,
+    "private_binding_paths_allowed": true
+  },
+  "predeclared_future_dimension": {
+    "dimension_mode": "candidate_12_60_3",
+    "entity_count": 12,
+    "months": 60,
+    "scenarios": 3,
+    "status": "not_generated_not_executed",
+    "policy_types_unchanged": true,
+    "profiles_require_distinct_effective_dated_terms_and_cross_policy_combinations": true
+  },
+  "unverified_activation_requirements": [
+    "all_three_loan_types_and_both_day_counts",
+    "quarterly_unpaid_accrual_then_coupon_cash",
+    "quarterly_coupon_reset_preserves_accrued_balance",
+    "off_cycle_maturity_stub_settlement",
+    "level_principal_recast_at_effective_amendment",
+    "new_draw_excluded_from_current_month_interest",
+    "interest_carry_creation_use_and_expiry",
+    "tax_loss_creation_use_and_expiry",
+    "both_dscr_effective_timing_policies",
+    "two_observed_pass_cure_and_non_test_carry",
+    "shared_bank_margin_and_ordered_draw_competition",
+    "finite_individual_and_group_lp_commitment",
+    "reserve_lock_and_release",
+    "three_statements_and_group_cash_bank_equity_conservation"
+  ],
+  "no_activation_claim_before_independent_forward_execution": true,
+  "construction_precision": {
+    "money_primitive_absolute_max_pence": 100000000000,
+    "rate_scale": 1000000000000,
+    "rate_numerator_grid": 1000000,
+    "computed_financial_and_display_integer_abs_exclusive_max": 9007199254740992,
+    "rounding": "nearest with ties away from zero at stated posting boundaries",
+    "public_money_encoding": "numeric GBP, two decimal display, exact R(value*100) private conversion",
+    "public_rate_encoding": "numeric annual fraction, percent display, exact R(value*1e12) private conversion"
+  }
+}
