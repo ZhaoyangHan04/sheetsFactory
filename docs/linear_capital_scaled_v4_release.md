@@ -45,7 +45,7 @@ multiple completed matches are rejected. All financial construction and complete
 actual D remain the original admitted task.
 
 Confirmation uses native `gpt-6.1-sol/xhigh`, the fixed factory stream-retry-eight
-profile, two CPUs, 32 GiB, PID256, pinned b3 image, MAX_CONCURRENCY=2, the strict
+profile, two CPUs, 32 GiB, pinned b3 image, MAX_CONCURRENCY=2, the strict
 SUM tool budget below 1,800 seconds excluding model response time, the 14,400
 second operational guard and zero outer infrastructure retries. The N360 v4
 budget declaration also classifies complete normal-tail lower bounds at or above
@@ -54,6 +54,10 @@ when raw verifier reward is one. Incomplete coverage or an interval that straddl
 the threshold stays UNKNOWN. Parallel primitive upper bounds are summed; only
 proved unique wrapper overlap gets credit. Every original timing proof is
 independently recomputed at publication and finalization.
+
+Source and verifier calculations enforce PID256. The existing Harbor agent
+schema does not enforce its declared PID limit; do not infer that limit from
+the profile alone. Actual role observations retain this boundary.
 
 The copied `dataset_manifest.json` explicitly retains
 `final20_qualified=False`, `final_root_controls_pending=True`. The original
