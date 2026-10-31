@@ -62,7 +62,9 @@ class ThreadCappedResourceLibreOfficeEngine(base.ResourceLibreOfficeEngine):
         _require(re.fullmatch(r'[0-9a-f]{64}', container_id), 'A full owned container ID is required')
         command = _inspect_command(container_id)
         text = super()._run(command, timeout=15)
-        lines = text.splitlines()
+        # The template's println and Docker's formatter each append a newline.
+        # Remove framing newlines only; preserve internal blanks and spaces.
+        lines = text.rstrip('\n').splitlines()
         evidence = {'stage': stage, 'inspected_at': datetime.now(timezone.utc).isoformat(),
                     'container_id': lines[0] if lines else '', 'variable': VARIABLE,
                     'values': lines[1:], 'inspect_command': command}

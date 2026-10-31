@@ -19,6 +19,7 @@ class Docker:
         self.events=[]; self.container_id='a'*64
         self.environments=[['MAX_CONCURRENCY=2'],['MAX_CONCURRENCY=2']]
         self.env_ids=[self.container_id,self.container_id]; self.inspect_count=0
+        self.trailing_env_newlines=2
         self.exit_code='0'; self.start_fails=False
 
     def run(self,command,timeout):
@@ -29,7 +30,7 @@ class Docker:
         if command[:2]==['docker','inspect']:
             if command[-1]==capped.ENV_FORMAT:
                 index=self.inspect_count;self.inspect_count+=1
-                return '\n'.join([self.env_ids[index],*self.environments[index]])+'\n'
+                return '\n'.join([self.env_ids[index],*self.environments[index]])+'\n'*self.trailing_env_newlines
             if command[-1]=='{{.State.ExitCode}}':return self.exit_code+'\n'
             return self.container_id+'\n'+json.dumps({'NanoCpus':2*10**9,'Memory':32*1024**3,'PidsLimit':256})
         if command[:2]==['docker','start']:
@@ -82,6 +83,23 @@ def test_only_create_environment_changes_with_before_after_fullid_inspections_an
     assert docker.events[start][1]==600 and docker.events[-1][0][:3]==['docker','rm','--force']
     assert record['thread_cap_after']['exit_code_observed']=='0' and result.is_file()
     assert not list(directory.glob('*.tmp')) and getattr(engine._local,'record',None) is None
+
+
+@pytest.mark.parametrize('newlines',[1,2,3])
+def test_formatter_trailing_newlines_do_not_change_the_exact_environment_value(setup,newlines):
+    engine,docker,source,directory=setup;docker.trailing_env_newlines=newlines
+    engine.recalculate(source,directory/'output.xlsx')
+    record=terminal(directory)[1]
+    assert record['thread_cap_before']['values']==record['thread_cap_after']['values']==['MAX_CONCURRENCY=2']
+    assert record['thread_cap_verified'] is True
+
+
+def test_internal_empty_line_is_not_discarded_by_formatter_normalization(setup):
+    engine,docker,source,directory=setup;docker.environments[0]=['','MAX_CONCURRENCY=2']
+    with pytest.raises(WorkbookEngineError,match='exactly one MAX_CONCURRENCY=2'):
+        engine.recalculate(source,directory/'failed.xlsx')
+    assert terminal(directory)[1]['thread_cap_before']['values']==['','MAX_CONCURRENCY=2']
+    assert not any(command[:2]==['docker','start'] for command,_ in docker.events)
 
 
 @pytest.mark.parametrize('environment',[[],['MAX_CONCURRENCY=3'],['MAX_CONCURRENCY=2','MAX_CONCURRENCY=2'],['MAX_CONCURRENCY=02'],['MAX_CONCURRENCY=2.0'],['MAX_CONCURRENCY=2 ']])
