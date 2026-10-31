@@ -4,7 +4,7 @@
 
 上一轮已完成 20 道 Financial Modeling、20 道 Debugging 的质量验收并保留冻结发布包；该批次没有通过难度验收。当前正在迭代两类各至少 10 题，构造与诊断使用 Codex CLI `gpt-6-sol` / `high`，难度门禁固定使用 Codex CLI `gpt-6.1-sol` / `xhigh`，累计工具执行时间严格小于 1800 秒，排除模型思考与生成时间，冻结确认集 Overall Pass@1 ≤ 0.2。新执行合同另有不计模型失败的运行保护时限；旧合同及成绩保留，详见 [评测要求](docs/evaluation_requirements.md)。未完成最终确认前，不作难度达标声明。
 
-截至 2026-10-31 21:19 UTC 的只读快照，正式难度交付仍为 **0 Financial Modeling + 0 Debugging**，根目录 `SpreadsheetEval/` 尚未发布。官方 SpreadsheetBench 2 的 FM100、Debugging100 首测已有103/200道终态（101道新增、2道复用）：FM原始评分15/53通过，Debugging0/50通过；101道新运行中11道协议UNKNOWN，不计作有效模型失败。二十道已完成实际轨迹和完整目标归因，完整复测仍运行，详见[官方复测研究](docs/official_calibration_study.md)。
+官方运行采用2026-10-31 21:19 UTC的只读计数快照：FM100、Debugging100首测已有103/200道终态（101道新增、2道复用），FM原始评分15/53通过，Debugging0/50通过；101道新运行中11道协议UNKNOWN，不计作有效模型失败。至21:32已有21道完成实际轨迹和完整目标归因，完整复测仍运行。正式难度交付仍为 **0 Financial Modeling + 0 Debugging**，根目录 `SpreadsheetEval/` 尚未发布，详见[官方复测研究](docs/official_calibration_study.md)。
 
 日期边界、独立控制和跨持股反馈三组迁移原型均被解出，停止原样扩量。已确认的真实错因包括误用历史净利润符号，以及重构增长率时漏掉“减1”；两个机制组合后的首次最强模型结果为FM原始及有效0、Debugging1，但两类全部目标值均正确，FM只多填三个未适用空格的文字，未证明金融难度。另从FM08_01观察到情景纵轴验收遗漏，新的预算×容量九格参考正在实际计算；200实体、六种自然报告布局的放大版本已冻结契约，尚待完整构造和实测。N360研究早于这些原题归因：P07调试最新取得有效0，工具界797.421–806.225秒，具体原因待逐格确认；P07/P09补全均原始1、原计时UNKNOWN。正常质量的新P01入口仍运行。各项证据与已知用量下界见[当前开发状态](docs/current_development_status.md)。
 
