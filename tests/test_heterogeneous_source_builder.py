@@ -101,6 +101,38 @@ def test_infeasible_or_unbalanced_journal_cannot_pass_regime_admission():
         with pytest.raises(ValueError):builder.mechanism_coverage(f)
 
 
+def policy_bindings():
+    from sheets_factory.workbook.heterogeneous_contracts import excel
+    return {"public_notes":list(excel.PUBLIC_NOTES), "phases":list(builder.spec.PHASES),
+        "cached_financial_values_written":False, "independent_ledger_imported":False}
+
+
+def test_frozen_policy_clarification_is_accepted_without_weakening_base_rules():
+    from sheets_factory.workbook.heterogeneous_contracts import excel
+    bindings=policy_bindings()
+    assert len(bindings['public_notes'])>len(builder.spec.RULES)
+    builder.validate_public_policy_bindings(bindings,excel.PUBLIC_NOTES)
+
+
+@pytest.mark.parametrize('change',[
+    'missing_base_rule','changed_base_rule','reordered_base_rules','missing_clarification',
+    'extra_unfrozen_rule','changed_phase','copied_caches','imported_ledger','missing_metadata'])
+def test_policy_guard_rejects_missing_or_changed_frozen_explanations(change):
+    from sheets_factory.workbook.heterogeneous_contracts import excel
+    bindings=policy_bindings();notes=list(excel.PUBLIC_NOTES)
+    if change=='missing_base_rule':del notes[0];bindings['public_notes']=notes
+    elif change=='changed_base_rule':notes[0]='UNIT changed policy';bindings['public_notes']=notes
+    elif change=='reordered_base_rules':notes[:2]=notes[1::-1];bindings['public_notes']=notes
+    elif change=='missing_clarification':bindings['public_notes'].pop()
+    elif change=='extra_unfrozen_rule':bindings['public_notes'].append('UNIT extra policy')
+    elif change=='changed_phase':bindings['phases'][0]='UNIT changed phase'
+    elif change=='copied_caches':bindings['cached_financial_values_written']=True
+    elif change=='imported_ledger':bindings['independent_ledger_imported']=True
+    elif change=='missing_metadata':del bindings['independent_ledger_imported']
+    with pytest.raises(ValueError,match='exact frozen public policies'):
+        builder.validate_public_policy_bindings(bindings,notes)
+
+
 def test_complete_geometry_and_no_formula_truncation():
     b=openpyxl.Workbook();s=b.active;s.title='UNIT Forecast';s['A1']='GBP';s['B1']='=1+1'
     bindings={'arithmetic_bindings':[{'sheet':s.title,'cell':'B1','formula':'=1+1'}],

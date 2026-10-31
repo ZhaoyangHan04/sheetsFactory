@@ -301,6 +301,17 @@ def _audit_pass(report, workbook, bindings, forward, specification):
         "An actual financial, support, input or full-scope cache audit failed")
 
 
+def validate_public_policy_bindings(bindings, public_notes):
+    """Bind public explanations to the frozen emitter without dropping base rules."""
+    notes = list(public_notes)
+    require(notes[:len(spec.RULES)] == list(spec.RULES)
+        and bindings.get("public_notes") == notes
+        and bindings.get("phases") == list(spec.PHASES)
+        and bindings.get("cached_financial_values_written") is False
+        and bindings.get("independent_ledger_imported") is False,
+        "The source must expose the exact frozen public policies without copied journal caches")
+
+
 def execute_prepared(value, *, port=0):
     from sheets_factory.workbook.heterogeneous_contracts import excel,ledger,validate
     import openpyxl
@@ -336,9 +347,7 @@ def execute_prepared(value, *, port=0):
                 try:
                     bindings=excel.emit_heterogeneous_workbook(book,public,
                         max_formulas=frozen["runtime_profile_value"]["limits"]["source_physical_formulas"],allow_production=True)
-                    require(bindings["public_notes"]==list(spec.RULES) and bindings["phases"]==list(spec.PHASES)
-                        and bindings.get("cached_financial_values_written") is False and bindings.get("independent_ledger_imported") is False,
-                        "The source must expose the exact policies without copied journal caches")
+                    validate_public_policy_bindings(bindings, excel.PUBLIC_NOTES)
                     expected=validate.expected_values(public,forward,bindings)
                     shape=geometry(book,bindings,expected,frozen["runtime_profile_value"])
                     raw=attempt/"raw.xlsx";book.save(raw)
