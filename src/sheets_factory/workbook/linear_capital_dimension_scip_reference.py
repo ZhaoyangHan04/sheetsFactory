@@ -118,13 +118,17 @@ def _runtime(n,modules):
 
 def _finance_ast(n):
  tree=ast.parse(inspect.getsource(prior_reference._checked_finance));hits=Counter();rows=sum(backend.counts(n).values())
+ dimension_text={'L720-D01':f'L{n}-D01','Fixed L720-D01 is required':f'Fixed L{n}-D01 is required',
+  'Only complete N720 production allowed':f'Only complete N{n} production allowed'}
  class Adapt(ast.NodeTransformer):
   def visit_Constant(self,node):
    if type(node.value)is int and node.value in (720,202710720,1121,807120):
     hits[str(node.value)]+=1;node.value={720:n,202710720:202710720 if n==720 else 202711080,1121:rows,807120:n*rows}[node.value]
-   elif type(node.value)is str:node.value=node.value.replace('L720-D01',f'L{n}-D01').replace('N720',f'N{n}')
+   elif type(node.value)is str:
+    if node.value=='completed_N720_N1080_pure_financial_and_full_matrix_handoff':hits['shared_handoff_kind']+=1
+    elif node.value in dimension_text:node.value=dimension_text[node.value];hits['dimension_text']+=1
    return node
- tree=Adapt().visit(tree);require(hits==Counter({'720':3,'202710720':1,'1121':1,'807120':1}),'Frozen full-finance gate sites changed')
+ tree=Adapt().visit(tree);require(hits==Counter({'720':3,'202710720':1,'1121':1,'807120':1,'shared_handoff_kind':1,'dimension_text':6}),'Frozen full-finance gate sites changed')
  return tree
 
 

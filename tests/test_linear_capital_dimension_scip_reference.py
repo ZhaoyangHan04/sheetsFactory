@@ -49,6 +49,22 @@ def test_private_factories_preserve_old_cp600_and_financial_free_native_surface(
  assert (cp600.PREPARATION_KIND,cp600.BACKENDS,cp600.RUNNER,cp600.profile_reference())==old
 
 
+@pytest.mark.parametrize('n',[720,1080])
+@pytest.mark.parametrize('kind',['completed_N720_N1080_pure_financial_and_full_matrix_handoff','completed_N1080_N1080_pure_financial_and_full_matrix_handoff'])
+def test_shared_completed_finance_kind_is_not_dimension_renamed(n,kind):
+ class ReachedFullEvidenceCheck(Exception):pass
+ handoff={'kind':kind,'version':2,'passed':True,
+  'cold_evidence_hashes_typed_census_and_matrix_recomparison_passed':True,
+  'host_only_no_container_resource_claim':True,'new_solver_LO_model_Harbor_network_calls':0}
+ def reached(record):raise ReachedFullEvidenceCheck
+ namespace={'Path':Path,'read':lambda record:handoff,'require':entry.require,'_refs':reached}
+ entry._compile(entry._finance_ast(n),namespace)
+ if kind=='completed_N720_N1080_pure_financial_and_full_matrix_handoff':
+  with pytest.raises(ReachedFullEvidenceCheck):namespace['_checked_finance']({'mock_reference':True})
+ else:
+  with pytest.raises(ValueError,match='Genuine completed zero-service'):namespace['_checked_finance']({'mock_reference':True})
+
+
 def test_representation_omits_only_exact_duplicates_and_true_zero_tautologies():
  def row(id,a,b):return {'id':id,'coefficients':a,'limit':b}
  value={'rows':[row('a',[1000001,0],2000002),row('copy',[1000001,0],2000002),
