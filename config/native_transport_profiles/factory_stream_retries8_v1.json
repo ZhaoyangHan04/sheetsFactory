@@ -1,0 +1,12 @@
+{
+  "kind": "native_codex_transport_resilience_profile",
+  "version": 1,
+  "id": "factory_stream_retries8_v1",
+  "provider_id": "factory",
+  "wire_api": "responses",
+  "provider_overrides": {"stream_max_retries": 8},
+  "request_max_retries": "unchanged_default",
+  "stream_idle_timeout_ms": "unchanged_default",
+  "purpose": "Prospective resilience mitigation; the exact failed transport layer is unknown and this is not a proven root-cause fix.",
+  "official_reference": "https://learn.chatgpt.com/docs/config-file/config-reference"
+}
