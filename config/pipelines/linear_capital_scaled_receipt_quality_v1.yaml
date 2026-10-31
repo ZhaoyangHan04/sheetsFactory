@@ -1,0 +1,99 @@
+run:
+  name: linear-capital-scaled-reference-receipt-normal-quality
+  scheduler: rolling
+  targets:
+    financial_modeling: 1
+    debugging: 1
+  max_sources: 1
+  max_parallel_sources: 1
+  max_candidates_per_seed: 1
+  max_steps: 3
+  max_evidence_rounds_per_revision: 2
+  infrastructure_retries_per_stage: 2
+  max_additional_trials_per_revision: 0
+  source_ordering: manifest
+construction:
+  instruction_style: business_brief
+  max_edit_count:
+    financial_modeling: 2000000
+    debugging: 2000000
+  analysis_limits:
+    max_dependency_closure_cells: 3000000
+    max_profile_cells: 3000000
+    per_formula_reference_cells: 5000
+    max_mask_ranges: 1024
+engine:
+  image: sheetsfactory-lo:24.2-iterative-openpyxl315-v1
+  timeout_seconds: 600
+agents:
+  model: gpt-6-sol
+  reasoning_effort: high
+  timeout_seconds: 1200
+  trajectory_timeout_seconds: 600
+  max_parallel_calls: 1
+  container_image: sheetsfactory-lo:24.2-iterative-openpyxl315-v1
+  container_memory: 32g
+  container_cpus: 2
+  roles:
+    reference_diagnostician:
+      model: gpt-6-sol
+      reasoning_effort: high
+      timeout_seconds: 2400
+diagnosis:
+  selection:
+    include:
+    - Q01
+    - Q02
+    - Q03
+    - Q04
+    - Q05
+    - Q06
+    - Q07
+    - Q08
+    - Q09
+    - Q10
+    - Q11
+    - Q12
+    exclude: []
+  execution:
+    llm_batching: all_in_one
+    reference_evidence_transport: audited_summary
+  difficulty_deferred: false
+  reference_evidence_policy: reference_review
+prompt_overrides:
+  diagnosis.md: diagnosis_business.md
+dashboard:
+  host: 127.0.0.1
+  port: 0
+  open_browser: false
+harbor:
+  execute_controls: true
+  concurrency: 1
+reference_receipt_revision:
+  id: reference_receipt_diagnosis_v1
+  reason: Diagnosis receipt transport correction; financial source, task policies
+    and strong model attempts are unchanged.
+  prior_evidence:
+  - path: /data/hzy/sheetsFactory/outputs/research/P01_Q12_reference_receipt_transport_readonly_20261031T194900Z/receipt.json
+    sha256: bc63f5cd40dd466953b6b8629a1a6631dcd74b57c56afbc7c4ce0e3b1813db9a
+    bytes: 6745
+  - path: /data/hzy/sheetsFactory/outputs/research/linear_scaled_normal_batch_dispatch_hold_20261031T194700Z/before_signal.json
+    sha256: 049f7bb8f754c58fb158c3d066c0abef5fccadf6817d13b477d2cfc91e1bb59b
+    bytes: 2582
+  - path: /data/hzy/sheetsFactory/outputs/research/linear_scaled_normal_batch_dispatch_hold_20261031T194700Z/after_signal_verification.json
+    sha256: b6e4626c5ac2434e83e837dc7ec5b757f479261618b7fc89b9f66a96f0900c61
+    bytes: 779
+  prior_attempted_profiles:
+  - L360-P01
+  - L360-P02
+  retained_undispatched_profiles:
+  - L360-P07
+  - L360-P09
+  - L360-P10
+  - L360-P14
+  - L360-P16
+  - L360-P17
+  - L360-P18
+  - L360-P20
+  prior_normal_clear_or_qualified_inherited: false
+  strong_model_resampled: false
