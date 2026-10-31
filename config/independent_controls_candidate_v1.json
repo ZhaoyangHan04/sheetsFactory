@@ -1,0 +1,22 @@
+{
+  "kind": "synthetic_independent_controls_financial_candidate",
+  "version": 1,
+  "currency_unit": "USD thousands",
+  "first_year": 2027,
+  "periods": 3,
+  "default_operating": "O01",
+  "default_financing": "F03",
+  "operating": [
+    {"id": "O01", "name": "Steady demand", "growth": "0.04", "ebitda_margin": "0.22"},
+    {"id": "O02", "name": "Expansion", "growth": "0.15", "ebitda_margin": "0.27"},
+    {"id": "O03", "name": "Demand contraction", "growth": "-0.08", "ebitda_margin": "0.10"}
+  ],
+  "financing": [
+    {"id": "F01", "name": "Standard facility", "interest_rate": "0.07", "facility_limit": "500", "sweep_fraction": "0.50"},
+    {"id": "F02", "name": "Flexible credit", "interest_rate": "0.045", "facility_limit": "800", "sweep_fraction": "1"},
+    {"id": "F03", "name": "Restricted liquidity", "interest_rate": "0.12", "facility_limit": "200", "sweep_fraction": "0.25"}
+  ],
+  "entities": [
+    {"id": "E01", "name": "North service business", "opening_revenue": "1000", "opening_cash": "40", "opening_debt": "180", "minimum_cash": "25", "annual_principal": "30", "tax_rate": "0.25", "working_capital_fraction": "0.10", "enterprise_multiple": "5", "capex": ["300", "80", "60"]}
+  ]
+}
