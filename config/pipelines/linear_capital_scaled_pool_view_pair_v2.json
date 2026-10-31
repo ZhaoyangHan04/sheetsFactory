@@ -1,0 +1,460 @@
+{
+  "kind": "linear_capital_scaled_fixed_pool_view_pair_policy",
+  "version": 2,
+  "source_provider": "scaled360",
+  "source_kind": "independently_verified_linear_capital_scaled_native_source",
+  "reference_kind": "linear_capital_scaled_producer16_best_runner_dual_financial_reference",
+  "raw_catalog": {
+    "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/catalog_manifest.json",
+    "sha256": "e83770dc74039d66b6258ddb180a60f2f0be75e433e26ee590448a59077ee4d0",
+    "bytes": 14920
+  },
+  "finance_inventory": {
+    "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/completed_finance_inventory.json",
+    "sha256": "d469248cf9e40cad6ebfcd7bc6787aa97f7a55f4792c680cef9f2cd8a90db0e9",
+    "bytes": 7018
+  },
+  "first_development_profile": "L360-P01",
+  "profile_order": [
+    "L360-P01",
+    "L360-P02",
+    "L360-P03",
+    "L360-P04",
+    "L360-P05",
+    "L360-P06",
+    "L360-P07",
+    "L360-P08",
+    "L360-P09",
+    "L360-P10",
+    "L360-P11",
+    "L360-P12",
+    "L360-P13",
+    "L360-P14",
+    "L360-P15",
+    "L360-P16",
+    "L360-P17",
+    "L360-P18",
+    "L360-P19",
+    "L360-P20"
+  ],
+  "profiles": [
+    {
+      "profile_id": "L360-P01",
+      "seed": 202701361,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P01/specification.json",
+        "sha256": "4a0a18552b265017e161193db2897eeedfcb8eda409cee7fa95d06051263169c",
+        "bytes": 3759855
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P01/preparation.json",
+        "sha256": "9e4dc8f76af3cd56c1a583bc28fc6b2934371df70805e66d4b2472999da2ae78",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P01/terminal.json",
+        "sha256": "58afc16298b4bc65aaf3bf04da5a80b4bdad046a584b30fb8cffbb98a7c47209",
+        "bytes": 11008
+      }
+    },
+    {
+      "profile_id": "L360-P02",
+      "seed": 202701362,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P02/specification.json",
+        "sha256": "3f6258bc867f69506415c4d9d2770e70bfa1eaf9214494236b6bdc468a953a16",
+        "bytes": 3759838
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P02/preparation.json",
+        "sha256": "bfa7b6ad7528bc24e36644d94a8d312af2ecc498ed485032ecd7e8107676ba9a",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P02/terminal.json",
+        "sha256": "f81fb07015d399afbbdb2b69b1c7cb3d631bd96512ab53a5bb1e5b38aabc88a8",
+        "bytes": 11007
+      }
+    },
+    {
+      "profile_id": "L360-P03",
+      "seed": 202701363,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P03/specification.json",
+        "sha256": "0e2cc40a83291ce85d7fc966b8f5d80c219391a3f2a4e160a69a16325355f8f4",
+        "bytes": 3760737
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P03/preparation.json",
+        "sha256": "ee07cb709c3cddfd0d973f21b8500eb4995776eb72b1842054440c3ee4058b73",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P03/terminal.json",
+        "sha256": "f1d54fd7106fbf640305ed2d374eb0b3624423dbfedde8e341adc752f95ab0ac",
+        "bytes": 11007
+      }
+    },
+    {
+      "profile_id": "L360-P04",
+      "seed": 202701364,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P04/specification.json",
+        "sha256": "5cd3b4681a6a99ad04d85cb58e11c7ca76ffe07e6ed564a483be35d0d2f28be6",
+        "bytes": 3762428
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P04/preparation.json",
+        "sha256": "652fe87f97e1da684fc478f756c6937b4a9fe34dda31f0580ec568fbaf60b6fd",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P04/terminal.json",
+        "sha256": "497793a5cc05bd7288a615f7a81bade617e0f8aedb51ca325d831205764da2d6",
+        "bytes": 11008
+      }
+    },
+    {
+      "profile_id": "L360-P05",
+      "seed": 202701365,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P05/specification.json",
+        "sha256": "24099cca4f095b0c98f25843a42a3918edbdd0819abd3247c02c71cff813baec",
+        "bytes": 3760911
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P05/preparation.json",
+        "sha256": "0edccd7a91b84e394433aa48f5d344ea1327936c17eac5392c70acdb87664b6c",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P05/terminal.json",
+        "sha256": "28015c96e61bc65278a674660f114c7a9b98aca172110fef43d5f8097a7e86cd",
+        "bytes": 11007
+      }
+    },
+    {
+      "profile_id": "L360-P06",
+      "seed": 202701366,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P06/specification.json",
+        "sha256": "a6776d31cb0c6b678f6a9b0ee4c4c56088ae16ef4dca5aca37e3db961ca3990b",
+        "bytes": 3759978
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P06/preparation.json",
+        "sha256": "82055a166cc6e7df88a2d8eae550af9f94e261a1c487da2c0c9544fb5bcca4ae",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P06/terminal.json",
+        "sha256": "9cc8ce89c434fe24dc3bad148986dab2e071dc7243b2b0b275c02ea66fd5d325",
+        "bytes": 11007
+      }
+    },
+    {
+      "profile_id": "L360-P07",
+      "seed": 202701367,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P07/specification.json",
+        "sha256": "dd806f6ccf7ad073ea69b806f7d29141a076f7a912383b5c5d4e602e1bfd16b8",
+        "bytes": 3762411
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P07/preparation.json",
+        "sha256": "95987d621b03784e55052edace436ca1bbd81db6c9e7e106785d1a98192191f3",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P07/terminal.json",
+        "sha256": "12814c1e8d610c6cc3f4d04259d1296a3bb67be3ed0b26c038cbeed6ae2e6bb3",
+        "bytes": 11008
+      }
+    },
+    {
+      "profile_id": "L360-P08",
+      "seed": 202701368,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P08/specification.json",
+        "sha256": "5904dbbb3788dc90983f26c45a0e8a60ddffa5e24142a1948722ae0cc1042343",
+        "bytes": 3762458
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P08/preparation.json",
+        "sha256": "d53830935ed2c3a6ff5d4f08290ef10946275d649423b3218643715180d2772c",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P08/terminal.json",
+        "sha256": "9be9a0ddb349cb3aaeee951d3f41c38cc8209d4e5b60031a8468fa4c163ddec0",
+        "bytes": 11007
+      }
+    },
+    {
+      "profile_id": "L360-P09",
+      "seed": 202701369,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P09/specification.json",
+        "sha256": "40e48c3cef825ab086b1f510df61fe77f2985215114c7b25f427ffddeafdbfa7",
+        "bytes": 3762424
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P09/preparation.json",
+        "sha256": "f83637ed6455d3f1f5be45acaebc6075c4b9e9480af987db61f9b3a3fb156076",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P09/terminal.json",
+        "sha256": "69b86ef4f26bfc911d718aba688e47b30452c0704c1ea9507092336f6f7485c9",
+        "bytes": 11007
+      }
+    },
+    {
+      "profile_id": "L360-P10",
+      "seed": 202701370,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P10/specification.json",
+        "sha256": "efdb2c67726bddcb9a9aa8e27c351881d62f62a9bd345016dea02e3d9ad370c2",
+        "bytes": 3759482
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P10/preparation.json",
+        "sha256": "282e0ac16fd18f006ce21216978955c6aa0e97d997ec58a58288c3c8caef200d",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P10/terminal.json",
+        "sha256": "4ada6b7d25a180c83476c370546e84892a209d53a3a5a541875d86a245fe918c",
+        "bytes": 11007
+      }
+    },
+    {
+      "profile_id": "L360-P11",
+      "seed": 202701371,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P11/specification.json",
+        "sha256": "165fa9fac25b4232c0c9f0499dabc10d25c9a506987e35f137b31da0701c9029",
+        "bytes": 3759609
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P11/preparation.json",
+        "sha256": "6b54ab7e7cebf5d22472610f84f1b96a543536e196b4e38225e03caf815a6ad9",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P11/terminal.json",
+        "sha256": "f9625d330c071c897552f27723c548840b764991469cebee2098c3d70c2aa237",
+        "bytes": 11007
+      }
+    },
+    {
+      "profile_id": "L360-P12",
+      "seed": 202701372,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P12/specification.json",
+        "sha256": "381f0195132dae80257361efa452af646e98767888c3084ec9cc0caecec553f0",
+        "bytes": 3760689
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P12/preparation.json",
+        "sha256": "052c0b54289cdc1bb6d8792d7c55a7d9cbcdf6c3e271ba6c6b5cc51b0d1743fe",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P12/terminal.json",
+        "sha256": "5fa99f2bf2c803a8118456d1b854dc049adeb085e55356fc1abb0f748ac92ea6",
+        "bytes": 11008
+      }
+    },
+    {
+      "profile_id": "L360-P13",
+      "seed": 202701373,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P13/specification.json",
+        "sha256": "5686a73bec40323044a425c81cdf984502b63257cf00959a4caa7904ff5a439f",
+        "bytes": 3759953
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P13/preparation.json",
+        "sha256": "86fa10fa020e404b990d5fa79f82ea2ea9b1d950c68e0d3f7473051c9f69986f",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P13/terminal.json",
+        "sha256": "da942fe14907075e018aad75b6d89f7465893128553827312aea8c98c3b0745b",
+        "bytes": 11008
+      }
+    },
+    {
+      "profile_id": "L360-P14",
+      "seed": 202701374,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P14/specification.json",
+        "sha256": "1ed1454e6819d032c46575c2a804bc2a7db4dd14c685269e8445ac808c574a2a",
+        "bytes": 3758454
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P14/preparation.json",
+        "sha256": "9cc432b9e6e31c159dcf62e4223ceedab960c49f1b9245fce0cdb02cdef599d9",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P14/terminal.json",
+        "sha256": "7697a64eddae62890b6b94d3658ddccf428b6852d90995d7722f84278655b6ba",
+        "bytes": 11007
+      }
+    },
+    {
+      "profile_id": "L360-P15",
+      "seed": 202701375,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P15/specification.json",
+        "sha256": "1018b61bc8b84bfa4a042bc94b6a62cd6af7603fed074a5d5c811465301ebb8f",
+        "bytes": 3761047
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P15/preparation.json",
+        "sha256": "9211910029abdf60a02efc6d23f9181d9a5271e496f8c6c04b0c6e1362d3afdc",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P15/terminal.json",
+        "sha256": "3e3d49cbd7880b76b8e93a647e400e498e6e603c1606b6be3f7bcd91839d0dbf",
+        "bytes": 11008
+      }
+    },
+    {
+      "profile_id": "L360-P16",
+      "seed": 202701376,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P16/specification.json",
+        "sha256": "4ddf1f81a9c3a8d449b20ef7d07c8a90592c481e07ab8be37cedbdd6f3a79dac",
+        "bytes": 3762284
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P16/preparation.json",
+        "sha256": "3cb961335e61e5d0ce54f8597365033a732f0ac76791d246d13177fedbdf05bb",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P16/terminal.json",
+        "sha256": "9a82051f51f414ffd0ff4fac6a2096693f502421364cd00e783b6642eb78c794",
+        "bytes": 11007
+      }
+    },
+    {
+      "profile_id": "L360-P17",
+      "seed": 202701377,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P17/specification.json",
+        "sha256": "770c100279bea307ccd11d986e5bcae831ad19cb5e4eba028401e8cb63bed4b7",
+        "bytes": 3761926
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P17/preparation.json",
+        "sha256": "50127943d067011b543c6ed672451808b1a477df424ee461717699b56825594f",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P17/terminal.json",
+        "sha256": "bf589667a1fd717895141dfbc5308720c3ba02452f6551b1c54e184bbf0018bd",
+        "bytes": 11008
+      }
+    },
+    {
+      "profile_id": "L360-P18",
+      "seed": 202701378,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P18/specification.json",
+        "sha256": "b1cc28a98a7fc5333772f45d7f9499c4b50c9e0f81c6c3dd03347885fa2b4fa4",
+        "bytes": 3761348
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P18/preparation.json",
+        "sha256": "991850d30708800ff1a5cbf83a1e4105cb1135a418d9fd319a216d0421fbd630",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P18/terminal.json",
+        "sha256": "5afc60881a599ee5fc5c67ac314ae93d393474d50edab621e71a78000b967907",
+        "bytes": 11008
+      }
+    },
+    {
+      "profile_id": "L360-P19",
+      "seed": 202701379,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P19/specification.json",
+        "sha256": "96848a83572808edbadd92f07d30d483069495d6120a53e79ec12e4e396e611b",
+        "bytes": 3759460
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P19/preparation.json",
+        "sha256": "1802562383a60e9c5a88113e4381eb1b191cd7952e717860e056003af68fd75b",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P19/terminal.json",
+        "sha256": "7d3405ea377d04544076762ca2e0cc2ea0540bbe0d1f4532cb9e019060da40d7",
+        "bytes": 11008
+      }
+    },
+    {
+      "profile_id": "L360-P20",
+      "seed": 202701380,
+      "revenue_jitter_pence": 150000,
+      "specification": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P20/specification.json",
+        "sha256": "ae660bee1f251c5b4d9060c2362616a76bcc472a66a01bf4a93e8ad2a536c266",
+        "bytes": 3761477
+      },
+      "raw_preparation": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_raw_actual_20261031T121400Z/L360-P20/preparation.json",
+        "sha256": "05d0e841e5ab759d04d233575e49e05970cc856499a6ab3346817988364c2a14",
+        "bytes": 131870
+      },
+      "financial_crosscheck": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/linear_scaled_N360_finance_actual_20261031T121400Z/L360-P20/terminal.json",
+        "sha256": "e39154a0752d634d98e78872146918e83140528eb768bdf9847a72fc632835c5",
+        "bytes": 11008
+      }
+    }
+  ],
+  "mode_order": [
+    "financial_modeling",
+    "debugging"
+  ],
+  "required_actual_LO_calls": {
+    "financial_modeling": 7,
+    "debugging": 11
+  },
+  "runtime_profile": "config/runtime_profiles/entity_group_large_v2.yaml",
+  "image_id": "sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043",
+  "resources": {
+    "cpus": 2,
+    "memory_bytes": 34359738368,
+    "pids_limit": 256
+  },
+  "MAX_CONCURRENCY": 2,
+  "retry_count": 0,
+  "does_not_change_first_development_or_authorize_models": true
+}
