@@ -1,0 +1,24 @@
+{
+  "kind": "external_official_calibration_cohort_policy",
+  "version": 1,
+  "research_only": true,
+  "maximum_cases": 200,
+  "concurrency": 4,
+  "model": "gpt-6.1-sol",
+  "reasoning_effort": "xhigh",
+  "attempts_per_case_version": 1,
+  "outer_retries": 0,
+  "official_original_evaluator_is_primary": true,
+  "project_exact_is_diagnostic_only": true,
+  "compatibility_is_not_a_selection_filter": true,
+  "run_compatibility_controls": false,
+  "execution_budget": {
+    "version": 1,
+    "elapsed_policy": "operational_guard",
+    "elapsed_guard_seconds": 14400,
+    "tool_budget_seconds": 1800
+  },
+  "runtime_profile": "config/runtime_profiles/entity_group_large_v2.yaml",
+  "worker_cap": "MAX_CONCURRENCY=2",
+  "production_seed_or_release_eligible": false
+}
