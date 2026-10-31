@@ -162,6 +162,59 @@ def test_new_session_never_trusts_persisted_checked_artifact_labels(tiny_mocked_
     assert value.count == {'builder': 2, 'audits': 6}
 
 
+def test_source_proof_is_identical_with_unrelated_prepopulated_caller_cache(tiny_mocked_source):
+    value = tiny_mocked_source
+    fresh = admission.validate_source(value.source_ref)
+    caller = admission.ReferenceSession()
+    unrelated = value.root / 'unrelated_quality_entry.py'
+    unrelated.write_text('# checked by the quality entry before source admission\n')
+    unrelated_ref = caller.ref(unrelated)
+    warm = admission.validate_source(value.source_ref, session=caller)
+    assert warm == fresh
+    assert str(unrelated) not in warm['verified_artifacts']
+    assert str(unrelated) not in warm['artifact_sha256']
+    assert caller._checked[str(unrelated)][0] == unrelated_ref
+    assert set(warm['verified_artifacts']) <= set(caller._checked)
+    assert admission.spec.canonical_sha(warm) in caller._proofs
+    assert value.count == {'builder': 2, 'audits': 6}
+    # The imported proof identity keeps subsequent node guards on their fast
+    # path instead of repeating complete source/search validation.
+    assert admission.verify_admitted_proof(warm, session=caller) == fresh
+    assert admission.verify_admitted_proof(warm, session=caller) == fresh
+    assert value.count == {'builder': 2, 'audits': 6}
+
+
+def test_source_session_merge_rejects_conflicts_without_partial_cache_or_proof_import(tiny_mocked_source):
+    value = tiny_mocked_source
+    caller = admission.ReferenceSession()
+    # Simulate a caller that checked a previous identity at the same path.
+    records = value.root / 'mock_records.bin'
+    original = records.read_bytes()
+    records.write_bytes(b'previous caller record identity')
+    old = caller.ref(records)
+    records.write_bytes(original)
+    unrelated = value.root / 'unrelated.txt'; unrelated.write_text('unrelated')
+    caller.ref(unrelated)
+    before = deepcopy(caller._checked)
+    with pytest.raises(ValueError, match='Conflicting.*merge'):
+        admission.validate_source(value.source_ref, session=caller)
+    assert caller._checked == before
+    assert caller._checked[str(records)][0] == old
+    assert caller._proofs == set()
+    assert value.count == {'builder': 1, 'audits': 3}
+
+
+def test_failed_semantic_source_validation_never_pollutes_caller_cache(tiny_mocked_source):
+    value = tiny_mocked_source; caller = admission.ReferenceSession()
+    unrelated = value.root / 'existing_config.json'; unrelated.write_text('{}\n')
+    caller.ref(unrelated); before = deepcopy(caller._checked)
+    value.source['financial_audit_passed'] = False
+    with pytest.raises(ValueError, match='actual complete'):
+        admission.validate_source(value.write_source(), session=caller)
+    assert caller._checked == before and caller._proofs == set()
+    assert value.count == {'builder': 0, 'audits': 0}
+
+
 @pytest.mark.parametrize('change', ['old18', 'wrong_profile', 'missing_sidecar_flag', 'unprotected_helper',
                                    'missing_financial_field', 'missing_pass', 'wrong_source_image',
                                    'eight_gib', 'network_public', 'agent_resources_claim', 'not_feasible',

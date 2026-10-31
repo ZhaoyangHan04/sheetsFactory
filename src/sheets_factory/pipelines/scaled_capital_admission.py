@@ -114,6 +114,24 @@ class ReferenceSession:
             require(previous is None or previous[0] == record, 'Conflicting checked builder artifacts')
             self._checked[path] = (dict(record), _identity(Path(path)))
 
+    def _merge_validated_source(self, source_session):
+        """Adopt a completed source validation without importing caller state.
+
+        Check every overlap before changing this cache. Large artifacts retain
+        their just-validated identities, so later node guards do not read both
+        complete record streams again when those files remain unchanged.
+        """
+        require(isinstance(source_session, ReferenceSession), 'Merge only an internal source validation session')
+        for path, (record, _) in source_session._checked.items():
+            previous = self._checked.get(path)
+            require(previous is None or previous[0] == record, 'Conflicting source artifact references during session merge')
+        for path, (record, identity) in list(source_session._checked.items()):
+            if _identity(_path(path)) != identity:
+                source_session.check(record)
+        self._checked.update({path: (dict(record), identity)
+            for path, (record, identity) in source_session._checked.items()})
+        self._proofs.update(source_session._proofs)
+
 
 def _unique(pairs):
     value = {}
@@ -217,7 +235,18 @@ def _actual_calls(source, frozen, session):
 
 def validate_source(source_manifest, *, session=None):
     """Validate the full source, without executing search kernels, LO or models."""
-    session = session or ReferenceSession()
+    require(session is None or isinstance(session, ReferenceSession), 'An internal reference validation session is required')
+    # A caller may already have checked entry/config/task artifacts. They are
+    # not source dependencies and must never affect the canonical source proof.
+    # Only successful source validation is merged back into that live cache.
+    source_session = ReferenceSession()
+    proof = _validate_source(source_manifest, session=source_session)
+    if session is not None:
+        session._merge_validated_source(source_session)
+    return proof
+
+
+def _validate_source(source_manifest, *, session):
     if isinstance(source_manifest, (str, Path)):
         source_manifest = session.ref(source_manifest)
     source = session.read(source_manifest)
