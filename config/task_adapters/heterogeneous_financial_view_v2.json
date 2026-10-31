@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "adapter": "heterogeneous_business_financial_view_v2",
+  "enabled_by_default": false,
+  "parent_adapter": "heterogeneous_business_financial_view_v1",
+  "excluded_counter_fields": ["cure_open", "cure_next"],
+  "retained_positions_and_values": "exact_version_one_subset",
+  "asset_policy_note_title": "Asset depreciation",
+  "asset_policy_note": "Pay for and capitalise an asset at the end of its commissioning month. From the following month, charge monthly straight-line depreciation using original cost and stated useful-life months, rounded to pennies with halves away from zero. Cap each charge at remaining net book value and charge any remaining balance in the final useful-life month. Use supplied opening accumulated depreciation as the opening book balance.",
+  "opening_cure_input_preserved": true,
+  "substantive_covenant_test_DSCR_restriction_and_closure_outputs_preserved": true,
+  "reference_representation": "unchanged_audited_source_business_values_as_literals",
+  "input_forecasts": "all_retained_business_slots_blank_including_zero_results",
+  "new_actual_full_delta_required": true,
+  "no_prior_task_quality_or_difficulty_transfer": true,
+  "offline_prototype_census_not_source_certificate": {
+    "parent_business_slots": 100296,
+    "excluded_internal_counter_slots": 864,
+    "retained_business_slots": 99432,
+    "new_actual_changed_value_set_count": null
+  }
+}
