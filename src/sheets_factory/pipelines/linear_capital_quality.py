@@ -64,7 +64,12 @@ class References:
         current = _fingerprint(path)
         prior = self.files.get(str(path))
         require(prior is None or prior == record, 'Conflicting references name one physical file')
-        if self.fingerprints.get(str(path)) != current:
+        # Some filesystems can preserve ctime within one clock tick after a
+        # same-length write plus mtime restoration. Always hash small code,
+        # configuration and receipts; metadata caching is only a performance
+        # guard for large controlled workbook/financial payloads. A fresh cold
+        # admission still hashes every complete large artifact.
+        if record['bytes'] <= 2 * 1024**2 or self.fingerprints.get(str(path)) != current:
             require(reference(path) == record, 'A bound artifact changed: ' + str(path))
             self.fingerprints[str(path)] = current
         self.files[str(path)] = deepcopy(record)
@@ -429,3 +434,113 @@ def require_view_admission(value):
     require(type(value) is LinearViewAdmission and value in _ACTIVE_VIEWS,
         'Persisted pass flags cannot replace an actual cold source/view admission')
     return value.guard()
+
+
+NORMAL_SOURCE_KIND = 'audited_native_linear_capital_source_with_actual_task_views'
+
+
+def validate_configuration(config):
+    from ..task_adapters import linear_capital_portfolio as adapter
+    from ..nodes.quality import validate_reference_policy_selection
+    from ..checkers import DiagnosisRunner
+    from ..workbook.resource_engine import load_runtime_profile
+    adapter.validate_setting(config.get(adapter.SETTING))
+    require(validate_reference_policy_selection(config)=='independent_public_recovery',
+        'The normal family requires isolated public-only reconstruction')
+    recovery_config=config['recovery']
+    require(recovery_config.get('compiler_backend')==adapter.recovery.BACKEND
+        and type(recovery_config.get('replay_timeout_seconds')) is int
+        and recovery_config['replay_timeout_seconds']==7200,
+        'The public recovery backend and operational guard changed')
+    adapter.recovery.validate_offline_configuration(recovery_config['offline_public_recovery'])
+    adapter.recovery.validate_public_runtime(recovery_config['public_runtime_preparation'])
+    require(config['pipeline']['node_registry']==str(adapter.REGISTRY)
+        and config['diagnosis'].get('execution',{}).get('reference_evidence_transport')=='audited_summary'
+        and config['harbor'].get('execute_controls') is True,
+        'All normal routes, complete private evidence transport and actual Harbor controls are mandatory')
+    # Resolve the ordinary pluggable registry rather than inventing a second QA
+    # selection mechanism. The provided default configuration enables all 12.
+    DiagnosisRunner(config['project_root']).resolve(config)
+    run=config['run'];targets=run['targets']
+    require(set(targets)=={'financial_modeling','debugging'}
+        and all(type(v) is int and v>=0 for v in targets.values()) and sum(targets.values())>0
+        and run.get('source_ordering')=='manifest' and not run.get('continuation_id')
+        and all(type(run.get(k)) is int and run[k]>=1 for k in ('max_sources','max_parallel_sources','max_candidates_per_seed'))
+        and run['max_candidates_per_seed']==1,
+        'Use explicit fresh source/mode quotas with one audited physical view per source and mode')
+    profile=load_runtime_profile(config[adapter.SETTING]['runtime_profile']['path'])
+    limits=config['construction']['analysis_limits']
+    require(limits.get('max_profile_cells')==profile['limits']['max_profile_cells']
+        and limits.get('max_dependency_closure_cells')==profile['limits']['max_dependency_closure_cells']
+        and all(config['construction']['max_edit_count'][m]==profile['limits']['full_target_cells'] for m in targets),
+        'Complete analysis and target capacities must remain explicit and untruncated')
+    agents=config['agents']
+    require(agents.get('container_cpus')==2 and agents.get('container_memory')=='32g'
+        and config['engine']['image']==profile['image']['tag'] and config['engine']['timeout_seconds']==600,
+        'The model/source runtime profile must remain separate from the offline recovery resources')
+    return profile
+
+
+def validate_seed(seed, admissions):
+    require(seed.get('source_kind')==NORMAL_SOURCE_KIND and type(seed.get('variant')) is int and seed['variant']==0,
+        'A seed must identify an explicitly admitted native-linear source')
+    source=reference(seed['local_path'])
+    require(seed.get('sha256')==source['sha256'] and type(seed.get('modes')) is list
+        and len(seed['modes'])==len(set(seed['modes'])) and seed['modes'], 'An exact source identity and distinct modes are required')
+    evidence=seed.get('finance_evidence',{})
+    require(evidence.get('financial_seed_verified') is True and evidence.get('financial_modeling_eligible') is True,
+        'Complete financial source evidence is required')
+    for mode in seed['modes']:
+        key=(source['sha256'],mode)
+        require(key in admissions,'A declared mode has no completed opaque source/view admission')
+        proof=require_view_admission(admissions[key])
+        require(proof['workbook']==source and evidence['linear_view_admissions'].get(mode)==proof,
+            'Persisted seed evidence differs from its actual current source/view admission')
+
+
+from .factory import FactoryPipeline
+
+
+class LinearCapitalQualityFactory(FactoryPipeline):
+    """Original scheduler and state machine with only admitted family providers."""
+    def __init__(self,config,*args,admissions,**kwargs):
+        validate_configuration(config)
+        require(type(admissions) in (list,tuple) and admissions,'At least one opaque source/view admission is required')
+        self.admissions={}
+        for item in admissions:
+            proof=require_view_admission(item);key=(proof['workbook']['sha256'],proof['mode'])
+            require(key not in self.admissions,'A source/mode admission was duplicated')
+            require(proof['runtime_profile']==config['linear_capital_portfolio']['runtime_profile']
+                and proof['provider_registry']==config['linear_capital_portfolio']['provider_registry'],
+                'Every selected source/view must use the same explicit quality registry and task resource profile')
+            self.admissions[key]=item
+        counts={mode:sum(m==mode for _,m in self.admissions) for mode in config['run']['targets']}
+        require(all(config['run']['targets'][mode]<=count for mode,count in counts.items()),
+            'A requested task quota exceeds the complete admitted source/mode inventory')
+        super().__init__(config,*args,**kwargs)
+
+    def load_seeds(self):
+        seeds=super().load_seeds()
+        for seed in seeds:validate_seed(seed,self.admissions)
+        represented={(seed['sha256'],mode) for seed in seeds for mode in seed['modes']}
+        require(represented==set(self.admissions),'The exact selected source/mode inventory changed')
+        return seeds
+
+    def run_phase(self,context,phase):
+        identity=reference(context.source)['sha256'];key=(identity,context.mode)
+        require(key in self.admissions,'This normal task has no admitted actual view')
+        context.data['_linear_admission']=self.admissions[key]
+        self.admissions[key].guard()
+        return super().run_phase(context,phase)
+
+    def _claim_targets(self,context):
+        from ..workbook.resource_engine import load_runtime_profile
+        proof=require_view_admission(context.data.get('_linear_admission'))
+        plan=context.data['plan']
+        require('mask_ranges' not in plan and not plan.get('scenario_inputs'),
+            'The complete native view cannot change supplied assumptions or become formula-only range masking')
+        cap=load_runtime_profile(proof['runtime_profile']['path'])['limits']['full_target_cells']
+        edits=plan.get('edits',[])
+        require(0<len(edits)<=cap and len({(e['sheet'],e['cell']) for e in edits})==len(edits),
+            'The full physical target inventory must be nonempty, unique and within its declared capacity')
+        return super()._claim_targets(context)

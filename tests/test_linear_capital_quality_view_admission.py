@@ -152,3 +152,13 @@ def test_admitted_guard_rejects_late_control_artifact_tamper(completed_view):
     live=q.LinearViewAdmission(source,terminal,provider_id='fixture')
     (root/'extra_change.xlsx').write_bytes(b'late corruption')
     with pytest.raises(ValueError,match='changed'):live.guard()
+
+
+def test_small_code_guard_rehashes_even_when_all_stat_fields_repeat(tmp_path,monkeypatch):
+    path=tmp_path/'provider.py';path.write_text('x=1\n');record=q.reference(path)
+    original=q._fingerprint(path)
+    # Deterministic regression for the real coarse-clock observation retained
+    # in research: a same-length write can repeat every stat field.
+    monkeypatch.setattr(q,'_fingerprint',lambda unused:original)
+    refs=q.References();refs.check(record);path.write_text('x=2\n')
+    with pytest.raises(ValueError,match='changed'):refs.guard()
