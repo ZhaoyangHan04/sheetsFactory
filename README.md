@@ -4,9 +4,9 @@
 
 上一轮已完成 20 道 Financial Modeling、20 道 Debugging 的质量验收并保留冻结发布包；该批次没有通过难度验收。当前正在迭代两类各至少 10 题，构造与诊断使用 Codex CLI `gpt-6-sol` / `high`，难度门禁固定使用 Codex CLI `gpt-6.1-sol` / `xhigh`，累计工具执行时间严格小于 1800 秒，排除模型思考与生成时间，冻结确认集 Overall Pass@1 ≤ 0.2。新执行合同另有不计模型失败的运行保护时限；旧合同及成绩保留，详见 [评测要求](docs/evaluation_requirements.md)。未完成最终确认前，不作难度达标声明。
 
-截至 2026-10-31 17:17 UTC，正式难度交付仍为 **0 Financial Modeling + 0 Debugging**，根目录 `SpreadsheetEval/` 尚未发布。官方 SpreadsheetBench 2 完整 FM 100 题、Debugging 100 题最强配置复测正在执行：原有两次成绩保留，剩余 198 题按固定交错顺序、四个独立进程执行首次尝试。该时点新增 17 道终态：FM 10 道官方通过 6 道，Debugging 7 道原始评分均未通过，其中 1 道运行协议状态 UNKNOWN，不能计作有效模型失败。这些是部分结果。范围、完整目标及轨迹归因、实际迁移实验见[官方复测研究](docs/official_calibration_study.md)。
+截至 2026-10-31 17:52 UTC，正式难度交付仍为 **0 Financial Modeling + 0 Debugging**，根目录 `SpreadsheetEval/` 尚未发布。官方 SpreadsheetBench 2 完整 FM100、Debugging100 最强配置复测已有31/200道终态，包含30道新首测和1道既有成绩复用：FM官方评分9/17通过，Debugging0/14通过，两类各1道协议状态UNKNOWN，不能计作有效模型失败。剩余运行继续，不外推完整通过率。完整目标、实际轨迹归因和迁移实验见[官方复测研究](docs/official_calibration_study.md)。
 
-根据官方实际轨迹中的终止日期遗漏，已构造独立的周期边界财务原型，并完成全部 657 个输出的真实重算。两类首次最强测试均 reward=1，当前原型没有难度资格；另一独立控制交叉状态原型正在验证。新 360 项池 P01 两类工程视图均已通过，首次模型开发已启动，未取得分数。八业务旧组合的调试已被解出，补全零分涉及公开范围和口径缺陷，不作为难度证据。各项证据、剩余工作与用量见[当前开发状态](docs/current_development_status.md)。
+日期边界与独立情景控制两类迁移原型均已完成实际工程验证，各自补全、调试首测都被完整解出，不原样扩量或重抽成绩。新银行模型归因确认了照抄零值历史样例、忽视跨报表净利润符号证据的真实错误，后续迁移须另行实测。另一组N360组合候选的P01补全实际verifier=0，但原v3计时状态UNKNOWN，追加保守计时诊断不覆盖原成绩；固定10个来源的两类工程构造现已批量启动，尚无正常质量或最终确认资格。各项证据、剩余工作与用量见[当前开发状态](docs/current_development_status.md)。
 
 公开失败案例与当前配置的复测见[失败机制与任务设计](docs/failure_driven_task_design.md)。新题保留必要业务政策与提交范围，避免在题面给出解题步骤、正确公式或错误根位置。历史已解出版本不重复采样凑零分，接口故障单列。具体旧实验及收据路径见[历史开发记录](docs/development_history.md)。
 
