@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "kind": "workbook_runtime_resource_profile",
+  "id": "entity_group_large_v2",
+  "image": {
+    "tag": "sheetsfactory-lo:24.2-iterative-openpyxl315-v1",
+    "id": "sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043"
+  },
+  "docker_resources": {
+    "source": {
+      "cpus": 2,
+      "memory_bytes": 34359738368,
+      "pids_limit": 256
+    },
+    "agent": {
+      "cpus": 2,
+      "memory_bytes": 34359738368,
+      "pids_limit": 256
+    },
+    "verifier": {
+      "cpus": 2,
+      "memory_bytes": 34359738368,
+      "pids_limit": 256
+    }
+  },
+  "timeouts": {
+    "workbook_file_seconds": 600,
+    "verifier_total_seconds": 2400
+  },
+  "solver_tool_budget": {
+    "seconds": 1800,
+    "strict_less_than": true,
+    "exclude_model_response_time": true,
+    "parallel_executions": "sum"
+  },
+  "limits": {
+    "source_physical_formulas": 2000000,
+    "max_profile_cells": 3000000,
+    "max_dependency_closure_cells": 3000000,
+    "full_target_cells": 2000000,
+    "truncate": false
+  }
+}

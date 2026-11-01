@@ -1,0 +1,153 @@
+{
+  "task_id": "dbg-dbg-s19-c86371bca08a71d5c935",
+  "metadata": {
+    "task_id": "dbg-dbg-s19-c86371bca08a71d5c935",
+    "mode": "debugging",
+    "source_kind": "hypothetical_operating_report_factory",
+    "revision": 0,
+    "revision_hash": "c86371bca08a71d5c935fa9c1846864456e233a5cf377cc03f56980f74186651",
+    "difficulty_status": "development_pending",
+    "shared_source_id": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+    "variant_id": "DBG-S19",
+    "libreoffice_worker_cap": "MAX_CONCURRENCY=2",
+    "resource_runtime": {
+      "version": 1,
+      "profile": {
+        "version": 1,
+        "kind": "workbook_runtime_resource_profile",
+        "id": "entity_group_large_v2",
+        "image": {
+          "tag": "sheetsfactory-lo:24.2-iterative-openpyxl315-v1",
+          "id": "sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043"
+        },
+        "docker_resources": {
+          "source": {
+            "cpus": 2,
+            "memory_bytes": 34359738368,
+            "pids_limit": 256
+          },
+          "agent": {
+            "cpus": 2,
+            "memory_bytes": 34359738368,
+            "pids_limit": 256
+          },
+          "verifier": {
+            "cpus": 2,
+            "memory_bytes": 34359738368,
+            "pids_limit": 256
+          }
+        },
+        "timeouts": {
+          "workbook_file_seconds": 600,
+          "verifier_total_seconds": 2400
+        },
+        "solver_tool_budget": {
+          "seconds": 1800,
+          "strict_less_than": true,
+          "exclude_model_response_time": true,
+          "parallel_executions": "sum"
+        },
+        "limits": {
+          "source_physical_formulas": 2000000,
+          "max_profile_cells": 3000000,
+          "max_dependency_closure_cells": 3000000,
+          "full_target_cells": 2000000,
+          "truncate": false
+        }
+      },
+      "profile_binding": {
+        "path": "/data/hzy/sheetsFactory/config/runtime_profiles/entity_group_large_v2.yaml",
+        "sha256": "4ecc79fe954b9e2965a15d2f0c8965a39394f621ae9808f02fcf88965f446b9b",
+        "bytes": 781
+      },
+      "recipe": {
+        "exporter": {
+          "path": "/data/hzy/sheetsFactory/src/sheets_factory/evaluation/resource_harbor.py",
+          "sha256": "38f625e9f74dd51ef61c66b986bb4e68bf183d8ab7d5a7acbf9dc77acec28a40",
+          "bytes": 15318
+        },
+        "verifier_wrapper": {
+          "path": "/data/hzy/sheetsFactory/src/sheets_factory/evaluation/resource_streaming_verifier.py",
+          "sha256": "fd076d6327840012214ede6a1cb4191c4f6f68d3455ac1896aea535aab37ef2d",
+          "bytes": 8024
+        },
+        "streaming_comparison": {
+          "path": "/data/hzy/sheetsFactory/src/sheets_factory/evaluation/streaming_verifier.py",
+          "sha256": "76c9c8ac718195fd9daa04c90a2f7f3b4dfb1f8d70e7b45acadb1386c6cdc665",
+          "bytes": 10253
+        },
+        "original_harbor": {
+          "path": "/data/hzy/sheetsFactory/src/sheets_factory/evaluation/harbor.py",
+          "sha256": "3166295f3af521031b078535465c65b9351b812357c24eea5880b72c88022d33",
+          "bytes": 11578
+        },
+        "resource_engine": {
+          "path": "/data/hzy/sheetsFactory/src/sheets_factory/workbook/resource_engine.py",
+          "sha256": "cc4fb863740a0fc403a5947a52fa1c2e644b81b75c358e2a3cbf47e7d33a9c8d",
+          "bytes": 12759
+        },
+        "uno_recalculate": {
+          "path": "/data/hzy/sheetsFactory/src/sheets_factory/workbook/uno_recalculate.py",
+          "sha256": "c6b854c4705d12a9d7d1ec36575f0634e50c93290bd62c40634cc826ee41fc41",
+          "bytes": 4966
+        }
+      },
+      "source_artifacts": {
+        "input": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_DBG20_20261101T043800Z/private/DBG-S19/materialized/public/input.xlsx",
+          "sha256": "9a42e7360b5d89115c583db7918160559c835113e9c07ebdb84939114c58cfc8",
+          "bytes": 2250992
+        },
+        "goal": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_DBG20_20261101T043800Z/private/DBG-S19/materialized/private/goal.xlsx",
+          "sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+          "bytes": 2261814
+        },
+        "instruction": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_DBG20_20261101T043800Z/private/DBG-S19/materialized/public/instruction.md",
+          "sha256": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+          "bytes": 405
+        }
+      },
+      "required_controls": [
+        "oracle",
+        "nop"
+      ],
+      "execution_budget": {
+        "version": 1,
+        "elapsed_policy": "operational_guard",
+        "elapsed_guard_seconds": 14400,
+        "tool_budget_seconds": 1800
+      },
+      "operational_guard_is_model_failure": false,
+      "actual_container_resources_verified": false,
+      "requested_harbor_network_mode": "public",
+      "source_and_public_reference_replay_network_mode": "none",
+      "build_base_reference": "sheetsfactory-lo:24.2-iterative-openpyxl315-v1",
+      "required_local_base_image_id": "sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043",
+      "actual_local_base_image_verification_required_before_build": true,
+      "harbor_pid_limit_configured": false,
+      "pid_limit_note": "The installed Harbor task schema has no PID-limit field; verify real HostConfig separately.",
+      "quality_or_difficulty_certified": false
+    },
+    "base_image": "sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043"
+  },
+  "files": {
+    "environment/Dockerfile": "a5525b2b43c52dd95ad39681cb6acd39785362adfa4c1cdfc1db01e32f9920b6",
+    "environment/input.xlsx": "9a42e7360b5d89115c583db7918160559c835113e9c07ebdb84939114c58cfc8",
+    "environment/recalculate": "a52a942285c195440784b00c3da844555695ff110fa44ca1cd79421b1756b4bf",
+    "environment/resource_runner.py": "fd076d6327840012214ede6a1cb4191c4f6f68d3455ac1896aea535aab37ef2d",
+    "environment/runtime_profile.json": "87cf077f449313564f9376f0fb8b25161ac0e178513ede79f4c451f21f13aa34",
+    "instruction.md": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+    "solution/reference.xlsx": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+    "solution/solve.sh": "f0b4194b90b343a935cebe7dec55a1d468f25a305c4b67cd8106a7b7631e2b4e",
+    "task.toml": "d80f7aa04cfdf488ad74368e8fc5eb347c95ecdadae666985f9c339d8571e1ec",
+    "tests/Dockerfile": "4cbf9b5656ff778ccdeed79664961816d92c44e1f4a2b9480aba6ca71bf38288",
+    "tests/original_input.xlsx": "9a42e7360b5d89115c583db7918160559c835113e9c07ebdb84939114c58cfc8",
+    "tests/reference.xlsx": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+    "tests/runtime_profile.json": "87cf077f449313564f9376f0fb8b25161ac0e178513ede79f4c451f21f13aa34",
+    "tests/streaming_core.py": "76c9c8ac718195fd9daa04c90a2f7f3b4dfb1f8d70e7b45acadb1386c6cdc665",
+    "tests/test.sh": "463fcbff22329a9d3440cfaad02e6e0a201aa617e08c15b358aafb415880520e",
+    "tests/verify.py": "fd076d6327840012214ede6a1cb4191c4f6f68d3455ac1896aea535aab37ef2d"
+  }
+}

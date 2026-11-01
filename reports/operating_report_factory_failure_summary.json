@@ -1,0 +1,944 @@
+{
+  "kind": "actual_operating_reports_factory_confirmation_failure_summary",
+  "version": 1,
+  "evidence": {
+    "confirmation": {
+      "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/terminal.json",
+      "sha256": "d3bb3e70eb71029abbd4022a6d53f20033033239cd7ba0c7bdfbd66b01460174",
+      "bytes": 5724776
+    },
+    "cohort": {
+      "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/cohort/cohort_frozen.json",
+      "sha256": "3e2205ee83430f4563190b1e4f5d9a03a3f3b97a9e872d2d5474bbc2d17b8147",
+      "bytes": 151830
+    },
+    "bindings": {
+      "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_200_rendering_v2_pure_20261031T221200Z/emission/private_bindings.json",
+      "sha256": "672d30e86ea782f1ad8f739758011249df490b018dcfd921854fdce0e150db4b",
+      "bytes": 36373536
+    },
+    "bindings_descriptor": null
+  },
+  "count": 20,
+  "raw_rewards": {
+    "0": 20
+  },
+  "by_mode": {
+    "debugging": {
+      "count": 10,
+      "raw_rewards": {
+        "0": 10
+      }
+    },
+    "financial_modeling": {
+      "count": 10,
+      "raw_rewards": {
+        "0": 10
+      }
+    }
+  },
+  "patterns": [
+    {
+      "mode": "debugging",
+      "pattern": "boundary_only",
+      "count": 5
+    },
+    {
+      "mode": "debugging",
+      "pattern": "other_observed_field_differences",
+      "count": 5
+    },
+    {
+      "mode": "financial_modeling",
+      "pattern": "boundary_only",
+      "count": 5
+    },
+    {
+      "mode": "financial_modeling",
+      "pattern": "other_observed_field_differences",
+      "count": 5
+    }
+  ],
+  "rows": [
+    {
+      "task_id": "fm-f20-abcfe7ae1af3dd1ef508",
+      "mode": "financial_modeling",
+      "variant_id": "F20",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f20-abcfe7ae1af3dd1ef508__MY9ysY3/result.json",
+        "sha256": "ebb1b730bc694415f37f20d568101a6aeb0893fef526acd58612dec96916fda0",
+        "bytes": 6343
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f20-abcfe7ae1af3dd1ef508__MY9ysY3/verifier/diagnostics.json",
+        "sha256": "e784f1cd717346a78b1c73a1817ae262921a9161bed42710a1ae362df4ef125e",
+        "bytes": 1527
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 88322,
+      "actual_D": 88322,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 2,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "boundary_only"
+    },
+    {
+      "task_id": "fm-f19-699f818d16d16e3e41f4",
+      "mode": "financial_modeling",
+      "variant_id": "F19",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f19-699f818d16d16e3e41f4__yoodFYP/result.json",
+        "sha256": "3fe4bd10dcc734cd8a7de62aaebf15025ccc79705cae258ee5f02df9770b2a85",
+        "bytes": 6339
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f19-699f818d16d16e3e41f4__yoodFYP/verifier/diagnostics.json",
+        "sha256": "bddd4fa64dd29f1422b927edfc60740ce82a02ae8648495aab19744ac92a4b34",
+        "bytes": 1527
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 87427,
+      "actual_D": 87427,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 2,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "boundary_only"
+    },
+    {
+      "task_id": "fm-f18-3042cfe550d9cf6992f8",
+      "mode": "financial_modeling",
+      "variant_id": "F18",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f18-3042cfe550d9cf6992f8__ARCbYGe/result.json",
+        "sha256": "8e7f7b62fbe3bd7bdb561953833ca53e292866c1ea7fc164a37b4562348a9ce2",
+        "bytes": 6343
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f18-3042cfe550d9cf6992f8__ARCbYGe/verifier/diagnostics.json",
+        "sha256": "5b09265f861824354561856ca00d022ab9d82f15bcffa9731dea1ebc32678bab",
+        "bytes": 1527
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 86533,
+      "actual_D": 86533,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 2,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "boundary_only"
+    },
+    {
+      "task_id": "fm-f17-8e9c73856a47ec4fe5e7",
+      "mode": "financial_modeling",
+      "variant_id": "F17",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f17-8e9c73856a47ec4fe5e7__2AGbv7Z/result.json",
+        "sha256": "a9464346c1bbab28b883f99bbe862613fbfbeb0a5e26804fc68fe326dc7eac60",
+        "bytes": 6343
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f17-8e9c73856a47ec4fe5e7__2AGbv7Z/verifier/diagnostics.json",
+        "sha256": "7081cb4f9d04d97fd4f1576763c68254eb1f6d341fa758dd19c6a460ed3ef2fa",
+        "bytes": 29389
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 85638,
+      "actual_D": 85638,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 802,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "other_observed_field_differences"
+    },
+    {
+      "task_id": "fm-f16-fd6a9a8d4e98f334016f",
+      "mode": "financial_modeling",
+      "variant_id": "F16",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f16-fd6a9a8d4e98f334016f__5dh3TmU/result.json",
+        "sha256": "8327a969588361f3d4dca4a94466081eb052d7156684914a73dd5abff4f39720",
+        "bytes": 6323
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f16-fd6a9a8d4e98f334016f__5dh3TmU/verifier/diagnostics.json",
+        "sha256": "50ff24bbbb6321b8a6f09a0f751c6c417cee199e1a74c8bc78dcd636fbd9dc6d",
+        "bytes": 1528
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 84744,
+      "actual_D": 84744,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 2,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "boundary_only"
+    },
+    {
+      "task_id": "fm-f15-03e4909f03e7114eceaf",
+      "mode": "financial_modeling",
+      "variant_id": "F15",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f15-03e4909f03e7114eceaf__8hA4cQU/result.json",
+        "sha256": "b3dd699a9b91af926d387d2afd3f4370019873acf729ac706a565daff4086bdc",
+        "bytes": 6323
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f15-03e4909f03e7114eceaf__8hA4cQU/verifier/diagnostics.json",
+        "sha256": "6bb93898c349544ee17c708560ad88a02d3c9f51526a132fadf92e323283dbb9",
+        "bytes": 1526
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 83849,
+      "actual_D": 83849,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 2,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "boundary_only"
+    },
+    {
+      "task_id": "fm-f14-b4fc8284df5804a93b09",
+      "mode": "financial_modeling",
+      "variant_id": "F14",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f14-b4fc8284df5804a93b09__RrW2mNk/result.json",
+        "sha256": "5a81e810bf8803f0e510537f95b6f6697afad51160970662e9469dd6a6d91b1a",
+        "bytes": 6343
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f14-b4fc8284df5804a93b09__RrW2mNk/verifier/diagnostics.json",
+        "sha256": "433f12c3e97a8f4706bd1813e075ce9ac8494d55de3507dda52095db20c66b94",
+        "bytes": 29391
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 82955,
+      "actual_D": 82955,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 802,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "other_observed_field_differences"
+    },
+    {
+      "task_id": "fm-f13-c257af446b28691dbaeb",
+      "mode": "financial_modeling",
+      "variant_id": "F13",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f13-c257af446b28691dbaeb__QnmLNzM/result.json",
+        "sha256": "e2ff0152b3ba5ac59da8c5b64968d3a386d51153c8ed2135f06065380db68c54",
+        "bytes": 6323
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f13-c257af446b28691dbaeb__QnmLNzM/verifier/diagnostics.json",
+        "sha256": "a73579f2a6ec214bbd0a2ae776d3932b96d33ef9c70390e8ddacf778e9d28a91",
+        "bytes": 29388
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 82060,
+      "actual_D": 82060,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 802,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "other_observed_field_differences"
+    },
+    {
+      "task_id": "fm-f12-1232300ebebce98a12c8",
+      "mode": "financial_modeling",
+      "variant_id": "F12",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f12-1232300ebebce98a12c8__5ZNTvuK/result.json",
+        "sha256": "231b7bc9a3c8812624b204ef25117006d873b1ef365b9edfae738bac697709f0",
+        "bytes": 6343
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f12-1232300ebebce98a12c8__5ZNTvuK/verifier/diagnostics.json",
+        "sha256": "77a11b8b0d7f2ca662f12cea03aa757b5cc9c074fbe9304b1f770f9dcbec8404",
+        "bytes": 29388
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 81166,
+      "actual_D": 81166,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 802,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "other_observed_field_differences"
+    },
+    {
+      "task_id": "fm-f11-f7a3b39b327a92e5ed0b",
+      "mode": "financial_modeling",
+      "variant_id": "F11",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": null,
+        "state": "unknown",
+        "infrastructure_unknown_is_not_model_zero": true
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f11-f7a3b39b327a92e5ed0b__2wriM8U/result.json",
+        "sha256": "c1231f067ee6721fa60a9c5706a046d8245bab7b748a549f667bb65ef0458e40",
+        "bytes": 6343
+      },
+      "resources_passed": true,
+      "tool_time_passed": null,
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f11-f7a3b39b327a92e5ed0b__2wriM8U/verifier/diagnostics.json",
+        "sha256": "1cc33acb9825579503248ef5ed49f86b40b867127e330310a68eeb8a5cdfbc27",
+        "bytes": 29389
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 80271,
+      "actual_D": 80271,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 802,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "other_observed_field_differences"
+    },
+    {
+      "task_id": "dbg-dbg-s20-e7ce7308dd0f1ed7633a",
+      "mode": "debugging",
+      "variant_id": "DBG-S20",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s20-e7ce7308dd0f1ed7633a__u4DSkCf/result.json",
+        "sha256": "2fefe93c107029c8bbb9f56c969c3659dc43f49102c159eeb0ccdbb2d9fc3715",
+        "bytes": 6371
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s20-e7ce7308dd0f1ed7633a__u4DSkCf/verifier/diagnostics.json",
+        "sha256": "56f889165b8eb21e20e7144dc789df0294d6c3f32dea285fb57739d398ff8883",
+        "bytes": 57253
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 8320,
+      "actual_D": 7520,
+      "missing_count": 800,
+      "extra_count": 0,
+      "wrong_value_count": 802,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "missing_fields": {
+        "reported_associate_line": 800
+      },
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "other_observed_field_differences"
+    },
+    {
+      "task_id": "dbg-dbg-s19-c86371bca08a71d5c935",
+      "mode": "debugging",
+      "variant_id": "DBG-S19",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s19-c86371bca08a71d5c935__nD9SX82/result.json",
+        "sha256": "a01610e61df2a322a42bc8c65a4119806adc1442dce45b5669ed121147cf72a3",
+        "bytes": 6371
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s19-c86371bca08a71d5c935__nD9SX82/verifier/diagnostics.json",
+        "sha256": "974b323f4fea1133ace6de26f6011749d5af5c949a5e5c7e5d3aab40b286b95c",
+        "bytes": 57178
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 8140,
+      "actual_D": 7340,
+      "missing_count": 800,
+      "extra_count": 0,
+      "wrong_value_count": 800,
+      "wrong_fields": {
+        "reported_associate_line": 800
+      },
+      "missing_fields": {
+        "reported_associate_line": 800
+      },
+      "extra_fields": {},
+      "known_boundary_positions": [],
+      "pattern": "other_observed_field_differences"
+    },
+    {
+      "task_id": "dbg-dbg-s18-48527d4336475a852f56",
+      "mode": "debugging",
+      "variant_id": "DBG-S18",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s18-48527d4336475a852f56__KLrL9jU/result.json",
+        "sha256": "5cf48e33a7af0a5b5e8a7176ed2f52c3121dc73026582469484fda1865dc746a",
+        "bytes": 6353
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s18-48527d4336475a852f56__KLrL9jU/verifier/diagnostics.json",
+        "sha256": "20af7c4a818d0ee3f67c69b3faff7b45d3b6c39f6c2b50666a005b579486547c",
+        "bytes": 1527
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 7960,
+      "actual_D": 7960,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 2,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "boundary_only"
+    },
+    {
+      "task_id": "dbg-dbg-s17-313601735740ca359782",
+      "mode": "debugging",
+      "variant_id": "DBG-S17",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s17-313601735740ca359782__GjKmgmc/result.json",
+        "sha256": "faeb621f36eae409562829d87233d42654d31e54c0b04a8c5ce80c8d806b21b1",
+        "bytes": 6353
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s17-313601735740ca359782__GjKmgmc/verifier/diagnostics.json",
+        "sha256": "0a01a82374d7ec345602deb87bd355c795560ea72b7a59115a7607aef96d02ec",
+        "bytes": 57253
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 7780,
+      "actual_D": 6980,
+      "missing_count": 800,
+      "extra_count": 0,
+      "wrong_value_count": 802,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "missing_fields": {
+        "reported_associate_line": 800
+      },
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "other_observed_field_differences"
+    },
+    {
+      "task_id": "dbg-dbg-s16-0e48668962ff322c7768",
+      "mode": "debugging",
+      "variant_id": "DBG-S16",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s16-0e48668962ff322c7768__EkzEwiA/result.json",
+        "sha256": "29da50ed2908f4f87dfc81ccb0472319f90beb32f1e8de805c4f48cc412cd506",
+        "bytes": 6373
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s16-0e48668962ff322c7768__EkzEwiA/verifier/diagnostics.json",
+        "sha256": "7ef2d3cbc1f538766a5dabe2cb91547356634f7f127028d3230f81e0926a96e6",
+        "bytes": 1525
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 7600,
+      "actual_D": 7600,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 2,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "boundary_only"
+    },
+    {
+      "task_id": "dbg-dbg-s15-61a6895b4cc76434483e",
+      "mode": "debugging",
+      "variant_id": "DBG-S15",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s15-61a6895b4cc76434483e__fuRpAUG/result.json",
+        "sha256": "632c1e44b6dec781ded5145e577103171ceb52ebccea987dca4001f00d4ebe17",
+        "bytes": 6373
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s15-61a6895b4cc76434483e__fuRpAUG/verifier/diagnostics.json",
+        "sha256": "ea4206fd811ba992c1b0e95392d52078740a0150ef0dfaf235b563c462a5c0f8",
+        "bytes": 1525
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 7420,
+      "actual_D": 7420,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 2,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "boundary_only"
+    },
+    {
+      "task_id": "dbg-dbg-s14-49f71f2468b4c85550a3",
+      "mode": "debugging",
+      "variant_id": "DBG-S14",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s14-49f71f2468b4c85550a3__h69eCjh/result.json",
+        "sha256": "f9af7567c5135585a2779516edee80cca10b7ae0eeadeb484f53f2f2a46887c3",
+        "bytes": 6373
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s14-49f71f2468b4c85550a3__h69eCjh/verifier/diagnostics.json",
+        "sha256": "87ad9bb2adc0a458e0a95672c21d22fa38798c74aacf02810eebee4460f9f0eb",
+        "bytes": 57252
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 7240,
+      "actual_D": 6440,
+      "missing_count": 800,
+      "extra_count": 0,
+      "wrong_value_count": 802,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "missing_fields": {
+        "reported_associate_line": 800
+      },
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "other_observed_field_differences"
+    },
+    {
+      "task_id": "dbg-dbg-s13-0f1246cf8b76d7e0a755",
+      "mode": "debugging",
+      "variant_id": "DBG-S13",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s13-0f1246cf8b76d7e0a755__4GfRwVo/result.json",
+        "sha256": "195540d58c35700f2e11de212cac971595f4163643d5fdad2f356254bbdf274b",
+        "bytes": 6353
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s13-0f1246cf8b76d7e0a755__4GfRwVo/verifier/diagnostics.json",
+        "sha256": "93bae9044efe20fb5b4561f795c7309f7c3fd833677c70f9b023a1763123ff07",
+        "bytes": 1527
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 7060,
+      "actual_D": 7060,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 2,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "boundary_only"
+    },
+    {
+      "task_id": "dbg-dbg-s12-046380d4e198ea0cb472",
+      "mode": "debugging",
+      "variant_id": "DBG-S12",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s12-046380d4e198ea0cb472__Jk9bTcV/result.json",
+        "sha256": "baa8a52aaceff78847ab9adcf46349fa8a604a1fcf311f2adca56687d88b73f9",
+        "bytes": 6353
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s12-046380d4e198ea0cb472__Jk9bTcV/verifier/diagnostics.json",
+        "sha256": "ad0a65fa835ff81b2e1a649c0252666c7542e641a82160a6e8107b24222a0edf",
+        "bytes": 1527
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 6880,
+      "actual_D": 6880,
+      "missing_count": 0,
+      "extra_count": 0,
+      "wrong_value_count": 2,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "missing_fields": {},
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "boundary_only"
+    },
+    {
+      "task_id": "dbg-dbg-s11-bd6f63001a3f336b68a1",
+      "mode": "debugging",
+      "variant_id": "DBG-S11",
+      "score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s11-bd6f63001a3f336b68a1__SjLkMyx/result.json",
+        "sha256": "a1b2236ee4b3cfa8ccacb26b7bc234eaf4f0653a0dc1d01eb126d77e07371b09",
+        "bytes": 6371
+      },
+      "resources_passed": true,
+      "tool_time_passed": true,
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s11-bd6f63001a3f336b68a1__SjLkMyx/verifier/diagnostics.json",
+        "sha256": "2a63a257f41e278a6bdba648d8c7f03be206191a750ab97f44d6df9460c47e2d",
+        "bytes": 57253
+      },
+      "diagnostic_reason": "value_or_modified_set_mismatch",
+      "diagnostic_error_type": null,
+      "expected_D": 6700,
+      "actual_D": 5900,
+      "missing_count": 800,
+      "extra_count": 0,
+      "wrong_value_count": 802,
+      "wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "missing_fields": {
+        "reported_associate_line": 800
+      },
+      "extra_fields": {},
+      "known_boundary_positions": [
+        "E057 Glenmere Facilities!M68",
+        "E097 Valecrest Analytics!H30"
+      ],
+      "pattern": "other_observed_field_differences"
+    }
+  ],
+  "new_model_calls": 0,
+  "new_native_calls": 0,
+  "scores_modified": false,
+  "financial_trace_cause_inferred": false,
+  "interpretation": "Boundary-only rows do not establish financial reasoning failure. Other rows report observed field differences, not inferred trace causality. All original scores remain unchanged."
+}

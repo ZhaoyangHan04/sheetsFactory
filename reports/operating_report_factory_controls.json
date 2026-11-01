@@ -1,0 +1,1355 @@
+{
+  "kind": "actual_complete_root_harbor_controls_public_summary",
+  "version": 1,
+  "source": {
+    "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/root_controls/terminal.json",
+    "sha256": "bad333da6bc30f8f9768b1aae05696034c8cf55b802719e7c25f88a0fd2c6417",
+    "bytes": 1290
+  },
+  "dataset_manifest": {
+    "path": "/data/hzy/sheetsFactory/SpreadsheetEval/dataset_manifest.json",
+    "sha256": "42bff7f46e65c93e0eda51ae0efad83686608a11f5908008eff3227040bf59a5",
+    "bytes": 159264
+  },
+  "passed": true,
+  "commands": {
+    "oracle": {
+      "argv": [
+        "harbor",
+        "run",
+        "-p",
+        "SpreadsheetEval",
+        "-a",
+        "oracle"
+      ],
+      "cwd": "/data/hzy/sheetsFactory",
+      "returncode": 0,
+      "started_at": "2026-11-01T05:20:50.261071+00:00",
+      "finished_at": "2026-11-01T05:30:30.502058+00:00",
+      "job_directory": "/data/hzy/sheetsFactory/jobs/2026-11-01__05-20-50",
+      "command_receipt": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/root_controls/oracle_command_receipt.json",
+        "sha256": "e0c2318e2260e2da5b7b419b2a5d08118dd6eb298b76ed7768489e24ce930b63",
+        "bytes": 1738
+      },
+      "whole_job_audit": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/root_controls/oracle_whole_job_audit.json",
+        "sha256": "2e0e33a51ddcbcebdeb29cebe30c16c7e5c3dd3388e32b65088f61e85de55780",
+        "bytes": 244593
+      },
+      "actual_resources": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/root_controls/oracle_actual_resources.json",
+        "sha256": "6cf97424c5487579749df5bf20cb1a18ae44bf709947967cc729eedeb0194119",
+        "bytes": 308685
+      },
+      "counts": {
+        "dataset_tasks": 20,
+        "trial_results": 20,
+        "matched_rewards": 20,
+        "exceptions": 0,
+        "missing": 0,
+        "unknown": 0,
+        "duplicates": 0
+      },
+      "trials": [
+        {
+          "task_id": "dbg-dbg-s11-bd6f63001a3f336b68a1",
+          "trial_name": "dbg-dbg-s11-bd6f63001a3f336b68a1__rPfLLkj",
+          "result_sha256": "f03d97b6cdee0ac54f6994ff89e50dac802ef24ebd79dfa3cc520673e217d2a7",
+          "task_checksum": "a70ad3e6105d0e9890f8b43f45761f3f98f6cc8b74085eecd5bd4f82fab1b361",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s12-046380d4e198ea0cb472",
+          "trial_name": "dbg-dbg-s12-046380d4e198ea0cb472__RFdfH7w",
+          "result_sha256": "1c6b1da2236b6d8a5fd055fd62888905625baa59f4610b4f76d8395b0b8ba094",
+          "task_checksum": "5533b6cb102da1f9c34589e7971acf8c7c380334ad7770770fd31c10ce9c1621",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s13-0f1246cf8b76d7e0a755",
+          "trial_name": "dbg-dbg-s13-0f1246cf8b76d7e0a755__uCxSsev",
+          "result_sha256": "319207811cfd175df8766d1070cd9eda745ba4f21e87b71e4cfa483425acafc6",
+          "task_checksum": "369735ea1119ce311dcc229834b30504a4d950c65f5e856b377941c808baa500",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s14-49f71f2468b4c85550a3",
+          "trial_name": "dbg-dbg-s14-49f71f2468b4c85550a3__MdsUTFS",
+          "result_sha256": "d5fee2fe10dc7b6436526a7cae3b74aee403fe6ceae79b6ec711e2bf59d62a47",
+          "task_checksum": "fcb19f0ed02919134080b2da221f33f3095137ec350b73c4afbcf599040707b8",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s15-61a6895b4cc76434483e",
+          "trial_name": "dbg-dbg-s15-61a6895b4cc76434483e__KCAjABz",
+          "result_sha256": "d1cd41391baf7bf46a3040958596468b54c38ed34190d6fceed0c437762eb64d",
+          "task_checksum": "27f1dfe25c2ecb7c6cbde40ebe3491ccb64c9dfc1ecf8bacd8ac891f1615fb9b",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s16-0e48668962ff322c7768",
+          "trial_name": "dbg-dbg-s16-0e48668962ff322c7768__NEUPtyr",
+          "result_sha256": "112873b2f1128b93651d13be887157b62955809c6986b0655d1c399da87bad25",
+          "task_checksum": "ade0b3d6243ef58be44a20c959dd9ba7f83c1b1a163071f5af7b970760431dc8",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s17-313601735740ca359782",
+          "trial_name": "dbg-dbg-s17-313601735740ca359782__HUoJThu",
+          "result_sha256": "64ea658ee27474ccacba6403df4cb6e9cb5130fefabb8b5477ca46e060f0a078",
+          "task_checksum": "51f7c4a319243742d2eb400724d697c1e645e3bda84e084e00699d3750f4bba7",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s18-48527d4336475a852f56",
+          "trial_name": "dbg-dbg-s18-48527d4336475a852f56__yXZACru",
+          "result_sha256": "394241fe92253d515a348888afc1bc9fad3b1c76c7e672346bba29cd5e30a589",
+          "task_checksum": "9a400bf46460916e4d5d39255b4e2fde5f4f887e5afe1e564aed138cfd22eec5",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s19-c86371bca08a71d5c935",
+          "trial_name": "dbg-dbg-s19-c86371bca08a71d5c935__TDEhPwM",
+          "result_sha256": "7cbf54e85910a3af92f4233d69cd39410770e19426c27fd09b4bc1d1d485cd57",
+          "task_checksum": "b11190c01574fb2e17c034526300ef214a2939ebc19d037e7879b7797508c063",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s20-e7ce7308dd0f1ed7633a",
+          "trial_name": "dbg-dbg-s20-e7ce7308dd0f1ed7633a__ckTRfwF",
+          "result_sha256": "1a8210b820b54d2f0e420f2020c8a7b8017642fd1e87857153f478e305e6a927",
+          "task_checksum": "5dafefd17e444195bcad737885c2c22df2abf308ec2a53bc81b5b51bf543eb12",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f11-f7a3b39b327a92e5ed0b",
+          "trial_name": "fm-f11-f7a3b39b327a92e5ed0b__aD9PgYL",
+          "result_sha256": "9dd290439ed75f9c8c5c62bf8b800f9fd916d19458664e0a21891bbeb780863e",
+          "task_checksum": "0b867fe3d3bc64aea583ecbb51de5a1054eb7a013e4a9c67266e1b913caa407b",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f12-1232300ebebce98a12c8",
+          "trial_name": "fm-f12-1232300ebebce98a12c8__Mw3pztK",
+          "result_sha256": "671c11eeaed73510a5cde5db847830c8f3d66592edbc8e3062ac1835d2e2be70",
+          "task_checksum": "e6003a16bed75fdbf7284e1902831a72fe00c57fe4dbae23eeda62c07a4c79c0",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f13-c257af446b28691dbaeb",
+          "trial_name": "fm-f13-c257af446b28691dbaeb__fXsWzEh",
+          "result_sha256": "d7925d459b9888799a753352ca6cd9b3331ea9921b458cc9873beb8ff6a5b0c4",
+          "task_checksum": "75c8e0ecca79190fd75e0943a03ee735d10e128a715cc2c4c9e85c9ead2f8b46",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f14-b4fc8284df5804a93b09",
+          "trial_name": "fm-f14-b4fc8284df5804a93b09__tseopcK",
+          "result_sha256": "9af3905590a62e91cec5c8a96dcb8225e5a70fc5a39e185301bb6d6c382e7d5d",
+          "task_checksum": "1d6a233a2613d81ead75c3635ab87b4680bf68e54e511284b40a415fdd5eb96d",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f15-03e4909f03e7114eceaf",
+          "trial_name": "fm-f15-03e4909f03e7114eceaf__xfd7puA",
+          "result_sha256": "024d7f4c9efbb53b0a526501ca98b8a41d9137567fa86011f77028c5e9a7596e",
+          "task_checksum": "747be4df41b33d6d286ef992f9e0ffe15e92db156db48a14dfefdc5d76cfcb2e",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f16-fd6a9a8d4e98f334016f",
+          "trial_name": "fm-f16-fd6a9a8d4e98f334016f__MufrnFc",
+          "result_sha256": "3e9b43f68a1bcd8a0f663bd2b4ed7e57d42d0bad2f4fb661edd9a12bfcad8098",
+          "task_checksum": "503995e9359d05edd8a965a9dc3bc5de735da9f8c7f4432343cf63a4c1293c4a",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f17-8e9c73856a47ec4fe5e7",
+          "trial_name": "fm-f17-8e9c73856a47ec4fe5e7__k2XQQ8W",
+          "result_sha256": "194a5c4aef4fe5a8259529f4c5d1f79c9782839b724795b43e4948fbd8242d73",
+          "task_checksum": "24416b6265ed513089c8904a60ea86f03819d67f53877943501e0449d35c425d",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f18-3042cfe550d9cf6992f8",
+          "trial_name": "fm-f18-3042cfe550d9cf6992f8__XwSBLZa",
+          "result_sha256": "e448c9c011a42daae1d13c12d36e20cdd0bb70727d3705796ff063418b0b5070",
+          "task_checksum": "e57611f33987f160a49068979dabe9a7102db70388ca999bf290230c68d4f7f6",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f19-699f818d16d16e3e41f4",
+          "trial_name": "fm-f19-699f818d16d16e3e41f4__HD28R9f",
+          "result_sha256": "dd4378338e91b03c215ec492fce2558b64b1593b30f8a0776256b8f90fec9bf0",
+          "task_checksum": "2dd10cb86c18b27f42202d59bf5f7924ea9849819b5ab3cb300a363194bcf434",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f20-abcfe7ae1af3dd1ef508",
+          "trial_name": "fm-f20-abcfe7ae1af3dd1ef508__y6eoFQ9",
+          "result_sha256": "d4499d9b0d970d5e14a2efab0ba7f00a1283fe528e1988951c83eb1c704f352d",
+          "task_checksum": "7310ab84fd277e316a44d48447680c7bb5486244c2b087c780383f1cdf6c38a3",
+          "reward": 1.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        }
+      ],
+      "agent_PID_limit_schema_supported": false,
+      "owned_cleanup": {
+        "all_owned_containers_absent": true,
+        "owned": [
+          {
+            "id": "29389ede4571edfe4772512ec0ee092b8b8b5caf93cc12f4c6061b4c07e1324d",
+            "trial_name": "dbg-dbg-s11-bd6f63001a3f336b68a1__rPfLLkj",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-e0b53e091d5e4043888e8cbd3e988e80.json",
+              "sha256": "362691c30b57fc0f9b55bca686d1ae12519ccdc077c182e6687578f1d37e0306",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "550672008aa8431a2b728f9b582b1642b5c07837315cd533bcdd92b25c51827b",
+            "trial_name": "dbg-dbg-s11-bd6f63001a3f336b68a1__rPfLLkj",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-7c897242db0d4deba7e7b72b475d73f4.json",
+              "sha256": "425e3009903f8a6e37b6aec1f51891504d33fece80f7a75b75b06b5c8613f672",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "1c058d76e3dcd849f38428879f10169fcc47bb0d645a380a88f69a7b5fe3ef88",
+            "trial_name": "dbg-dbg-s12-046380d4e198ea0cb472__RFdfH7w",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-33d90d2151ea45bbab5b889faf301337.json",
+              "sha256": "a06a47d1fa9247934b3b83f5d96236b1b84a706135def7050e9594fd5beae739",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "e8fbd7f0a0db2f70c2d8f7adce47d15418c8a9b7f1ff92d3c6f1bf4acf648b2b",
+            "trial_name": "dbg-dbg-s12-046380d4e198ea0cb472__RFdfH7w",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-a8527926e8334016b4aeff2b51808b3c.json",
+              "sha256": "2e4c64e0ca829e83f82dae8596659c91333d9ff2678baea7e1fa39fc2556dd16",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "50ad7396a19263fdd74b82181d433e26345810e52f12fe5e0c19cb6a39be73cd",
+            "trial_name": "dbg-dbg-s13-0f1246cf8b76d7e0a755__uCxSsev",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-5e19c2e23ec041dbac1bf2a9a6ce5806.json",
+              "sha256": "c8f652dbf30db09671ffc13aac5f5566b209d23915e646dabd84a6b2473a7adb",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "dd1822e0fb10e3115b7ba1d31b9dba377f49bba23ddcdf94131393d5eaa58814",
+            "trial_name": "dbg-dbg-s13-0f1246cf8b76d7e0a755__uCxSsev",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-482f28fd67354f07bc3aee567058d0e9.json",
+              "sha256": "3ed96fb1afcd32336b347281fee8e6d5241407d8f6da6d068f4e297298bf4e9c",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "772b7321eabd5bb857df62784c91ce5eb233f19700fe5c0a239b54c800fe061c",
+            "trial_name": "dbg-dbg-s14-49f71f2468b4c85550a3__MdsUTFS",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-b0ec8b9247a7432ca31fb8e23097e574.json",
+              "sha256": "0ec52aeba24aa97848a4a158e99a22d6b9acb2f15ebb414079da4c3773cd3b50",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "fa3df0008e2493d6c8f9928db3bb8a9c6fc5e4de1aa15c202e97a5b343746588",
+            "trial_name": "dbg-dbg-s14-49f71f2468b4c85550a3__MdsUTFS",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-5346fbdb6a0f41dc9d7619f914567b53.json",
+              "sha256": "d579d072f01f22f89bf2af908a055055def35e24ed19b45716038fadd44a70d7",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "d26349a45a1144865ed53c8f5cdcee719173f6318254b46bf42fe4d008b01326",
+            "trial_name": "dbg-dbg-s15-61a6895b4cc76434483e__KCAjABz",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-9258a4a5de204a858faf4c6a164f1c13.json",
+              "sha256": "ec472269076e7e3b0787f3d03db66b0ceb8fc38d09ef4402d43815464fe37195",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "7b2a6ed3f5c1bb3717b768b6d5d298d88e98856f0c818196e5bc94cc73de1561",
+            "trial_name": "dbg-dbg-s15-61a6895b4cc76434483e__KCAjABz",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-4731a8b1c78e4944b12a7f0552deade2.json",
+              "sha256": "f8e921a862e5fb31ccacb830bdddee43d9335a4e9d9f792514d0064041f18138",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "6f72cb9411b1f8b9e56db4bc0d7dba2f1f23ebf57c2cbc9aaaabe44a35860edd",
+            "trial_name": "dbg-dbg-s16-0e48668962ff322c7768__NEUPtyr",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-84980c5fa7a74cd6938dcd88f91269ed.json",
+              "sha256": "d43f87b2f60380a0958d7e8f380e18dd0e8c0b31ecd1f7fbc569a42f8e2ee369",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "223691d9be505cb0d1d8d46e64bd6a04b8a0ed6d7033f462b4378222eb8bf403",
+            "trial_name": "dbg-dbg-s16-0e48668962ff322c7768__NEUPtyr",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-b71e65fd56e443aeb047caeafc5646cb.json",
+              "sha256": "7d251effa3aef677a13f3fc0cee8d2e3c12b5aa01515c088b3198aafe544c0e4",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "02869168ffb78db97ada3576d8a837e8563f4adccd8b389438c0770b8386d1d1",
+            "trial_name": "dbg-dbg-s17-313601735740ca359782__HUoJThu",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-e2a40028cbbb47b393691445e16cefd8.json",
+              "sha256": "d8b7854b0ff80cc82561db9266ee026dfd3ce12f55fed7433ded5504a12f4c75",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "7bf8cf9927be0aa1e71837b6fc59505090063f2951227deba6e62def41a2b09b",
+            "trial_name": "dbg-dbg-s17-313601735740ca359782__HUoJThu",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-83a86935c53b416ab7cf5ee9d4ff7822.json",
+              "sha256": "46ff0f4bd86abb1dd4023a387d4be21ad6c578e4003a5de4da5d93ce6d4d038e",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "896aa8fcd75850aab2c60ae7d9f86aacbd4cb3661f6c8247b27f5b166686edd9",
+            "trial_name": "dbg-dbg-s18-48527d4336475a852f56__yXZACru",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-d317df23cda543b69e6ee59b511641e3.json",
+              "sha256": "328335419bdab9020fd42438fd7fc0440ecb09e280f6002ab2818f9ca473f010",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "188f235f51362d5c6e4ad3b6d216aef1e00dcf62a90989ac0a0dd6fcf3c789f1",
+            "trial_name": "dbg-dbg-s18-48527d4336475a852f56__yXZACru",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-0f514ba832ca4f9ea0f016cdc3bf6a6e.json",
+              "sha256": "3791d8bbac9a78de0a1e6f80a5916cf22d204d0f83d50f74a4cd48b422d6f1b0",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "7f541f2550fc4aa7f88a6b0fac33cb64df8d3342d621a85caffee31652dbf3bf",
+            "trial_name": "dbg-dbg-s19-c86371bca08a71d5c935__TDEhPwM",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-dc35604edbfa423ba6c9734d0397bcd6.json",
+              "sha256": "1f7b0d11513945e234131619cd58486c3e6f950748d85e7e9ce32b07ee3ad83e",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "0edb2f09a7964a8b27a8d82b0fbb0395cb17943595d9e3bdcd1b040ba32c116b",
+            "trial_name": "dbg-dbg-s19-c86371bca08a71d5c935__TDEhPwM",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-db8bb011929a4d519f7de4094323fe16.json",
+              "sha256": "5eb7d490cf24a7acda2d3830120c7e09ad2c2cb8c055c1e0937db73984761c57",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "4d1d99279051a4e367a7b26c24cc7a0c937e777bcd160372c81da6c58e8594dd",
+            "trial_name": "dbg-dbg-s20-e7ce7308dd0f1ed7633a__ckTRfwF",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-0814921722764dc8a9fc9b069c23f35f.json",
+              "sha256": "2aa9417554f6bb6e9249c57eaf7441c898113d0e513433ccacfdb64d022b05d5",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "4b14df633718243ebb1997b3f04b046f3292ff60fda92d8d8885dbf7e1db216f",
+            "trial_name": "dbg-dbg-s20-e7ce7308dd0f1ed7633a__ckTRfwF",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-dc7ca5464e274492acaff6ba737216d3.json",
+              "sha256": "2c6c364223200d97430b9229c776e7ca6a33d091e23dda0c438f2b74ffe4afd1",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "33960ee2fb33ce520b5d887b4fece57d7b5f64971c742ac5fc3ce1942c4bc2ec",
+            "trial_name": "fm-f11-f7a3b39b327a92e5ed0b__aD9PgYL",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-9aaf263e5a254ee0b523c7cadd34184b.json",
+              "sha256": "17705c1ad95d79e3f69b48b68c45aaf9cb7f35a353b44f0e5513a6ed22b95af6",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "9fafe1826e6bac2c197bf0131be82317bb77ef2315af678d8319432a3b668bc4",
+            "trial_name": "fm-f11-f7a3b39b327a92e5ed0b__aD9PgYL",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-8af04f236bea440c9d7ad802c3a03ba5.json",
+              "sha256": "11a1e31e8b6662353aa7675d55a936b73777452eecf2efcd1dc76d43ef5fe69d",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "e6a2c99cd3ef19154680ffe1a6f717aa4e8d20ef5df7a3872377090beed2d17d",
+            "trial_name": "fm-f12-1232300ebebce98a12c8__Mw3pztK",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-dc9ab7f4717c40fead209b1b2c219252.json",
+              "sha256": "6efb04ec73ee4278de06744720a6997a0f603a7cb87d9478eb02da48795cb27a",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "d1419889c415079dfc2dc3612939a4025acf3c307e1af1cad19c66d2290f1245",
+            "trial_name": "fm-f12-1232300ebebce98a12c8__Mw3pztK",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-b08e6399d65e457a8975af2136727f46.json",
+              "sha256": "f9108ba05e4e832aed38127abdcf13b4dfd6baae1f71811ab299ac9367f74d82",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "e54c2b501a9da7551905d2ee04971d7d7a7e830450a4b1a769338910fe0c93cb",
+            "trial_name": "fm-f13-c257af446b28691dbaeb__fXsWzEh",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-368d31f8290f41a199b30b9b4aa53390.json",
+              "sha256": "e5834340dd6546c29a2b39512ba797fcbfe1c5e92aa4dd813e40ebe83c77781c",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "85cc298072831a8c75ef8a0a353bd824f5563112bbc7fc0a93cdb107170fe853",
+            "trial_name": "fm-f13-c257af446b28691dbaeb__fXsWzEh",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-f145fa1e2a884ce7b22e898b40e0e720.json",
+              "sha256": "340f60261996dcc78265303c37721e27e51fae23816b27aef04e5e39463749bd",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "5c0baf4e6a1e772e6199b001ae630fcce100e15f96adf32f525bbd7a5d36c404",
+            "trial_name": "fm-f14-b4fc8284df5804a93b09__tseopcK",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-e4d1ff578e6c47249e7fcfa8a374506c.json",
+              "sha256": "c4bd182cb156d51fcbe5c5352001799f3342cb265ae0a1379053ac560240a0d5",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "cde4be5573de700548d949b7504ff40251729d399901267be59d533c698d15a0",
+            "trial_name": "fm-f14-b4fc8284df5804a93b09__tseopcK",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-ac3695e293104c3fae27ec14b594f628.json",
+              "sha256": "db92fecdc53b8c7ec1b7cdf66a763055e4950b930ed6b5547262dd952b9cf206",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "ed46fd2c6a8f93ae59278a15b7cc0b2be70d7324e206c8c60734949ca9d6a301",
+            "trial_name": "fm-f15-03e4909f03e7114eceaf__xfd7puA",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-670ab9ca5b014442ad6761d6acf9211e.json",
+              "sha256": "5be6c3af55e7a1480fed4657e2cc3471298cea88f49153dfc5e1579104b598fb",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "57331842cc2a628775e286a7f5a88dc95ad640c4598dbc525ff7c0772b932127",
+            "trial_name": "fm-f15-03e4909f03e7114eceaf__xfd7puA",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-9236a8401ba24628b50f7f4ab4f5c459.json",
+              "sha256": "2ae46d250619d6160503b6435532e9b5c56d1966f7b5cc8c86f4985620f6248c",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "488b67c22de06657d322df635204d5606a5455b9d9fc4e9d564380f29760e3c7",
+            "trial_name": "fm-f16-fd6a9a8d4e98f334016f__MufrnFc",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-e8d6824987ba4e63a3d79bbab6c994c7.json",
+              "sha256": "87de2c0cb4221026ada544039382e09fed2abdd5c4f6765690dbc4639768a228",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "b94131de54d91e5e7ac61c7ffea2780e90edca9e106b66f6174ed8f045003a86",
+            "trial_name": "fm-f16-fd6a9a8d4e98f334016f__MufrnFc",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-4fbf9eeb0f0241759016778912af2a54.json",
+              "sha256": "3d0c26ccd5e4b09833f34762b4eff01f6d99259db72bf27a086a5a104cddbf65",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "66b4dbb0c56343748bdecacb993b3b81be384ec826c39d1cc8cd740840a28ff7",
+            "trial_name": "fm-f17-8e9c73856a47ec4fe5e7__k2XQQ8W",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-c06a9e82aa054e21b21e8cbb710c6e66.json",
+              "sha256": "f1e2b2f9f8a0400be9772ed7f1433a540213b3395f89496b08cb5af125d57bcb",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "e81bc4a0d82b91566027ba54dc228f13c7395684bfeb7e731d19e3936b35169b",
+            "trial_name": "fm-f17-8e9c73856a47ec4fe5e7__k2XQQ8W",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-458ac72b88e747d7a1a86d87e4c90be2.json",
+              "sha256": "7fecc222becac0c60c226e1348df1cd0e72b9f5acf11282c3521bf1638f3a6f1",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "7fdf7632b8969f1fc76d713d62d0af64768d7538b312e990d9e16f1845d16aa9",
+            "trial_name": "fm-f18-3042cfe550d9cf6992f8__XwSBLZa",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-2b6df21e313244019d8110a21b0a2d2e.json",
+              "sha256": "999167cfe303cc0fb3c31c7d89c264bac632a81914910eaa1102124c1e895974",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "0be7335342789f757d9912b7e4c207585595ff5babb28c137c21548d3e0f2807",
+            "trial_name": "fm-f18-3042cfe550d9cf6992f8__XwSBLZa",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-9fffaf1e7d3d427f9fe756da9a62cbfa.json",
+              "sha256": "5a83d41d2614988246d2b4a6104460559baf9aad4693d1ec5c7dd6a4a3e6b6ca",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "563b6bd9c17db2b205d6527e589df06c6299643b877fdbb055ac21ef0c9c2b2a",
+            "trial_name": "fm-f19-699f818d16d16e3e41f4__HD28R9f",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-6036d29e138a4b23ad1ac6dc2545c2ff.json",
+              "sha256": "0fed8fa35234cd625fc1440e63b8abdda39e39b265337cbcd700a918f16f876e",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "24d0c473fa2a535fb60e9e59f4f486b040c88bbe05c9580d097c20736b4cddb2",
+            "trial_name": "fm-f19-699f818d16d16e3e41f4__HD28R9f",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-2c51f23e6d774a23bc21666f7f6711d8.json",
+              "sha256": "58bbb06c96689b1ba0b82d49fae52f95d80a50581de982a0275b873116f87b98",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "6755d7f6e0aea249a4dd9a5e205dc27f1c32702d4c82bfbad37160e89e563a59",
+            "trial_name": "fm-f20-abcfe7ae1af3dd1ef508__y6eoFQ9",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-886f5573eb6244a3a19ca53a16bfea97.json",
+              "sha256": "e7ca2d7ac2f9b2fb6e30801b2e8d9aab8c88e7ad73d2372b78c4f0b1ad035233",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "eb822536df1aab5363057e46a438f615e74c2034bac0f86d6a0fa16b5f8deaa7",
+            "trial_name": "fm-f20-abcfe7ae1af3dd1ef508__y6eoFQ9",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T052050.261641_0000-febca183eb69494d9207631c24428ddc/container-988119f21fc944abbd036f0bf7d35a57.json",
+              "sha256": "fa3d1ec34bbf30b902efafe05a56e0b371a1c8ed665456aeb87ccede7ede2dc9",
+              "bytes": 5477
+            },
+            "absent": true
+          }
+        ],
+        "daemon_reachable": true,
+        "no_containers_created_changed_or_removed_by_cleanup_audit": true
+      }
+    },
+    "nop": {
+      "argv": [
+        "harbor",
+        "run",
+        "-p",
+        "SpreadsheetEval",
+        "-a",
+        "nop"
+      ],
+      "cwd": "/data/hzy/sheetsFactory",
+      "returncode": 0,
+      "started_at": "2026-11-01T05:30:35.766574+00:00",
+      "finished_at": "2026-11-01T05:39:25.933840+00:00",
+      "job_directory": "/data/hzy/sheetsFactory/jobs/2026-11-01__05-30-36",
+      "command_receipt": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/root_controls/nop_command_receipt.json",
+        "sha256": "adfeddfa9f968ef9422b4f20146355bfe0b3686d1120d73a5aa107778fe58e64",
+        "bytes": 1729
+      },
+      "whole_job_audit": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/root_controls/nop_whole_job_audit.json",
+        "sha256": "ce754e3ec07d03845e8f6acd530d64a23cb6b9de7bb534f8c61af3e8d83c7026",
+        "bytes": 244470
+      },
+      "actual_resources": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/root_controls/nop_actual_resources.json",
+        "sha256": "abda3e3b16fc4a889eb5c486ab889ca6354c21e4887cbaab632a249c96d2d120",
+        "bytes": 202193
+      },
+      "counts": {
+        "dataset_tasks": 20,
+        "trial_results": 20,
+        "matched_rewards": 20,
+        "exceptions": 0,
+        "missing": 0,
+        "unknown": 0,
+        "duplicates": 0
+      },
+      "trials": [
+        {
+          "task_id": "dbg-dbg-s11-bd6f63001a3f336b68a1",
+          "trial_name": "dbg-dbg-s11-bd6f63001a3f336b68a1__7ttTXum",
+          "result_sha256": "4ee1b6bcffe5506cfd137983fef1e0c9eed9fe182da9175b553e0708eb766726",
+          "task_checksum": "a70ad3e6105d0e9890f8b43f45761f3f98f6cc8b74085eecd5bd4f82fab1b361",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s12-046380d4e198ea0cb472",
+          "trial_name": "dbg-dbg-s12-046380d4e198ea0cb472__HqkjT2o",
+          "result_sha256": "3c902ec1f541bd0080e78f210244807a7e8079607f2517bc8025b8bffb4378d6",
+          "task_checksum": "5533b6cb102da1f9c34589e7971acf8c7c380334ad7770770fd31c10ce9c1621",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s13-0f1246cf8b76d7e0a755",
+          "trial_name": "dbg-dbg-s13-0f1246cf8b76d7e0a755__kCsLDJw",
+          "result_sha256": "6dee08d909a579d6dd3ce912d00c8e21f672ffaedf72bc64cb58d77d9676fbf0",
+          "task_checksum": "369735ea1119ce311dcc229834b30504a4d950c65f5e856b377941c808baa500",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s14-49f71f2468b4c85550a3",
+          "trial_name": "dbg-dbg-s14-49f71f2468b4c85550a3__TcrNkoi",
+          "result_sha256": "cb6f32ce3ed426e3050d9c1a10989ab49dca52d187f73345ff7c21bf9a232028",
+          "task_checksum": "fcb19f0ed02919134080b2da221f33f3095137ec350b73c4afbcf599040707b8",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s15-61a6895b4cc76434483e",
+          "trial_name": "dbg-dbg-s15-61a6895b4cc76434483e__Nbj9hzL",
+          "result_sha256": "77f218a5e97883b06d121f923f293b416a7c97631b7ccac89ee2540cdaa3d637",
+          "task_checksum": "27f1dfe25c2ecb7c6cbde40ebe3491ccb64c9dfc1ecf8bacd8ac891f1615fb9b",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s16-0e48668962ff322c7768",
+          "trial_name": "dbg-dbg-s16-0e48668962ff322c7768__qWD77Hq",
+          "result_sha256": "e2b2975cca1291cd8435b9940cf562b921f3e2fab69ca8a96616508641e529c0",
+          "task_checksum": "ade0b3d6243ef58be44a20c959dd9ba7f83c1b1a163071f5af7b970760431dc8",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s17-313601735740ca359782",
+          "trial_name": "dbg-dbg-s17-313601735740ca359782__uvekwVq",
+          "result_sha256": "fc5ea088e7b0fcc83c6e8ca9083e6b9bb5130222a97787048015697cfa428678",
+          "task_checksum": "51f7c4a319243742d2eb400724d697c1e645e3bda84e084e00699d3750f4bba7",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s18-48527d4336475a852f56",
+          "trial_name": "dbg-dbg-s18-48527d4336475a852f56__fWGhuFM",
+          "result_sha256": "4bbd74c622c68bdd2a078abe272f1c42b804d01cfbdd29a7ede53ef1723ff1e5",
+          "task_checksum": "9a400bf46460916e4d5d39255b4e2fde5f4f887e5afe1e564aed138cfd22eec5",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s19-c86371bca08a71d5c935",
+          "trial_name": "dbg-dbg-s19-c86371bca08a71d5c935__nmHw3cA",
+          "result_sha256": "8388fcb85b3b0af4eb2e3009f4d23c8cce1d2900a295785b8a762fc3021ae5a2",
+          "task_checksum": "b11190c01574fb2e17c034526300ef214a2939ebc19d037e7879b7797508c063",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "dbg-dbg-s20-e7ce7308dd0f1ed7633a",
+          "trial_name": "dbg-dbg-s20-e7ce7308dd0f1ed7633a__jdLhvJK",
+          "result_sha256": "34a1e5a07d70cb921c1edeb92e63d7f4b36897558a4f2069fea792c20c5edf52",
+          "task_checksum": "5dafefd17e444195bcad737885c2c22df2abf308ec2a53bc81b5b51bf543eb12",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f11-f7a3b39b327a92e5ed0b",
+          "trial_name": "fm-f11-f7a3b39b327a92e5ed0b__rDCrgma",
+          "result_sha256": "1586da78fffa91396a1d8852dcc9bffd893b10b488b3e1281640ca6004943e00",
+          "task_checksum": "0b867fe3d3bc64aea583ecbb51de5a1054eb7a013e4a9c67266e1b913caa407b",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f12-1232300ebebce98a12c8",
+          "trial_name": "fm-f12-1232300ebebce98a12c8__Hi6c4uo",
+          "result_sha256": "d3dac2a964b6a7d180dac478170fe5509f4ef6fc747510ee31a7e8c35b27e95d",
+          "task_checksum": "e6003a16bed75fdbf7284e1902831a72fe00c57fe4dbae23eeda62c07a4c79c0",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f13-c257af446b28691dbaeb",
+          "trial_name": "fm-f13-c257af446b28691dbaeb__3PrUmjg",
+          "result_sha256": "f0c3fa7faefec0efa77c26bb96b490823819781a63ea09725528ba55f1876d85",
+          "task_checksum": "75c8e0ecca79190fd75e0943a03ee735d10e128a715cc2c4c9e85c9ead2f8b46",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f14-b4fc8284df5804a93b09",
+          "trial_name": "fm-f14-b4fc8284df5804a93b09__nJuzL6H",
+          "result_sha256": "9dbe0a791b0cd07ec1791a2a3868df16d8da32337c4f9abd181927698a5b0ae9",
+          "task_checksum": "1d6a233a2613d81ead75c3635ab87b4680bf68e54e511284b40a415fdd5eb96d",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f15-03e4909f03e7114eceaf",
+          "trial_name": "fm-f15-03e4909f03e7114eceaf__krDV9S7",
+          "result_sha256": "496f3efd90242679a0a51a765df35f9d99147807378424decd92618dbeff2ae0",
+          "task_checksum": "747be4df41b33d6d286ef992f9e0ffe15e92db156db48a14dfefdc5d76cfcb2e",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f16-fd6a9a8d4e98f334016f",
+          "trial_name": "fm-f16-fd6a9a8d4e98f334016f__JCJ9Hb2",
+          "result_sha256": "40b2933c807a8bffee2da024193f6f48ad12707e83863b07d7f9c13abeba12c6",
+          "task_checksum": "503995e9359d05edd8a965a9dc3bc5de735da9f8c7f4432343cf63a4c1293c4a",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f17-8e9c73856a47ec4fe5e7",
+          "trial_name": "fm-f17-8e9c73856a47ec4fe5e7__na3haWu",
+          "result_sha256": "094ea2acdc28b1d38a433c46a487eea6fb79ef33aca1711b49bcca4a9d56d8b7",
+          "task_checksum": "24416b6265ed513089c8904a60ea86f03819d67f53877943501e0449d35c425d",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f18-3042cfe550d9cf6992f8",
+          "trial_name": "fm-f18-3042cfe550d9cf6992f8__aBTtEHN",
+          "result_sha256": "f63183ef5f4ba9eab3c6cc9e0b8ad0362f1f58668562b3094ad7e7214af97fca",
+          "task_checksum": "e57611f33987f160a49068979dabe9a7102db70388ca999bf290230c68d4f7f6",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f19-699f818d16d16e3e41f4",
+          "trial_name": "fm-f19-699f818d16d16e3e41f4__tDVCkQq",
+          "result_sha256": "05d3e5d9c3d39e41fbccdabffe3a0d0a6dab929d235b64688b325e098d2b9e9e",
+          "task_checksum": "2dd10cb86c18b27f42202d59bf5f7924ea9849819b5ab3cb300a363194bcf434",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        },
+        {
+          "task_id": "fm-f20-abcfe7ae1af3dd1ef508",
+          "trial_name": "fm-f20-abcfe7ae1af3dd1ef508__7VNpCnd",
+          "result_sha256": "50ba5bb32213e5c1ced65207f64c743f99627b203d3b156f74ccbebd0bdcfd10",
+          "task_checksum": "7310ab84fd277e316a44d48447680c7bb5486244c2b087c780383f1cdf6c38a3",
+          "reward": 0.0,
+          "exception_info": null,
+          "both_actual_role_resources_passed": true
+        }
+      ],
+      "agent_PID_limit_schema_supported": false,
+      "owned_cleanup": {
+        "all_owned_containers_absent": true,
+        "owned": [
+          {
+            "id": "dfdf53905983819850165ce022ed8f6cdabe0b5801cee4463881254f0aefeba7",
+            "trial_name": "dbg-dbg-s11-bd6f63001a3f336b68a1__7ttTXum",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-8aec087c06c54760b9fe3489f0cf9b5c.json",
+              "sha256": "216dfe136696244661d9cf503ce902deeffd5b19f8ab62c3304a743d2c03a855",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "2e83c305bdbfba25e6e2c4726c45177e0392dd8c3ff6e51166ad6704e3c11d55",
+            "trial_name": "dbg-dbg-s11-bd6f63001a3f336b68a1__7ttTXum",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-b936652bc9564cd480b547c976344139.json",
+              "sha256": "3f641abefb29c042bb0461de17cf755f153caca2c7732cea6156a6389ee8b0ab",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "53f0201b42b078d8dd661652e52a51d1a4fe878acea8b1a4a6684b87319fdf3a",
+            "trial_name": "dbg-dbg-s12-046380d4e198ea0cb472__HqkjT2o",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-be1d89ae91b0403fa03ee4118ea628c0.json",
+              "sha256": "f52dcea7508609de5c4553abf34723c4b49f6cc6770eb54c1bf6e009fed54cdb",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "ef5ef4437c83ea5cb725923406215f1fed02ea01fc3a5cc6ee328864f979629b",
+            "trial_name": "dbg-dbg-s12-046380d4e198ea0cb472__HqkjT2o",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-b0772a546b7a4f9b9b7b139d5500dcc5.json",
+              "sha256": "23baba932f640e1ae12e785503bf16e01368e64b2fedae3c4790499d84c8d3c4",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "d381d5dd7e356c93a2fe84ab70171e309aeb643f0179089dd9c714fe86722f85",
+            "trial_name": "dbg-dbg-s13-0f1246cf8b76d7e0a755__kCsLDJw",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-44b705e230c84e059cedd1753977f367.json",
+              "sha256": "581fdc9c48eb01d9ca164c8cc0662dc944908ce131bf3cc69323ddc65ec2354d",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "4624afd2c8598867f99eb7195f441a1a401f0bb26f770c1edc500c51e21cad91",
+            "trial_name": "dbg-dbg-s13-0f1246cf8b76d7e0a755__kCsLDJw",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-1e94b5be87354e6e977c8316bb4727d8.json",
+              "sha256": "0afa9200a2a554c41781c4c7bfecd19d3c5ce6d1da7b29fe2b46a436ab79f3ed",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "ab5aabb0d498557cef2e3c2867cb0a46561a390608379351f826a12d06b334ab",
+            "trial_name": "dbg-dbg-s14-49f71f2468b4c85550a3__TcrNkoi",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-d393254071fc4a7aa8b71556a2749b68.json",
+              "sha256": "69da48010b9653beec77b8f17adf55492d44d73f96efa0a97de0e8577ca3b05a",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "e4a64d4010c473b2d009c6799c96d71ac8d2e9a0bea892d2d181324c9f940fcf",
+            "trial_name": "dbg-dbg-s14-49f71f2468b4c85550a3__TcrNkoi",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-297ab4092ba24c52a6c1465c2a070b1a.json",
+              "sha256": "0748f62376b4f8121e457c8368c734bc5fd5e9cb006626c6f68120acdabe430b",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "50e01198713482a14ac8c14bd48e4f4275d47b3c42e1575fc46d6963342a0edf",
+            "trial_name": "dbg-dbg-s15-61a6895b4cc76434483e__Nbj9hzL",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-1171e40a7b3d419ea88bc37a228837b3.json",
+              "sha256": "85f9561dbc80783de60c84b533423984a325cf78c9ef5f9e29f122340b84e43e",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "c15d8beb92d39a04da52c468708a0a3b995e608b35f8ac2ee64b3e570ebddfab",
+            "trial_name": "dbg-dbg-s15-61a6895b4cc76434483e__Nbj9hzL",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-8ca550781a744b15b4358a4f1147103e.json",
+              "sha256": "baf1495b827ca672ea6b893fa6802c0e7173d86dc32b5072a1ca030658d28095",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "19d25239025c3e530f3a9e37c63082c711b8610452916f830058eb24f3b70991",
+            "trial_name": "dbg-dbg-s16-0e48668962ff322c7768__qWD77Hq",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-8071477f586d4d69a7834c75ba6fa77d.json",
+              "sha256": "1bf5f5d42c33df1953d852a0b6dc8e84847777ba1dde7977bd48d4236e9a5e4b",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "f8f9d52c6bf121a0b57832cd7301d81a5d55c302939cec831efd2350c6c3361c",
+            "trial_name": "dbg-dbg-s16-0e48668962ff322c7768__qWD77Hq",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-217d5a55b4b24965bcdff084f0a0c479.json",
+              "sha256": "4302b84883d6ac546a2c309e7e368b7c33c1d535f5b7b2bfa743061b0b373fdc",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "600ede22aed1b555f71e694af5571cb3e2331e7e16f625ae9fe7cddf3eaadfcb",
+            "trial_name": "dbg-dbg-s17-313601735740ca359782__uvekwVq",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-4f65ce013e7846ff883fc9295bf81319.json",
+              "sha256": "bc3f1df9a9e05aa91438e95c2cb4ceb31acb393b9df6465b82f0217ede4523a2",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "2329d8576e44742df3df755ec5889c650659da2e10efcbc00bc04b177ef2d93f",
+            "trial_name": "dbg-dbg-s17-313601735740ca359782__uvekwVq",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-64a074432a534185957db9f6a2d3f84f.json",
+              "sha256": "803601739d99c88cc3be64d002a1941c960b69ba7cd66bb18c9d28e790de4ac7",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "87646ffcef0714ad427b293f5038fca231efa86d2d3207f1bc47d9a5ee2b5966",
+            "trial_name": "dbg-dbg-s18-48527d4336475a852f56__fWGhuFM",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-2e0f903e217347128cf5476f9e7df1f8.json",
+              "sha256": "e2f7f19ad1a9feee7b9f956cd695c2a6815b16031457860afad682d027e6665b",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "5372eae5ec220ae8769d2cdabbeda0ac3683766dfedffcef7684b8ccfbd889f6",
+            "trial_name": "dbg-dbg-s18-48527d4336475a852f56__fWGhuFM",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-78aae099de014c1fa91ea58bd98b422a.json",
+              "sha256": "6544d28c69a56b6fceeb83c60e821f12def0b69fcbef3c6d7203ada07d71dc39",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "7f6a054872a9a7871fd45eb3c8795a31edff5c88f0686bbd06b30036a2fe56fc",
+            "trial_name": "dbg-dbg-s19-c86371bca08a71d5c935__nmHw3cA",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-dfdf92416fce43019696d16eaacdccc5.json",
+              "sha256": "717763d7d8ee76b442f77a6801f726c065ca902fbefb16d8177b4979324eac48",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "9b6748ed8167bd1b5b63c046cfdc7f254312090ffb055e61fdb215c49a813ef5",
+            "trial_name": "dbg-dbg-s19-c86371bca08a71d5c935__nmHw3cA",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-b0da7ba151bd4016baa83d4688eb7caa.json",
+              "sha256": "1e6684cd79d48554001761f355dd02f63d351e0b559bb015473a9fd21a165424",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "23708a854285125cf2b0b12eb0d3866d80a720cbb62bfcc32a21eeb8c317a6fa",
+            "trial_name": "dbg-dbg-s20-e7ce7308dd0f1ed7633a__jdLhvJK",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-2dc81347e7c54841a15b6986468e82a7.json",
+              "sha256": "0f98e803905695252e36e816e54ca779b13c20aa9f4f083e1b28b3b1c190b411",
+              "bytes": 5733
+            },
+            "absent": true
+          },
+          {
+            "id": "1112160cdd483bbf7fd4bf9b26489700ee41b087fa78569033947fc9117b7885",
+            "trial_name": "dbg-dbg-s20-e7ce7308dd0f1ed7633a__jdLhvJK",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-c96488c1ba8c45448278aeacbcfc8ed1.json",
+              "sha256": "14838ac4b8361291473fd6fb6cc0185e76a4533b2034cd3e2c171cbb2a2900ae",
+              "bytes": 5517
+            },
+            "absent": true
+          },
+          {
+            "id": "6e7fa1843e2100c89420748e8effbcfe3ee0d5add24f0d5b99f6fa4de91cd5e4",
+            "trial_name": "fm-f11-f7a3b39b327a92e5ed0b__rDCrgma",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-39a74ab781174e2fa541152571a2cc3d.json",
+              "sha256": "20ef13573c871f875c72163031d21b460d8c41289f8b41469fe1114ad7717a20",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "dabad16510bdb6a4bbc0245b8628c2089bf54b38b8ec536740958c2ccd6d2ceb",
+            "trial_name": "fm-f11-f7a3b39b327a92e5ed0b__rDCrgma",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-8de79cfc36b54a46954eeab684502b9d.json",
+              "sha256": "7f1bc362b6dc6341cb79246acd5c1ae0ebf1de533e4584f2dd7ec1d2e1aec1a3",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "cd62e7f6e00d2d3bf0e63a89bece4d5518825ca7bf89cbe9fd9ead77855e431c",
+            "trial_name": "fm-f12-1232300ebebce98a12c8__Hi6c4uo",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-54e8a4edbbdc40a6a25735fd4e789f67.json",
+              "sha256": "227c2f62fc24cf8ec8db154f916c0dc4d3e2dc10be087fccb9b64fd27e0f3cc1",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "e0da64ca58746e11823e1e735752f457f2fd19833dba236a95e56c6b6f621d85",
+            "trial_name": "fm-f12-1232300ebebce98a12c8__Hi6c4uo",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-489dfc2b689b47e9b3df2f4a80aee520.json",
+              "sha256": "5acb19c54c1ee122895254308e5c11ead69868dc6ab6300ba81be2c49f081f14",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "45e7cd7e1e8d0ac8e2aa163cdbafa362db7ace1ba8cc5a4cea551e88eeeb1934",
+            "trial_name": "fm-f13-c257af446b28691dbaeb__3PrUmjg",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-be7d52b23013480cbf90aa1f0cade6b5.json",
+              "sha256": "12981901ec0c1ae52e1922562e052ba6f11d30b3edad500cdc311518b007cf9d",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "ba749b39cca3c8811dd611f7dcf5019e120e2b91d0345867c48d64d28dbfb960",
+            "trial_name": "fm-f13-c257af446b28691dbaeb__3PrUmjg",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-f576e619c25342b1a125f3edbfc4226f.json",
+              "sha256": "4b385f74423e97de747bfbb7c0aa4f8b15ef86ebbc2d9575f619d193cef75643",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "2f17539f3bbd08e3c6ab0750c66b3a8cf41a03eb3ad091b6217c3fa57402403c",
+            "trial_name": "fm-f14-b4fc8284df5804a93b09__nJuzL6H",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-327c80f286d341fc8906f69623dd81e4.json",
+              "sha256": "dcbe4b68cb1865cc7b34b36190162ba8fde7660a478bccd0c4b26d1f444ef0e8",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "3020f674b5bb83be204d734cdb9811bdd340a2f06444d3fe860baeb8f392e2d0",
+            "trial_name": "fm-f14-b4fc8284df5804a93b09__nJuzL6H",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-f2a0d9962f8644998e86ce597c62bb9b.json",
+              "sha256": "8fe1321291c7b39158c6833ca04db72616f4362945f31bd6c495d1c0af358e4f",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "c65de01dfdc7524cad8c4296bf13cc72d8c380b8c0fad342263d0e2a5d9415e1",
+            "trial_name": "fm-f15-03e4909f03e7114eceaf__krDV9S7",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-18fefc2fd5074e1a86b476984b01ddfe.json",
+              "sha256": "a704d68e078a95fc9dad51a783915baa42905c0f9d39a70d7614f839a8b83de1",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "b5d659a6ffdb4c11226bafc2d26893054ff79b0c20c4cbf88035720512dd4e79",
+            "trial_name": "fm-f15-03e4909f03e7114eceaf__krDV9S7",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-b2f497a747724f4d8c95e414937504fd.json",
+              "sha256": "6f2a5d7e637328869bb7193da601f134291572a10a037e0f16b6e028234066a1",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "59ebba18740bc1e0318a8fb55f5d6955827915d10d62ec635eb258947e5bde38",
+            "trial_name": "fm-f16-fd6a9a8d4e98f334016f__JCJ9Hb2",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-fadc15ca3a81430191d2cdbd058b1396.json",
+              "sha256": "efcc507dcc3443e16d7ca1578c380510a8c878070655fc89a55242e290d86f4a",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "9e4995e25f4b9734d404488a11ee8d2338f8f48761f50801526ef04e048b4182",
+            "trial_name": "fm-f16-fd6a9a8d4e98f334016f__JCJ9Hb2",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-90a29e49bc7f4e4ba06e94e54a38b2ed.json",
+              "sha256": "4d129be23d9620dc7ad678adf93bcce42043533c1f9b2ed918b33d9e0b570ef4",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "eeffb13f7e77973b3a379a4b9559d88e82a39b5b86856a6f93fbedc99602fcc3",
+            "trial_name": "fm-f17-8e9c73856a47ec4fe5e7__na3haWu",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-561e672c7dce47edade22fed1158123c.json",
+              "sha256": "6158d251edc7e146d72861a69ab70d177c00a15d8363dda11068bafb29757382",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "9461fff616370bf00535f1c6034538116153ed90c6ed1350a50d3b239e6e6f24",
+            "trial_name": "fm-f17-8e9c73856a47ec4fe5e7__na3haWu",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-c2b252877ffc41339f1c7eebf4306f02.json",
+              "sha256": "30921ef9fae738bca399c74a2084f9eff84746c89375ceefb5ab557e570ac804",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "f732bcddbefd8c58275209f55bbdc87a8420e02d637f6b0c95b8e0a55f891a66",
+            "trial_name": "fm-f18-3042cfe550d9cf6992f8__aBTtEHN",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-8e301dde644744a6822b0bbd0316025b.json",
+              "sha256": "91d21a67387c8a01e87ab8e7f0073d29c31dd3fb3b41394086a35b622c0ae3f5",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "7928aea697834a3e0e9d7dd2c64b3dac872de1ad46245e6c1ac8288b58149038",
+            "trial_name": "fm-f18-3042cfe550d9cf6992f8__aBTtEHN",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-3911b14e6d3441b4bae2c1490e87ea0c.json",
+              "sha256": "4dbf7a929069af1150d38d8c4c1e4fefd696b1fb3d975b2a0211e2bcb74d0a3b",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "875cb7d477405504d724353a029e5704225de57b5c5cd1b3289c44598ebb4d6f",
+            "trial_name": "fm-f19-699f818d16d16e3e41f4__tDVCkQq",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-802e4f34e07f4acb83e4f3755085c10e.json",
+              "sha256": "4e4988124f61d72caf33ab99ec040ea21616957ff827b99d65fa7e401d65ee1e",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "23204d2dcb4b62a8401e5d92f16af06aa8f2ede51f4988480d501535ac5b0454",
+            "trial_name": "fm-f19-699f818d16d16e3e41f4__tDVCkQq",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-0df05cb5a85a4e2a81ccc5b5ad85a23d.json",
+              "sha256": "34d3c7d6e8f060a5278de33ed7eabae77ecc0a09ac3fc85d74bdce138b75557d",
+              "bytes": 5477
+            },
+            "absent": true
+          },
+          {
+            "id": "90da8a1a75b2c85e03a85a20cdc75d9003b7a9f3b4358e4858e605d8305fe07b",
+            "trial_name": "fm-f20-abcfe7ae1af3dd1ef508__7VNpCnd",
+            "role": "agent",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-8215f19383f04a00bc9b5f5bf34221a1.json",
+              "sha256": "aeafe6149c4bfcc8db22ee725ac043541bdfd2d2198911ac82b4ce377611e3d6",
+              "bytes": 5693
+            },
+            "absent": true
+          },
+          {
+            "id": "2d8fd2d75b7f8c05ca9327c248e96ada75e2c0892c130c3fc234bd057575af7c",
+            "trial_name": "fm-f20-abcfe7ae1af3dd1ef508__7VNpCnd",
+            "role": "verifier",
+            "ownership": {
+              "path": "/data/hzy/sheetsFactory/jobs/resource_observations/2026-11-01T053035.767131_0000-06d08b63c4584dd5a1867bc362edf6f2/container-6f85179ff7e54d3ab48ad59ba4f5f362.json",
+              "sha256": "f26d089ab4d81ca11fcf5a56ea6dbc6976311df311c0c72becfbcd56aaaf6914",
+              "bytes": 5477
+            },
+            "absent": true
+          }
+        ],
+        "daemon_reachable": true,
+        "no_containers_created_changed_or_removed_by_cleanup_audit": true
+      }
+    }
+  }
+}

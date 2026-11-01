@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/bin/python3 /opt/sheetsfactory/resource_runner.py recalculate "$@" --profile /opt/sheetsfactory/runtime_profile.json
