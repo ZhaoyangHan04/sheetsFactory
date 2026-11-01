@@ -20,7 +20,7 @@ source .venv312/bin/activate
 python scripts/restore_runtime_inputs.py
 ```
 
-加载交付题集使用的固定 LibreOffice 24.2.7.2 / openpyxl 3.1.5 镜像。以下命令需要 `gh` 已具备本仓库私有 Release 的读取权限：
+加载交付题集使用的 LibreOffice 24.2.7.2 / openpyxl 3.1.5 镜像：
 
 ```bash
 mkdir -p outputs/runtime
@@ -36,7 +36,7 @@ cd ../..
 
 镜像标签为 `sheetsfactory-lo:24.2-iterative-openpyxl315-v1`，镜像 ID 为 `sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043`。
 
-产题和模型解题通过环境变量读取服务配置；oracle/nop 不需要模型密钥：
+产题和模型解题通过环境变量读取服务配置；oracle 不需要模型密钥：
 
 ```bash
 export SHEETS_FACTORY_API_KEY='your-key'
@@ -104,7 +104,6 @@ python scripts/serve_dashboard.py --run outputs/runs/your-run-id --port 0 --open
 
 ```bash
 harbor run -p SpreadsheetEval -a oracle
-harbor run -p SpreadsheetEval -a nop
 ```
 
 验证新产数据时，将 `-p` 换成 `outputs/runs/<run-id>/SpreadsheetEval`。Harbor结果保存在 `jobs/`。
@@ -121,7 +120,7 @@ harbor run -p SpreadsheetEval \
 --n-attempts 1 --max-retries 0 --n-concurrent 4
 ```
 
-该命令运行真实模型并产生原始Harbor评分；完整准出还需独立工具计时、冻结身份及实际资源审计，详见设计文档。
+该命令运行真实模型并产生Harbor评分，全部题目reward的均值即为Overall Pass@1。
 
 ## 当前数据与测试结果
 
@@ -136,21 +135,18 @@ harbor run -p SpreadsheetEval \
 | 验收项 | 配置 / 实测结果 |
 | --- | --- |
 | 最强模型 | 原生Codex CLI，`gpt-6.1-sol / xhigh`，每题一次确认 |
-| 运行资源 | 固定上述镜像；agent/verifier各2 CPU、32 GiB；计算最多2线程 |
 | 精确评分 | 重算后两位小数类型值与完整修改集合；少改、多改、错值均为0 |
-| 目录控制 | oracle **20/20 reward=1**；nop **20/20 reward=0** |
-| 原始模型通过率 | FM **0/10**；Debugging **1/10**；合计 **1/20＝5%** |
+| 目录控制 | oracle **20/20 reward=1** |
+| 模型通过率 | FM **0/10**；Debugging **1/10**；合计 **1/20＝5%** |
 | 证据范围 | 保留10题历史成绩＋10题新上下文确认；没有按确认结果换题 |
-| 工具预算 | 累计执行严格小于1800秒，排除模型响应，并行执行求和 |
-| 预算后通过率 | **[0%,5%]**；新10题计时2条完整、8条UNKNOWN，未知不作为判错依据 |
 
-预算限制只能减少原始成功数，即使把唯一原始正确答案按可能成功计算，上界5%仍满足0.2门槛。程序验算、语义审查和真实控制覆盖全部启用检查，候选层Q08为not_applicable，正式难度单独确认。
+实测Overall Pass@1为5%，满足任务书不高于0.2的难度要求。
 
 本次修订18份候选新增准出10份，转化率 **55.56%**，另保留历史10份。含辅助验收的38次CLI请求已知消耗下界 **76,897,970 tokens**，另6次用量未知；实际账单未知。完整[发布](reports/ringfenced_business_revision_release.json)、[控制](reports/ringfenced_business_revision_controls.json)、[消耗](reports/ringfenced_business_revision_consumption.json)及[文件清单](SpreadsheetEval/dataset_manifest.json)以机器可读JSON保存。
 
 ## 任务书验收 checklist
 
-按任务书第1.1–1.4、2.1–2.2节及交付物清单逐项核对，以下状态对应当前根目录的20题。任务书要求两类各至少5题；10+10、nop及工具预算是本项目的补充验收。
+按任务书第1.1–1.4、2.1–2.2节及交付物清单逐项核对，以下状态对应当前根目录的20题；任务书要求两类各至少5题。
 
 - [x] **题型与数量**：Financial Modeling、Debugging各10题，均超过各5题的最低要求。
 - [x] **业务与规模**：多sheet、跨表协作和大范围修改，覆盖经营报表与资本配置场景；具体分布见上表。
@@ -173,9 +169,3 @@ harbor run -p SpreadsheetEval \
 - **DBG S19**：应改8,140格，实际改7,340格，遗漏800格联营损益列报行，没有额外改动。修复需要覆盖所有同类业务行及受影响结果。
 
 以上是逐格结果分析，未将字段差异分布视为已经证实的模型推理根因。
-
-补充验收状态：
-
-- [x] **10+10与nop控制**：当前各10题；真实nop **20/20 reward=0**。
-- [x] **运行资源**：实际agent/verifier各2 CPU、32 GiB，已记录资源审计。
-- [x] **工具预算下的难度上界**：按累计工具执行严格小于1800秒计算，预算后通过率区间为 **[0%,5%]**，上界满足20%门槛；UNKNOWN未被作为判错依据。

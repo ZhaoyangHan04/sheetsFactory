@@ -111,8 +111,8 @@ text {font-family:'Noto Sans SC','Noto Sans CJK SC','PingFang SC','Microsoft YaH
   <rect x="756" y="623" width="42" height="36" rx="10" fill="#e7f2e8"/>
   <text class="number" x="777" y="649" fill="#39814b">11</text>
   <text class="title" x="814" y="651">真实目录验收</text>
-  <text class="body" x="760" y="695">oracle = 1 · nop = 0</text>
-  <text class="body" x="760" y="729">真实执行并核验资源</text>
+  <text class="body" x="760" y="695">oracle 全题 = 1</text>
+  <text class="body" x="760" y="729">全部任务真实执行</text>
 </g>
 <g id="node12">
   <rect class="card" x="1080" y="602" width="304" height="144" rx="16"/>
