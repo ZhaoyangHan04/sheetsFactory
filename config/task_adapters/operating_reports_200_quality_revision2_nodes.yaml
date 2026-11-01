@@ -1,0 +1,13 @@
+version: 1
+nodes:
+  normalize: sheets_factory.task_adapters.operating_reports_200_quality_revision2:NormalizeNode
+  profile: sheets_factory.task_adapters.operating_reports_200_quality_revision2:ProfileNode
+  plan: sheets_factory.task_adapters.operating_reports_200_quality_revision2:PlanNode
+  construct: sheets_factory.task_adapters.operating_reports_200_quality_revision2:ConstructNode
+  instruction: sheets_factory.task_adapters.operating_reports_200_quality_revision2:InstructionNode
+  precheck: sheets_factory.task_adapters.operating_reports_200_quality_revision2:ControlsNode
+  independent_recovery: sheets_factory.nodes.quality:RecoveryNode
+  trajectory: sheets_factory.nodes.quality:TrajectoryNode
+  diagnose: sheets_factory.task_adapters.operating_reports_200_quality_revision2:DiagnoseNode
+  repair: sheets_factory.task_adapters.operating_reports_200_quality_revision2:RepairNode
+  export: sheets_factory.task_adapters.operating_reports_200_quality_revision2:ExportNode
