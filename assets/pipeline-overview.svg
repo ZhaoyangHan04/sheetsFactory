@@ -1,64 +1,152 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1024" viewBox="0 0 720 1024" role="img" aria-labelledby="pipelineTitle pipelineDescription">
-  <title id="pipelineTitle">sheetsFactory 产线流程</title>
-  <desc id="pipelineDescription">三个阶段由上到下：规范化画像、规划并构造题目；原生验算和独立审查、代理尝试后逐项诊断；Harbor 导出、oracle 和 nop 控制、冻结材料后强模型确认与准出。代理成功或失败均诊断。R01 至 R10 修复后返回构造，R12 补证复核，R11 在故障阶段重试。通用入口先做质量构造，正式难度另行确认。</desc>
-  <defs>
-    <marker id="nextArrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="userSpaceOnUse">
-      <path d="M2 2 L9 6 L2 10" fill="none" stroke="#94a3b8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <marker id="repairArrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="userSpaceOnUse">
-      <path d="M2 2 L9 6 L2 10" fill="none" stroke="#b45309" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <style>
-      text { font-family: 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
-      .heading { font-size: 34px; font-weight: 700; fill: #142840; }
-      .body { font-size: 28px; font-weight: 400; fill: #334155; }
-      .route { font-size: 26px; font-weight: 500; fill: #475569; }
-      .number { font-size: 26px; font-weight: 700; fill: #ffffff; text-anchor: middle; }
-    </style>
-  </defs>
-
-  <rect width="720" height="1024" rx="24" fill="#f8fafc"/>
-  <text class="heading" x="32" y="59">从工作簿到可验收任务</text>
-
-  <!-- 01 · Authoring -->
-  <rect x="28" y="98" width="616" height="192" rx="20" fill="#ffffff" stroke="#dbe5ef" stroke-width="1.5"/>
-  <rect x="28" y="119" width="5" height="150" rx="2.5" fill="#2563eb"/>
-  <rect x="52" y="122" width="54" height="48" rx="12" fill="#2563eb"/>
-  <text class="number" x="79" y="156">01</text>
-  <text class="heading" x="124" y="157">构造任务</text>
-  <text class="body" x="60" y="213">规范化与画像 → 模板规划</text>
-  <text class="body" x="60" y="258">副本 mask / 注错 → 生成题面</text>
-
-  <path d="M336 302 V341" fill="none" stroke="#94a3b8" stroke-width="2.6" stroke-linecap="round" marker-end="url(#nextArrow)"/>
-
-  <!-- 02 · Evidence and diagnosis -->
-  <rect x="28" y="356" width="616" height="322" rx="20" fill="#ffffff" stroke="#dbe5ef" stroke-width="1.5"/>
-  <rect x="28" y="377" width="5" height="280" rx="2.5" fill="#0f766e"/>
-  <rect x="52" y="380" width="54" height="48" rx="12" fill="#0f766e"/>
-  <text class="number" x="79" y="414">02</text>
-  <text class="heading" x="124" y="415">验算与诊断</text>
-  <text class="body" x="60" y="471">原生验算 · 独立审查</text>
-  <text class="body" x="60" y="516">代理尝试 → 逐项诊断</text>
-
-  <rect x="52" y="546" width="568" height="108" rx="12" fill="#fff7ed"/>
-  <text class="route" x="68" y="585"><tspan fill="#a64b0b" font-weight="700">R01–R10</tspan><tspan dx="12">修复后重构</tspan></text>
-  <text class="route" x="68" y="629">R12 补证复核 · R11 环境重试</text>
-
-  <!-- A repair returns to construction, not to the agent's output. -->
-  <path d="M644 586 H674 Q690 586 690 570 V260 Q690 244 674 244 H650" fill="none" stroke="#b45309" stroke-width="2.6" stroke-dasharray="6 7" stroke-linecap="round" marker-end="url(#repairArrow)"/>
-
-  <path d="M336 690 V757" fill="none" stroke="#94a3b8" stroke-width="2.6" stroke-linecap="round" marker-end="url(#nextArrow)"/>
-  <rect x="264" y="704" width="144" height="34" rx="8" fill="#f8fafc"/>
-  <text x="336" y="730" text-anchor="middle" font-size="26" font-weight="600" fill="#0f766e">质量通过</text>
-
-  <!-- 03 · Controls and release -->
-  <rect x="28" y="772" width="616" height="192" rx="20" fill="#ffffff" stroke="#dbe5ef" stroke-width="1.5"/>
-  <rect x="28" y="793" width="5" height="150" rx="2.5" fill="#15803d"/>
-  <rect x="52" y="796" width="54" height="48" rx="12" fill="#15803d"/>
-  <text class="number" x="79" y="830">03</text>
-  <text class="heading" x="124" y="831">验收与交付</text>
-  <text class="body" x="60" y="887">Harbor 导出 → oracle / nop</text>
-  <text class="body" x="60" y="932">冻结材料 → 强模型确认 → 准出</text>
-
-  <text class="route" x="32" y="1008">正式确认绑定冻结材料与新上下文</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+<title id="title">sheetsFactory：从工作簿到可验收任务</title>
+<desc id="desc">十二个独立节点按编号折行：第一行向右，第二行向左，第三行向右。规范化、画像、规划、构造、题面、原生验算、独立审查、代理尝试、逐项诊断、Harbor导出、真实控制、冻结确认准出。成功和失败均诊断。R01至R10修复后返回规划或构造，R12返回相应证据阶段，R11仅重试故障阶段。正式难度另行冻结确认。</desc>
+<defs>
+<marker id="arrow" markerWidth="13" markerHeight="13" refX="10" refY="6.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M3 2 L10 6.5 L3 11" fill="none" stroke="#8194aa" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="repairArrow" markerWidth="13" markerHeight="13" refX="10" refY="6.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M3 2 L10 6.5 L3 11" fill="none" stroke="#c47725" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<style>
+text {font-family:'Noto Sans SC','Noto Sans CJK SC','PingFang SC','Microsoft YaHei',sans-serif;}
+.heading {font-size:44px;font-weight:700;fill:#142840;}
+.subtitle {font-size:26px;fill:#52657a;}
+.card {fill:#fff;stroke:#d8e2ed;stroke-width:1.6;}
+.title {font-size:32px;font-weight:700;fill:#172e47;}
+.body {font-size:26px;fill:#45586e;}
+.number {font-size:23px;font-weight:700;text-anchor:middle;}
+.next {fill:none;stroke:#8194aa;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow);}
+.repair {fill:none;stroke:#c47725;stroke-width:2.6;stroke-dasharray:7 7;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#repairArrow);}
+.routeTitle {font-size:25px;font-weight:700;fill:#965b1c;}
+.routeBody {font-size:24px;fill:#805e37;}
+</style>
+</defs>
+<rect width="1440" height="900" rx="26" fill="#f7f9fc"/>
+<text class="heading" x="48" y="62">从工作簿到可验收任务</text>
+<text class="subtitle" x="48" y="102">数据构造 → 执行与诊断 → 冻结与交付</text>
+<text x="1384" y="58" text-anchor="end" font-size="28" font-weight="700" fill="#28476b">sheetsFactory</text>
+<text class="subtitle" x="1384" y="100" text-anchor="end">12 个节点 · 3 类修复路径</text>
+<rect x="36" y="146" width="1360" height="160" rx="22" fill="#eaf1fb"/>
+<rect x="36" y="370" width="1360" height="160" rx="22" fill="#e7f3f2"/>
+<rect x="36" y="594" width="1360" height="160" rx="22" fill="#eaf3eb"/>
+<g id="node01">
+  <rect class="card" x="48" y="154" width="304" height="144" rx="16"/>
+  <rect x="68" y="175" width="42" height="36" rx="10" fill="#e8effc"/>
+  <text class="number" x="89" y="201" fill="#3167b9">01</text>
+  <text class="title" x="126" y="203">规范化输入</text>
+  <text class="body" x="72" y="247">.xls / .xlsx 输入</text>
+  <text class="body" x="72" y="281">转换与重算稳定性</text>
+</g>
+<g id="node02">
+  <rect class="card" x="392" y="154" width="304" height="144" rx="16"/>
+  <rect x="412" y="175" width="42" height="36" rx="10" fill="#e8effc"/>
+  <text class="number" x="433" y="201" fill="#3167b9">02</text>
+  <text class="title" x="470" y="203">工作簿画像</text>
+  <text class="body" x="416" y="247">结构与业务标签</text>
+  <text class="body" x="416" y="281">跨表依赖与影响范围</text>
+</g>
+<g id="node03">
+  <rect class="card" x="736" y="154" width="304" height="144" rx="16"/>
+  <rect x="756" y="175" width="42" height="36" rx="10" fill="#e8effc"/>
+  <text class="number" x="777" y="201" fill="#3167b9">03</text>
+  <text class="title" x="814" y="203">模式与规划</text>
+  <text class="body" x="760" y="247">FM / Debugging</text>
+  <text class="body" x="760" y="281">模板选择与编辑计划</text>
+</g>
+<g id="node04">
+  <rect class="card" x="1080" y="154" width="304" height="144" rx="16"/>
+  <rect x="1100" y="175" width="42" height="36" rx="10" fill="#e8effc"/>
+  <text class="number" x="1121" y="201" fill="#3167b9">04</text>
+  <text class="title" x="1158" y="203">构造任务副本</text>
+  <text class="body" x="1104" y="247">预测遮蔽 / 公式注错</text>
+  <text class="body" x="1104" y="281">健康参考与变更记录</text>
+</g>
+<g id="node05">
+  <rect class="card" x="1080" y="378" width="304" height="144" rx="16"/>
+  <rect x="1100" y="399" width="42" height="36" rx="10" fill="#e3f2ef"/>
+  <text class="number" x="1121" y="425" fill="#187c76">05</text>
+  <text class="title" x="1158" y="427">生成题面</text>
+  <text class="body" x="1104" y="471">基于真实输入与规则</text>
+  <text class="body" x="1104" y="505">明确目标与输出约定</text>
+</g>
+<g id="node06">
+  <rect class="card" x="736" y="378" width="304" height="144" rx="16"/>
+  <rect x="756" y="399" width="42" height="36" rx="10" fill="#e3f2ef"/>
+  <text class="number" x="777" y="425" fill="#187c76">06</text>
+  <text class="title" x="814" y="427">原生验算</text>
+  <text class="body" x="760" y="471">原生重算与完整差异</text>
+  <text class="body" x="760" y="505">正负控制与边界检查</text>
+</g>
+<g id="node07">
+  <rect class="card" x="392" y="378" width="304" height="144" rx="16"/>
+  <rect x="412" y="399" width="42" height="36" rx="10" fill="#e3f2ef"/>
+  <text class="number" x="433" y="425" fill="#187c76">07</text>
+  <text class="title" x="470" y="427">独立参考审查</text>
+  <text class="body" x="416" y="471">按策略恢复或审查</text>
+  <text class="body" x="416" y="505">绑定当前材料版本</text>
+</g>
+<g id="node08">
+  <rect class="card" x="48" y="378" width="304" height="144" rx="16"/>
+  <rect x="68" y="399" width="42" height="36" rx="10" fill="#e3f2ef"/>
+  <text class="number" x="89" y="425" fill="#187c76">08</text>
+  <text class="title" x="126" y="427">代理自然尝试</text>
+  <text class="body" x="72" y="471">执行一次自然尝试</text>
+  <text class="body" x="72" y="505">保留完整工具轨迹</text>
+</g>
+<g id="node09">
+  <rect class="card" x="48" y="602" width="304" height="144" rx="16"/>
+  <rect x="68" y="623" width="42" height="36" rx="10" fill="#e7f2e8"/>
+  <text class="number" x="89" y="649" fill="#39814b">09</text>
+  <text class="title" x="126" y="651">逐项诊断</text>
+  <text class="body" x="72" y="695">全部启用项逐项检查</text>
+  <text class="body" x="72" y="729">问题编号与修复路由</text>
+</g>
+<g id="node10">
+  <rect class="card" x="392" y="602" width="304" height="144" rx="16"/>
+  <rect x="412" y="623" width="42" height="36" rx="10" fill="#e7f2e8"/>
+  <text class="number" x="433" y="649" fill="#39814b">10</text>
+  <text class="title" x="470" y="651">Harbor 导出</text>
+  <text class="body" x="416" y="695">公开输入 / 私有参考</text>
+  <text class="body" x="416" y="729">verifier 与任务目录</text>
+</g>
+<g id="node11">
+  <rect class="card" x="736" y="602" width="304" height="144" rx="16"/>
+  <rect x="756" y="623" width="42" height="36" rx="10" fill="#e7f2e8"/>
+  <text class="number" x="777" y="649" fill="#39814b">11</text>
+  <text class="title" x="814" y="651">真实目录验收</text>
+  <text class="body" x="760" y="695">oracle = 1 · nop = 0</text>
+  <text class="body" x="760" y="729">真实执行并核验资源</text>
+</g>
+<g id="node12">
+  <rect class="card" x="1080" y="602" width="304" height="144" rx="16"/>
+  <rect x="1100" y="623" width="42" height="36" rx="10" fill="#e7f2e8"/>
+  <text class="number" x="1121" y="649" fill="#39814b">12</text>
+  <text class="title" x="1158" y="651">冻结确认准出</text>
+  <text class="body" x="1104" y="695">强模型 · 新上下文</text>
+  <text class="body" x="1104" y="729">汇总质量与难度证据</text>
+</g>
+<path class="next" d="M360 226 H383"/>
+<path class="next" d="M704 226 H727"/>
+<path class="next" d="M1048 226 H1071"/>
+<path class="next" d="M1232 310 V364"/>
+<path class="next" d="M1072 450 H1049"/>
+<path class="next" d="M728 450 H705"/>
+<path class="next" d="M384 450 H361"/>
+<path class="next" d="M200 534 V588"/>
+<path class="next" d="M360 674 H383"/>
+<path class="next" d="M704 674 H727"/>
+<path class="next" d="M1048 674 H1071"/>
+<!-- Content repair returns to planning/construction, above the row backgrounds. -->
+<path class="repair" d="M48 674 H22 V128 H888 V150"/>
+<rect x="358" y="110" width="450" height="34" rx="10" fill="#f7f9fc"/>
+<text x="583" y="135" text-anchor="middle" font-size="24" font-weight="700" fill="#a36722">R01–R10 · 修复后重新规划 / 构造</text>
+<text class="subtitle" x="888" y="347" text-anchor="middle">构造副本后，生成题面并逐层验算</text>
+<text class="subtitle" x="544" y="571" text-anchor="middle">无论成功或失败，都进入诊断</text>
+<!-- Separate routes and separate budgets for content, evidence and infrastructure. -->
+<path d="M200 754 V778" fill="none" stroke="#c47725" stroke-width="2.6" marker-end="url(#repairArrow)"/>
+<rect x="48" y="786" width="1336" height="84" rx="16" fill="#fff3e3" stroke="#efdbbf"/>
+<path d="M492 804 V852 M938 804 V852" stroke="#e5ceac" stroke-width="1.5"/>
+<text class="routeTitle" x="72" y="820">R01–R10 · 内容修复</text>
+<text class="routeBody" x="72" y="853">返回规划 / 构造，限 max_steps 轮</text>
+<text class="routeTitle" x="516" y="820">R12 · 缺失证据</text>
+<text class="routeBody" x="516" y="853">返回相应证据阶段补证与复核</text>
+<text class="routeTitle" x="962" y="820">R11 · 环境故障</text>
+<text class="routeBody" x="962" y="853">仅重试故障阶段，保留原始记录</text>
 </svg>

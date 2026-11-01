@@ -6,7 +6,7 @@
 
 ## 产线流程
 
-![产线流程：构造任务、验算诊断、验收交付；编号问题修复后重新验证](assets/pipeline-overview.svg)
+[![产线横幅：12个具体节点，含原生验算、代理尝试、逐项诊断、三类修复路由及冻结准出](assets/pipeline-overview.svg)](assets/pipeline-overview.svg)
 
 代理尝试成功或失败都进入诊断。内容修复、补证与基础设施重试分别计数。通用入口默认先完成质量构造；正式难度确认另行冻结执行。
 
@@ -147,3 +147,36 @@ harbor run -p SpreadsheetEval \
 预算限制只能减少原始成功数，即使把唯一原始正确答案按可能成功计算，上界5%仍满足0.2门槛。程序验算、语义审查和真实控制覆盖全部启用检查，候选层Q08为not_applicable，正式难度单独确认。
 
 本次修订18份候选新增准出10份，转化率 **55.56%**，另保留历史10份。含辅助验收的38次CLI请求已知消耗下界 **76,897,970 tokens**，另6次用量未知；实际账单未知。完整[发布](reports/ringfenced_business_revision_release.json)、[控制](reports/ringfenced_business_revision_controls.json)、[消耗](reports/ringfenced_business_revision_consumption.json)及[文件清单](SpreadsheetEval/dataset_manifest.json)以机器可读JSON保存。
+
+## 任务书验收 checklist
+
+按任务书第1.1–1.4、2.1–2.2节及交付物清单逐项核对，以下状态对应当前根目录的20题。任务书要求两类各至少5题；10+10、nop及工具预算是本项目的补充验收。
+
+- [x] **题型与数量**：Financial Modeling、Debugging各10题，均超过各5题的最低要求。
+- [x] **业务与规模**：多sheet、跨表协作和大范围修改，覆盖经营报表与资本配置场景；具体分布见上表。
+- [x] **仅程序化评分**：不以图表、可读性、美观或注释质量判分。
+- [x] **难度实测**：最强可用配置为原生Codex CLI `gpt-6.1-sol / xhigh`，Overall Pass@1为 **5% ≤ 20%**；分项成绩和证据范围见上表及[发布报告](reports/ringfenced_business_revision_release.json)。
+- [x] **计算值评分**：实际LibreOffice重算后比较值，不比较公式字符串。
+- [x] **数值与日期**：数值按两位小数比较，日期归一化；实现见[精确比较器](src/sheets_factory/evaluation/streaming_verifier.py)。
+- [x] **完整修改集合**：输出相对输入的修改集合须与参考一致，少改、多改、错值均判0，未要求变动的单元格也必须保持一致。
+- [x] **二元奖励**：每题reward只取0或1，dataset score为全部题目reward的均值。
+- [x] **自动scaling**：参考工作簿、mask/注错、题面、验证与导出均由程序执行，无需逐题人工编辑；抽象及专用构建路径见[设计文档](docs/PIPELINE_DESIGN.md)。
+- [x] **原创任务**：交付题由本地业务模型程序构造，未使用官方原题作为交付题。
+- [x] **Harbor结构**：[SpreadsheetEval/](SpreadsheetEval)中20题均包含`instruction.md`、`task.toml`、`environment/`、`solution/`、`tests/test.sh`。
+- [x] **真实正确参考**：`reference.xlsx`由程序构造，来源验算、独立审查与当前材料绑定，证据索引见[发布报告](reports/ringfenced_business_revision_release.json)。
+- [x] **完整目录oracle**：实际执行`harbor run -p SpreadsheetEval -a oracle`，**20/20 reward=1**，无异常、缺失或未知结果；见[控制报告](reports/ringfenced_business_revision_controls.json)。
+- [x] **交付内容**：构造代码、题目目录、README、造题解读、模型分数表、Harbor命令及下述失败案例均已提供；[仓库链接](https://github.com/ZhaoyangHan04/sheetsFactory)。
+
+失败案例依据[保留题逐格分析](reports/history/operating_report_factory_business_retained_v1.json)，均来自当前题集：
+
+- **FM F17**：应改与实改集合均为85,638格，但802格值错误，其中800格属于联营损益列报行（`reported_associate_line`），另有同比、环比各1格。覆盖修改范围后，仍需算对每一格业务结果。
+- **DBG S19**：应改8,140格，实际改7,340格，遗漏800格联营损益列报行，没有额外改动。修复需要覆盖所有同类业务行及受影响结果。
+
+以上是逐格结果分析，未将字段差异分布视为已经证实的模型推理根因。
+
+补充验收状态：
+
+- [x] **10+10与nop控制**：当前各10题；真实nop **20/20 reward=0**。
+- [x] **运行资源**：实际agent/verifier各2 CPU、32 GiB，已记录资源审计。
+- [x] **工具预算下的难度上界**：按累计工具执行严格小于1800秒计算，预算后通过率区间为 **[0%,5%]**，上界满足20%门槛；UNKNOWN未被作为判错依据。
+- [ ] **逐轨迹工具计时完整**：新确认10题中2条完整、8条UNKNOWN。尚不能声称全部轨迹计时完整或全部满足30分钟限制。
