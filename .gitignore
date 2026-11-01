@@ -12,3 +12,11 @@ data/seeds/**
 !data/seeds/.gitkeep
 *.log
 .DS_Store
+
+# Local reference notes; publish only the two maintained project guides.
+/AGENTS.md
+/docs/**
+!/docs/PIPELINE_DESIGN.md
+/data/**/*.md
+/runtime/**/*.md
+/src/**/*.md

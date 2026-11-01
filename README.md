@@ -1,76 +1,162 @@
 # sheetsFactory
 
-任务书要求的目录位于仓库根目录：[SpreadsheetEval/](SpreadsheetEval)，包含 **10道 Financial Modeling＋10道 Debugging**。完整目录已实际通过oracle和nop控制，结果见[发布报告](reports/ringfenced_business_revision_release.json)和[控制报告](reports/ringfenced_business_revision_controls.json)。
+从 `.xls` / `.xlsx` 工作簿构造 **Financial Modeling** 和 **Debugging** 任务：自动画像、规划、mask/注错、代理尝试、诊断修复、验收和 Harbor 导出。每次运行启动实时面板，记录节点状态、耗时、token、产量与转化率。
 
-原有5＋5道题的材料和历史成绩保留；新增5＋5道资本配置题已完成真实输入验算，并在最强模型新上下文中确认。材料按[冻结清单](SpreadsheetEval/dataset_manifest.json)绑定，没有根据确认结果替换个别题目。
+详细抽象、节点实现、检查编号与修复路由见 **[管线设计文档](docs/PIPELINE_DESIGN.md)**。
 
-| 组成 | FM | Debugging | 工作簿结构 |
-| --- | ---: | ---: | --- |
-| 保留经营报表题 | 5 | 5 | 每题211张sheet、200家虚构企业及分部/集团报表 |
-| 新增资本配置题 | 5 | 5 | 每题741张sheet、两个各360项目的投资组合及集团报告 |
+## 产线流程
 
-新增FM每题有3,044,678个实际变化位置；新增Debugging每题有约897,200个实际变化位置，注入172,800处公式错误和720个暂定项目选择。业务错误包括利息使用期末债务、税损在最后合法年度提前失效，以及情景冲击错误反馈到下一期收入基数，影响税、现金流和LP/GP估值。两个投资组合的预算、资源、地点和前置项目约束均需在各情景满足，选择按已入账S01 LP NPV最大化。
+```mermaid
+flowchart LR
+    A[种子工作簿] --> B[规范化 / 画像]
+    B --> C[模式与模板规划]
+    C --> D[副本 mask / 注错]
+    D --> E[题面 / 原生验算]
+    E --> F[代理尝试与轨迹]
+    F --> G{全部启用项诊断}
+    G -->|编号问题：修复 / 补证| C
+    G -->|质量通过| H[Harbor 导出]
+    H --> I[oracle / nop]
+    I --> J[冻结 / 强模型确认]
+    J --> K[准出]
+```
 
-新来源由六份已独立验算的本地投资模型组合为五份健康工作簿。五份组合不是五个互不相关的公开数据集。每份组合核对两套完整财务结果和原始整数约束，组合最佳/次佳证书，并完成三次真实LibreOffice计算、完整财务/公式/原始数据审计和两次数值稳定性比较。每份新输入也另有真实重算和完整修改集合检查。
+代理尝试成功或失败都进入诊断。内容修复、补证与基础设施重试分别计数。通用入口默认先完成质量构造；正式难度确认另行冻结执行。
 
-最强模型采用原生Codex CLI `gpt-6.1-sol` / `xhigh`。新增十题原始评分为9个0、1个1；加上保留十题的历史0分，完整20题原始通过率为 **1/20＝5%**。FM为0/10，Debugging为1/10；不声称二十题都在本轮重新确认。
+## 环境准备
 
-累计工具执行严格小于1800秒，模型响应时间不计入，并行工具分别累加；14400秒是运行保护时限。新十题有2条完整计时、8条UNKNOWN，原记录全部保留。预算限制只能减少原始成功数：错误答案无论是否超时都失败，唯一原始正确答案在计时未知时按可能成功计算。因此完整20题预算调整后的通过率区间为 **[0%, 5%]**，最有利于模型的上界仍低于0.2；不声称得到了全部预算调整点成绩或全部计时通过。
-
-主评分比较重算后两位小数类型值与完整修改集合：多改、少改或应改值不正确均得0。错因分类用于解释结果，不另加准出阈值，也不改变原始评分。完整实际验收结果、资源和材料身份必须有效；UNKNOWN本身不作为模型失败依据。
-
-公开与参考质量审查覆盖全部五组新题，十二项检查均保留。四次已完成审查未发现阻塞性的题意、业务假设或答案泄漏问题，实际资源检查通过；其余验收证据连接完整工程审计和实际目录控制。Q08在候选质量层为not_applicable，独立难度门槛已验证。首轮四次超时审查的未知结论和未知用量仍保留。
-
-本次修订构造18份候选材料，其中8份原型、10份最终新增材料；新增准出10份，转化率 **55.56%（10/18）**，另外保留历史10份。它不是项目全部历史转化率。主产线已知74,280,115 tokens；加入辅助验收后，本次38次CLI请求的已知消耗下界为 **76,897,970 tokens**，另有6次用量未知。缓存输入包含在输入token中；实际账单未知。分项见[消耗报告](reports/ringfenced_business_revision_consumption.json)。更早40候选的87,496,946 tokens及官方复测研究不纳入此次修订统计。
-
-## 运行交付题集
-
-需要 Python3.12、uv、Docker，以及仓库锁定的 Harbor0.25.0依赖。从仓库根目录执行：
+需要 Linux、Python 3.12、uv、Docker；产题还需要可调用目标模型的原生 Codex CLI。依赖锁定 Harbor 0.25.0。从仓库根目录执行：
 
 ```bash
 UV_PROJECT_ENVIRONMENT=.venv312 uv sync --frozen --extra test --python 3.12
 source .venv312/bin/activate
+python scripts/restore_runtime_inputs.py
 ```
 
-加载精确运行镜像 `sheetsfactory-lo:24.2-iterative-openpyxl315-v1`，步骤见 [运行镜像说明](runtime/lo24.2-iterative-openpyxl315-v1/README.md)。镜像含 LibreOffice24.2.7.2 和 openpyxl3.1.5，镜像ID为 `sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043`。仓库权限持有者可从该说明链接的私有 Release 下载并校验镜像归档。
+加载交付题集使用的固定 LibreOffice 24.2.7.2 / openpyxl 3.1.5 镜像。以下命令需要 `gh` 已具备本仓库私有 Release 的读取权限：
 
-任务书要求的完整目录命令是：
+```bash
+mkdir -p outputs/runtime
+cd outputs/runtime
+gh release download runtime-lo-24.2-iterative-openpyxl315-v1 \
+--repo ZhaoyangHan04/sheetsFactory \
+--pattern 'sheetsfactory-lo-24.2-iterative-openpyxl315-v1.tar.gz*' \
+--pattern runtime_manifest.json
+sha256sum --check sheetsfactory-lo-24.2-iterative-openpyxl315-v1.tar.gz.sha256
+docker image load --input sheetsfactory-lo-24.2-iterative-openpyxl315-v1.tar.gz
+cd ../..
+```
+
+镜像标签为 `sheetsfactory-lo:24.2-iterative-openpyxl315-v1`，镜像 ID 为 `sha256:b3a295b1ea8e88931893a96d8e5f1af97a998333a02189103bef5d223d13e043`。
+
+产题和模型解题通过环境变量读取服务配置；oracle/nop 不需要模型密钥：
+
+```bash
+export SHEETS_FACTORY_API_KEY='your-key'
+export SHEETS_FACTORY_BASE_URL='https://your-service/v1'
+command -v codex
+```
+
+也可将密钥保存在被忽略的 `.secrets/api_key`。旧说明保留在本地；少量被程序读取的固定文本由恢复脚本按摘要还原，不覆盖已有不同内容。
+
+## 配置与启动产题
+
+先复制基准配置，保留其余默认字段：
+
+```bash
+mkdir -p outputs
+cp config/pipelines/quality40.yaml outputs/pipeline.local.yaml
+```
+
+在 `outputs/pipeline.local.yaml` 中修改下列字段，`agents.binary` 使用上面查到的实际 Codex 可执行路径：
+
+```yaml
+run:
+  targets: {financial_modeling: 10, debugging: 10}
+  max_parallel_sources: 4
+  max_steps: 3
+engine:
+  image: sheetsfactory-lo:24.2-iterative-openpyxl315-v1
+agents:
+  binary: /absolute/path/to/codex
+  container_image: sheetsfactory-lo:24.2-iterative-openpyxl315-v1
+  model: gpt-6-sol
+  reasoning_effort: high
+diagnosis:
+  selection: {include: all, exclude: []}
+  execution: {llm_batching: grouped}
+  difficulty_deferred: true
+```
+
+```bash
+./scripts/run.sh --config outputs/pipeline.local.yaml --seeds /path/to/workbooks --port 0
+```
+
+`--seeds` 接受文件或递归目录。追加 `--count 40` 会覆盖配额为20+20；自定义两类数量时使用 `run.targets`。`max_steps` 限制内容修复轮数，补证和环境重试另有预算。配置、模板与提示词的职责如下：
+
+| 位置 | 配置内容 |
+| --- | --- |
+| `config/llm.yaml`、`config/agents.yaml` | CLI默认值、各角色模型与提示词映射 |
+| `config/pipelines/*.yaml` | 题量、来源、并发、预算、构造模式和诊断策略 |
+| `config/checkers.yaml`、`config/routes.yaml` | Q01–Q12检查插件、问题编号及修复路由 |
+| `config/nodes.yaml`、`src/sheets_factory/pipelines/templates/` | 节点注册与两类任务阶段模板 |
+| `prompts/` | 规划、题面、轨迹诊断和修复提示词 |
+
+管线会打印面板地址，`--port 0` 分配可用端口；`--headless` 仅关闭自动打开浏览器。运行记录在 `outputs/runs/<run-id>/`，新题导出到其中的 `SpreadsheetEval/`。默认结束后保留面板，`--exit-on-finish` 可在结束时关闭。
+
+```bash
+./scripts/run.sh --resume outputs/runs/your-run-id
+python scripts/serve_dashboard.py --run outputs/runs/your-run-id --port 0 --open-browser
+```
+
+输入只保证文件格式；不满足可解释性、稳定性或质量要求的工作簿会被拒绝，因此目标数量不等于保证产量。通用 `quality40` 默认延后难度，不会一键重建本仓库专用20题的全部历史来源与审计。
+
+## 跑题与验收
+
+交付目录位于仓库根目录 **[SpreadsheetEval/](SpreadsheetEval)**。任务书要求的完整目录命令为：
 
 ```bash
 harbor run -p SpreadsheetEval -a oracle
-```
-
-完整负例控制：
-
-```bash
 harbor run -p SpreadsheetEval -a nop
 ```
 
-以上两条完整目录命令已真实运行：**oracle20/20 reward=1，nop20/20 reward=0**，两个角色的实际资源及容器清理均验证通过。每个任务声明 `/app/input.xlsx` 和 `/app/output.xlsx`；运行现有题集的oracle/nop不需要模型API密钥。最终目录及逐题文件由 [dataset_manifest.json](SpreadsheetEval/dataset_manifest.json) 绑定。
+验证新产数据时，将 `-p` 换成 `outputs/runs/<run-id>/SpreadsheetEval`。Harbor结果保存在 `jobs/`。
 
-## 使用构造管线
-
-通用管线可从一个 `.xls` / `.xlsx` 种子目录启动：
+直接使用本地原生 Codex 对当前题集解题、获取原始评分：
 
 ```bash
-./scripts/run.sh --seeds /path/to/workbooks --count 40
+harbor run -p SpreadsheetEval \
+-a sheets_factory.evaluation.frontier:LocalCodex \
+--ak native_binary="$(command -v codex)" \
+-m gpt-6.1-sol --effort xhigh --sm \
+--base-url "$SHEETS_FACTORY_BASE_URL" \
+--api-key-name SHEETS_FACTORY_API_KEY --api-format openai_responses \
+--n-attempts 1 --max-retries 0 --n-concurrent 4
 ```
 
-构造和诊断使用 `gpt-6-sol` / `high`。密钥通过 `SHEETS_FACTORY_API_KEY` 或被忽略的 `.secrets/api_key` 提供，端点配置位于 `config/llm.yaml` / 本地密钥元数据。每次运行自动启动面板，实时记录节点、事件、时间、token和产量；终端输出实际地址。
+该命令运行真实模型并产生原始Harbor评分；完整准出还需独立工具计时、冻结身份及实际资源审计，详见设计文档。
 
-本批次的专用路线使用冻结的虚构业务来源、完整公式遮蔽或已知非零缺陷计划、每材料原生验算、开发筛选、事前冻结、新上下文确认及完整根目录控制。来源和构造审计保存在本地 `outputs/`；这些私有证据没有作为公开解题输入，也不随Git发布。已交付题集的运行不依赖这些构造审计。
+## 当前数据与测试结果
 
-| 目录 | 内容 |
+| 任务来源 | FM | Debugging | 每题结构 |
+| --- | ---: | ---: | --- |
+| 经营报表 | 5 | 5 | 211张sheet，200家企业及分部/集团报表 |
+| 双投资组合 | 5 | 5 | 741张sheet，两个各360项目的投资组合及集团报告 |
+| 合计 | 10 | 10 | 20道Harbor任务 |
+
+新增FM每题实际变化3,044,678格；新增Debugging约897,200格，包含利息口径、税损到期、情景收入等公式错误及待修复项目选择。五份组合健康工作簿共享六个本地来源；同源变体不按独立数据集计数。
+
+| 验收项 | 配置 / 实测结果 |
 | --- | --- |
-| `SpreadsheetEval/` | 当前20题Harbor任务与冻结清单 |
-| `config/` | 模型、代理、管线、任务适配和资源配置 |
-| `prompts/` | 计划、题面、诊断及修复提示词 |
-| `data/` | 种子与来源清单 |
-| `src/sheets_factory/` | 节点抽象、继承实现、管线及工作簿构造 |
-| `scripts/` | 一键启动、原生验算、模型评测、控制、只读审计和发布 |
-| `outputs/` | 本地运行、审计、面板及私有构造证据，Git忽略 |
-| `reports/` | 当前发布摘要和失败摘要 |
-| `tests/` | 代码与证据合同测试 |
+| 最强模型 | 原生Codex CLI，`gpt-6.1-sol / xhigh`，每题一次确认 |
+| 运行资源 | 固定上述镜像；agent/verifier各2 CPU、32 GiB；计算最多2线程 |
+| 精确评分 | 重算后两位小数类型值与完整修改集合；少改、多改、错值均为0 |
+| 目录控制 | oracle **20/20 reward=1**；nop **20/20 reward=0** |
+| 原始模型通过率 | FM **0/10**；Debugging **1/10**；合计 **1/20＝5%** |
+| 证据范围 | 保留10题历史成绩＋10题新上下文确认；没有按确认结果换题 |
+| 工具预算 | 累计执行严格小于1800秒，排除模型响应，并行执行求和 |
+| 预算后通过率 | **[0%,5%]**；新10题计时2条完整、8条UNKNOWN，未知不作为判错依据 |
 
+预算限制只能减少原始成功数，即使把唯一原始正确答案按可能成功计算，上界5%仍满足0.2门槛。程序验算、语义审查和真实控制覆盖全部启用检查，候选层Q08为not_applicable，正式难度单独确认。
 
-原20题发布、0/20历史确认及当时oracle/nop证据见[历史发布说明](docs/history/README_operating_report_factory_20261101.md)和[历史发布报告](reports/operating_report_factory_release.json)。这些原批次结果不代表当前新目录的确认成绩。当前规则见[主评分准出合同](docs/ringfenced_primary_release.md)，材料冻结与调用边界见[组合确认记录](docs/ringfenced_replacement_confirmation.md)。
+本次修订18份候选新增准出10份，转化率 **55.56%**，另保留历史10份。含辅助验收的38次CLI请求已知消耗下界 **76,897,970 tokens**，另6次用量未知；实际账单未知。完整[发布](reports/ringfenced_business_revision_release.json)、[控制](reports/ringfenced_business_revision_controls.json)、[消耗](reports/ringfenced_business_revision_consumption.json)及[文件清单](SpreadsheetEval/dataset_manifest.json)以机器可读JSON保存。
