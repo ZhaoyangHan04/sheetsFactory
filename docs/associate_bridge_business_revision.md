@@ -20,6 +20,26 @@ Financial Modeling removes all 88,676 financial formulas while preserving source
 
 Both task modes use the existing seventeen-file Harbor export and 2-CPU/32-GiB runtime. The first engineered cases are B04 and B05. Their source checks cover all 93,510 fields and contain zero primary boundary observations. Their actual task changes are respectively 88,676/24,086 and 88,676/23,288 cells for completion/repair. Engineering completion does not confer difficulty or final release qualification.
 
+The first actual B04 development attempts both scored one. Their cumulative primitive tool times were 44.841278437 seconds for completion and 122.589840456 seconds for repair. A separate complete native submission diagnostic found no primary or material business mismatch. B04 is therefore evidence that this source mechanism is solvable, and is not a new difficulty-qualified task. B05 has engineering evidence only; no solver attempt has started for it.
+
+## Tax-vintage extension
+
+The separate `tax_vintage_bridge_v2` family preserves investment accounting and introduces two isolated taxable-income pools. Opening loss vintages have origin and last-eligible quarters; FIFO uses origin and ID rather than register display order. Current losses become usable next quarter. Effective terms set utilization caps, new-loss lives and the lag for new tax assessments. The assessment-quarter lag and creation-quarter expiry remain fixed after a later policy change.
+
+These states affect current tax, income, actual tax payments, cash, unpaid-tax liabilities and retained earnings. Tax expense and cash paid are distinct. Loss-vintage helpers form part of the complete report inventory but a helper-only error cannot establish core business difficulty.
+
+Eight raw T01–T08 contracts were frozen before production financial forwards. They combine four earlier investment contracts with different declared tax assignments over the same business backbone; they are not independent public seeds. The complete scope contains 291,000 fields and 286,166 formulas. Independent Decimal and Fraction ledgers cover the full economic, raw and primary maps, including every vintage state. Fifty-five tests cover the ledgers, formula boundaries and protected-input mutation before actual native engineering. Final task and difficulty qualification remain pending.
+
+```bash
+.venv312/bin/python scripts/build_tax_vintage_bridge_business_batch.py freeze-raw \
+  --bridge-manifest /path/to/frozen/bridge/raw/manifest.json \
+  --output outputs/research/new_tax_raw
+
+.venv312/bin/python scripts/build_tax_vintage_bridge_business_batch.py build \
+  --raw-manifest outputs/research/new_tax_raw/manifest.json --case T01 \
+  --output outputs/research/new_tax_engineering
+```
+
 ## Difficulty and semantic diagnosis
 
 The new native development entry reserves each material before its single Codex CLI `gpt-6.1-sol/xhigh` attempt. It shares the earlier permanent material registry, makes zero outer retries, and retains actual role-resource and cumulative-tool evidence. Primitive tools must sum to less than 1,800 seconds; model response time is excluded. A 14,400-second operational guard cannot supply a model-failure score.
