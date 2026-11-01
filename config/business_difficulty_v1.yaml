@@ -1,0 +1,6 @@
+version: 1
+enabled: true
+economic_absolute_tolerance_gbp: '0.01'
+economic_relative_tolerance: '1e-10'
+primary_numeric_decimals: 2
+primary_reward_modified: false

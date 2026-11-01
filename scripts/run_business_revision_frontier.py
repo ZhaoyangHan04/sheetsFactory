@@ -64,7 +64,7 @@ def recipes():
     _base_guard()
     return {**_BASE_RECIPES(), 'frozen_generic_base': ref(BASE),
         'business_revision_development_contract': {
-            'kind': BATCH_KIND, 'candidate_minimum': 10, 'candidate_maximum': 20,
+            'kind': BATCH_KIND, 'candidate_minimum': 1, 'candidate_maximum': 20,
             'phase': 'development', 'source_goal_identity': 'each task declares its exact goal SHA256',
             'reservation_registry': str(_N['RESERVATIONS']),
             'new_namespace_does_not_reset_existing_material_history': True}}
@@ -74,7 +74,7 @@ _N['recipes'] = recipes
 
 
 def prepare(batches, output, *, port=0):
-    """Freeze all declared 10–20 candidates; never select using later scores."""
+    """Freeze all declared 1–20 candidates; never select using later scores."""
     records = [checked(value) for value in batches]
     count = 0
     for record in records:
@@ -84,14 +84,14 @@ def prepare(batches, output, *, port=0):
             and batch.get('selected_task_ids') == [t['task_id'] for t in batch['tasks']],
             'Use complete new business-revision engineering batches')
         count += batch['count']
-    require(10 <= count <= 20, 'Predeclare ten through twenty fresh development candidates')
+    require(1 <= count <= 20, 'Predeclare one through twenty fresh development candidates')
     return _BASE_PREPARE(records, output, phase='development', port=port)
 
 
 def validate_prepared(output):
     prepared = _BASE_VALIDATE(output)
     require(prepared['phase'] == 'development' and prepared['development'] is None
-        and 10 <= len(prepared['tasks']) <= 20,
+        and 1 <= len(prepared['tasks']) <= 20,
         'This entry admits the fixed small development phase only')
     require(read(prepared['source']).get('kind') == SOURCE_KIND,
             'Require the distinct business-revision native source identity')

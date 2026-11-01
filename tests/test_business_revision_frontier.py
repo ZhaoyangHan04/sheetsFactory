@@ -69,13 +69,22 @@ def test_real_new_goal_batches_freeze_all10_without_old_source_identity(entry, b
     assert selection['infrastructure_retry_policy']['max_retries'] == 0
 
 
-@pytest.mark.parametrize('count', [0, 9, 21])
+@pytest.mark.parametrize('count', [0, 21])
 def test_small_batch_contract_rejects_unfrozen_candidate_counts_before_export(entry, tmp_path, count):
     record = entry.write(tmp_path/f'count-{count}.json', {'kind': entry.BATCH_KIND, 'version': 1,
         'count': count, 'tasks': [{'task_id': str(i)} for i in range(count)],
         'selected_task_ids': [str(i) for i in range(count)]})
-    with pytest.raises(ValueError, match='ten through twenty'):
+    with pytest.raises(ValueError, match='one through twenty'):
         entry.prepare([record], tmp_path/'never-created')
+
+
+def test_two_mode_first_probe_is_admitted_without_an_artificial_minimum(entry, batch, tmp_path):
+    b = batch('probe', (1, 1))
+    prepared = entry.read(entry.prepare([b.ref], tmp_path/'probe-prepared'))
+    assert len(prepared['tasks']) == 2
+    assert {r['mode'] for r in prepared['tasks']} == {'financial_modeling', 'debugging'}
+    assert entry.validate_prepared(tmp_path/'probe-prepared') == prepared
+    assert prepared['recipe']['business_revision_development_contract']['candidate_minimum'] == 1
 
 
 def test_old_batch_kind_cannot_masquerade_as_new_business_revision(entry, batch, tmp_path):
