@@ -38,22 +38,29 @@ def _stat(path):
 
 class _Artifacts:
     """Hash once; fail closed on identity/size/mtime/ctime drift at each boundary."""
-    def __init__(self):self.records={}
+    def __init__(self):self.records={};self.expanded=set()
     def add(self,record,*,expand=False):
         path=Path(record['path']);key=str(path)
         if key in self.records:
-            c.require(self.records[key][0]==record,'Conflicting immutable artifact references');return
-        before=_stat(path);c.checked(record);after=_stat(path)
-        c.require(before==after,'An artifact changed during its full hash verification')
-        self.records[key]=(deepcopy(record),after)
-        if expand and path.suffix=='.json':
-            if after[2]>JSON_METADATA_LIMIT:
-                # These closed schemas are complete numeric/locator data, not
-                # metadata envelopes. Their whole bytes were cold checked;
-                # no path/ref inside them drives any later filesystem read.
-                c.require(path.name in _LARGE_DATA_LEAVES,'Unknown large metadata needs explicit dependency coverage')
-            else:
-                for child in _refs(c.read(record)):self.add(child,expand=True)
+            c.require(self.records[key][0]==record,'Conflicting immutable artifact references')
+            c.require(_stat(path)==self.records[key][1],'An admitted artifact changed before dependency expansion')
+        else:
+            before=_stat(path);c.checked(record);after=_stat(path)
+            c.require(before==after,'An artifact changed during its full hash verification')
+            self.records[key]=(deepcopy(record),after)
+        if expand and path.suffix=='.json' and key not in self.expanded:
+            self.expanded.add(key)
+            after=self.records[key][1]
+            try:
+                if after[2]>JSON_METADATA_LIMIT:
+                    # These closed schemas are complete numeric/locator data, not
+                    # metadata envelopes. Their whole bytes were cold checked;
+                    # no path/ref inside them drives any later filesystem read.
+                    c.require(path.name in _LARGE_DATA_LEAVES,'Unknown large metadata needs explicit dependency coverage')
+                else:
+                    for child in _refs(c.read(record)):self.add(child,expand=True)
+            except BaseException:
+                self.expanded.remove(key);raise
     def guard(self):
         for record,stamp in self.records.values():
             c.require(_stat(record['path'])==stamp,'An admitted artifact changed; the process-local proof is invalid')

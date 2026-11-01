@@ -96,12 +96,26 @@ def test_recursive_dependency_changes_and_symlinks_fail_closed(module,tmp_path):
     with pytest.raises(ValueError):module._Artifacts().add({'path':str(link),'sha256':parent['sha256'],'bytes':parent['bytes']})
 
 
+def test_previously_hashed_envelope_is_still_expanded_and_descendants_guarded(module,tmp_path):
+    child=write(module,tmp_path/'child.json',{'number':1})
+    parent=write(module,tmp_path/'parent.json',{'child':child})
+    guard=module._Artifacts();guard.add(parent)
+    assert str(Path(child['path'])) not in guard.records
+    guard.add(parent,expand=True)
+    assert str(Path(child['path'])) in guard.records
+    guard.add(parent,expand=True)  # Repeated dependency walks are idempotent.
+    guard.guard();Path(child['path']).write_text('{"number":2}')
+    with pytest.raises(ValueError,match='artifact changed'):guard.guard()
+
+
 def test_unknown_large_dependency_envelope_is_not_silently_ignored(module,tmp_path,monkeypatch):
     monkeypatch.setattr(module,'JSON_METADATA_LIMIT',32)
     known=write(module,tmp_path/'bindings.json',{'fixture_large_closed_data':'x'*50})
     module._Artifacts().add(known,expand=True)
     unknown=write(module,tmp_path/'unknown_envelope.json',{'hidden_reference':known})
-    with pytest.raises(ValueError,match='Unknown large metadata'):module._Artifacts().add(unknown,expand=True)
+    guard=module._Artifacts()
+    for _ in range(2):
+        with pytest.raises(ValueError,match='Unknown large metadata'):guard.add(unknown,expand=True)
 
 
 def test_source_functions_are_private_bytecode_copies_with_exact_cached_gate(module,admitted):
