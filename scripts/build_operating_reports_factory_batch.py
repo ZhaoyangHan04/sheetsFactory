@@ -172,7 +172,7 @@ def build(output, *, count=20, concurrency=4, modes=('financial_modeling', 'debu
                 'execution_budget': BUDGET, 'variant_id': key, 'individual_engineering': check_ref,
                 'worker_cap_audit': ref(cap_audit), 'plan_freeze': freeze}
             write(folder/'task_record.json', record)
-            audit.task(key, status='ready', stage='engineering_complete', task_id=task_id,
+            audit.task(key, status='ready', stage='engineering_complete', harbor_task_id=task_id,
                        primary_difference_count=len(checks['complete_primary_difference']))
             audit.record('nodes', {'node': 'individual_engineering', 'task_id': task_id, 'duration_ms': round(1000*(time.monotonic()-start)), 'status': 'completed'})
             audit.emit('candidate_engineered', task_id=task_id, mode=mode, variant=key)
