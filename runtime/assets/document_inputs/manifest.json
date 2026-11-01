@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "kind": "local_runtime_document_inputs",
+  "entries": [
+    {
+      "target": "src/sheets_factory/workbook/derived_regulatory/POLICY.md",
+      "source": "runtime/assets/document_inputs/derived_regulatory_policy.txt",
+      "sha256": "c21d1c9a3da8cb186236a32e2bcf85f48f638f24a00c2010f6ee624c19db0593",
+      "bytes": 9877
+    },
+    {
+      "target": "src/sheets_factory/workbook/lease_finance/CONTRACT.md",
+      "source": "runtime/assets/document_inputs/lease_finance_contract.txt",
+      "sha256": "c7fb9dda761f338c928226cb2dc788053efe04a9b8bdb4bfdb475b26d916a0b0",
+      "bytes": 4120
+    },
+    {
+      "target": "docs/linear_capital_portfolio_contract.md",
+      "source": "runtime/assets/document_inputs/linear_capital_portfolio_contract.txt",
+      "sha256": "a77261b223dbc8d60161a07906883a8aa6e9c501413301f2c83e3b8ac9fda980",
+      "bytes": 9083
+    },
+    {
+      "target": "docs/spreadsheet_failure_analysis_prompt.md",
+      "source": "runtime/assets/document_inputs/spreadsheet_failure_analysis_prompt.txt",
+      "sha256": "14f3e84eea309ab24419273e85ab4a04f7f2cd58c8a9d855ff98d3525cd1d8fe",
+      "bytes": 6915
+    },
+    {
+      "target": "docs/independent_controls_candidate.md",
+      "source": "runtime/assets/document_inputs/independent_controls_candidate.txt",
+      "sha256": "3be762a32ac1b1b00f04f0076436c9d861c4c7516b7162178663e2d72dffad8c",
+      "bytes": 3351
+    },
+    {
+      "target": "docs/heterogeneous_native_review_pack.md",
+      "source": "runtime/assets/document_inputs/heterogeneous_native_review_pack.txt",
+      "sha256": "4c6a982fd3542e02d5c1825ce5a75dbffb4a4bc049cadc81a1d16afc906b1242",
+      "bytes": 4182
+    },
+    {
+      "target": "docs/linear_capital_scaled_highs_screen.md",
+      "source": "runtime/assets/document_inputs/linear_capital_scaled_highs_screen.txt",
+      "sha256": "0b59f03622373a23c4f809ff53216de3eb510ceb11884288a528995ae61d04fb",
+      "bytes": 4120
+    }
+  ]
+}
