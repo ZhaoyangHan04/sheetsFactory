@@ -70,3 +70,27 @@ The one-shot continuation can start while that development batch is running. It 
 ## Statistics
 
 Count the reference as one synthetic source, the forty different inputs as forty candidates, and the selected twenty inputs as twenty delivered tasks only after finalization succeeds. Report candidate conversion and source count separately. Development and fresh confirmation calls are separate observations. Native input/output token totals come from actual completed usage records; cached input is a subset, and provider payment remains unknown without billing evidence. Shared semantic calls and historical experiments have separate consumption scopes.
+
+## Published batch and append-only timing interpretation
+
+The [version-two release](../reports/operating_report_factory_release.json) qualifies twenty tasks, ten per category. The frozen, fresh native `gpt-6.1-sol` / `xhigh` confirmation has zero successes in twenty attempts. The [actual root controls](../reports/operating_report_factory_controls.json) contain twenty oracle rewards of one and twenty nop rewards of zero, with actual resources for both execution roles. All twelve checks remain enabled: each delivered task has evidence for Q01–Q12; candidate Q08 is not applicable because the separate frozen-set difficulty gate supplies that measurement.
+
+The original F11 attempt retains timing `UNKNOWN`. Its original aggregate evaluation retains `infrastructure_failed`, which was derived from that timing status. The narrow missing parser case was a pure display expression, `rr.forEach(r=>text(r));`. A separate read-only supplement binds all twenty-two complete execution wrappers from that same attempt and establishes a conservative cumulative tool upper bound of 126.614143299 seconds. It does not run a new attempt or change the execution-budget contract.
+
+`finalize_operating_reports_factory_with_timing_supplement.py` consumes the original confirmation and this additional evidence. It verifies the original hashes and the supplement, constructs a scoped in-memory interpretation, and invokes the unchanged, hash-pinned quality join and finalizer. It writes new reports with `timing_interpretation` provenance. It does not modify the original protocol results, raw rewards, UNKNOWN state, aggregate status, logs or reservations. The published report explicitly records zero new model, LibreOffice and Harbor calls for this step.
+
+On the construction machine, the retained evidence can be consumed again into **fresh output paths** with the following command. These private inputs are under ignored `outputs/`; they are not required to run the delivered oracle/nop tasks. The consumer refuses existing output files, so choose a new directory for each audit.
+
+```bash
+.venv312/bin/python scripts/finalize_operating_reports_factory_with_timing_supplement.py \
+  --cohort outputs/research/operating_reports_factory_delivery_20261101T050700Z/cohort/cohort_frozen.json \
+  --fm-join outputs/research/factory_shared_FM_semantic_review_20261101T043814Z/all20_native_append_only_join.json \
+  --debug-join outputs/research/factory_shared_DBG_semantic_review_20261101T044147Z/all20_native_append_only_join.json \
+  --root-controls outputs/research/operating_reports_factory_delivery_20261101T050700Z/root_controls/terminal.json \
+  --confirmation outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/terminal.json \
+  --supplement outputs/research/operating_reports_factory_F11_timing_supplement_20261101T054200Z/receipt.json \
+  --quality-output outputs/research/release_evidence_replay_01/quality.json \
+  --output outputs/research/release_evidence_replay_01/release.json
+```
+
+The actual confirmed set includes ten tasks with only the two known two-decimal boundary differences. The other ten have associate-income display differences, nine also with the boundary differences. The [failure summary](../reports/operating_report_factory_failure_summary.json) reports observed cells; it does not establish a unique financial reasoning cause for every failure. The fixed primary grading rule and each actual score remain unchanged.
