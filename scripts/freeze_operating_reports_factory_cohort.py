@@ -98,6 +98,7 @@ def freeze(development_path, batches, output, root_destination):
         'selected_task_ids': record['selected_task_ids'], 'cohort_freeze': reference(path),
         'shared_source_count': 1, 'tasks': [
             {'task_id': row['task_id'], 'mode': row['mode'], 'variant_id': row['variant_id'],
+             'revision': row['revision'], 'revision_hash': row['revision_hash'],
              'harbor_export_binding': row['harbor_export_binding'],
              'payload_files': {name: value['sha256'] for name, value in inventory[row['task_id']].items()}}
             for row in selected]}
