@@ -1,0 +1,1062 @@
+{
+  "kind": "operating_report_factory_business_revision_status",
+  "version": 1,
+  "created_at": "2026-11-01T06:10:03.202951+00:00",
+  "status": "in_progress",
+  "qualified_new_revision": false,
+  "target_task_count": 20,
+  "target_counts_by_mode": {
+    "financial_modeling": 10,
+    "debugging": 10
+  },
+  "retained_business_accepted_count": 10,
+  "retained_counts_by_mode": {
+    "financial_modeling": 5,
+    "debugging": 5
+  },
+  "new_tasks_pending_count": 10,
+  "new_tasks_pending_by_mode": {
+    "financial_modeling": 5,
+    "debugging": 5
+  },
+  "retained_material_manifest": {
+    "path": "reports/history/operating_report_factory_business_retained_v1.json",
+    "sha256": "053c5eb66ac4458969c94386678ca740f698caa76bf6c1dec2a51228ef2eb453",
+    "bytes": 55679
+  },
+  "previous_release": {
+    "path": "reports/operating_report_factory_release.json",
+    "sha256": "f56b0003c4daf4c40646d85279b19028df344665ee4a371a842714b2f39b20f2",
+    "bytes": 17247
+  },
+  "previous_failure_summary": {
+    "path": "reports/operating_report_factory_failure_summary.json",
+    "sha256": "5b7a5aa95974d5be7ffe40146485a3eb68c2846603d0b782f778e9460ca38bc5",
+    "bytes": 36498
+  },
+  "original_root_dataset_manifest": {
+    "path": "SpreadsheetEval/dataset_manifest.json",
+    "sha256": "42bff7f46e65c93e0eda51ae0efad83686608a11f5908008eff3227040bf59a5",
+    "bytes": 159264
+  },
+  "original_root_dataset_unchanged": true,
+  "previous_twenty_task_qualification_preserved": true,
+  "original_scores_modified": false,
+  "new_model_LO_Harbor_calls": 0,
+  "new_confirmation_performed": false,
+  "criterion": {
+    "name": "business_failure_evidence",
+    "enabled_by_default": true,
+    "new_gate_implementation_status": "planned",
+    "description": "New candidates require observed failure of a disclosed business calculation or constraint beyond floating-point boundary or formatting-only differences. This is an admission criterion independent of the unchanged primary verifier reward.",
+    "primary_grading_unchanged": true,
+    "new_candidate_evidence_required": [
+      "hash-bound task and actual native attempt",
+      "public business rule and affected business fields",
+      "actual value or constraint mismatch beyond numerical boundary and format-only differences",
+      "complete timing and resource evidence",
+      "independent reference and actual oracle1/nop0"
+    ],
+    "unknown_evidence_is_not_pass": true,
+    "unique_financial_trace_causality_claimed_for_retained_tasks": false
+  },
+  "source_scope": {
+    "shared_source_count": 1,
+    "independent_task_families": 1,
+    "different_retained_materials": 10
+  },
+  "tasks": [
+    {
+      "task_id": "fm-f20-abcfe7ae1af3dd1ef508",
+      "mode": "financial_modeling",
+      "variant_id": "F20",
+      "disposition": "superseded_for_new_business_difficulty_criterion",
+      "counts_toward_current_business_target": false,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "7310ab84fd277e316a44d48447680c7bb5486244c2b087c780383f1cdf6c38a3",
+      "material_identity_sha256": "e02f2ba26ef9b98c8556b1b799a342311de0f970af63c088a12a30406871c7a7",
+      "input_sha256": "3508214c9e51105455ee1436cf74cc863309cc1ea686bc00c3bdafe1a6722617",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "1ddb923b7a1bf9d7887bda3b58a88be1f3dec34274bd0c2f775c0f608fefef7a",
+      "original_pattern": "boundary_only",
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "expected_D": 88322,
+      "actual_D": 88322,
+      "wrong_value_count": 2,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "The recorded failure contains only the two known numerical-boundary differences; it does not satisfy the new business-difficulty admission criterion. The original zero reward remains unchanged.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f20-abcfe7ae1af3dd1ef508__MY9ysY3/result.json",
+        "sha256": "ebb1b730bc694415f37f20d568101a6aeb0893fef526acd58612dec96916fda0",
+        "bytes": 6343
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f20-abcfe7ae1af3dd1ef508__MY9ysY3/verifier/diagnostics.json",
+        "sha256": "e784f1cd717346a78b1c73a1817ae262921a9161bed42710a1ae362df4ef125e",
+        "bytes": 1527
+      }
+    },
+    {
+      "task_id": "fm-f19-699f818d16d16e3e41f4",
+      "mode": "financial_modeling",
+      "variant_id": "F19",
+      "disposition": "superseded_for_new_business_difficulty_criterion",
+      "counts_toward_current_business_target": false,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "2dd10cb86c18b27f42202d59bf5f7924ea9849819b5ab3cb300a363194bcf434",
+      "material_identity_sha256": "924c764ca2e0df8a306b8ae99003c37598ae1b749847d228ac6c92ac85cbae78",
+      "input_sha256": "d16c3d060555fa3025a531d254fda8073375de8048cd824928b3ffe9c7fc203a",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "1ddb923b7a1bf9d7887bda3b58a88be1f3dec34274bd0c2f775c0f608fefef7a",
+      "original_pattern": "boundary_only",
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "expected_D": 87427,
+      "actual_D": 87427,
+      "wrong_value_count": 2,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "The recorded failure contains only the two known numerical-boundary differences; it does not satisfy the new business-difficulty admission criterion. The original zero reward remains unchanged.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f19-699f818d16d16e3e41f4__yoodFYP/result.json",
+        "sha256": "3fe4bd10dcc734cd8a7de62aaebf15025ccc79705cae258ee5f02df9770b2a85",
+        "bytes": 6339
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f19-699f818d16d16e3e41f4__yoodFYP/verifier/diagnostics.json",
+        "sha256": "bddd4fa64dd29f1422b927edfc60740ce82a02ae8648495aab19744ac92a4b34",
+        "bytes": 1527
+      }
+    },
+    {
+      "task_id": "fm-f18-3042cfe550d9cf6992f8",
+      "mode": "financial_modeling",
+      "variant_id": "F18",
+      "disposition": "superseded_for_new_business_difficulty_criterion",
+      "counts_toward_current_business_target": false,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "e57611f33987f160a49068979dabe9a7102db70388ca999bf290230c68d4f7f6",
+      "material_identity_sha256": "cea40b4b9ccdf5d83c40d2ee9d1e3a583c3696915424784bb8c724600da67778",
+      "input_sha256": "9efb4cafef89eb58796eb3b53dedcab90736e7bfe221626cf1b878701b308e1b",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "1ddb923b7a1bf9d7887bda3b58a88be1f3dec34274bd0c2f775c0f608fefef7a",
+      "original_pattern": "boundary_only",
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "expected_D": 86533,
+      "actual_D": 86533,
+      "wrong_value_count": 2,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "The recorded failure contains only the two known numerical-boundary differences; it does not satisfy the new business-difficulty admission criterion. The original zero reward remains unchanged.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f18-3042cfe550d9cf6992f8__ARCbYGe/result.json",
+        "sha256": "8e7f7b62fbe3bd7bdb561953833ca53e292866c1ea7fc164a37b4562348a9ce2",
+        "bytes": 6343
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f18-3042cfe550d9cf6992f8__ARCbYGe/verifier/diagnostics.json",
+        "sha256": "5b09265f861824354561856ca00d022ab9d82f15bcffa9731dea1ebc32678bab",
+        "bytes": 1527
+      }
+    },
+    {
+      "task_id": "fm-f17-8e9c73856a47ec4fe5e7",
+      "mode": "financial_modeling",
+      "variant_id": "F17",
+      "disposition": "retained_for_business_difficulty_revision",
+      "counts_toward_current_business_target": true,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "24416b6265ed513089c8904a60ea86f03819d67f53877943501e0449d35c425d",
+      "material_identity_sha256": "77d77c3eb9fdfa11ad44c29b8cc0a735c1dcb61ae3482322e89a00be71d937f3",
+      "input_sha256": "ffae83382405b90a6f60daf3eb1bb3fad1bc9c0c7f66e46a749e46ecfd6543c0",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "1ddb923b7a1bf9d7887bda3b58a88be1f3dec34274bd0c2f775c0f608fefef7a",
+      "original_pattern": "other_observed_field_differences",
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "expected_D": 85638,
+      "actual_D": 85638,
+      "wrong_value_count": 802,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "Observed associate-income report value mismatches beyond the two known numerical-boundary positions; retained unchanged. Unique trace causality is not inferred.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f17-8e9c73856a47ec4fe5e7__2AGbv7Z/result.json",
+        "sha256": "a9464346c1bbab28b883f99bbe862613fbfbeb0a5e26804fc68fe326dc7eac60",
+        "bytes": 6343
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f17-8e9c73856a47ec4fe5e7__2AGbv7Z/verifier/diagnostics.json",
+        "sha256": "7081cb4f9d04d97fd4f1576763c68254eb1f6d341fa758dd19c6a460ed3ef2fa",
+        "bytes": 29389
+      }
+    },
+    {
+      "task_id": "fm-f16-fd6a9a8d4e98f334016f",
+      "mode": "financial_modeling",
+      "variant_id": "F16",
+      "disposition": "superseded_for_new_business_difficulty_criterion",
+      "counts_toward_current_business_target": false,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "503995e9359d05edd8a965a9dc3bc5de735da9f8c7f4432343cf63a4c1293c4a",
+      "material_identity_sha256": "6f9eebb993cf0c028245cc1b76da504839e16afb0aa8d2fd2998d491e638f794",
+      "input_sha256": "543f33032cd9b2ba2493d4654cd0d4910162cc9f04b8eba51fc3fd5e2d88c4c5",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "1ddb923b7a1bf9d7887bda3b58a88be1f3dec34274bd0c2f775c0f608fefef7a",
+      "original_pattern": "boundary_only",
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "expected_D": 84744,
+      "actual_D": 84744,
+      "wrong_value_count": 2,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "The recorded failure contains only the two known numerical-boundary differences; it does not satisfy the new business-difficulty admission criterion. The original zero reward remains unchanged.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f16-fd6a9a8d4e98f334016f__5dh3TmU/result.json",
+        "sha256": "8327a969588361f3d4dca4a94466081eb052d7156684914a73dd5abff4f39720",
+        "bytes": 6323
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f16-fd6a9a8d4e98f334016f__5dh3TmU/verifier/diagnostics.json",
+        "sha256": "50ff24bbbb6321b8a6f09a0f751c6c417cee199e1a74c8bc78dcd636fbd9dc6d",
+        "bytes": 1528
+      }
+    },
+    {
+      "task_id": "fm-f15-03e4909f03e7114eceaf",
+      "mode": "financial_modeling",
+      "variant_id": "F15",
+      "disposition": "superseded_for_new_business_difficulty_criterion",
+      "counts_toward_current_business_target": false,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "747be4df41b33d6d286ef992f9e0ffe15e92db156db48a14dfefdc5d76cfcb2e",
+      "material_identity_sha256": "b2ebd059c278e806520af91e03c383caba634ffd5676bbaa53e2ee414ce5c2bd",
+      "input_sha256": "3fd6ee1122f611a77fcfff9918c8c8ab06f33a5ec5220f4cd04b2cdc2043f13d",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "1ddb923b7a1bf9d7887bda3b58a88be1f3dec34274bd0c2f775c0f608fefef7a",
+      "original_pattern": "boundary_only",
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "expected_D": 83849,
+      "actual_D": 83849,
+      "wrong_value_count": 2,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "The recorded failure contains only the two known numerical-boundary differences; it does not satisfy the new business-difficulty admission criterion. The original zero reward remains unchanged.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f15-03e4909f03e7114eceaf__8hA4cQU/result.json",
+        "sha256": "b3dd699a9b91af926d387d2afd3f4370019873acf729ac706a565daff4086bdc",
+        "bytes": 6323
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f15-03e4909f03e7114eceaf__8hA4cQU/verifier/diagnostics.json",
+        "sha256": "6bb93898c349544ee17c708560ad88a02d3c9f51526a132fadf92e323283dbb9",
+        "bytes": 1526
+      }
+    },
+    {
+      "task_id": "fm-f14-b4fc8284df5804a93b09",
+      "mode": "financial_modeling",
+      "variant_id": "F14",
+      "disposition": "retained_for_business_difficulty_revision",
+      "counts_toward_current_business_target": true,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "1d6a233a2613d81ead75c3635ab87b4680bf68e54e511284b40a415fdd5eb96d",
+      "material_identity_sha256": "66d1236371daf8b0432dd10eb745be1ae4c2f58fe3740bbf53858cd9c39e4b0c",
+      "input_sha256": "76a5c609cf4fbd5ea8b09c97f79e036fc4bbef76055c95d1c09d7398434603c5",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "1ddb923b7a1bf9d7887bda3b58a88be1f3dec34274bd0c2f775c0f608fefef7a",
+      "original_pattern": "other_observed_field_differences",
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "expected_D": 82955,
+      "actual_D": 82955,
+      "wrong_value_count": 802,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "Observed associate-income report value mismatches beyond the two known numerical-boundary positions; retained unchanged. Unique trace causality is not inferred.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f14-b4fc8284df5804a93b09__RrW2mNk/result.json",
+        "sha256": "5a81e810bf8803f0e510537f95b6f6697afad51160970662e9469dd6a6d91b1a",
+        "bytes": 6343
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f14-b4fc8284df5804a93b09__RrW2mNk/verifier/diagnostics.json",
+        "sha256": "433f12c3e97a8f4706bd1813e075ce9ac8494d55de3507dda52095db20c66b94",
+        "bytes": 29391
+      }
+    },
+    {
+      "task_id": "fm-f13-c257af446b28691dbaeb",
+      "mode": "financial_modeling",
+      "variant_id": "F13",
+      "disposition": "retained_for_business_difficulty_revision",
+      "counts_toward_current_business_target": true,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "75c8e0ecca79190fd75e0943a03ee735d10e128a715cc2c4c9e85c9ead2f8b46",
+      "material_identity_sha256": "b1f10790fe8a910055bbb90072894d174656da024e5356327a664ee3df9c204b",
+      "input_sha256": "00e4e0ec878f3fc0fa0dca4595a74f77a62979ae3839ffd79dafb9da62cf70ba",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "1ddb923b7a1bf9d7887bda3b58a88be1f3dec34274bd0c2f775c0f608fefef7a",
+      "original_pattern": "other_observed_field_differences",
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "expected_D": 82060,
+      "actual_D": 82060,
+      "wrong_value_count": 802,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "Observed associate-income report value mismatches beyond the two known numerical-boundary positions; retained unchanged. Unique trace causality is not inferred.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f13-c257af446b28691dbaeb__QnmLNzM/result.json",
+        "sha256": "e2ff0152b3ba5ac59da8c5b64968d3a386d51153c8ed2135f06065380db68c54",
+        "bytes": 6323
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f13-c257af446b28691dbaeb__QnmLNzM/verifier/diagnostics.json",
+        "sha256": "a73579f2a6ec214bbd0a2ae776d3932b96d33ef9c70390e8ddacf778e9d28a91",
+        "bytes": 29388
+      }
+    },
+    {
+      "task_id": "fm-f12-1232300ebebce98a12c8",
+      "mode": "financial_modeling",
+      "variant_id": "F12",
+      "disposition": "retained_for_business_difficulty_revision",
+      "counts_toward_current_business_target": true,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "e6003a16bed75fdbf7284e1902831a72fe00c57fe4dbae23eeda62c07a4c79c0",
+      "material_identity_sha256": "b0804276b2c36282875ae0fa7b41926fae0b78079b0948a951ce1057edcf3064",
+      "input_sha256": "faa38d18435559ec87e301a6503117632d00f7ce3fa3f54833029f67e923700c",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "1ddb923b7a1bf9d7887bda3b58a88be1f3dec34274bd0c2f775c0f608fefef7a",
+      "original_pattern": "other_observed_field_differences",
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "expected_D": 81166,
+      "actual_D": 81166,
+      "wrong_value_count": 802,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "Observed associate-income report value mismatches beyond the two known numerical-boundary positions; retained unchanged. Unique trace causality is not inferred.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f12-1232300ebebce98a12c8__5ZNTvuK/result.json",
+        "sha256": "231b7bc9a3c8812624b204ef25117006d873b1ef365b9edfae738bac697709f0",
+        "bytes": 6343
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f12-1232300ebebce98a12c8__5ZNTvuK/verifier/diagnostics.json",
+        "sha256": "77a11b8b0d7f2ca662f12cea03aa757b5cc9c074fbe9304b1f770f9dcbec8404",
+        "bytes": 29388
+      }
+    },
+    {
+      "task_id": "fm-f11-f7a3b39b327a92e5ed0b",
+      "mode": "financial_modeling",
+      "variant_id": "F11",
+      "disposition": "retained_for_business_difficulty_revision",
+      "counts_toward_current_business_target": true,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": null,
+        "state": "unknown",
+        "infrastructure_unknown_is_not_model_zero": true
+      },
+      "timing_interpretation": {
+        "interpretation": "append_only_F11_complete_timing_supplement_v1",
+        "original_confirmation": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/terminal.json",
+          "sha256": "d3bb3e70eb71029abbd4022a6d53f20033033239cd7ba0c7bdfbd66b01460174",
+          "bytes": 5724776
+        },
+        "timing_supplement": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_F11_timing_supplement_20261101T054200Z/receipt.json",
+          "sha256": "a0c2515c12d39de76535e985a79e952ea38987f55b954a0afcb7a3ae926f3941",
+          "bytes": 200531
+        },
+        "original_v6_unknown_preserved": true,
+        "original_evaluation": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/evaluation_manifest.json",
+          "sha256": "5c372400c38b18acdeff35273b5044e5656d2c6dc272d535b4b5448d7b6a45ca",
+          "bytes": 4070450
+        },
+        "original_evaluation_status_preserved": "infrastructure_failed",
+        "original_artifacts_modified": false,
+        "new_model_LO_Harbor_calls": 0,
+        "supplemented_task_id": "fm-f11-f7a3b39b327a92e5ed0b",
+        "supplemented_result": {
+          "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f11-f7a3b39b327a92e5ed0b__2wriM8U/result.json",
+          "sha256": "c1231f067ee6721fa60a9c5706a046d8245bab7b748a549f667bb65ef0458e40",
+          "bytes": 6343
+        },
+        "interpretation_recipe": [
+          {
+            "path": "/data/hzy/sheetsFactory/scripts/finalize_operating_reports_factory_with_timing_supplement.py",
+            "sha256": "f70263d1a2ea76fa93c6f064768f8b4d9f7ee159fe64e2cde0cb65deaf83e607",
+            "bytes": 16322
+          },
+          {
+            "path": "/data/hzy/sheetsFactory/scripts/join_operating_reports_factory_final_quality.py",
+            "sha256": "b87f30af319ed3b460e3c1e0a113c104c20f5b21857ca962ef6db331b18d82b8",
+            "bytes": 18692
+          },
+          {
+            "path": "/data/hzy/sheetsFactory/scripts/finalize_operating_reports_factory_release.py",
+            "sha256": "98c0bf07b56c14314b158e5c3db126cec54727bf5194fdeeeb40cc4626ec4b00",
+            "bytes": 10992
+          },
+          {
+            "path": "/data/hzy/sheetsFactory/scripts/supplement_operating_reports_F11_tool_time.py",
+            "sha256": "c5523f284e679d934fb2f736b246ae82dad2ca8f1ed9d54b6d961f8229dd1d9e",
+            "bytes": 8650
+          },
+          {
+            "path": "/data/hzy/sheetsFactory/src/sheets_factory/evaluation/frontier.py",
+            "sha256": "f507f738726347f61c27c3cf866d701e722690a87951b38d349b7d046d34df36",
+            "bytes": 57509
+          }
+        ]
+      },
+      "task_checksum": "0b867fe3d3bc64aea583ecbb51de5a1054eb7a013e4a9c67266e1b913caa407b",
+      "material_identity_sha256": "5e20af6bf636199b01b18e2c186aaf99747e132cf707d3fa5558bda33477798b",
+      "input_sha256": "141059dd64b62fc36db0325b8db9e8086b6bfd3c7ab7482e69b975a4addf623a",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "1ddb923b7a1bf9d7887bda3b58a88be1f3dec34274bd0c2f775c0f608fefef7a",
+      "original_pattern": "other_observed_field_differences",
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "expected_D": 80271,
+      "actual_D": 80271,
+      "wrong_value_count": 802,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "Observed associate-income report value mismatches beyond the two known numerical-boundary positions; retained unchanged. Unique trace causality is not inferred.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f11-f7a3b39b327a92e5ed0b__2wriM8U/result.json",
+        "sha256": "c1231f067ee6721fa60a9c5706a046d8245bab7b748a549f667bb65ef0458e40",
+        "bytes": 6343
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/fm-f11-f7a3b39b327a92e5ed0b__2wriM8U/verifier/diagnostics.json",
+        "sha256": "1cc33acb9825579503248ef5ed49f86b40b867127e330310a68eeb8a5cdfbc27",
+        "bytes": 29389
+      }
+    },
+    {
+      "task_id": "dbg-dbg-s20-e7ce7308dd0f1ed7633a",
+      "mode": "debugging",
+      "variant_id": "DBG-S20",
+      "disposition": "retained_for_business_difficulty_revision",
+      "counts_toward_current_business_target": true,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "5dafefd17e444195bcad737885c2c22df2abf308ec2a53bc81b5b51bf543eb12",
+      "material_identity_sha256": "b9f7d8f62eb4b5da89ee9d2a18e12b3f6ada3a87068f5538c9cf7daea8442e17",
+      "input_sha256": "aceec0e4a96ff2facbf555501b5da2fbfe99655214355848d5c6c475f5811448",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+      "original_pattern": "other_observed_field_differences",
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "expected_D": 8320,
+      "actual_D": 7520,
+      "wrong_value_count": 802,
+      "missing_count": 800,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {
+        "reported_associate_line": 800
+      },
+      "decision_basis": "Observed associate-income report value mismatches beyond the two known numerical-boundary positions; retained unchanged. Unique trace causality is not inferred.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s20-e7ce7308dd0f1ed7633a__u4DSkCf/result.json",
+        "sha256": "2fefe93c107029c8bbb9f56c969c3659dc43f49102c159eeb0ccdbb2d9fc3715",
+        "bytes": 6371
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s20-e7ce7308dd0f1ed7633a__u4DSkCf/verifier/diagnostics.json",
+        "sha256": "56f889165b8eb21e20e7144dc789df0294d6c3f32dea285fb57739d398ff8883",
+        "bytes": 57253
+      }
+    },
+    {
+      "task_id": "dbg-dbg-s19-c86371bca08a71d5c935",
+      "mode": "debugging",
+      "variant_id": "DBG-S19",
+      "disposition": "retained_for_business_difficulty_revision",
+      "counts_toward_current_business_target": true,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "b11190c01574fb2e17c034526300ef214a2939ebc19d037e7879b7797508c063",
+      "material_identity_sha256": "ee4b874f9411215416d362ad1c9430e0dba5c0ae2a31527bdb27bade472f2baa",
+      "input_sha256": "9a42e7360b5d89115c583db7918160559c835113e9c07ebdb84939114c58cfc8",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+      "original_pattern": "other_observed_field_differences",
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "expected_D": 8140,
+      "actual_D": 7340,
+      "wrong_value_count": 800,
+      "missing_count": 800,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "reported_associate_line": 800
+      },
+      "observed_missing_fields": {
+        "reported_associate_line": 800
+      },
+      "decision_basis": "Observed associate-income report value mismatches beyond the two known numerical-boundary positions; retained unchanged. Unique trace causality is not inferred.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s19-c86371bca08a71d5c935__nD9SX82/result.json",
+        "sha256": "a01610e61df2a322a42bc8c65a4119806adc1442dce45b5669ed121147cf72a3",
+        "bytes": 6371
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s19-c86371bca08a71d5c935__nD9SX82/verifier/diagnostics.json",
+        "sha256": "974b323f4fea1133ace6de26f6011749d5af5c949a5e5c7e5d3aab40b286b95c",
+        "bytes": 57178
+      }
+    },
+    {
+      "task_id": "dbg-dbg-s18-48527d4336475a852f56",
+      "mode": "debugging",
+      "variant_id": "DBG-S18",
+      "disposition": "superseded_for_new_business_difficulty_criterion",
+      "counts_toward_current_business_target": false,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "9a400bf46460916e4d5d39255b4e2fde5f4f887e5afe1e564aed138cfd22eec5",
+      "material_identity_sha256": "fca85c1e5380ebd588e89d28fead746c88474d90933c2046cdbdb323b9a6c5ad",
+      "input_sha256": "1da3e10450691af2a4287b2e20f67b621d0015d2014c0c36267c57a7a83ea6a3",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+      "original_pattern": "boundary_only",
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "expected_D": 7960,
+      "actual_D": 7960,
+      "wrong_value_count": 2,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "The recorded failure contains only the two known numerical-boundary differences; it does not satisfy the new business-difficulty admission criterion. The original zero reward remains unchanged.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s18-48527d4336475a852f56__KLrL9jU/result.json",
+        "sha256": "5cf48e33a7af0a5b5e8a7176ed2f52c3121dc73026582469484fda1865dc746a",
+        "bytes": 6353
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s18-48527d4336475a852f56__KLrL9jU/verifier/diagnostics.json",
+        "sha256": "20af7c4a818d0ee3f67c69b3faff7b45d3b6c39f6c2b50666a005b579486547c",
+        "bytes": 1527
+      }
+    },
+    {
+      "task_id": "dbg-dbg-s17-313601735740ca359782",
+      "mode": "debugging",
+      "variant_id": "DBG-S17",
+      "disposition": "retained_for_business_difficulty_revision",
+      "counts_toward_current_business_target": true,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "51f7c4a319243742d2eb400724d697c1e645e3bda84e084e00699d3750f4bba7",
+      "material_identity_sha256": "dccb1cfa1064819d7056f5702031c4c38f887b68b435693ef2d8403db1be2102",
+      "input_sha256": "322a8bcc42416a91eaf25fa75f22f9b0dd263ac06a26710f21704d75f98d330b",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+      "original_pattern": "other_observed_field_differences",
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "expected_D": 7780,
+      "actual_D": 6980,
+      "wrong_value_count": 802,
+      "missing_count": 800,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {
+        "reported_associate_line": 800
+      },
+      "decision_basis": "Observed associate-income report value mismatches beyond the two known numerical-boundary positions; retained unchanged. Unique trace causality is not inferred.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s17-313601735740ca359782__GjKmgmc/result.json",
+        "sha256": "faeb621f36eae409562829d87233d42654d31e54c0b04a8c5ce80c8d806b21b1",
+        "bytes": 6353
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s17-313601735740ca359782__GjKmgmc/verifier/diagnostics.json",
+        "sha256": "0a01a82374d7ec345602deb87bd355c795560ea72b7a59115a7607aef96d02ec",
+        "bytes": 57253
+      }
+    },
+    {
+      "task_id": "dbg-dbg-s16-0e48668962ff322c7768",
+      "mode": "debugging",
+      "variant_id": "DBG-S16",
+      "disposition": "superseded_for_new_business_difficulty_criterion",
+      "counts_toward_current_business_target": false,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "ade0b3d6243ef58be44a20c959dd9ba7f83c1b1a163071f5af7b970760431dc8",
+      "material_identity_sha256": "c8aa6bf109104641ec4552cc513b61b810b2e51ad00b55a32435a31dd851c026",
+      "input_sha256": "6c290e736c1fe04b5a636fe9dccc5c7fe9ece29dd5a880bdd09334ed99d01d68",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+      "original_pattern": "boundary_only",
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "expected_D": 7600,
+      "actual_D": 7600,
+      "wrong_value_count": 2,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "The recorded failure contains only the two known numerical-boundary differences; it does not satisfy the new business-difficulty admission criterion. The original zero reward remains unchanged.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s16-0e48668962ff322c7768__EkzEwiA/result.json",
+        "sha256": "29da50ed2908f4f87dfc81ccb0472319f90beb32f1e8de805c4f48cc412cd506",
+        "bytes": 6373
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s16-0e48668962ff322c7768__EkzEwiA/verifier/diagnostics.json",
+        "sha256": "7ef2d3cbc1f538766a5dabe2cb91547356634f7f127028d3230f81e0926a96e6",
+        "bytes": 1525
+      }
+    },
+    {
+      "task_id": "dbg-dbg-s15-61a6895b4cc76434483e",
+      "mode": "debugging",
+      "variant_id": "DBG-S15",
+      "disposition": "superseded_for_new_business_difficulty_criterion",
+      "counts_toward_current_business_target": false,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "27f1dfe25c2ecb7c6cbde40ebe3491ccb64c9dfc1ecf8bacd8ac891f1615fb9b",
+      "material_identity_sha256": "fa4182e5520a59299dfe675cb50d70c2f2da572b856b11351b482317bbbd30ac",
+      "input_sha256": "1a75245073d319d644e6b2c3fb22ce197d97d7ff776a80a46af1de2ca2bb9901",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+      "original_pattern": "boundary_only",
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "expected_D": 7420,
+      "actual_D": 7420,
+      "wrong_value_count": 2,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "The recorded failure contains only the two known numerical-boundary differences; it does not satisfy the new business-difficulty admission criterion. The original zero reward remains unchanged.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s15-61a6895b4cc76434483e__fuRpAUG/result.json",
+        "sha256": "632c1e44b6dec781ded5145e577103171ceb52ebccea987dca4001f00d4ebe17",
+        "bytes": 6373
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s15-61a6895b4cc76434483e__fuRpAUG/verifier/diagnostics.json",
+        "sha256": "ea4206fd811ba992c1b0e95392d52078740a0150ef0dfaf235b563c462a5c0f8",
+        "bytes": 1525
+      }
+    },
+    {
+      "task_id": "dbg-dbg-s14-49f71f2468b4c85550a3",
+      "mode": "debugging",
+      "variant_id": "DBG-S14",
+      "disposition": "retained_for_business_difficulty_revision",
+      "counts_toward_current_business_target": true,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "fcb19f0ed02919134080b2da221f33f3095137ec350b73c4afbcf599040707b8",
+      "material_identity_sha256": "d7ffa85000e8d3c4df51f7f6fe808cefdc5111da6ac3f26c0e5ec36ed91aab51",
+      "input_sha256": "bb365d6690e643788bc7cc7f5d903429beaf3016900a9cb6e8105100a6986526",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+      "original_pattern": "other_observed_field_differences",
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "expected_D": 7240,
+      "actual_D": 6440,
+      "wrong_value_count": 802,
+      "missing_count": 800,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {
+        "reported_associate_line": 800
+      },
+      "decision_basis": "Observed associate-income report value mismatches beyond the two known numerical-boundary positions; retained unchanged. Unique trace causality is not inferred.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s14-49f71f2468b4c85550a3__h69eCjh/result.json",
+        "sha256": "f9af7567c5135585a2779516edee80cca10b7ae0eeadeb484f53f2f2a46887c3",
+        "bytes": 6373
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s14-49f71f2468b4c85550a3__h69eCjh/verifier/diagnostics.json",
+        "sha256": "87ad9bb2adc0a458e0a95672c21d22fa38798c74aacf02810eebee4460f9f0eb",
+        "bytes": 57252
+      }
+    },
+    {
+      "task_id": "dbg-dbg-s13-0f1246cf8b76d7e0a755",
+      "mode": "debugging",
+      "variant_id": "DBG-S13",
+      "disposition": "superseded_for_new_business_difficulty_criterion",
+      "counts_toward_current_business_target": false,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "369735ea1119ce311dcc229834b30504a4d950c65f5e856b377941c808baa500",
+      "material_identity_sha256": "f095ff241e19418ec061b5d03a9e45ac44e4cdde1fd4b70faf0da45bad36e5b3",
+      "input_sha256": "7a578181094a21a0d9244cf1c95367fe0717fa94cf930f0b2e01660a69a4ffe3",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+      "original_pattern": "boundary_only",
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "expected_D": 7060,
+      "actual_D": 7060,
+      "wrong_value_count": 2,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "The recorded failure contains only the two known numerical-boundary differences; it does not satisfy the new business-difficulty admission criterion. The original zero reward remains unchanged.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s13-0f1246cf8b76d7e0a755__4GfRwVo/result.json",
+        "sha256": "195540d58c35700f2e11de212cac971595f4163643d5fdad2f356254bbdf274b",
+        "bytes": 6353
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s13-0f1246cf8b76d7e0a755__4GfRwVo/verifier/diagnostics.json",
+        "sha256": "93bae9044efe20fb5b4561f795c7309f7c3fd833677c70f9b023a1763123ff07",
+        "bytes": 1527
+      }
+    },
+    {
+      "task_id": "dbg-dbg-s12-046380d4e198ea0cb472",
+      "mode": "debugging",
+      "variant_id": "DBG-S12",
+      "disposition": "superseded_for_new_business_difficulty_criterion",
+      "counts_toward_current_business_target": false,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "5533b6cb102da1f9c34589e7971acf8c7c380334ad7770770fd31c10ce9c1621",
+      "material_identity_sha256": "b471b6a7851ace1d45f56f314f6af3f51d03fbc656419bd0135e43a4d4422afe",
+      "input_sha256": "204171a8a6126dd48df8ee798610c9cf5f81c56ae7879d1dab4f6e1095585e8a",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+      "original_pattern": "boundary_only",
+      "boundary_only": true,
+      "trace_causality_established": false,
+      "expected_D": 6880,
+      "actual_D": 6880,
+      "wrong_value_count": 2,
+      "missing_count": 0,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {},
+      "decision_basis": "The recorded failure contains only the two known numerical-boundary differences; it does not satisfy the new business-difficulty admission criterion. The original zero reward remains unchanged.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s12-046380d4e198ea0cb472__Jk9bTcV/result.json",
+        "sha256": "baa8a52aaceff78847ab9adcf46349fa8a604a1fcf311f2adca56687d88b73f9",
+        "bytes": 6353
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s12-046380d4e198ea0cb472__Jk9bTcV/verifier/diagnostics.json",
+        "sha256": "ad0a65fa835ff81b2e1a649c0252666c7542e641a82160a6e8107b24222a0edf",
+        "bytes": 1527
+      }
+    },
+    {
+      "task_id": "dbg-dbg-s11-bd6f63001a3f336b68a1",
+      "mode": "debugging",
+      "variant_id": "DBG-S11",
+      "disposition": "retained_for_business_difficulty_revision",
+      "counts_toward_current_business_target": true,
+      "original_raw_verifier_reward": 0,
+      "original_published_effective_reward": 0,
+      "original_published_attempt_state": "complete",
+      "original_diagnostic_score": {
+        "raw_verifier_reward": 0,
+        "effective_reward": 0,
+        "state": "complete",
+        "infrastructure_unknown_is_not_model_zero": false
+      },
+      "timing_interpretation": null,
+      "task_checksum": "a70ad3e6105d0e9890f8b43f45761f3f98f6cc8b74085eecd5bd4f82fab1b361",
+      "material_identity_sha256": "8b70c12438ae84c2799fd8d19053984379c67f59b13ca40e446e01d1ef7030e2",
+      "input_sha256": "7c418654c3c952b95c239405d0201310875dbcb80b88a06a06ce1a93d034206f",
+      "goal_sha256": "5f38a984cf7fc689e030602aab0f0bc95a51b05d54711d4a79207f04445936ef",
+      "instruction_sha256": "dc3e90582ec6716c5e5521389b94ceac2171c0dec86cfca9f066a58541c97719",
+      "original_pattern": "other_observed_field_differences",
+      "boundary_only": false,
+      "trace_causality_established": false,
+      "expected_D": 6700,
+      "actual_D": 5900,
+      "wrong_value_count": 802,
+      "missing_count": 800,
+      "extra_count": 0,
+      "observed_wrong_fields": {
+        "qoq_percent": 1,
+        "reported_associate_line": 800,
+        "yoy_percent": 1
+      },
+      "observed_missing_fields": {
+        "reported_associate_line": 800
+      },
+      "decision_basis": "Observed associate-income report value mismatches beyond the two known numerical-boundary positions; retained unchanged. Unique trace causality is not inferred.",
+      "original_actual_result": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s11-bd6f63001a3f336b68a1__SjLkMyx/result.json",
+        "sha256": "a1b2236ee4b3cfa8ccacb26b7bc234eaf4f0653a0dc1d01eb126d77e07371b09",
+        "bytes": 6371
+      },
+      "original_diagnostics": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/operating_reports_factory_delivery_20261101T050700Z/confirmation/evaluation/harbor_jobs/frontier-pass1/dbg-dbg-s11-bd6f63001a3f336b68a1__SjLkMyx/verifier/diagnostics.json",
+        "sha256": "2a63a257f41e278a6bdba648d8c7f03be206191a750ab97f44d6df9460c47e2d",
+        "bytes": 57253
+      }
+    }
+  ]
+}

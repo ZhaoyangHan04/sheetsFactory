@@ -1,10 +1,16 @@
 # sheetsFactory
 
-当前已准出 **10道 Financial Modeling＋10道 Debugging**。冻结后的原生最强模型确认成绩为 **0/20（Overall Pass@1＝0%）**；完整目录实际 oracle20/20为1、nop20/20为0，十二项质量检查均已完成。
+当前正在推进**业务逻辑难度修订**，目标为10道 Financial Modeling＋10道 Debugging。原批次中超出两处舍入边界的 **5道FM＋5道Debugging保持原材料和原成绩保留**；还需新增5道FM＋5道Debugging。仅有舍入边界差异的另外10题不计入本次目标，其原始评分不变。当前新修订尚未准出。
 
-交付目录是仓库根目录的 [SpreadsheetEval/](SpreadsheetEval)，包含10道 Financial Modeling 和10道 Debugging。每题有211张工作表，覆盖200家虚构企业、八个业务分部及集团汇总。它们来自 **1个共享的独立生成财务来源**；40份不同候选材料均使用同一已验算的健康参考工作簿，不能按40个独立数据源统计。
+新题需要有超出浮点边界或纯格式差异的业务计算/约束错误证据；完整修改集合和两位小数值比较的主评分合同保持不变。进度与逐题处置见[业务修订清单](reports/operating_report_factory_business_revision_status.json)，保留材料见[历史保留清单](reports/history/operating_report_factory_business_retained_v1.json)。
 
-| 本批次统计 | 数量 |
+## 原20题发布快照
+
+以下记录原批次的20题、0/20确认结果及真实oracle/nop控制。根目录`SpreadsheetEval/`目前仍完整保留这批原材料，未用新题替换；这些历史结果不代表新修订已经完成。
+
+原批次交付目录是仓库根目录的 [SpreadsheetEval/](SpreadsheetEval)，包含10道 Financial Modeling 和10道 Debugging。每题有211张工作表，覆盖200家虚构企业、八个业务分部及集团汇总。它们来自 **1个共享的独立生成财务来源**；40份不同候选材料均使用同一已验算的健康参考工作簿，不能按40个独立数据源统计。
+
+| 原批次统计 | 数量 |
 | --- | ---: |
 | 共享来源 / 独立验算业务字段 | 1 / 93,510 |
 | 不同候选材料 | 40：FM20＋Debugging20 |

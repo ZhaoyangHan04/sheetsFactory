@@ -1,12 +1,22 @@
 # 当前发布状态
 
-更新于2026-11-01 05:47 UTC。当前已准出 **10道 Financial Modeling＋10道 Debugging**。冻结后的原生最强模型确认成绩为 **0/20（Overall Pass@1＝0%）**；完整目录实际 oracle20/20为1、nop20/20为0，十二项质量检查均已完成。
+更新于2026-11-01 06:10 UTC。当前正在进行**业务逻辑难度修订**：目标10道Financial Modeling＋10道Debugging，已保留原材料5＋5，仍需新增5＋5；新修订尚未准出。
 
-当前交付为根目录 [SpreadsheetEval/](../SpreadsheetEval) 中的20题：Financial Modeling10题、Debugging10题。最终冻结确认采用原生Codex CLI `gpt-6.1-sol` / `xhigh`，Overall Pass@1为0%（0/20）；旧20＋20质量批次及更早实验另行保留，不能代替当前交付。
+| 本次修订 | Financial Modeling | Debugging | 合计 |
+| --- | ---: | ---: | ---: |
+| 目标 | 10 | 10 | 20 |
+| 原材料保留 | 5 | 5 | 10 |
+| 新题待完成 | 5 | 5 | 10 |
 
-## 本轮证据
+保留FM：F11、F12、F13、F14、F17；保留Debugging：S11、S14、S17、S19、S20。它们均有超出已知舍入边界的联营收益报告值差异；这说明存在业务字段差异，不推定每次运行的唯一推理过程。原来仅两处舍入边界不同的另外10题，在新清单中标记`superseded_for_new_business_difficulty_criterion`，原始0分不变。
 
-| 项目 | 当前证据 |
+[业务修订清单](../reports/operating_report_factory_business_revision_status.json)绑定原发布报告、完整失败摘要及20题处置；[保留材料历史清单](../reports/history/operating_report_factory_business_retained_v1.json)绑定5＋5的原输入、参考、题面及完整任务文件哈希。根目录`SpreadsheetEval/`暂不改动，原20题报告及资格保留。新题需要超出浮点边界或纯格式差异的业务错误证据，主评分合同保持不变；`business_failure_evidence`将作为可插拔、默认启用的新增准出门禁接入。
+
+## 原20题发布证据
+
+以下为原发布快照，不代表本次业务逻辑修订已经补齐或完成新冻结确认。原20题是FM10＋Debugging10，最强模型原生Codex CLI `gpt-6.1-sol/xhigh`的新上下文确认成功0/20；真实完整目录oracle20/20为1、nop20/20为0。
+
+| 项目 | 原批次证据 |
 | --- | --- |
 | 来源 | 1个独立生成的虚构业务来源；200实体、8分部、211工作表；不同候选共享同一健康参考 |
 | 来源正确性 | 两套独立财务实现完整核对93,510字段；三轮真实来源计算和两次稳定性比较 |
@@ -19,7 +29,7 @@
 | 全目录oracle | 实际 `harbor run -p SpreadsheetEval -a oracle`，20/20 reward1 |
 | 全目录nop | 实际 `harbor run -p SpreadsheetEval -a nop`，20/20 reward0 |
 | 最终十二项质量 | 20/20材料全部完成Q01–Q12；Q08在候选质量层为not_applicable，独立冻结难度门禁已完成 |
-| 最终发布 | 已准出20题，发布报告qualified=true；正式Overall Pass@1＝0%，满足≤0.2 |
+| 原批次发布 | 原20题发布报告qualified=true；原Overall Pass@1＝0%，满足当时合同；新业务修订尚未准出 |
 
 发布报告：[operating_report_factory_release.json](../reports/operating_report_factory_release.json)。冻结任务清单：[dataset_manifest.json](../SpreadsheetEval/dataset_manifest.json)。完整根目录控制：[operating_report_factory_controls.json](../reports/operating_report_factory_controls.json)。完整失败摘要：[operating_report_factory_failure_summary.json](../reports/operating_report_factory_failure_summary.json)。
 
@@ -40,7 +50,7 @@ Debugging后五题同时有800个应改位置未发生变化。缺改与错值�
 
 ## 转化率与用量
 
-当前批次构造40份材料，最终交付20份，候选转化率50%（20/40）。本批次共享来源数为1，不能用材料数量替代来源分母。
+原批次构造40份材料，当时交付20份，候选转化率50%（20/40）。本批次共享来源数为1，不能用材料数量替代来源分母。
 
 | 范围 | 调用数 | 已知token |
 | --- | ---: | ---: |
