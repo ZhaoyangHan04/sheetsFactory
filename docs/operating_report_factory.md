@@ -55,6 +55,18 @@ The batch builder consumes the retained, hash-bound source manifest. Its source 
 
 The general pipeline continues to support arbitrary seed paths through `scripts/run.sh --seeds /path/to/workbooks --count 40`. This retained-source factory is a separate reproducible task family, not an assumption about every spreadsheet's sheet names or field structure.
 
+The one-shot continuation can start while that development batch is running. It waits for the existing terminal, freezes the cohort, runs fresh confirmation alongside the exact root controls, joins quality evidence and writes the final release receipt. It never restarts an existing attempt. Its dashboard remains available through all these stages.
+
+```bash
+.venv312/bin/python scripts/finish_operating_reports_factory_batch.py \
+  --development-terminal outputs/difficulty/my_development/terminal.json \
+  --batch outputs/research/my_fm_batch/engineered_batch.json \
+  --batch outputs/research/my_debug_batch/engineered_batch.json \
+  --fm-join /path/to/shared_fm_native_join.json \
+  --debug-join /path/to/shared_debug_native_join.json \
+  --confirmation-concurrency 20 --output outputs/research/my_delivery
+```
+
 ## Statistics
 
 Count the reference as one synthetic source, the forty different inputs as forty candidates, and the selected twenty inputs as twenty delivered tasks only after finalization succeeds. Report candidate conversion and source count separately. Development and fresh confirmation calls are separate observations. Native input/output token totals come from actual completed usage records; cached input is a subset, and provider payment remains unknown without billing evidence. Shared semantic calls and historical experiments have separate consumption scopes.
