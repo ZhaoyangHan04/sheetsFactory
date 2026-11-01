@@ -115,3 +115,24 @@ def test_raw_reward_is_checked_against_native_evidence(data):
     p = data[0];z = json.loads(p.read_text());z['results'][0]['score']['raw_verifier_reward'] = 1;write(p,z)
     with pytest.raises(ValueError, match='Native reward'):
         m.summarize(*data)
+
+
+def test_verification_error_without_arrays_keeps_score_and_reason(data):
+    p = data[0].parent / 'financial_modeling-0/verifier/diagnostics.json'
+    write(p, {'reason':'verification_error','error_type':'FileNotFoundError'})
+    r = m.summarize(*data)['rows'][0]
+    assert r['pattern'] == 'diagnostics_without_position_census'
+    assert r['diagnostic_reason'] == 'verification_error'
+    assert r['diagnostic_error_type'] == 'FileNotFoundError'
+    assert r['missing_count'] is None and r['wrong_value_count'] is None
+    assert r['score']['raw_verifier_reward'] == 0
+
+
+def test_reward_one_with_empty_arrays_is_matched(data):
+    native = data[0].parent / 'financial_modeling-0/result.json'
+    n = json.loads(native.read_text());n['verifier_result']['rewards']['reward'] = 1;write(native,n)
+    term = json.loads(data[0].read_text());term['results'][0]['score'] = {'raw_verifier_reward':1,'effective_reward':1}
+    term['results'][0]['actual_attempt']['result_sha256'] = m.reference(native)['sha256'];write(data[0],term)
+    write(native.parent/'verifier/diagnostics.json', {'missing_changes':[],'extra_changes':[],'wrong_values':[]})
+    r = m.summarize(*data)['rows'][0]
+    assert r['pattern'] == 'matched' and not r['boundary_only']

@@ -103,15 +103,27 @@ def summarize(confirmation, cohort, bindings):
                'boundary_only': False, 'trace_causality_established': False}
         if diag_path.is_file():
             diag, diag_ref = read(diag_path)
-            missing, extra, wrong = (_points(diag, k) for k in ('missing_changes', 'extra_changes', 'wrong_values'))
-            boundary = sorted(set(wrong) & BOUNDARIES)
-            row.update({'diagnostics': diag_ref, 'expected_D': diag.get('expected_change_count'),
-                        'actual_D': diag.get('actual_change_count'), 'missing_count': len(missing),
-                        'extra_count': len(extra), 'wrong_value_count': len(wrong),
-                        'wrong_fields': _fields(wrong, index), 'missing_fields': _fields(missing, index),
-                        'extra_fields': _fields(extra, index), 'known_boundary_positions': boundary,
-                        'boundary_only': not missing and not extra and set(wrong) == BOUNDARIES})
-            pattern = 'boundary_only' if row['boundary_only'] else 'other_observed_field_differences'
+            row.update({'diagnostics': diag_ref, 'diagnostic_reason': diag.get('reason'),
+                        'diagnostic_error_type': diag.get('error_type')})
+            fields = ('missing_changes', 'extra_changes', 'wrong_values')
+            if any(diag.get(k) is None for k in fields):
+                row.update({'expected_D': None, 'actual_D': None, 'missing_count': None,
+                            'extra_count': None, 'wrong_value_count': None, 'wrong_fields': {},
+                            'missing_fields': {}, 'extra_fields': {}, 'known_boundary_positions': []})
+                pattern = 'diagnostics_without_position_census'
+            else:
+                missing, extra, wrong = (_points(diag, k) for k in fields)
+                boundary = sorted(set(wrong) & BOUNDARIES)
+                row.update({'expected_D': diag.get('expected_change_count'),
+                            'actual_D': diag.get('actual_change_count'), 'missing_count': len(missing),
+                            'extra_count': len(extra), 'wrong_value_count': len(wrong),
+                            'wrong_fields': _fields(wrong, index), 'missing_fields': _fields(missing, index),
+                            'extra_fields': _fields(extra, index), 'known_boundary_positions': boundary,
+                            'boundary_only': not missing and not extra and set(wrong) == BOUNDARIES})
+                if not missing and not extra and not wrong:
+                    pattern = 'matched' if native_reward == 1 else 'no_observed_position_differences'
+                else:
+                    pattern = 'boundary_only' if row['boundary_only'] else 'other_observed_field_differences'
         else:
             row.update({'diagnostics': None, 'expected_D': None, 'actual_D': None,
                         'missing_count': None, 'extra_count': None, 'wrong_value_count': None,
