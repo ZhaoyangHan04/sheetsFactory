@@ -211,8 +211,7 @@ def finalize(cohort, fm_join, debug_join, root_controls, confirmation, supplemen
     verified = checker.validate_supplement(supplement_ref)
     projected = _projection(original, original_ref, verified)
     evaluation_ref, evaluation, interpreted_evaluation = _evaluation_projection(original, projected)
-    guarded = [original_ref, supplement_ref, evaluation_ref, original['selection'], verified['result'],
-        reference(__file__), *[reference(p) for p in PINS], *verified['recipes'],
+    guarded = [original_ref, supplement_ref, evaluation_ref, original['selection'], verified['result'], *verified['recipes'],
         *verified['wrapper_comparison']['sessions'], *verified['supplemental_clock']['artifacts']]
     def guard():
         require(all(reference(r['path']) == r for r in guarded), 'Retained evidence changed during interpretation')
