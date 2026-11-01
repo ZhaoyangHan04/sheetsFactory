@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1024" viewBox="0 0 720 1024" role="img" aria-labelledby="pipelineTitle pipelineDescription">
+  <title id="pipelineTitle">sheetsFactory 产线流程</title>
+  <desc id="pipelineDescription">三个阶段由上到下：规范化画像、规划并构造题目；原生验算和独立审查、代理尝试后逐项诊断；Harbor 导出、oracle 和 nop 控制、冻结材料后强模型确认与准出。代理成功或失败均诊断。R01 至 R10 修复后返回构造，R12 补证复核，R11 在故障阶段重试。通用入口先做质量构造，正式难度另行确认。</desc>
+  <defs>
+    <marker id="nextArrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M2 2 L9 6 L2 10" fill="none" stroke="#94a3b8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="repairArrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M2 2 L9 6 L2 10" fill="none" stroke="#b45309" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      text { font-family: 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+      .heading { font-size: 34px; font-weight: 700; fill: #142840; }
+      .body { font-size: 28px; font-weight: 400; fill: #334155; }
+      .route { font-size: 26px; font-weight: 500; fill: #475569; }
+      .number { font-size: 26px; font-weight: 700; fill: #ffffff; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect width="720" height="1024" rx="24" fill="#f8fafc"/>
+  <text class="heading" x="32" y="59">从工作簿到可验收任务</text>
+
+  <!-- 01 · Authoring -->
+  <rect x="28" y="98" width="616" height="192" rx="20" fill="#ffffff" stroke="#dbe5ef" stroke-width="1.5"/>
+  <rect x="28" y="119" width="5" height="150" rx="2.5" fill="#2563eb"/>
+  <rect x="52" y="122" width="54" height="48" rx="12" fill="#2563eb"/>
+  <text class="number" x="79" y="156">01</text>
+  <text class="heading" x="124" y="157">构造任务</text>
+  <text class="body" x="60" y="213">规范化与画像 → 模板规划</text>
+  <text class="body" x="60" y="258">副本 mask / 注错 → 生成题面</text>
+
+  <path d="M336 302 V341" fill="none" stroke="#94a3b8" stroke-width="2.6" stroke-linecap="round" marker-end="url(#nextArrow)"/>
+
+  <!-- 02 · Evidence and diagnosis -->
+  <rect x="28" y="356" width="616" height="322" rx="20" fill="#ffffff" stroke="#dbe5ef" stroke-width="1.5"/>
+  <rect x="28" y="377" width="5" height="280" rx="2.5" fill="#0f766e"/>
+  <rect x="52" y="380" width="54" height="48" rx="12" fill="#0f766e"/>
+  <text class="number" x="79" y="414">02</text>
+  <text class="heading" x="124" y="415">验算与诊断</text>
+  <text class="body" x="60" y="471">原生验算 · 独立审查</text>
+  <text class="body" x="60" y="516">代理尝试 → 逐项诊断</text>
+
+  <rect x="52" y="546" width="568" height="108" rx="12" fill="#fff7ed"/>
+  <text class="route" x="68" y="585"><tspan fill="#a64b0b" font-weight="700">R01–R10</tspan><tspan dx="12">修复后重构</tspan></text>
+  <text class="route" x="68" y="629">R12 补证复核 · R11 环境重试</text>
+
+  <!-- A repair returns to construction, not to the agent's output. -->
+  <path d="M644 586 H674 Q690 586 690 570 V260 Q690 244 674 244 H650" fill="none" stroke="#b45309" stroke-width="2.6" stroke-dasharray="6 7" stroke-linecap="round" marker-end="url(#repairArrow)"/>
+
+  <path d="M336 690 V757" fill="none" stroke="#94a3b8" stroke-width="2.6" stroke-linecap="round" marker-end="url(#nextArrow)"/>
+  <rect x="264" y="704" width="144" height="34" rx="8" fill="#f8fafc"/>
+  <text x="336" y="730" text-anchor="middle" font-size="26" font-weight="600" fill="#0f766e">质量通过</text>
+
+  <!-- 03 · Controls and release -->
+  <rect x="28" y="772" width="616" height="192" rx="20" fill="#ffffff" stroke="#dbe5ef" stroke-width="1.5"/>
+  <rect x="28" y="793" width="5" height="150" rx="2.5" fill="#15803d"/>
+  <rect x="52" y="796" width="54" height="48" rx="12" fill="#15803d"/>
+  <text class="number" x="79" y="830">03</text>
+  <text class="heading" x="124" y="831">验收与交付</text>
+  <text class="body" x="60" y="887">Harbor 导出 → oracle / nop</text>
+  <text class="body" x="60" y="932">冻结材料 → 强模型确认 → 准出</text>
+
+  <text class="route" x="32" y="1008">正式确认绑定冻结材料与新上下文</text>
+</svg>
