@@ -4,6 +4,8 @@
 
 新题需要有超出浮点边界或纯格式差异的业务计算/约束错误证据；完整修改集合和两位小数值比较的主评分合同保持不变。进度与逐题处置见[业务修订清单](reports/operating_report_factory_business_revision_status.json)，保留材料见[历史保留清单](reports/history/operating_report_factory_business_retained_v1.json)。
 
+新业务模型的构造、独立账簿、原生验算与业务错误门禁见[投资业务修订方法](docs/associate_bridge_business_revision.md)。首两份场景已完成工程校验；模型首测与语义审查的结果另行记录，尚未增加本次准出数量。
+
 ## 原20题发布快照
 
 以下记录原批次的20题、0/20确认结果及真实oracle/nop控制。根目录`SpreadsheetEval/`目前仍完整保留这批原材料，未用新题替换；这些历史结果不代表新修订已经完成。

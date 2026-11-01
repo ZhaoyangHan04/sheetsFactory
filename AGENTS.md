@@ -11,3 +11,4 @@ Development scores and fresh confirmation scores must be distinct. Never count i
 Deliver the actual SpreadsheetEval/ directory, document its location and exact oracle command in README, and run that command on the complete final directory with every oracle reward equal to one.
 All quality findings require evidence. Never fabricate oracle/nop, recovery or Harbor results.
 Keep public agent files physically isolated from private references and construction logs.
+The investment-policy revision retains the ten existing non-boundary tasks listed in reports/history/operating_report_factory_business_retained_v1.json. New difficulty evidence must include a material core financial error under the declared business policy. A rounding-only result does not qualify a new task. Preserve all original binary rewards and report this auxiliary admission decision separately.

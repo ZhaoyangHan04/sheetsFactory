@@ -1,6 +1,6 @@
 # 当前发布状态
 
-更新于2026-11-01 06:10 UTC。当前正在进行**业务逻辑难度修订**：目标10道Financial Modeling＋10道Debugging，已保留原材料5＋5，仍需新增5＋5；新修订尚未准出。
+更新于2026-11-01 06:36 UTC。当前正在进行**业务逻辑难度修订**：目标10道Financial Modeling＋10道Debugging，已保留原材料5＋5，仍需新增5＋5；新修订尚未准出。
 
 | 本次修订 | Financial Modeling | Debugging | 合计 |
 | --- | ---: | ---: | ---: |
@@ -11,6 +11,8 @@
 保留FM：F11、F12、F13、F14、F17；保留Debugging：S11、S14、S17、S19、S20。它们均有超出已知舍入边界的联营收益报告值差异；这说明存在业务字段差异，不推定每次运行的唯一推理过程。原来仅两处舍入边界不同的另外10题，在新清单中标记`superseded_for_new_business_difficulty_criterion`，原始0分不变。
 
 [业务修订清单](../reports/operating_report_factory_business_revision_status.json)绑定原发布报告、完整失败摘要及20题处置；[保留材料历史清单](../reports/history/operating_report_factory_business_retained_v1.json)绑定5＋5的原输入、参考、题面及完整任务文件哈希。根目录`SpreadsheetEval/`暂不改动，原20题报告及资格保留。新题需要超出浮点边界或纯格式差异的业务错误证据，主评分合同保持不变；`business_failure_evidence`将作为可插拔、默认启用的新增准出门禁接入。
+
+新的投资业务桥已有两套独立实现，并已完成B04、B05各三次真实来源验算及两种输入验算。每次完整核对93,510个财务字段，无主评分舍入边界差异，给定值和结构保持；FM各遮蔽88,676个公式，DBG实际分别影响24,086和23,288个位置。B04的两次原生最强模型开发首测与四次普通模型语义审查正在运行。新增准出数仍为0，工程通过不作为难度通过。方法及执行入口见[投资业务修订](associate_bridge_business_revision.md)。
 
 ## 原20题发布证据
 
