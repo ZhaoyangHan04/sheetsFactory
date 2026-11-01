@@ -68,3 +68,9 @@ Public and reference semantic reviews run in separate workspaces with Codex CLI 
 ```
 
 Each entry starts its own audit dashboard. Construction, raw model traces and independent financial records remain private under `outputs/`. These commands use fresh output directories and do not overwrite earlier runs.
+
+## Measured tax-vintage outcome
+
+T01 and T02 each completed all three source calculations and both input calculations with complete A/B native value checks. Both completion attempts scored one. Both repair attempts scored zero because of the same two untouched operating-report rounding boundaries; full submitted-workbook recalculation found no primary core-business error. These four calls do not establish business difficulty. Across B04, T01 and T02, six completed strongest-model attempts used 9,182,301 reported tokens. Eight semantic-review calls used 10,198,826 tokens. Their sum, 19,381,127, covers these completed calls only; it excludes later capital-pair attempts and earlier project experiments.
+
+The next fixed family composes certified local capital-allocation cases and management reports. Its economic diagnosis checks actual binary project choices, every integer resource constraint and the exact objective gap against the retained unique optimum. It keeps raw rewards separate from the business-error conclusion. See [the replacement confirmation protocol](ringfenced_replacement_confirmation.md).
