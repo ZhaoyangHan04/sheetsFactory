@@ -124,7 +124,9 @@ def parallel(commands_by_name,out,audit,*,popen=subprocess.Popen,development=Non
         while True:
             active=False
             for name,row in children.items():
-                result=row['process'].poll();active |= result is None;duration=round(1000*(time.monotonic()-row['tick']))
+                result=row['process'].poll();active |= result is None;current_tick=time.monotonic()
+                if result is not None:row.setdefault('finished_tick',current_tick)
+                duration=round(1000*(row.get('finished_tick',current_tick)-row['tick']))
                 state='running' if result is None else 'completed' if result==0 else 'failed'
                 detail=child_status(name,out)
                 audit.task(name,status=state,node=name,duration_ms=duration,pid=row['process'].pid,**detail)

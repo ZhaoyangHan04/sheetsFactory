@@ -43,11 +43,14 @@ def test_child_failure_waits_healthy_sibling_without_termination_retry_or_restar
         def kill(self):raise AssertionError('Do not kill a healthy child')
     def popen(argv,**kwargs):calls.append(argv);return Process(argv[0])
     monkeypatch.setattr(m.time,'sleep',lambda seconds:sleeps.append(seconds))
+    ticks=iter(range(100));monkeypatch.setattr(m.time,'monotonic',lambda:next(ticks))
     with pytest.raises(ValueError,match='child failed'):
         m.parallel({'confirmation':['failed'],'root_controls':['healthy']},tmp_path,audit,popen=popen)
     assert calls==[['failed'],['healthy']] and sleeps
     assert (tmp_path/'confirmation_launched.json').is_file() and (tmp_path/'root_controls_launched.json').is_file()
     assert any(r.get('status')=='running' for r in audit.rows) and any(r.get('status')=='completed' for r in audit.rows)
+    finished=[r['duration_ms'] for r in audit.rows if r.get('node')=='confirmation' and r.get('status')=='failed']
+    assert len(finished)>1 and len(set(finished))==1  # A finished sibling's duration stays frozen.
 
 
 def test_second_spawn_error_does_not_cancel_first_or_restart(tmp_path,monkeypatch):
