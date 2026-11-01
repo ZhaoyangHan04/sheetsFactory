@@ -25,6 +25,9 @@ unrepaired roots, extra edits, intentional blanks, stale/missing caches, ambiguo
 period/unit/sign policies, and evaluator representation differences. Do not
 infer cause from raw zero alone. Infrastructure-null cases must stay separate;
 they do not have a measured business failure or invented scoring-region census.
+An error-only evaluator-loading case can retain original raw zero while having
+no completed cell census. Describe that loading error as infrastructure only,
+use zero attributed cell misses, and set all_misses_accounted_for to false.
 
 Suggest at most three transfer/amplification dimensions, each tied to a specific
 cause and its limits. Propose independent synthetic business material, never

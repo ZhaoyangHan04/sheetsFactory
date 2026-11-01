@@ -4,6 +4,8 @@ import importlib.util
 import json
 from pathlib import Path
 import subprocess
+import zipfile
+import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -205,10 +207,52 @@ def test_infrastructure_null_never_coerced_into_business_zero(fixture):
     _, frozen = prepared(fixture); row = frozen['cases'][4]
     assert row['original_raw_score'] is None
     value = review(row); value['causes'][0].update(classification='infrastructure', miss_count=0)
+    value['all_misses_accounted_for'] = False
     value['causes'][0]['evidence'] = []
     assert m.validate_review(row, value) == value
     value['causes'][0]['classification'] = 'financial_error'
     with pytest.raises(ValueError, match='Infrastructure-null'): m.validate_review(row, value)
+
+
+@pytest.mark.parametrize('change', [None, 'wrong_error', 'wrong_source', 'nonzero_metric', 'extra_hold', 'financial_claim'])
+def test_exact_original_loading_error_only_readiness(fixture, change):
+    case = fixture['inv']['cases'][0]; source = fixture['root'] / 'malformed_original.xlsx'
+    metadata = b'<root><dc:creator>Author</dc:creator></root>'
+    with zipfile.ZipFile(source, 'w') as archive: archive.writestr('docProps/core.xml', metadata)
+    try: ET.fromstring(metadata)
+    except ET.ParseError as error: message = str(error)
+    source_ref = m.reference(source)
+    terminal_ref = fixture['census']['rows'][0]['terminal']; terminal = m.read(terminal_ref)
+    terminal['official_primary']['input'] = source_ref
+    score = terminal['official_primary']['result']; score.update(accuracy=0, regression_accuracy=0,
+            modification_accuracy=0, error_message=message)
+    census = m.read(fixture['regions']['cases'][0]['report'])
+    census.update(status='hold', original_official_score=deepcopy(score), official_score_consistency=None,
+        summary={'region_position_count': None, 'miss_count': None}, all_misses=[], holds=[{
+            'reason': 'offline_comparison_exception', 'exception': 'ParseError', 'message': message}])
+    census['evidence']['source'] = source_ref
+    new_case = deepcopy(case); new_case['input'] = source_ref
+    if change == 'wrong_error': census['holds'][0]['message'] = 'another parser error'
+    if change == 'wrong_source':
+        with zipfile.ZipFile(source, 'w') as archive: archive.writestr('docProps/core.xml', b'<root/>')
+        fresh = m.reference(source); new_case['input'] = terminal['official_primary']['input'] = census['evidence']['source'] = fresh
+    if change == 'nonzero_metric': score['modification_accuracy'] = 1; census['original_official_score'] = deepcopy(score)
+    if change == 'extra_hold': census['holds'].append({'reason': 'unrelated_failure'})
+    census_ref = fixture['save']('error_census.json', census)
+    region = {'status': 'hold', 'case_terminal': terminal_ref, 'report': census_ref}
+    if change not in (None, 'financial_claim'):
+        with pytest.raises(ValueError): m._evaluator_error(new_case, terminal_ref, terminal, region, fixture['inv']['official_evaluator'])
+    else:
+        artifacts, summary = m._evaluator_error(new_case, terminal_ref, terminal, region, fixture['inv']['official_evaluator'])
+        assert artifacts['region_census.json'] == census_ref and summary['miss_count'] is None
+        row = {'case_key': case['case_key'], 'context_id': 'error-context', 'status': 'ready_evaluator_error',
+            'summary': {'coverage': summary}, 'artifacts': artifacts}
+        value = review(row); value['all_misses_accounted_for'] = False
+        value['causes'][0].update(classification='infrastructure', miss_count=0)
+        if change == 'financial_claim':
+            value['causes'][0]['classification'] = 'financial_error'
+            with pytest.raises(ValueError, match='Infrastructure-null'): m.validate_review(row, value)
+        else: assert m.validate_review(row, value) == value
 
 
 def test_actual_infra_trial_binds_typed_verifier_cause_and_complete_model_output(fixture):

@@ -22,6 +22,8 @@ import sys
 import threading
 import time
 import traceback
+import zipfile
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
@@ -139,26 +141,13 @@ def _instruction(case, terminal_ref, terminal):
     return {'instruction_transport.json': transport_ref, 'actual_instruction.md': rendered}
 
 
-def _ready(case, terminal_ref, terminal, off, region, evaluator_ref):
-    require(region.get('status') == 'complete', 'Full-region census is not complete')
-    region_ref = region['report']; census = read(region_ref)
-    report_ref, report = off
-    require(census.get('kind') == 'complete_official_comparison_region_case_census' and census.get('version') == 1,
-            'Wrong full-region census kind')
-    require(census['case_key'] == report['case_id'] == case['case_key'], 'Wrong evidence case')
-    require(not census.get('holds') and census.get('official_score_consistency') is True,
-            'A census inconsistency is an evidence hold, not a business failure')
-    a, b = report['evidence'], census['evidence']
-    require(a['case_terminal'] == b['case_terminal'] == terminal_ref, 'Evidence must bind this exact actual terminal')
-    require(a['source'] == b['source'] == case['input'] and a['reference'] == b['reference'] == case['goal'],
+def _material_artifacts(case, terminal_ref, terminal, evidence, evaluator_ref):
+    require(evidence['case_terminal'] == terminal_ref, 'Evidence must bind this exact actual terminal')
+    require(evidence['source'] == case['input'] and evidence['reference'] == case['goal'],
             'Evidence input/gold must equal the frozen original inventory')
-    require(a['official_evaluator'] == b['official_evaluator'] == evaluator_ref, 'Official evaluator differs')
-    require(report.get('public_instruction') == case['official_record']['instruction'], 'Offline public instruction differs')
-    for name in ('source', 'reference', 'output', 'trajectory', 'result'):
-        require(a.get(name) is not None and a[name] == b.get(name), 'Offline/census artifact mismatch: ' + name)
+    require(evidence['official_evaluator'] == evaluator_ref, 'Official evaluator differs')
     scoring = terminal['official_primary']
-    artifacts = {'offline_report.json': report_ref, 'region_census.json': region_ref,
-                 'case_terminal.json': terminal_ref}
+    artifacts = {'case_terminal.json': terminal_ref}
     artifacts.update(_instruction(case, terminal_ref, terminal))
     if terminal.get('disposition') == 'reused_original_completed_attempt':
         retained = read(terminal['original_postscore'])
@@ -172,18 +161,62 @@ def _ready(case, terminal_ref, terminal, off, region, evaluator_ref):
     else:
         scoring_output, scoring_evaluator = scoring['output'], scoring['evaluator']
     for name, alias in (('source', 'input'), ('reference', 'reference'), ('output', 'output')):
-        require(same_bytes(a[name], scoring_output if alias == 'output' else scoring[alias]), 'Official scorer used different workbook bytes')
-    require(same_bytes(a['official_evaluator'], scoring_evaluator), 'Official scorer used different evaluator bytes')
-    require(census.get('original_official_score') == scoring['result'], 'Census original score differs')
-    summary = census['summary']
-    require(type(summary['region_position_count']) is int and summary['region_position_count'] >= 0
-            and type(summary['miss_count']) is int and summary['miss_count'] >= 0, 'Invalid full-region counts')
+        require(same_bytes(evidence[name], scoring_output if alias == 'output' else scoring[alias]), 'Official scorer used different workbook bytes')
+    require(same_bytes(evidence['official_evaluator'], scoring_evaluator), 'Official scorer used different evaluator bytes')
     for name, filename in (('source', 'input.xlsx'), ('reference', 'gold.xlsx'), ('output', 'output.xlsx'),
                            ('trajectory', 'trajectory.json'), ('result', 'original_result.json'),
                            ('official_evaluator', 'official_evaluator.py')):
-        artifacts[filename] = a[name]
+        artifacts[filename] = evidence[name]
     for ref in artifacts.values(): checked(ref)
+    return artifacts
+
+
+def _ready(case, terminal_ref, terminal, off, region, evaluator_ref):
+    require(region.get('status') == 'complete', 'Full-region census is not complete')
+    region_ref = region['report']; census = read(region_ref)
+    report_ref, report = off
+    require(census.get('kind') == 'complete_official_comparison_region_case_census' and census.get('version') == 1,
+            'Wrong full-region census kind')
+    require(census['case_key'] == report['case_id'] == case['case_key'], 'Wrong evidence case')
+    require(not census.get('holds') and census.get('official_score_consistency') is True,
+            'A census inconsistency is an evidence hold, not a business failure')
+    a, b = report['evidence'], census['evidence']
+    require(report.get('public_instruction') == case['official_record']['instruction'], 'Offline public instruction differs')
+    for name in ('source', 'reference', 'output', 'trajectory', 'result', 'case_terminal', 'official_evaluator'):
+        require(a.get(name) is not None and a[name] == b.get(name), 'Offline/census artifact mismatch: ' + name)
+    artifacts = _material_artifacts(case, terminal_ref, terminal, a, evaluator_ref)
+    artifacts.update({'offline_report.json': report_ref, 'region_census.json': region_ref})
+    require(census.get('original_official_score') == terminal['official_primary']['result'], 'Census original score differs')
+    summary = census['summary']
+    require(type(summary['region_position_count']) is int and summary['region_position_count'] >= 0
+            and type(summary['miss_count']) is int and summary['miss_count'] >= 0, 'Invalid full-region counts')
     return artifacts, summary
+
+
+def _evaluator_error(case, terminal_ref, terminal, region, evaluator_ref):
+    census_ref = region['report']; census = read(census_ref); score = terminal['official_primary']['result']
+    message = score.get('error_message', '')
+    require(region['status'] == census.get('status') == 'hold'
+            and census.get('kind') == 'complete_official_comparison_region_case_census' and census.get('version') == 1
+            and census['case_key'] == case['case_key'] and region['case_terminal'] == terminal_ref
+            and census.get('original_official_score') == score
+            and all(score.get(k) == 0 for k in ('accuracy', 'regression_accuracy', 'modification_accuracy'))
+            and re.fullmatch(r'unbound prefix: line [1-9][0-9]*, column [0-9]+', message) is not None
+            and census.get('holds') == [{'reason': 'offline_comparison_exception', 'exception': 'ParseError', 'message': message}]
+            and census.get('official_score_consistency') is None
+            and census.get('summary') == {'region_position_count': None, 'miss_count': None}
+            and not census.get('all_misses'), 'Only an exact original parser failure may use error-only diagnosis')
+    artifacts = _material_artifacts(case, terminal_ref, terminal, census['evidence'], evaluator_ref)
+    with zipfile.ZipFile(checked(case['input'])) as archive: metadata = archive.read('docProps/core.xml')
+    observed = None
+    try: ET.fromstring(metadata)
+    except ET.ParseError as error: observed = str(error)
+    require(observed == message, 'Original source metadata does not reproduce the same parser error')
+    artifacts['region_census.json'] = census_ref
+    return artifacts, {'kind': 'original_evaluator_loading_error_only', 'original_error': message,
+        'original_raw_score': score['accuracy'], 'source_part': 'docProps/core.xml',
+        'source_part_sha256': hashlib.sha256(metadata).hexdigest(), 'miss_count': None,
+        'region_position_count': None, 'financial_error_established': False}
 
 
 def _infra(case, terminal_ref, terminal):
@@ -256,9 +289,15 @@ def prepare(inventory, execution_census, deep_ledger, offline_scan, region_index
                 except (ValueError, KeyError) as error: row.update(status='evidence_hold', holds=[str(error)])
             elif raw == 0:
                 try:
-                    require(key in offline and rr[key]['case_terminal'] == terminal_ref, 'Missing exact-terminal offline/full-region evidence')
-                    artifacts, summary = _ready(case, terminal_ref, terminal, offline[key], rr[key], inv['official_evaluator'])
-                    row.update(status='ready', artifacts=artifacts); row['summary']['coverage'] = summary
+                    require(rr[key]['case_terminal'] == terminal_ref, 'Missing exact-terminal full-region evidence')
+                    if rr[key]['status'] == 'hold':
+                        artifacts, summary = _evaluator_error(case, terminal_ref, terminal, rr[key], inv['official_evaluator'])
+                        row.update(status='ready_evaluator_error', artifacts=artifacts)
+                    else:
+                        require(key in offline, 'Missing exact-terminal offline evidence')
+                        artifacts, summary = _ready(case, terminal_ref, terminal, offline[key], rr[key], inv['official_evaluator'])
+                        row.update(status='ready', artifacts=artifacts)
+                    row['summary']['coverage'] = summary
                 except (ValueError, KeyError) as error:
                     row.update(status='evidence_hold', holds=[str(error)])
             elif raw is None:
@@ -368,7 +407,7 @@ def validate_review(row, value):
         require(value['all_misses_accounted_for'] and sum(c['miss_count'] for c in value['causes']) == row['summary']['coverage']['miss_count'],
                 'Diagnostic groups must account for the whole mismatch census')
     else:
-        require(all(c['classification'] == 'infrastructure' and c['miss_count'] == 0 for c in value['causes']),
+        require(not value['all_misses_accounted_for'] and all(c['classification'] == 'infrastructure' and c['miss_count'] == 0 for c in value['causes']),
                 'Infrastructure-null cannot become a measured business failure')
     for cause in value['causes']:
         if cause['certainty'] == 'confirmed' and cause['classification'] in ('financial_error', 'completeness', 'extra_change'):
