@@ -1,0 +1,13 @@
+version: 1
+nodes:
+  normalize: run_native_business_recovery_quality:NormalizeNode
+  profile: run_native_business_recovery_quality:ProfileNode
+  plan: run_native_business_recovery_quality:PlanNode
+  construct: run_native_business_recovery_quality:ConstructNode
+  instruction: run_native_business_recovery_quality:InstructionNode
+  precheck: run_native_business_recovery_quality:ControlsNode
+  independent_recovery: sheets_factory.nodes.quality:RecoveryNode
+  trajectory: sheets_factory.nodes.quality:TrajectoryNode
+  diagnose: run_native_business_recovery_quality:DiagnoseNode
+  repair: run_native_business_recovery_quality:RepairNode
+  export: run_native_business_recovery_quality:ExportNode
