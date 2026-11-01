@@ -209,7 +209,7 @@ def execute_prepared(output):
             f=validate_prepared(output)
             RESERVATIONS.mkdir(parents=True,exist_ok=True);require(RESERVATIONS==RESERVATIONS.resolve(),'Use the real permanent cohort reservation directory')
             write(RESERVATIONS/(schema.CONTRACT_SHA256+'.json'),{'prospective':reference(output/'prospective.json'),'at':now(),'outer_retries':0})
-            pending=list(f['cases'])
+            pending=list(f['cases']);last_live=0.0
             while pending or active:
                 while pending and len(active)<2:
                     row=pending.pop(0);identity=row['case_id'];folder=output/'cases'/identity;folder.mkdir(parents=True,exist_ok=True)
@@ -217,15 +217,24 @@ def execute_prepared(output):
                     argv=[sys.executable,str(Path(__file__).resolve()),'--prepared',str(output),'--worker',identity]
                     process=subprocess.Popen(argv,cwd=ROOT,stdout=stdout,stderr=stderr)
                     launcher=write(folder/'launcher.json',{'pid':process.pid,'at':now(),'argv':argv})
-                    active[identity]=(process,stdout,stderr,launcher)
-                for identity,(process,stdout,stderr,launcher) in list(active.items()):
+                    audit.task(identity,mode='financial_modeling',source_id=identity,status='engineering',node='source_and_task_engineering')
+                    node=audit.record('nodes',{'node':identity,'task_id':identity,'status':'running','started_at':now(),'duration_ms':0})
+                    active[identity]=(process,stdout,stderr,launcher,node,time.monotonic())
+                tick=time.monotonic()
+                if tick-last_live>=3:
+                    for identity,(_,_,_,_,node,started) in active.items():
+                        audit.update_record('nodes',node,{'status':'running','duration_ms':1000*(tick-started)})
+                    last_live=tick
+                for identity,(process,stdout,stderr,launcher,node,started) in list(active.items()):
                     code=process.poll()
                     if code is None:continue
                     stdout.close();stderr.close();folder=output/'cases'/identity;path=folder/'worker_terminal.json'
                     terminal=reference(path) if path.exists() else None
                     completed[identity]={'case_id':identity,'passed':code==0 and terminal is not None and read(terminal)['passed'] is True,
                         'returncode':code,'terminal':terminal,'launcher':launcher,'stdout':reference(folder/'stdout.log'),'stderr':reference(folder/'stderr.log')}
-                    audit.record('nodes',{'node':identity,'status':'completed' if completed[identity]['passed'] else 'failed','terminal':terminal})
+                    audit.update_record('nodes',node,{'status':'completed' if completed[identity]['passed'] else 'failed',
+                        'duration_ms':1000*(time.monotonic()-started),'terminal':terminal,'finished_at':now()})
+                    audit.task(identity,status='engineering_passed' if completed[identity]['passed'] else 'rejected',node='source_and_task_engineering')
                     del active[identity]
                 audit.update_run(active_cases={key:row[0].pid for key,row in active.items()},completed_cases=len(completed),
                     elapsed_seconds=time.monotonic()-clock,producer_active=True);audit.export();time.sleep(.5)
@@ -243,7 +252,7 @@ def execute_prepared(output):
         write(output/'orchestration_failure.json',{'type':type(error).__name__,'error':str(error),'completed':completed,
             'active_owned_pids':{key:row[0].pid for key,row in active.items()},'retry_permitted':False});raise
     finally:
-        for process,stdout,stderr,_ in active.values():process.wait();stdout.close();stderr.close()
+        for process,stdout,stderr,_,_,_ in active.values():process.wait();stdout.close();stderr.close()
         lease.release()
 
 

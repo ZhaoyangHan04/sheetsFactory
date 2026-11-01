@@ -24,7 +24,7 @@ def store(m,path,value):return m.write(path,value)
 
 @pytest.fixture
 def fixed(m,tmp_path,monkeypatch):
-    calls=[];events=[];raw=store(m,tmp_path/'raw_inventory.json',{'TEST_ONLY':True})
+    calls=[];events=[];nodes=[];node_updates=[];task_updates=[];raw=store(m,tmp_path/'raw_inventory.json',{'TEST_ONLY':True})
     candidate_rows=[];publics={}
     for index,identity in enumerate(m.ORDER,1):
         public={'TEST_ONLY_case':identity};publics[identity]=public
@@ -65,14 +65,17 @@ def fixed(m,tmp_path,monkeypatch):
     class Audit:
         def update_run(self,**kwargs):pass
         def export(self):pass
-        def record(self,*args,**kwargs):pass
+        def record(self,table,value):nodes.append(deepcopy(value));return len(nodes)-1
+        def update_record(self,table,index,value):node_updates.append((index,deepcopy(value)))
+        def task(self,identity,**values):task_updates.append((identity,deepcopy(values)))
     @contextmanager
     def monitor(out,phase):
         events.append('panel:'+phase)
         yield Audit(),'http://127.0.0.1:0/'
         events.append('closed:'+phase)
     monkeypatch.setattr(m,'monitor',monitor)
-    return SimpleNamespace(batch=batch,reused=reused,rows=candidate_rows,raw=raw,source=source,task=task,calls=calls,events=events)
+    return SimpleNamespace(batch=batch,reused=reused,rows=candidate_rows,raw=raw,source=source,task=task,calls=calls,events=events,
+        nodes=nodes,node_updates=node_updates,task_updates=task_updates)
 
 
 def test_prepare_freezes_all_nine_then_cold_validates_original_C01_only(m,fixed,tmp_path):
@@ -153,6 +156,13 @@ def test_master_panel_precedes_validation_and_scheduler_never_exceeds_two(m,fixe
     terminal=m.read(m.execute_prepared(out))
     assert launched==m.ORDER and maximum[0]==2 and terminal['passed']
     assert terminal['actual_new_LO_calls']=={'complete':True,'started':69,'completed':69}
+    assert len(fixed.nodes)==9 and all(row['status']=='running' and row['duration_ms']==0 for row in fixed.nodes)
+    completed=[row for _,row in fixed.node_updates if row['status']=='completed']
+    assert len(completed)==9 and all(row['duration_ms']>=0 for row in completed)
+    assert any(row['status']=='running' and row['duration_ms']>=0 for _,row in fixed.node_updates)
+    assert [identity for identity,row in fixed.task_updates if row['status']=='engineering']==m.ORDER
+    assert [identity for identity,row in fixed.task_updates if row['status']=='engineering_passed']==m.ORDER
+    assert all(row['status']!='qualified' for _,row in fixed.task_updates)
     assert (m.RESERVATIONS/(m.schema.CONTRACT_SHA256+'.json')).exists()
     with pytest.raises(ValueError,match='first batch execution'):m.execute_prepared(out)
     assert len(launched)==9
