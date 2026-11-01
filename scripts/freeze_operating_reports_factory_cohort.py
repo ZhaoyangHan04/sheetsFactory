@@ -93,8 +93,19 @@ def freeze(development_path, batches, output, root_destination):
         if len(files) != 17:
             raise ValueError('Keep exactly seventeen task files')
         inventory[row['task_id']] = files
+    dataset_manifest = {'kind': 'frozen_operating_report_factory_dataset', 'version': 1,
+        'task_count': 20, 'counts_by_mode': {'financial_modeling': 10, 'debugging': 10},
+        'selected_task_ids': record['selected_task_ids'], 'cohort_freeze': reference(path),
+        'shared_source_count': 1, 'tasks': [
+            {'task_id': row['task_id'], 'mode': row['mode'], 'variant_id': row['variant_id'],
+             'harbor_export_binding': row['harbor_export_binding'],
+             'payload_files': {name: value['sha256'] for name, value in inventory[row['task_id']].items()}}
+            for row in selected]}
+    with (destination/'dataset_manifest.json').open('x') as stream:
+        json.dump(dataset_manifest, stream, indent=2); stream.write('\n')
     with (output/'root_copy.json').open('x') as stream:
         json.dump({'cohort': reference(path), 'files': inventory, 'count': 20,
+                   'dataset_manifest': reference(destination/'dataset_manifest.json'),
                    'byte_identical_copy': True, 'actual_root_controls_pending': True}, stream, indent=2); stream.write('\n')
     return reference(path)
 
