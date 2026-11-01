@@ -1,0 +1,367 @@
+{
+  "kind": "published_exact_mixed_twenty_controls_summary",
+  "version": 1,
+  "created_at": "2026-11-01T09:40:13.912397+00:00",
+  "dataset_manifest": {
+    "path": "/data/hzy/sheetsFactory/SpreadsheetEval/dataset_manifest.json",
+    "sha256": "b48b7b1d9a97c2c7cbc1baac3990e02c2880371a5e9e39e26ab89fab288a9c44",
+    "bytes": 169535
+  },
+  "source_terminal": {
+    "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_business_revision_exact_root_controls_20261101T085300Z/terminal.json",
+    "sha256": "89b9e940304393df5c70062d485d6662547e07ecb17e91576bdf0353164fae67",
+    "bytes": 1290
+  },
+  "actual_commands": {
+    "oracle": {
+      "argv": [
+        "harbor",
+        "run",
+        "-p",
+        "SpreadsheetEval",
+        "-a",
+        "oracle"
+      ],
+      "returncode": 0,
+      "expected_reward": 1,
+      "counts": {
+        "dataset_tasks": 20,
+        "trial_results": 20,
+        "matched_rewards": 20,
+        "exceptions": 0,
+        "missing": 0,
+        "unknown": 0,
+        "duplicates": 0
+      },
+      "counts_by_mode": {
+        "financial_modeling": 10,
+        "debugging": 10
+      },
+      "trials": [
+        {
+          "task_id": "dbg-dbg-s11-bd6f63001a3f336b68a1",
+          "task_checksum": "a70ad3e6105d0e9890f8b43f45761f3f98f6cc8b74085eecd5bd4f82fab1b361",
+          "reward": 1.0,
+          "result_sha256": "a738eda4e3afe7b7cddf786cd328dedcebdaa1b82254fa5b212ccae18bd6ecf4",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-dbg-s14-49f71f2468b4c85550a3",
+          "task_checksum": "fcb19f0ed02919134080b2da221f33f3095137ec350b73c4afbcf599040707b8",
+          "reward": 1.0,
+          "result_sha256": "f73fb6282fec6b3f204c335c213448fb2a84735c682552a28d7b273a65a367a8",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-dbg-s17-313601735740ca359782",
+          "task_checksum": "51f7c4a319243742d2eb400724d697c1e645e3bda84e084e00699d3750f4bba7",
+          "reward": 1.0,
+          "result_sha256": "8a05e3bf65057bdb5b469b9d0a4baae6a598730c8b3495596b8916ae634f2018",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-dbg-s19-c86371bca08a71d5c935",
+          "task_checksum": "b11190c01574fb2e17c034526300ef214a2939ebc19d037e7879b7797508c063",
+          "reward": 1.0,
+          "result_sha256": "41eda69e4c0b7f03dda69d27247561a6d0c469d7bb07c0a8e82a8056e840fbf5",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-dbg-s20-e7ce7308dd0f1ed7633a",
+          "task_checksum": "5dafefd17e444195bcad737885c2c22df2abf308ec2a53bc81b5b51bf543eb12",
+          "reward": 1.0,
+          "result_sha256": "6da813b8df887aad98ad93d0c321a87c0db150f73210b8606cdfa6cf47d18be2",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-01-a2da8f875151ae293624",
+          "task_checksum": "00596a78d0c7a923738ffaa49c2117c7f28e945c8b0344dd5a21e51a3bef39f5",
+          "reward": 1.0,
+          "result_sha256": "e1c70025ea137b38647c221aa4c967b66aeaab1f686577cbdac7d113a816bb90",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-02-35f20d78ca950d6979db",
+          "task_checksum": "e5c8d4b8bb1e892b0b05abdd30968e32169d33cf2d7ee1d92673814a75615153",
+          "reward": 1.0,
+          "result_sha256": "f8e5d1174c88c0b37b4f618e4be01e700bb76ca32190e7465c79769ac1be790b",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-03-a377abbaf2968e9ea3fe",
+          "task_checksum": "fe6fb291ec2ea5ce1e459909e249b5734e239f53429c2a903b952550b0695c92",
+          "reward": 1.0,
+          "result_sha256": "f122a6f5db43a2c12e61f82190630143405be4258b5d08629801f632187302d2",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-04-c5975851ac8ec0bcc746",
+          "task_checksum": "a36f2b780c71f08814cdfc2804a55553da174731594caa1376bc6daa402e187a",
+          "reward": 1.0,
+          "result_sha256": "6349353ea199be3e34671cc8d094d9874f2ee5a729cf2b2a283a5aeb14cc5930",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-05-d20192bf89e9c70f76d0",
+          "task_checksum": "74b6d1c248e51fd9bae4cb17e52fed8023284293b1ea25a66d9a6ee2072751e3",
+          "reward": 1.0,
+          "result_sha256": "dabaa8bc5fd81c9d03d998172ecae99929a9eb902a48495146a1c04494310fb1",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-f11-f7a3b39b327a92e5ed0b",
+          "task_checksum": "0b867fe3d3bc64aea583ecbb51de5a1054eb7a013e4a9c67266e1b913caa407b",
+          "reward": 1.0,
+          "result_sha256": "2d4ab1bc81a837eed582d63d544ef52886de4d779dffdcbbd6a58cbe6113e7b7",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-f12-1232300ebebce98a12c8",
+          "task_checksum": "e6003a16bed75fdbf7284e1902831a72fe00c57fe4dbae23eeda62c07a4c79c0",
+          "reward": 1.0,
+          "result_sha256": "03bc5f03d84cfd81f985145e5cc62fce29dbe2c618b5bc5f111e1f80e682083e",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-f13-c257af446b28691dbaeb",
+          "task_checksum": "75c8e0ecca79190fd75e0943a03ee735d10e128a715cc2c4c9e85c9ead2f8b46",
+          "reward": 1.0,
+          "result_sha256": "212c9f90ddf236ff775f287a465d6afbeb24945d38e895e7f624200789a144e5",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-f14-b4fc8284df5804a93b09",
+          "task_checksum": "1d6a233a2613d81ead75c3635ab87b4680bf68e54e511284b40a415fdd5eb96d",
+          "reward": 1.0,
+          "result_sha256": "85df7bb40d63f2e2c629a6673d5881c033bc03cf34ae056991d71364d87fd951",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-f17-8e9c73856a47ec4fe5e7",
+          "task_checksum": "24416b6265ed513089c8904a60ea86f03819d67f53877943501e0449d35c425d",
+          "reward": 1.0,
+          "result_sha256": "28484a25cc8503b53dcf563fa0d5d38eb825a820b7f743fa353de5be03641d2b",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-ringfenced-r2-01-283e68178727c78459a3",
+          "task_checksum": "7d4b262a259e484486cf3da17b161e1e171b873a93d59e1a8c32ad3076d2733b",
+          "reward": 1.0,
+          "result_sha256": "0d9fb377725251bf4fffedd2cca06df67821dcd383d2bd284ab27a42376abd4f",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-ringfenced-r2-02-35e3b46fdecbb99ebbe3",
+          "task_checksum": "9152133e4abc1fe6bde89e06512f658617e818625d7716ddd75a884cbccb809f",
+          "reward": 1.0,
+          "result_sha256": "dc1235dfb29b2e99dfa6d75ae47e8cb0579189a1007de1451fd75afc2748d566",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-ringfenced-r2-03-f12dedd624aeba00ba95",
+          "task_checksum": "20d8cae7eed0550c92f80f0e5fef02cd8db6cb7178f09c63d0b33d0593930760",
+          "reward": 1.0,
+          "result_sha256": "513cbb96d177ed57b6b2a7b288fc2ca6af2e848a491c5aeb513268afdc2cf097",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-ringfenced-r2-04-260ea630c058f634c83f",
+          "task_checksum": "4f9340be27291d63aa0aed20b71bc81f8bfe88e920dde386e653a27c11e22205",
+          "reward": 1.0,
+          "result_sha256": "3179bad41d743810e26e6abde5928cd7efb165c951f3b1dddcd6fedc413056ae",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-ringfenced-r2-05-fb575d256975cdbd5d1c",
+          "task_checksum": "68248a72bba594edfa4d38f59f2679d2595ee55834a442c337918a2cb81b8d09",
+          "reward": 1.0,
+          "result_sha256": "6f0730b69a1c511212f0c093693faecd48d435ac8c9dcd6a28df5d1ffa7dfd96",
+          "exception_info": null
+        }
+      ],
+      "actual_role_resources_verified": true,
+      "owned_containers_absent": true,
+      "executed_command_receipt": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_business_revision_exact_root_controls_20261101T085300Z/oracle_command_receipt.json",
+        "sha256": "47a75f18ee7068d61f3ed1e0331fc92090e237ca07b5c4b73d1ab7b95071f503",
+        "bytes": 1738
+      }
+    },
+    "nop": {
+      "argv": [
+        "harbor",
+        "run",
+        "-p",
+        "SpreadsheetEval",
+        "-a",
+        "nop"
+      ],
+      "returncode": 0,
+      "expected_reward": 0,
+      "counts": {
+        "dataset_tasks": 20,
+        "trial_results": 20,
+        "matched_rewards": 20,
+        "exceptions": 0,
+        "missing": 0,
+        "unknown": 0,
+        "duplicates": 0
+      },
+      "counts_by_mode": {
+        "financial_modeling": 10,
+        "debugging": 10
+      },
+      "trials": [
+        {
+          "task_id": "dbg-dbg-s11-bd6f63001a3f336b68a1",
+          "task_checksum": "a70ad3e6105d0e9890f8b43f45761f3f98f6cc8b74085eecd5bd4f82fab1b361",
+          "reward": 0.0,
+          "result_sha256": "d7d1d8ef26d428e310ac9ac9935ac700b399dee6568c8cbeb0316b8a980c9421",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-dbg-s14-49f71f2468b4c85550a3",
+          "task_checksum": "fcb19f0ed02919134080b2da221f33f3095137ec350b73c4afbcf599040707b8",
+          "reward": 0.0,
+          "result_sha256": "16599a66fa32f8f6d3e75ccc6a9a0277325d0a7aca1738dd1440714b68997753",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-dbg-s17-313601735740ca359782",
+          "task_checksum": "51f7c4a319243742d2eb400724d697c1e645e3bda84e084e00699d3750f4bba7",
+          "reward": 0.0,
+          "result_sha256": "536118b0398a2686f0682af26636ef3034196cb21667c0bb30494f857b245c26",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-dbg-s19-c86371bca08a71d5c935",
+          "task_checksum": "b11190c01574fb2e17c034526300ef214a2939ebc19d037e7879b7797508c063",
+          "reward": 0.0,
+          "result_sha256": "59cf41227c97986bc982b82f18de124e1c7dbc0dc3755a29a9a210fc293dc79a",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-dbg-s20-e7ce7308dd0f1ed7633a",
+          "task_checksum": "5dafefd17e444195bcad737885c2c22df2abf308ec2a53bc81b5b51bf543eb12",
+          "reward": 0.0,
+          "result_sha256": "f6dd5bc9f51a91745df2b4b397651ca983e69f2f116f0f61cc9963117afef4e0",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-01-a2da8f875151ae293624",
+          "task_checksum": "00596a78d0c7a923738ffaa49c2117c7f28e945c8b0344dd5a21e51a3bef39f5",
+          "reward": 0.0,
+          "result_sha256": "e5f6667435f57388eec6342d576019f238fc18189b6dbcf3655b797c81cd4738",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-02-35f20d78ca950d6979db",
+          "task_checksum": "e5c8d4b8bb1e892b0b05abdd30968e32169d33cf2d7ee1d92673814a75615153",
+          "reward": 0.0,
+          "result_sha256": "8395acbf37a0583f470e3f8ab30240ff4b10e988911fa7e892cfb8cf55bed7cc",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-03-a377abbaf2968e9ea3fe",
+          "task_checksum": "fe6fb291ec2ea5ce1e459909e249b5734e239f53429c2a903b952550b0695c92",
+          "reward": 0.0,
+          "result_sha256": "40e463cfe3d4514ed27a888421941cd36dc43828f10bf36f748ba4c941545c95",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-04-c5975851ac8ec0bcc746",
+          "task_checksum": "a36f2b780c71f08814cdfc2804a55553da174731594caa1376bc6daa402e187a",
+          "reward": 0.0,
+          "result_sha256": "6efc51e3ef93a5f210e0a7899617cfd9cf63353a91ba92b41030b8bd02b09022",
+          "exception_info": null
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-05-d20192bf89e9c70f76d0",
+          "task_checksum": "74b6d1c248e51fd9bae4cb17e52fed8023284293b1ea25a66d9a6ee2072751e3",
+          "reward": 0.0,
+          "result_sha256": "f1c0cedf8717cab6f446e6bbab431c381ced5accbc597cf36aad7456e0831cf5",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-f11-f7a3b39b327a92e5ed0b",
+          "task_checksum": "0b867fe3d3bc64aea583ecbb51de5a1054eb7a013e4a9c67266e1b913caa407b",
+          "reward": 0.0,
+          "result_sha256": "c68f76125a75e31bfef977dd2a95a52917c206ea6a473dcd0b3814cb1bbafb22",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-f12-1232300ebebce98a12c8",
+          "task_checksum": "e6003a16bed75fdbf7284e1902831a72fe00c57fe4dbae23eeda62c07a4c79c0",
+          "reward": 0.0,
+          "result_sha256": "cd209291fb03bc4f1cfee2eca829e71df548aa21ef061e3595d7a43417c2df5f",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-f13-c257af446b28691dbaeb",
+          "task_checksum": "75c8e0ecca79190fd75e0943a03ee735d10e128a715cc2c4c9e85c9ead2f8b46",
+          "reward": 0.0,
+          "result_sha256": "3fc7c6e6b61a6258c8b4f5323c2f22ef6cfa1c7add2086489e261a1bb1b86b12",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-f14-b4fc8284df5804a93b09",
+          "task_checksum": "1d6a233a2613d81ead75c3635ab87b4680bf68e54e511284b40a415fdd5eb96d",
+          "reward": 0.0,
+          "result_sha256": "f3cd26f9dd4187e91e25241f342a5825ee97c72e21e6577f8bda78d7979c51d7",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-f17-8e9c73856a47ec4fe5e7",
+          "task_checksum": "24416b6265ed513089c8904a60ea86f03819d67f53877943501e0449d35c425d",
+          "reward": 0.0,
+          "result_sha256": "6ccfde61e808c7e889d3ce2249e7e9f7924541dda96206d80bc8544881b846ae",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-ringfenced-r2-01-283e68178727c78459a3",
+          "task_checksum": "7d4b262a259e484486cf3da17b161e1e171b873a93d59e1a8c32ad3076d2733b",
+          "reward": 0.0,
+          "result_sha256": "b46300659466d71599fe8c5f084b3564c3f27c8c18b9e04c385693c2abba681f",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-ringfenced-r2-02-35e3b46fdecbb99ebbe3",
+          "task_checksum": "9152133e4abc1fe6bde89e06512f658617e818625d7716ddd75a884cbccb809f",
+          "reward": 0.0,
+          "result_sha256": "d84208dca1829153aa965c8e7981b2a18d377650231ecb26e0f6b5d797512e4b",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-ringfenced-r2-03-f12dedd624aeba00ba95",
+          "task_checksum": "20d8cae7eed0550c92f80f0e5fef02cd8db6cb7178f09c63d0b33d0593930760",
+          "reward": 0.0,
+          "result_sha256": "8b959b3c5eff58de1bda9c5c37798076a056e523944f076dac27308a5e4adf9b",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-ringfenced-r2-04-260ea630c058f634c83f",
+          "task_checksum": "4f9340be27291d63aa0aed20b71bc81f8bfe88e920dde386e653a27c11e22205",
+          "reward": 0.0,
+          "result_sha256": "2df0861c470aac843d70b57339ebeeb0b5eb3141c03807097eda9f032dfb792b",
+          "exception_info": null
+        },
+        {
+          "task_id": "fm-ringfenced-r2-05-fb575d256975cdbd5d1c",
+          "task_checksum": "68248a72bba594edfa4d38f59f2679d2595ee55834a442c337918a2cb81b8d09",
+          "reward": 0.0,
+          "result_sha256": "927d6f23b697969d41206d404494d4697117d306e210a04eb080654eef22f0fc",
+          "exception_info": null
+        }
+      ],
+      "actual_role_resources_verified": true,
+      "owned_containers_absent": true,
+      "executed_command_receipt": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_business_revision_exact_root_controls_20261101T085300Z/nop_command_receipt.json",
+        "sha256": "7b7fbb8028c4a15744e49971b60c29be44f9d02f04d412169d31b2f1f6d4d834",
+        "bytes": 1729
+      }
+    }
+  },
+  "task_count": 20,
+  "passed": true
+}

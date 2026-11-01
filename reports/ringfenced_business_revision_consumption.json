@@ -1,0 +1,896 @@
+{
+  "kind": "actual_ringfenced_business_revision_consumption_receipt",
+  "version": 1,
+  "created_at": "2026-11-01T09:33:42.919429+00:00",
+  "collector": {
+    "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_business_final_consumption_20261101T093300Z/collect.py",
+    "sha256": "71f2c6c3dfca2a18e0b2a78f9534c7f464876c9524c4f63b6e7a727495bfadad",
+    "bytes": 9931
+  },
+  "scopes": {
+    "prototype_development_and_semantic": {
+      "evidence": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/business_revision_prototype_usage_baseline_20261101T083200Z/receipt.json",
+        "sha256": "11dab8f0b6fa5196c5363403c47c5133a48d9165e77abde66cff5a8d99d67c5e",
+        "bytes": 12830
+      },
+      "calls": [
+        {
+          "scope": "prototype_strongest_development",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/associate_bridge_B04_first_native_v1_20261101T063000Z/terminal.json",
+            "sha256": "4e0cf5b6ad4e267bb3c8149abe8b03d2305c9d2161d36ee50b51e29b82c7a0f9",
+            "bytes": 898049
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/associate_bridge_B04_first_native_v1_20261101T063000Z/evaluation/harbor_jobs/frontier-pass1/fm-bridge-b04-67c35b4a47b37a5ffb__ccigoUH/result.json",
+            "sha256": "f7120efa0d817492be78a8d843bf1ff0f36f2ad2bf4dac4b9fe698bdd6afd86b",
+            "bytes": 6339
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 928722,
+          "output_tokens": 17004,
+          "cached_input_tokens": 868224,
+          "total_tokens": 945726,
+          "harbor_estimated_cost_usd": 0.37785840000000004
+        },
+        {
+          "scope": "prototype_strongest_development",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/associate_bridge_B04_first_native_v1_20261101T063000Z/terminal.json",
+            "sha256": "4e0cf5b6ad4e267bb3c8149abe8b03d2305c9d2161d36ee50b51e29b82c7a0f9",
+            "bytes": 898049
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/associate_bridge_B04_first_native_v1_20261101T063000Z/evaluation/harbor_jobs/frontier-pass1/dbg-bridge-b04-05c0bef93744ef565__S72DSjw/result.json",
+            "sha256": "3c55060e053e12ab76cb1d657c5ee65215210a27a9b14905f0bd7032c9f98987",
+            "bytes": 6344
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 2381444,
+          "output_tokens": 21237,
+          "cached_input_tokens": 2244992,
+          "total_tokens": 2402681,
+          "harbor_estimated_cost_usd": 0.7097732000000002
+        },
+        {
+          "scope": "prototype_strongest_development",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/tax_vintage_bridge_T01_first_native_v1_20261101T071000Z/terminal.json",
+            "sha256": "eea3682f50e7120bc3141f6ec0a6fc1f66e5e9891cdebc5681326284294fc53f",
+            "bytes": 883037
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/tax_vintage_bridge_T01_first_native_v1_20261101T071000Z/evaluation/harbor_jobs/frontier-pass1/fm-tax-vintage-t01-de774b97b4dde__Vv6jfPk/result.json",
+            "sha256": "3894623e9f9cac0c8f0ee2a19c26cd53e026c20d949399866e82325dcc4fbc92",
+            "bytes": 6346
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 1169424,
+          "output_tokens": 24221,
+          "cached_input_tokens": 1112064,
+          "total_tokens": 1193645,
+          "harbor_estimated_cost_usd": 0.4681364
+        },
+        {
+          "scope": "prototype_strongest_development",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/tax_vintage_bridge_T01_first_native_v1_20261101T071000Z/terminal.json",
+            "sha256": "eea3682f50e7120bc3141f6ec0a6fc1f66e5e9891cdebc5681326284294fc53f",
+            "bytes": 883037
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/tax_vintage_bridge_T01_first_native_v1_20261101T071000Z/evaluation/harbor_jobs/frontier-pass1/dbg-tax-vintage-t01-d281242ce738__tdCZy6F/result.json",
+            "sha256": "1ee2c11825ce9c7a4aa15acd302d82986d198dc82623d12241ead0e3d166a532",
+            "bytes": 6349
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 1860405,
+          "output_tokens": 19785,
+          "cached_input_tokens": 1763968,
+          "total_tokens": 1880190,
+          "harbor_estimated_cost_usd": 0.5671208
+        },
+        {
+          "scope": "prototype_strongest_development",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/tax_vintage_bridge_T02_first_native_v1_20261101T070500Z/terminal.json",
+            "sha256": "431a2431d27fcdb6fc74f96746e95f90ee94700da45526b325aa4036f1c1bd6e",
+            "bytes": 789005
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/tax_vintage_bridge_T02_first_native_v1_20261101T070500Z/evaluation/harbor_jobs/frontier-pass1/fm-tax-vintage-t02-9542b54feb01a__Xmm2tvv/result.json",
+            "sha256": "d79695772807de9a4bdf032c9a67219cf093f9d8cd6354daa83718d33fe5835c",
+            "bytes": 6360
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 950355,
+          "output_tokens": 21622,
+          "cached_input_tokens": 890112,
+          "total_tokens": 971977,
+          "harbor_estimated_cost_usd": 0.4257172000000001
+        },
+        {
+          "scope": "prototype_strongest_development",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/tax_vintage_bridge_T02_first_native_v1_20261101T070500Z/terminal.json",
+            "sha256": "431a2431d27fcdb6fc74f96746e95f90ee94700da45526b325aa4036f1c1bd6e",
+            "bytes": 789005
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/tax_vintage_bridge_T02_first_native_v1_20261101T070500Z/evaluation/harbor_jobs/frontier-pass1/dbg-tax-vintage-t02-03ee25e2adae__5v5ddge/result.json",
+            "sha256": "c549df3177ba3056f494bb101daa866733cadd4c47b88645ac32114d8a78111f",
+            "bytes": 6367
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 1771085,
+          "output_tokens": 16997,
+          "cached_input_tokens": 1681536,
+          "total_tokens": 1788082,
+          "harbor_estimated_cost_usd": 0.5172216000000001
+        },
+        {
+          "scope": "prototype_shared_semantic_review",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/associate_bridge_B04_shared_semantic_review_20261101T064500Z/terminal.json",
+            "sha256": "f6ab46145cd700f0b4dcaa5ee46e21ef596dbbca456340e4cf0e752c2c630f8b",
+            "bytes": 27199
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/associate_bridge_B04_shared_semantic_review_20261101T064500Z/llm_calls/private/401ed1436b3a4036bceac0681a5440a9/result.json",
+            "sha256": "3e3d7cb287dff915918ca2236359e0682480e73bbf912fa1bb381fdfac6986bb",
+            "bytes": 1541
+          },
+          "model": "gpt-6-sol",
+          "input_tokens": 533933,
+          "output_tokens": 10649,
+          "cached_input_tokens": 433536,
+          "total_tokens": 544582,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "scope": "prototype_shared_semantic_review",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/associate_bridge_B04_shared_semantic_review_20261101T064500Z/terminal.json",
+            "sha256": "f6ab46145cd700f0b4dcaa5ee46e21ef596dbbca456340e4cf0e752c2c630f8b",
+            "bytes": 27199
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/associate_bridge_B04_shared_semantic_review_20261101T064500Z/llm_calls/private/82000b6995fe46e8a4ba790edc28f258/result.json",
+            "sha256": "735504dd08ca78d1ac9991e10df59ce9c519c9c42df56040e17cee8612020962",
+            "bytes": 1556
+          },
+          "model": "gpt-6-sol",
+          "input_tokens": 2263187,
+          "output_tokens": 14611,
+          "cached_input_tokens": 2140032,
+          "total_tokens": 2277798,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "scope": "prototype_shared_semantic_review",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/associate_bridge_B04_shared_semantic_review_20261101T064500Z/terminal.json",
+            "sha256": "f6ab46145cd700f0b4dcaa5ee46e21ef596dbbca456340e4cf0e752c2c630f8b",
+            "bytes": 27199
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/associate_bridge_B04_shared_semantic_review_20261101T064500Z/llm_calls/private/97ec1dd4a9c94017983feb0d3778e195/result.json",
+            "sha256": "0406c7aa0c170d9dadf3695b170ff6e5c945c9b7e7b822166c4815578a66a5b1",
+            "bytes": 1574
+          },
+          "model": "gpt-6-sol",
+          "input_tokens": 1615483,
+          "output_tokens": 13576,
+          "cached_input_tokens": 1511168,
+          "total_tokens": 1629059,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "scope": "prototype_shared_semantic_review",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/associate_bridge_B04_shared_semantic_review_20261101T064500Z/terminal.json",
+            "sha256": "f6ab46145cd700f0b4dcaa5ee46e21ef596dbbca456340e4cf0e752c2c630f8b",
+            "bytes": 27199
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/associate_bridge_B04_shared_semantic_review_20261101T064500Z/llm_calls/private/c913cc32788f4cc2aca5c78c589b43e1/result.json",
+            "sha256": "80a4f023909db009c95c1ed4ed5bd5b025c173b9b1b98f38e0ae8477f8985df2",
+            "bytes": 1557
+          },
+          "model": "gpt-6-sol",
+          "input_tokens": 885855,
+          "output_tokens": 9324,
+          "cached_input_tokens": 814976,
+          "total_tokens": 895179,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "scope": "prototype_shared_semantic_review",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/tax_vintage_bridge_T01_shared_semantic_review_20261101T071500Z/terminal.json",
+            "sha256": "b0c5e9616056d70d3da1ee0bbfeab8cb316d3269a3e6393bdd5c1cd8cbf9dc4f",
+            "bytes": 26680
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/tax_vintage_bridge_T01_shared_semantic_review_20261101T071500Z/llm_calls/private/256ba0bb3f494793832ee82da51fbbb3/result.json",
+            "sha256": "2bd4e0704a32b62233f757a731b105561d474b8c740c35c9b63eef76c05a2cbe",
+            "bytes": 1544
+          },
+          "model": "gpt-6-sol",
+          "input_tokens": 1462316,
+          "output_tokens": 15515,
+          "cached_input_tokens": 1364480,
+          "total_tokens": 1477831,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "scope": "prototype_shared_semantic_review",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/tax_vintage_bridge_T01_shared_semantic_review_20261101T071500Z/terminal.json",
+            "sha256": "b0c5e9616056d70d3da1ee0bbfeab8cb316d3269a3e6393bdd5c1cd8cbf9dc4f",
+            "bytes": 26680
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/tax_vintage_bridge_T01_shared_semantic_review_20261101T071500Z/llm_calls/private/3043ba799aa14023b7f67f6972f44f06/result.json",
+            "sha256": "42137b70cc9d9f04c19203260a727cfe9322c004259812ee15a94ea63e38dbb7",
+            "bytes": 1566
+          },
+          "model": "gpt-6-sol",
+          "input_tokens": 209734,
+          "output_tokens": 4064,
+          "cached_input_tokens": 165120,
+          "total_tokens": 213798,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "scope": "prototype_shared_semantic_review",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/tax_vintage_bridge_T01_shared_semantic_review_20261101T071500Z/terminal.json",
+            "sha256": "b0c5e9616056d70d3da1ee0bbfeab8cb316d3269a3e6393bdd5c1cd8cbf9dc4f",
+            "bytes": 26680
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/tax_vintage_bridge_T01_shared_semantic_review_20261101T071500Z/llm_calls/private/8f333c2518f04a0d89c028cc5ec147fa/result.json",
+            "sha256": "781574c544a9390b94bc5104f7811dbea435c3bd2b687be4395604c87ef3d47d",
+            "bytes": 1560
+          },
+          "model": "gpt-6-sol",
+          "input_tokens": 665685,
+          "output_tokens": 10366,
+          "cached_input_tokens": 610304,
+          "total_tokens": 676051,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "scope": "prototype_shared_semantic_review",
+          "terminal": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/tax_vintage_bridge_T01_shared_semantic_review_20261101T071500Z/terminal.json",
+            "sha256": "b0c5e9616056d70d3da1ee0bbfeab8cb316d3269a3e6393bdd5c1cd8cbf9dc4f",
+            "bytes": 26680
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/tax_vintage_bridge_T01_shared_semantic_review_20261101T071500Z/llm_calls/private/df873f2134ed4702b93860d457ab8375/result.json",
+            "sha256": "18b08f02db6dddd317459a673125aa38bb12c8df7d66f52f11d9a09a77cc7fdc",
+            "bytes": 1555
+          },
+          "model": "gpt-6-sol",
+          "input_tokens": 2470089,
+          "output_tokens": 14439,
+          "cached_input_tokens": 2351232,
+          "total_tokens": 2484528,
+          "harbor_estimated_cost_usd": null
+        }
+      ],
+      "usage": {
+        "actual_call_count": 14,
+        "known_usage_call_count": 14,
+        "unknown_usage_call_count": 0,
+        "input_tokens": 19167717,
+        "output_tokens": 213410,
+        "cached_input_tokens": 17951744,
+        "known_reported_total_token_lower_bound": 19381127,
+        "harbor_estimated_cost_usd_known_sum": "3.06582760000000044",
+        "harbor_estimated_cost_known_call_count": 6,
+        "harbor_cost_estimate_is_provider_invoice": false,
+        "provider_paid_USD": null
+      }
+    },
+    "R2_first_development": {
+      "evidence": {
+        "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_R2_01_first_native_business_v6_20261101T074000Z/terminal.json",
+        "sha256": "4d7f61b608943bdc43c04abdd909a755f89b5c1cfa95d7890c09ebae37a9c773",
+        "bytes": 1097155
+      },
+      "calls": [
+        {
+          "task_id": "fm-ringfenced-r2-01-283e68178727c78459a3",
+          "mode": "financial_modeling",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_R2_01_first_native_business_v6_20261101T074000Z/evaluation/harbor_jobs/frontier-pass1/fm-ringfenced-r2-01-283e68178727__MD4VHkb/result.json",
+            "sha256": "c39211b6e240f68cb8b27abfa170bacbc07d2aab4b7d46ab296c4f9efd06f782",
+            "bytes": 6368
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 4536206,
+          "output_tokens": 39291,
+          "cached_input_tokens": 4392448,
+          "harbor_estimated_cost_usd": 1.1196708000000002
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-01-a2da8f875151ae293624",
+          "mode": "debugging",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_R2_01_first_native_business_v6_20261101T074000Z/evaluation/harbor_jobs/frontier-pass1/dbg-ringfenced-r2-01-a2da8f87515__jZQJRkL/result.json",
+            "sha256": "8f19f96890d1cc54a3949a8e254e29b29b19d6d71ce095f78f940a6249836092",
+            "bytes": 6371
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 5450274,
+          "output_tokens": 34233,
+          "cached_input_tokens": 5274112,
+          "harbor_estimated_cost_usd": 1.2220652000000003
+        }
+      ],
+      "usage": {
+        "actual_call_count": 2,
+        "known_usage_call_count": 2,
+        "unknown_usage_call_count": 0,
+        "input_tokens": 9986480,
+        "output_tokens": 73524,
+        "cached_input_tokens": 9666560,
+        "known_reported_total_token_lower_bound": 10060004,
+        "harbor_estimated_cost_usd_known_sum": "2.3417360000000005",
+        "harbor_estimated_cost_known_call_count": 2,
+        "harbor_cost_estimate_is_provider_invoice": false,
+        "provider_paid_USD": null
+      }
+    },
+    "successful_bounded_shared_review": {
+      "evidence": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_fixed5_bounded_quality_actual_20261101T090300Z/terminal.json",
+        "sha256": "2b41d3d3481d481d5d3e5a3351dce370058e94a3fa276f3e2854535afa1f3b08",
+        "bytes": 53599
+      },
+      "calls": [
+        {
+          "call_id": "06fd861cd3404fe4a67b4bd4d574b885",
+          "model": "gpt-6-sol",
+          "status": "completed",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_fixed5_bounded_quality_actual_20261101T090300Z/llm_calls/private/06fd861cd3404fe4a67b4bd4d574b885/result.json",
+            "sha256": "e0020dfbc28c5d5380952035714525e225ff5f54dcaeab51b3c039f910908678",
+            "bytes": 1559
+          },
+          "input_tokens": 279270,
+          "output_tokens": 4759,
+          "cached_input_tokens": 244096,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "call_id": "5643228ec6234004af6a808f81d48b10",
+          "model": "gpt-6-sol",
+          "status": "completed",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_fixed5_bounded_quality_actual_20261101T090300Z/llm_calls/private/5643228ec6234004af6a808f81d48b10/result.json",
+            "sha256": "a97c98ead61322a8cf5f187547622cf8a8dfd77055c924c287152d73093bf48a",
+            "bytes": 1570
+          },
+          "input_tokens": 818463,
+          "output_tokens": 7528,
+          "cached_input_tokens": 731904,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "call_id": "7e92fa5a5b0b4d9d8530c8fb9965b975",
+          "model": "gpt-6-sol",
+          "status": "completed",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_fixed5_bounded_quality_actual_20261101T090300Z/llm_calls/private/7e92fa5a5b0b4d9d8530c8fb9965b975/result.json",
+            "sha256": "ac39bea3e7d8fc58b22f092d849f7dbec3a5b92fd7054fbd22dd6d8af09b3c2b",
+            "bytes": 1541
+          },
+          "input_tokens": 415352,
+          "output_tokens": 5268,
+          "cached_input_tokens": 352384,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "call_id": "a4a872a0e76f433495f5ff6b611ba57b",
+          "model": "gpt-6-sol",
+          "status": "completed",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_fixed5_bounded_quality_actual_20261101T090300Z/llm_calls/private/a4a872a0e76f433495f5ff6b611ba57b/result.json",
+            "sha256": "afcc2972d3e0d003ecba564bea6e1897bc27e1393ff8d57d22c54ac168d30936",
+            "bytes": 1552
+          },
+          "input_tokens": 675252,
+          "output_tokens": 7849,
+          "cached_input_tokens": 575104,
+          "harbor_estimated_cost_usd": null
+        }
+      ],
+      "usage": {
+        "actual_call_count": 4,
+        "known_usage_call_count": 4,
+        "unknown_usage_call_count": 0,
+        "input_tokens": 2188337,
+        "output_tokens": 25404,
+        "cached_input_tokens": 1903488,
+        "known_reported_total_token_lower_bound": 2213741,
+        "harbor_estimated_cost_usd_known_sum": null,
+        "harbor_estimated_cost_known_call_count": 0,
+        "harbor_cost_estimate_is_provider_invoice": false,
+        "provider_paid_USD": null
+      }
+    },
+    "failed_original_shared_review": {
+      "evidence": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_fixed5_shared_quality_actual_20261101T083400Z/terminal.json",
+        "sha256": "a9d7054d3f6b139afb3d06b16f35d5c9ca361c040fd4ef3c37973bcf7352477c",
+        "bytes": 38399
+      },
+      "calls": [
+        {
+          "call_id": "32120eb1a48144afa7030d8a1d164521",
+          "model": "gpt-6-sol",
+          "status": "failed",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_fixed5_shared_quality_actual_20261101T083400Z/llm_calls/private/32120eb1a48144afa7030d8a1d164521/result.json",
+            "sha256": "ee6d7652e571e1f5f109de4dee20e4e3df61241f4bf172c8b84b10bcf02b4ff5",
+            "bytes": 1428
+          },
+          "input_tokens": null,
+          "output_tokens": null,
+          "cached_input_tokens": null,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "call_id": "5e8ae892077e493a9661d4ce12e3459f",
+          "model": "gpt-6-sol",
+          "status": "failed",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_fixed5_shared_quality_actual_20261101T083400Z/llm_calls/private/5e8ae892077e493a9661d4ce12e3459f/result.json",
+            "sha256": "de46909fb1a1e174ef565c483718793e40304f59e9cc2ae5cd6e5086ae090c8f",
+            "bytes": 1417
+          },
+          "input_tokens": null,
+          "output_tokens": null,
+          "cached_input_tokens": null,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "call_id": "c7bc73862a9c42998ca2e0d0e17989c2",
+          "model": "gpt-6-sol",
+          "status": "failed",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_fixed5_shared_quality_actual_20261101T083400Z/llm_calls/private/c7bc73862a9c42998ca2e0d0e17989c2/result.json",
+            "sha256": "7e84aaff63195d31b562c4b18744b5abee2453322ee586ab6df4889c20204390",
+            "bytes": 1399
+          },
+          "input_tokens": null,
+          "output_tokens": null,
+          "cached_input_tokens": null,
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "call_id": "d0d7f4f737c04312be8e5719d47e0e31",
+          "model": "gpt-6-sol",
+          "status": "failed",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/ringfenced_fixed5_shared_quality_actual_20261101T083400Z/llm_calls/private/d0d7f4f737c04312be8e5719d47e0e31/result.json",
+            "sha256": "d16f7289a68cf2fc9e95dfd8d613eef370b2fa0f31958c57dabead3b1dca3760",
+            "bytes": 1410
+          },
+          "input_tokens": null,
+          "output_tokens": null,
+          "cached_input_tokens": null,
+          "harbor_estimated_cost_usd": null
+        }
+      ],
+      "usage": {
+        "actual_call_count": 4,
+        "known_usage_call_count": 0,
+        "unknown_usage_call_count": 4,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cached_input_tokens": 0,
+        "known_reported_total_token_lower_bound": 0,
+        "harbor_estimated_cost_usd_known_sum": null,
+        "harbor_estimated_cost_known_call_count": 0,
+        "harbor_cost_estimate_is_provider_invoice": false,
+        "provider_paid_USD": null
+      }
+    },
+    "new_fixed_ten_confirmation": {
+      "evidence": {
+        "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_fixed5_replacement_confirmation_20261101T083400Z/terminal.json",
+        "sha256": "c265c4b6bb3fbbbcbbe8b0e25b759fbdf61459bd74daf4895b986e103fda0a56",
+        "bytes": 6381887
+      },
+      "calls": [
+        {
+          "task_id": "dbg-ringfenced-r2-01-a2da8f875151ae293624",
+          "mode": "debugging",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_fixed5_replacement_confirmation_20261101T083400Z/evaluation/harbor_jobs/frontier-pass1/dbg-ringfenced-r2-01-a2da8f87515__N3oPPNg/result.json",
+            "sha256": "69342e88dac4c82bc2b25fa098d2976386a0a302cac7cef1e4139b5a4c63dfda",
+            "bytes": 6355
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 6048036,
+          "output_tokens": 34529,
+          "cached_input_tokens": 5781120,
+          "harbor_estimated_cost_usd": 1.457234
+        },
+        {
+          "task_id": "fm-ringfenced-r2-01-283e68178727c78459a3",
+          "mode": "financial_modeling",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_fixed5_replacement_confirmation_20261101T083400Z/evaluation/harbor_jobs/frontier-pass1/fm-ringfenced-r2-01-283e68178727__oma7bi8/result.json",
+            "sha256": "9443b911a587583d502b6f0c41bd754439aa6b1a7d1ae674296f79707015a077",
+            "bytes": 6372
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 3368417,
+          "output_tokens": 29459,
+          "cached_input_tokens": 3226624,
+          "harbor_estimated_cost_usd": 0.9008383999999997
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-02-35f20d78ca950d6979db",
+          "mode": "debugging",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_fixed5_replacement_confirmation_20261101T083400Z/evaluation/harbor_jobs/frontier-pass1/dbg-ringfenced-r2-02-35f20d78ca9__9tpg8CA/result.json",
+            "sha256": "239d6bc3db5e0781133295a8339e4e31c7518b7c36fd554975aaf2e73099a443",
+            "bytes": 6375
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 4570536,
+          "output_tokens": 32540,
+          "cached_input_tokens": 4131328,
+          "harbor_estimated_cost_usd": 1.6169487999999999
+        },
+        {
+          "task_id": "fm-ringfenced-r2-02-35e3b46fdecbb99ebbe3",
+          "mode": "financial_modeling",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_fixed5_replacement_confirmation_20261101T083400Z/evaluation/harbor_jobs/frontier-pass1/fm-ringfenced-r2-02-35e3b46fdecb__snkRRRA/result.json",
+            "sha256": "68f77b3d726aafdfff6c416be109c36802b2dfbcac62878f595647d9e33bf535",
+            "bytes": 6354
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 2366942,
+          "output_tokens": 20542,
+          "cached_input_tokens": 2247168,
+          "harbor_estimated_cost_usd": 0.6696848
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-03-a377abbaf2968e9ea3fe",
+          "mode": "debugging",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_fixed5_replacement_confirmation_20261101T083400Z/evaluation/harbor_jobs/frontier-pass1/dbg-ringfenced-r2-03-a377abbaf29__GRVUcLs/result.json",
+            "sha256": "7d181b9b458b11b71d0b694e3478684f9eae538a6f9902f30b53d7b2abe9130c",
+            "bytes": 6375
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 4635547,
+          "output_tokens": 27352,
+          "cached_input_tokens": 4423296,
+          "harbor_estimated_cost_usd": 1.1403515999999998
+        },
+        {
+          "task_id": "fm-ringfenced-r2-03-f12dedd624aeba00ba95",
+          "mode": "financial_modeling",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_fixed5_replacement_confirmation_20261101T083400Z/evaluation/harbor_jobs/frontier-pass1/fm-ringfenced-r2-03-f12dedd624ae__3TAVsSQ/result.json",
+            "sha256": "db4e2518660f768012522cea33a48cb2e9e803d0208a1cdb3d7e69a125db9836",
+            "bytes": 6372
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 2882154,
+          "output_tokens": 22041,
+          "cached_input_tokens": 2726272,
+          "harbor_estimated_cost_usd": 0.8048012000000001
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-04-c5975851ac8ec0bcc746",
+          "mode": "debugging",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_fixed5_replacement_confirmation_20261101T083400Z/evaluation/harbor_jobs/frontier-pass1/dbg-ringfenced-r2-04-c5975851ac8__itQatYJ/result.json",
+            "sha256": "ffe6c12a4ca3a4eec16841ecddc36a88ae2c94fabd8754aa157901c7ba98aea2",
+            "bytes": 6375
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 5355438,
+          "output_tokens": 33996,
+          "cached_input_tokens": 5135232,
+          "harbor_estimated_cost_usd": 1.2938952000000004
+        },
+        {
+          "task_id": "fm-ringfenced-r2-04-260ea630c058f634c83f",
+          "mode": "financial_modeling",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_fixed5_replacement_confirmation_20261101T083400Z/evaluation/harbor_jobs/frontier-pass1/fm-ringfenced-r2-04-260ea630c058__9x95Du9/result.json",
+            "sha256": "084502817e5f11082f51233aca93704e6b71569c3b26d9e38a8a78afb81a6f58",
+            "bytes": 6372
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 4071848,
+          "output_tokens": 26062,
+          "cached_input_tokens": 3919360,
+          "harbor_estimated_cost_usd": 0.9575319999999999
+        },
+        {
+          "task_id": "dbg-ringfenced-r2-05-d20192bf89e9c70f76d0",
+          "mode": "debugging",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_fixed5_replacement_confirmation_20261101T083400Z/evaluation/harbor_jobs/frontier-pass1/dbg-ringfenced-r2-05-d20192bf89e__QzxLPCi/result.json",
+            "sha256": "5dcb0699659b45cfb07ed992a2bc56f983e809fa757f308c70aaa7bdef08d03e",
+            "bytes": 6375
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 5663798,
+          "output_tokens": 30241,
+          "cached_input_tokens": 5441536,
+          "harbor_estimated_cost_usd": 1.2910876000000007
+        },
+        {
+          "task_id": "fm-ringfenced-r2-05-fb575d256975cdbd5d1c",
+          "mode": "financial_modeling",
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/difficulty/ringfenced_fixed5_replacement_confirmation_20261101T083400Z/evaluation/harbor_jobs/frontier-pass1/fm-ringfenced-r2-05-fb575d256975__QB4KXHm/result.json",
+            "sha256": "08c1226db9ed50a02b7a888f06dc26878f934aceddd8b2f26879c07179344dd9",
+            "bytes": 6352
+          },
+          "model": "gpt-6.1-sol",
+          "input_tokens": 3381907,
+          "output_tokens": 23858,
+          "cached_input_tokens": 3203840,
+          "harbor_estimated_cost_usd": 0.915098
+        }
+      ],
+      "usage": {
+        "actual_call_count": 10,
+        "known_usage_call_count": 10,
+        "unknown_usage_call_count": 0,
+        "input_tokens": 42344623,
+        "output_tokens": 280620,
+        "cached_input_tokens": 40235776,
+        "known_reported_total_token_lower_bound": 42625243,
+        "harbor_estimated_cost_usd_known_sum": "11.0474716000000005",
+        "harbor_estimated_cost_known_call_count": 10,
+        "harbor_cost_estimate_is_provider_invoice": false,
+        "provider_paid_USD": null
+      }
+    },
+    "P07_auxiliary_quality": {
+      "evidence": {
+        "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_admission_20261101T073000Z/auxiliary_usage_receipt.json",
+        "sha256": "4542efda082181631180dbb0ab1d282c3e64ad564461d0eeb11f26c916affcab",
+        "bytes": 5349
+      },
+      "calls": [
+        {
+          "call_id": "d7450633ac9547d2b5456bf381bad635",
+          "role": "trace_agent",
+          "model": "gpt-6-sol",
+          "reasoning_effort": "high",
+          "isolated": true,
+          "status": "failed",
+          "started_at": "2026-11-01T08:03:27.946261+00:00",
+          "finished_at": "2026-11-01T08:13:30.161489+00:00",
+          "duration_ms": 602215,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cached_input_tokens": null,
+          "error": "Codex call exceeded 600s",
+          "result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/d7450633ac9547d2b5456bf381bad635/result.json",
+            "sha256": "4f86839118aea008b0c1dc0586058c2fe36a237e3faa05258232a0754f17bd30",
+            "bytes": 1219
+          },
+          "request": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/d7450633ac9547d2b5456bf381bad635/request.json",
+            "sha256": "2cf5046f36a1749b559fd69da414b5b4be391c661ce5f65c81402f63dba3e070",
+            "bytes": 780
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/d7450633ac9547d2b5456bf381bad635/result.json",
+            "sha256": "4f86839118aea008b0c1dc0586058c2fe36a237e3faa05258232a0754f17bd30",
+            "bytes": 1219
+          },
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "call_id": "293356cfb5504b45828e2ed86da3a5a5",
+          "role": "public_diagnostician",
+          "model": "gpt-6-sol",
+          "reasoning_effort": "high",
+          "isolated": true,
+          "status": "completed",
+          "started_at": "2026-11-01T08:13:35.050648+00:00",
+          "finished_at": "2026-11-01T08:18:42.072434+00:00",
+          "duration_ms": 307022,
+          "input_tokens": 417982,
+          "output_tokens": 5468,
+          "cached_input_tokens": 369024,
+          "error": null,
+          "result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/293356cfb5504b45828e2ed86da3a5a5/result.json",
+            "sha256": "96cbc499c3c91aec7f17f234949afa11213f719fba5ea46eec3d4d28f46e875a",
+            "bytes": 1496
+          },
+          "request": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/293356cfb5504b45828e2ed86da3a5a5/request.json",
+            "sha256": "b2e63de9308338cd1f56d2ede0cd23504be160ef21e34cc8f3c4e0ad66869473",
+            "bytes": 918
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/293356cfb5504b45828e2ed86da3a5a5/result.json",
+            "sha256": "96cbc499c3c91aec7f17f234949afa11213f719fba5ea46eec3d4d28f46e875a",
+            "bytes": 1496
+          },
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "call_id": "820d817becfe48a89826619d755f4af4",
+          "role": "reference_diagnostician",
+          "model": "gpt-6-sol",
+          "reasoning_effort": "high",
+          "isolated": false,
+          "status": "failed",
+          "started_at": "2026-11-01T08:18:44.787718+00:00",
+          "finished_at": "2026-11-01T08:58:44.820315+00:00",
+          "duration_ms": 2400033,
+          "input_tokens": null,
+          "output_tokens": null,
+          "cached_input_tokens": null,
+          "error": "Codex call exceeded 2400s",
+          "result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/820d817becfe48a89826619d755f4af4/result.json",
+            "sha256": "6ca6e54658214747ae4a3d3089798e59adca2994e21783252a6dd088250f69c4",
+            "bytes": 1364
+          },
+          "request": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/820d817becfe48a89826619d755f4af4/request.json",
+            "sha256": "ce57b17fe5f9ceb3ce11b95c57c1cf5beb4c1c7b13244b58ec0fbedb214fc998",
+            "bytes": 923
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/820d817becfe48a89826619d755f4af4/result.json",
+            "sha256": "6ca6e54658214747ae4a3d3089798e59adca2994e21783252a6dd088250f69c4",
+            "bytes": 1364
+          },
+          "harbor_estimated_cost_usd": null
+        },
+        {
+          "call_id": "325e44aa678b408c9bb96f9a7911deef",
+          "role": "reference_diagnostician",
+          "model": "gpt-6-sol",
+          "reasoning_effort": "high",
+          "isolated": false,
+          "status": "completed",
+          "started_at": "2026-11-01T08:58:54.375176+00:00",
+          "finished_at": "2026-11-01T09:17:39.396075+00:00",
+          "duration_ms": 1125021,
+          "input_tokens": 2178617,
+          "output_tokens": 15788,
+          "cached_input_tokens": 2045440,
+          "error": null,
+          "result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/325e44aa678b408c9bb96f9a7911deef/result.json",
+            "sha256": "f8875598df1f4b691405c362c261b3258dc7efa82f67a4fade0f6012d42f353e",
+            "bytes": 1508
+          },
+          "request": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/325e44aa678b408c9bb96f9a7911deef/request.json",
+            "sha256": "365fa035e755796eeaedd484547f874a7aa566839e9d2c8ff0a1a049b07773e9",
+            "bytes": 923
+          },
+          "actual_result": {
+            "path": "/data/hzy/sheetsFactory/outputs/research/P07_DBG_receipt_normal_20261101T073000Z/llm_calls/private/325e44aa678b408c9bb96f9a7911deef/result.json",
+            "sha256": "f8875598df1f4b691405c362c261b3258dc7efa82f67a4fade0f6012d42f353e",
+            "bytes": 1508
+          },
+          "harbor_estimated_cost_usd": null
+        }
+      ],
+      "usage": {
+        "actual_call_count": 4,
+        "known_usage_call_count": 2,
+        "unknown_usage_call_count": 2,
+        "input_tokens": 2596599,
+        "output_tokens": 21256,
+        "cached_input_tokens": 2414464,
+        "known_reported_total_token_lower_bound": 2617855,
+        "harbor_estimated_cost_usd_known_sum": null,
+        "harbor_estimated_cost_known_call_count": 0,
+        "harbor_cost_estimate_is_provider_invoice": false,
+        "provider_paid_USD": null
+      }
+    }
+  },
+  "primary_pipeline_total": {
+    "actual_call_count": 34,
+    "known_usage_call_count": 30,
+    "unknown_usage_call_count": 4,
+    "input_tokens": 73687157,
+    "output_tokens": 592958,
+    "cached_input_tokens": 69757568,
+    "known_reported_total_token_lower_bound": 74280115,
+    "harbor_estimated_cost_usd_known_sum": "16.45503520000000144",
+    "harbor_estimated_cost_known_call_count": 18,
+    "harbor_cost_estimate_is_provider_invoice": false,
+    "provider_paid_USD": null
+  },
+  "current_revision_including_auxiliary_total": {
+    "actual_call_count": 38,
+    "known_usage_call_count": 32,
+    "unknown_usage_call_count": 6,
+    "input_tokens": 76283756,
+    "output_tokens": 614214,
+    "cached_input_tokens": 72172032,
+    "known_reported_total_token_lower_bound": 76897970,
+    "harbor_estimated_cost_usd_known_sum": "16.45503520000000144",
+    "harbor_estimated_cost_known_call_count": 18,
+    "harbor_cost_estimate_is_provider_invoice": false,
+    "provider_paid_USD": null
+  },
+  "prior_production_history_separate_scope": {
+    "release": {
+      "path": "/data/hzy/sheetsFactory/reports/operating_report_factory_release.json",
+      "sha256": "f56b0003c4daf4c40646d85279b19028df344665ee4a371a842714b2f39b20f2",
+      "bytes": 17247
+    },
+    "candidate_count": 40,
+    "original_release_task_count": 20,
+    "current_retained_task_count": 10,
+    "actual_model_call_count": 64,
+    "known_reported_total_tokens": 87496946,
+    "excluded_from_current_revision_totals": true
+  },
+  "new_confirmation_by_mode": {
+    "financial_modeling": {
+      "actual_call_count": 5,
+      "known_usage_call_count": 5,
+      "unknown_usage_call_count": 0,
+      "input_tokens": 16071268,
+      "output_tokens": 121962,
+      "cached_input_tokens": 15323264,
+      "known_reported_total_token_lower_bound": 16193230,
+      "harbor_estimated_cost_usd_known_sum": "4.2479543999999997",
+      "harbor_estimated_cost_known_call_count": 5,
+      "harbor_cost_estimate_is_provider_invoice": false,
+      "provider_paid_USD": null
+    },
+    "debugging": {
+      "actual_call_count": 5,
+      "known_usage_call_count": 5,
+      "unknown_usage_call_count": 0,
+      "input_tokens": 26273355,
+      "output_tokens": 158658,
+      "cached_input_tokens": 24912512,
+      "known_reported_total_token_lower_bound": 26432013,
+      "harbor_estimated_cost_usd_known_sum": "6.7995172000000008",
+      "harbor_estimated_cost_known_call_count": 5,
+      "harbor_cost_estimate_is_provider_invoice": false,
+      "provider_paid_USD": null
+    }
+  },
+  "cost_scope_notes": [
+    "Cached tokens are a subset of input, not additional tokens.",
+    "Six incomplete calls retain unknown usage; known reported totals are lower bounds.",
+    "Harbor cost_usd values are recorded estimates, not paid provider invoice values.",
+    "P07 auxiliary usage is included in current-revision total, but not primary-pipeline total or candidate denominator.",
+    "Prior production history is excluded from current-revision totals."
+  ],
+  "candidate_denominator": {
+    "new_revision_prototype_materials": 8,
+    "new_fixed_ringfenced_materials": 10,
+    "new_revision_materials": 18,
+    "auxiliary_calls_are_not_candidates": true
+  },
+  "release_decision_performed": false,
+  "new_models_native_solver_Harbor_calls": 0
+}

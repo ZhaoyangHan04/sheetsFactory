@@ -1,8 +1,8 @@
 # sheetsFactory
 
-任务书要求的目录位于仓库根目录：[SpreadsheetEval/](SpreadsheetEval)。当前固定候选集包含 **10道 Financial Modeling＋10道 Debugging**，新修订正在验收，尚未宣布准出。
+任务书要求的目录位于仓库根目录：[SpreadsheetEval/](SpreadsheetEval)，包含 **10道 Financial Modeling＋10道 Debugging**。完整目录已实际通过oracle和nop控制，结果见[发布报告](reports/ringfenced_business_revision_release.json)和[控制报告](reports/ringfenced_business_revision_controls.json)。
 
-原有5＋5道题的材料和历史成绩保留；新增5＋5道资本配置题已完成真实输入验算并导出，全部在最强模型新上下文中并行确认。根目录已安装这20题，完整oracle/nop命令正在验证。材料按[冻结清单](SpreadsheetEval/dataset_manifest.json)绑定，后续不依据确认结果替换个别题目。
+原有5＋5道题的材料和历史成绩保留；新增5＋5道资本配置题已完成真实输入验算，并在最强模型新上下文中确认。材料按[冻结清单](SpreadsheetEval/dataset_manifest.json)绑定，没有根据确认结果替换个别题目。
 
 | 组成 | FM | Debugging | 工作簿结构 |
 | --- | ---: | ---: | --- |
@@ -13,11 +13,15 @@
 
 新来源由六份已独立验算的本地投资模型组合为五份健康工作簿。五份组合不是五个互不相关的公开数据集。每份组合核对两套完整财务结果和原始整数约束，组合最佳/次佳证书，并完成三次真实LibreOffice计算、完整财务/公式/原始数据审计和两次数值稳定性比较。每份新输入也另有真实重算和完整修改集合检查。
 
-最强模型采用原生Codex CLI `gpt-6.1-sol` / `xhigh`。累计工具执行严格小于1800秒，模型响应时间不计入，并行工具分别累加；14400秒是运行保护时限。已完成的首组开发测试两份方案均达到金融最优值，但工具累计1828.02秒和1807.29秒，均违反工具预算。它们不是金融最优解错误的证据。新增十题的正式确认尚未结束；旧十题历史成绩与新十题确认将分开报告。
+最强模型采用原生Codex CLI `gpt-6.1-sol` / `xhigh`。新增十题原始评分为9个0、1个1；加上保留十题的历史0分，完整20题原始通过率为 **1/20＝5%**。FM为0/10，Debugging为1/10；不声称二十题都在本轮重新确认。
 
-主评分比较重算后两位小数类型值与完整修改集合：多改、少改或应改值不正确均得0。完整20题的准出通过率按此主评分计算，须不超过0.2。错因分类用于解释结果，不另加准出阈值，也不改变原始评分。独立验证的工具预算失败按显式执行合同记失败；未知基础设施或计时不算模型失败。
+累计工具执行严格小于1800秒，模型响应时间不计入，并行工具分别累加；14400秒是运行保护时限。新十题有2条完整计时、8条UNKNOWN，原记录全部保留。预算限制只能减少原始成功数：错误答案无论是否超时都失败，唯一原始正确答案在计时未知时按可能成功计算。因此完整20题预算调整后的通过率区间为 **[0%, 5%]**，最有利于模型的上界仍低于0.2；不声称得到了全部预算调整点成绩或全部计时通过。
 
-公开与参考质量审查覆盖全部五组新题，十二项检查均保留。首轮四次审查超时，结论及用量保持UNKNOWN；补充四次审查已完成，未发现阻塞性的题意、业务假设或答案泄漏问题，实际资源检查通过。审查使用从实际原表提取的完整业务政策、明确标记的结构样本和绑定的完整程序审计；完整目录控制与难度仍待实际结果。
+主评分比较重算后两位小数类型值与完整修改集合：多改、少改或应改值不正确均得0。错因分类用于解释结果，不另加准出阈值，也不改变原始评分。完整实际验收结果、资源和材料身份必须有效；UNKNOWN本身不作为模型失败依据。
+
+公开与参考质量审查覆盖全部五组新题，十二项检查均保留。四次已完成审查未发现阻塞性的题意、业务假设或答案泄漏问题，实际资源检查通过；其余验收证据连接完整工程审计和实际目录控制。Q08在候选质量层为not_applicable，独立难度门槛已验证。首轮四次超时审查的未知结论和未知用量仍保留。
+
+本次修订构造18份候选材料，其中8份原型、10份最终新增材料；新增准出10份，转化率 **55.56%（10/18）**，另外保留历史10份。它不是项目全部历史转化率。主产线已知74,280,115 tokens；加入辅助验收后，本次38次CLI请求的已知消耗下界为 **76,897,970 tokens**，另有6次用量未知。缓存输入包含在输入token中；实际账单未知。分项见[消耗报告](reports/ringfenced_business_revision_consumption.json)。更早40候选的87,496,946 tokens及官方复测研究不纳入此次修订统计。
 
 ## 运行交付题集
 
@@ -42,7 +46,7 @@ harbor run -p SpreadsheetEval -a oracle
 harbor run -p SpreadsheetEval -a nop
 ```
 
-当前固定20题的两条完整目录命令正在实际验证；新一轮结果尚未齐全，暂不声明当前目录已经全部通过。每个任务声明 `/app/input.xlsx` 和 `/app/output.xlsx`；运行现有题集的oracle/nop不需要模型API密钥。最终目录及逐题文件由 [dataset_manifest.json](SpreadsheetEval/dataset_manifest.json) 绑定。
+以上两条完整目录命令已真实运行：**oracle20/20 reward=1，nop20/20 reward=0**，两个角色的实际资源及容器清理均验证通过。每个任务声明 `/app/input.xlsx` 和 `/app/output.xlsx`；运行现有题集的oracle/nop不需要模型API密钥。最终目录及逐题文件由 [dataset_manifest.json](SpreadsheetEval/dataset_manifest.json) 绑定。
 
 ## 使用构造管线
 
@@ -69,4 +73,4 @@ harbor run -p SpreadsheetEval -a nop
 | `tests/` | 代码与证据合同测试 |
 
 
-原20题发布、0/20历史确认及当时oracle/nop证据见[历史发布说明](docs/history/README_operating_report_factory_20261101.md)和[历史发布报告](reports/operating_report_factory_release.json)。这些原批次结果不代表当前新目录的确认成绩。[当前状态](docs/current_development_status.md)与[组合确认协议](docs/ringfenced_replacement_confirmation.md)说明证据边界。
+原20题发布、0/20历史确认及当时oracle/nop证据见[历史发布说明](docs/history/README_operating_report_factory_20261101.md)和[历史发布报告](reports/operating_report_factory_release.json)。这些原批次结果不代表当前新目录的确认成绩。当前规则见[主评分准出合同](docs/ringfenced_primary_release.md)，材料冻结与调用边界见[组合确认记录](docs/ringfenced_replacement_confirmation.md)。
