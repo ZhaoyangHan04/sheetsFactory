@@ -132,6 +132,11 @@ def finalize(cohort_path, confirmation_path, quality_path, controls_path, output
     attempts = [row['actual_attempt'] for terminal in (development, confirmation) for row in terminal['results'] if row.get('actual_attempt')]
     consumption = usage(attempts)
     consumption['known_total_tokens'] = consumption['known_input_tokens']+consumption['known_output_tokens']
+    semantic_usage = [read_ref(record)['usage'] for record in quality['shared_semantic_reviews']]
+    ordinary = {key: sum(record[key] for record in semantic_usage)
+        for key in ('input_tokens', 'output_tokens', 'total_tokens', 'cached_input_tokens', 'llm_calls', 'unknown_usage_calls')}
+    ordinary['model'] = 'gpt-6-sol'; ordinary['reasoning_effort'] = 'high'
+    ordinary['provider_paid_cost'] = None
     result = {'kind': 'qualified_operating_report_factory_release', 'version': 1,
         'created_at': datetime.now(timezone.utc).isoformat(), 'qualified': True, 'task_count': 20,
         'counts_by_mode': {'financial_modeling': 10, 'debugging': 10}, 'overall_pass_at_1': overall,
@@ -141,6 +146,9 @@ def finalize(cohort_path, confirmation_path, quality_path, controls_path, output
         'candidate_conversion': 20/len(development['results']),
         'cohort': cohort_ref, 'confirmation': confirmation_ref, 'quality': quality_ref, 'controls': controls_ref,
         'dataset_manifest': manifest_ref, 'tasks': rows, 'strongest_model_consumption': consumption,
+        'shared_semantic_review_consumption': ordinary,
+        'current_batch_known_total_tokens': consumption['known_total_tokens']+ordinary['total_tokens'],
+        'current_batch_model_calls': consumption['attempts']+ordinary['llm_calls'],
         'ordinary_semantic_review_consumption_reported_separately': True,
         'historical_production_and_official_study_consumption_excluded': True}
     output = Path(output).absolute(); require(output == output.resolve() and not output.exists(), 'Use a new public summary file')
