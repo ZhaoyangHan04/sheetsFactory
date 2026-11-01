@@ -1,0 +1,43 @@
+run:
+  name: C00-debugging-reference-quality
+  scheduler: rolling
+  targets: {financial_modeling: 0, debugging: 1}
+  max_sources: 1
+  max_parallel_sources: 1
+  max_candidates_per_seed: 1
+  max_steps: 3
+  max_evidence_rounds_per_revision: 2
+  infrastructure_retries_per_stage: 2
+  max_additional_trials_per_revision: 0
+  source_ordering: manifest
+construction:
+  instruction_style: business_brief
+  max_edit_count: {financial_modeling: 2000000, debugging: 2000000}
+  analysis_limits:
+    max_dependency_closure_cells: 3000000
+    max_profile_cells: 3000000
+    per_formula_reference_cells: 5000
+    max_mask_ranges: 1024
+engine:
+  image: sheetsfactory-lo:24.2-iterative-openpyxl315-v1
+  timeout_seconds: 600
+agents:
+  model: gpt-6-sol
+  reasoning_effort: high
+  timeout_seconds: 1200
+  trajectory_timeout_seconds: 600
+  max_parallel_calls: 1
+  container_image: sheetsfactory-lo:24.2-iterative-openpyxl315-v1
+  container_memory: 32g
+  container_cpus: 2
+  roles:
+    reference_diagnostician: {model: gpt-6-sol, reasoning_effort: high, timeout_seconds: 2400}
+diagnosis:
+  selection: {include: all, exclude: []}
+  execution: {llm_batching: all_in_one, reference_evidence_transport: audited_summary}
+  difficulty_deferred: false
+  reference_evidence_policy: reference_review
+prompt_overrides:
+  diagnosis.md: diagnosis_business.md
+dashboard: {host: 127.0.0.1, port: 0, open_browser: false}
+harbor: {execute_controls: true, concurrency: 1}
